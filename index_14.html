@@ -1,0 +1,3156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post-Apocalyptic Character Sheet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/rpg-awesome/0.2.0/css/rpg-awesome.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0;
+            background: rgba(30, 30, 50, 0.95);
+            min-height: 100vh;
+        }
+
+        /* Desktop-specific styling */
+        @media (min-width: 769px) and (pointer: fine) {
+            body {
+                padding: 0 10%;
+            }
+            
+            .container {
+                max-width: 1200px;
+                margin: 0 auto;
+                border-radius: 15px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+                min-height: calc(100vh - 40px);
+                margin-top: 20px;
+                margin-bottom: 20px;
+            }
+            
+            .header {
+                border-radius: 15px 15px 0 0;
+            }
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4a4a8a 0%, #2a2a5a 100%);
+            padding: 20px 15px;
+            text-align: center;
+            border-bottom: 3px solid #8b7355;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(1.2em, 5vw, 1.8em);
+            color: #f4d03f;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: clamp(0.7em, 3vw, 0.9em);
+            opacity: 0.9;
+        }
+
+        /* Mobile-first tab design */
+        .tabs {
+            display: flex;
+            background: #2a2a4a;
+            border-bottom: 2px solid #8b7355;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .tab {
+            flex: 0 0 auto;
+            min-width: 80px;
+            padding: 16px 12px;
+            background: #3a3a5a;
+            border: none;
+            color: #c0c0c0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 11px;
+            font-weight: 500;
+            text-align: center;
+            white-space: nowrap;
+            scroll-snap-align: start;
+            touch-action: manipulation;
+        }
+
+        .tab i {
+            display: block;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .tab:hover, .tab:focus {
+            background: #4a4a6a;
+            color: #f4d03f;
+            outline: none;
+        }
+
+        .tab.active {
+            background: #5a5a7a;
+            color: #f4d03f;
+            border-bottom: 3px solid #f4d03f;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px 15px;
+            min-height: calc(100vh - 140px);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Character Creation Section */
+        .char-creation-grid {
+            display: grid;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .section-card {
+            background: rgba(60, 60, 80, 0.8);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #4a4a6a;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .section-title {
+            font-family: 'Cinzel', serif;
+            font-size: 1.2em;
+            color: #f4d03f;
+            margin-bottom: 15px;
+            text-align: center;
+            border-bottom: 2px solid #8b7355;
+            padding-bottom: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: #f4d03f;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 16px;
+            background: #2a2a4a;
+            border: 2px solid #4a4a6a;
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+            touch-action: manipulation;
+            min-height: 48px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #f4d03f;
+            box-shadow: 0 0 0 2px rgba(244, 208, 63, 0.2);
+        }
+
+        /* Stats Section */
+        .stats-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .points-display {
+            background: rgba(244, 208, 63, 0.15);
+            border: 2px solid #f4d03f;
+            border-radius: 10px;
+            padding: 12px 16px;
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .points-display h3 {
+            color: #f4d03f;
+            font-size: 12px;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .points-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        .health-magic-display {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .hp-mp-box {
+            background: rgba(40, 40, 60, 0.9);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            border: 2px solid #4a4a6a;
+        }
+
+        .hp-box {
+            border-color: #8a4a4a;
+            background: rgba(138, 74, 74, 0.2);
+        }
+
+        .mp-box {
+            border-color: #8a4a8a;
+            background: rgba(138, 74, 138, 0.2);
+        }
+
+        .hp-mp-box h3 {
+            font-size: 12px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .hp-box h3 { color: #ff6b6b; }
+        .mp-box h3 { color: #da70d6; }
+
+        .hp-mp-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 10px;
+        }
+
+        .hp-mp-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-card {
+            background: rgba(40, 40, 60, 0.9);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border: 2px solid #4a4a6a;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            border-color: #f4d03f;
+            box-shadow: 0 0 15px rgba(244, 208, 63, 0.3);
+        }
+
+        .stat-name {
+            font-weight: 600;
+            color: #f4d03f;
+            font-size: 13px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 15px;
+        }
+
+        .stat-controls {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .control-btn {
+            width: 48px;
+            height: 48px;
+            border: none;
+            border-radius: 50%;
+            background: #4a4a6a;
+            color: #ffffff;
+            cursor: pointer;
+            font-size: 20px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            touch-action: manipulation;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-btn:hover:not(:disabled) {
+            background: #f4d03f;
+            color: #2a2a4a;
+            transform: scale(1.1);
+        }
+
+        .control-btn:disabled {
+            background: #3a3a5a;
+            color: #6a6a8a;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Character Tab Sub-tabs */
+        .char-sub-tabs {
+            display: flex;
+            background: #3a3a5a;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .char-sub-tab {
+            flex: 1;
+            padding: 12px 16px;
+            background: #3a3a5a;
+            border: none;
+            color: #c0c0c0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .char-sub-tab:hover {
+            background: #4a4a6a;
+            color: #f4d03f;
+        }
+
+        .char-sub-tab.active {
+            background: #5a5a7a;
+            color: #f4d03f;
+        }
+
+        .char-sub-content {
+            display: none;
+        }
+
+        .char-sub-content.active {
+            display: block;
+        }
+
+        /* Skills Section */
+        .skills-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .skill-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: rgba(40, 40, 60, 0.8);
+            border-radius: 8px;
+            border: 1px solid #4a4a6a;
+            min-height: 56px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .skill-item:hover {
+            border-color: #f4d03f;
+            background: rgba(244, 208, 63, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .skill-item.rollable {
+            border-left: 3px solid #4a8a4a;
+        }
+
+        .skill-item.rollable:hover {
+            border-left-color: #5a9a5a;
+        }
+
+        .skill-info {
+            flex: 1;
+        }
+
+        .skill-name {
+            font-weight: 500;
+            color: #e0e0e0;
+            font-size: 14px;
+        }
+
+        .skill-stat {
+            font-size: 12px;
+            color: #8a8a8a;
+            margin-top: 2px;
+        }
+
+        .skill-value {
+            font-weight: bold;
+            color: #f4d03f;
+            font-size: 18px;
+            margin-left: 10px;
+        }
+
+        /* Spell Items in Character Tab */
+        .spell-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: rgba(40, 40, 60, 0.8);
+            border-radius: 8px;
+            border: 1px solid #8a4a8a;
+            min-height: 56px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 10px;
+        }
+
+        .spell-item:hover {
+            border-color: #da70d6;
+            background: rgba(218, 112, 214, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .spell-item.castable {
+            border-left: 3px solid #8a4a8a;
+        }
+
+        .spell-item.castable:hover {
+            border-left-color: #da70d6;
+        }
+
+        .spell-item.insufficient-mp {
+            opacity: 0.5;
+            cursor: not-allowed;
+            border-left-color: #6a6a6a;
+        }
+
+        .spell-info {
+            flex: 1;
+        }
+
+        .spell-name {
+            font-weight: 500;
+            color: #da70d6;
+            font-size: 14px;
+        }
+
+        .spell-element {
+            font-size: 12px;
+            color: #8a8a8a;
+            margin-top: 2px;
+            text-transform: capitalize;
+        }
+
+        .spell-cost {
+            font-weight: bold;
+            color: #f4d03f;
+            font-size: 16px;
+            margin-left: 10px;
+        }
+
+        /* Buttons */
+        .btn-primary {
+            width: 100%;
+            padding: 16px 24px;
+            background: #4a6a8a;
+            border: none;
+            border-radius: 10px;
+            color: #ffffff;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            touch-action: manipulation;
+            min-height: 48px;
+        }
+
+        .btn-primary:hover {
+            background: #5a7a9a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-secondary {
+            width: 100%;
+            padding: 12px 20px;
+            background: #6a4a6a;
+            border: none;
+            border-radius: 8px;
+            color: #ffffff;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            touch-action: manipulation;
+            min-height: 44px;
+        }
+
+        .btn-secondary:hover {
+            background: #7a5a7a;
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px 10px;
+            }
+            
+            .tab-content {
+                padding: 15px 10px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .health-magic-display {
+                grid-template-columns: 1fr;
+            }
+            
+            .skills-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-header {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .control-btn {
+                width: 44px;
+                height: 44px;
+                font-size: 18px;
+            }
+        }
+
+        /* Touch feedback */
+        .control-btn:active,
+        .btn-primary:active,
+        .btn-secondary:active,
+        .tab:active,
+        .skill-item:active,
+        .spell-item:active,
+        .stat-card.clickable:active {
+            transform: scale(0.95);
+        }
+
+        /* Roll notification */
+        .roll-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #4a8a4a 0%, #5a9a5a 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            max-width: 300px;
+            border-left: 4px solid #f4d03f;
+        }
+
+        .roll-notification.show {
+            transform: translateX(0);
+        }
+
+        .roll-notification h4 {
+            margin: 0 0 5px 0;
+            color: #f4d03f;
+            font-size: 14px;
+        }
+
+        .roll-notification .roll-result {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+
+        .roll-notification .roll-details {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        /* Spell notification */
+        .spell-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #8a4a8a 0%, #9a5a9a 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            max-width: 300px;
+            border-left: 4px solid #da70d6;
+        }
+
+        .spell-notification.show {
+            transform: translateX(0);
+        }
+
+        .spell-notification h4 {
+            margin: 0 0 5px 0;
+            color: #da70d6;
+            font-size: 14px;
+        }
+
+        .spell-notification .spell-result {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+
+        .spell-notification .spell-details {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        /* Accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="ra ra-knight-helmet"></i> Wasteland Chronicles</h1>
+            <p>Post-Apocalyptic Character Manager</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="creation">
+                <i class="ra ra-player"></i>
+                Creation
+            </button>
+            <button class="tab" data-tab="character">
+                <i class="ra ra-muscle-up"></i>
+                Character
+            </button>
+            <button class="tab" data-tab="inventory">
+                <i class="ra ra-sword"></i>
+                Inventory
+            </button>
+            <button class="tab" data-tab="magic">
+                <i class="ra ra-lightning"></i>
+                Magic
+            </button>
+            <button class="tab" data-tab="rolling">
+                <i class="ra ra-dice"></i>
+                Rolling
+            </button>
+        </div>
+
+        <!-- Character Creation Tab -->
+        <div class="tab-content active" id="creation">
+            <div class="char-creation-grid">
+                <!-- Basic Info -->
+                <div class="section-card">
+                    <h2 class="section-title">Basic Information</h2>
+                    <div class="form-group">
+                        <label for="char-name">Character Name</label>
+                        <input type="text" id="char-name" placeholder="Enter character name">
+                    </div>
+                    <div class="form-group">
+                        <label for="char-level">Starting Level</label>
+                        <input type="number" id="char-level" value="1" min="1" max="20">
+                    </div>
+                </div>
+
+                <!-- Portrait Upload -->
+                <div class="section-card">
+                    <h2 class="section-title">Character Portrait</h2>
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+                        <div id="portrait-display" style="width: 120px; height: 120px; border: 2px dashed #4a4a6a; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(40, 40, 60, 0.8); overflow: hidden;">
+                            <i class="ra ra-player" style="font-size: 3em; color: #4a4a6a;"></i>
+                            <p style="color: #8a8a8a; font-size: 12px; margin-top: 5px; text-align: center;">No image uploaded</p>
+                        </div>
+                        <input type="file" id="portrait-upload" accept="image/*" style="display: none;">
+                        <button class="btn-secondary" onclick="document.getElementById('portrait-upload').click()">
+                            <i class="ra ra-image"></i> Upload Portrait
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Backstory -->
+                <div class="section-card">
+                    <h2 class="section-title">Pre-War Background</h2>
+                    <div class="form-group">
+                        <label for="job-select">Old World Profession</label>
+                        <select id="job-select">
+                            <option value="">Select your past...</option>
+                            <option value="engineer">Engineer</option>
+                            <option value="doctor">Doctor</option>
+                            <option value="lawyer">Lawyer</option>
+                            <option value="teacher">Teacher</option>
+                            <option value="mechanic">Mechanic</option>
+                            <option value="police">Police Officer</option>
+                            <option value="firefighter">Firefighter</option>
+                            <option value="chef">Chef</option>
+                            <option value="artist">Artist</option>
+                            <option value="programmer">Programmer</option>
+                            <option value="soldier">Soldier</option>
+                            <option value="athlete">Athlete</option>
+                            <option value="scientist">Scientist</option>
+                            <option value="musician">Musician</option>
+                            <option value="writer">Writer</option>
+                            <option value="custom">Custom Background</option>
+                        </select>
+                        <input type="text" id="custom-job" placeholder="Enter custom background" style="display: none; margin-top: 10px;">
+                        
+                        <!-- Custom Job Bonuses -->
+                        <div id="custom-job-bonuses" style="display: none; margin-top: 15px; padding: 15px; background: rgba(40, 40, 60, 0.8); border-radius: 8px;">
+                            <h4 style="color: #f4d03f; margin-bottom: 10px;">Custom Background Bonuses</h4>
+                            <div style="display: grid; gap: 10px;">
+                                <label style="font-size: 14px; color: #c0c0c0;">Choose 1-2 Attributes (1 = +3, 2 = +2/+1):</label>
+                                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                                    <label style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                                        <input type="checkbox" id="custom-job-str" onchange="updateCustomJobBonuses()"> STR
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                                        <input type="checkbox" id="custom-job-dex" onchange="updateCustomJobBonuses()"> DEX
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                                        <input type="checkbox" id="custom-job-con" onchange="updateCustomJobBonuses()"> CON
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                                        <input type="checkbox" id="custom-job-int" onchange="updateCustomJobBonuses()"> INT
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                                        <input type="checkbox" id="custom-job-wis" onchange="updateCustomJobBonuses()"> WIS
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                                        <input type="checkbox" id="custom-job-cha" onchange="updateCustomJobBonuses()"> CHA
+                                    </label>
+                                </div>
+                                
+                                <label style="font-size: 14px; color: #c0c0c0; margin-top: 10px;">Add 2 Skills:</label>
+                                <div style="display: grid; gap: 8px;">
+                                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 8px;">
+                                        <select id="custom-job-skill1">
+                                            <option value="">Choose skill...</option>
+                                            <option value="custom">Custom Skill</option>
+                                            <option value="Acrobatics">Acrobatics</option>
+                                            <option value="Animal Handling">Animal Handling</option>
+                                            <option value="Arcana">Arcana</option>
+                                            <option value="Athletics">Athletics</option>
+                                            <option value="Deception">Deception</option>
+                                            <option value="History">History</option>
+                                            <option value="Insight">Insight</option>
+                                            <option value="Intimidation">Intimidation</option>
+                                            <option value="Investigation">Investigation</option>
+                                            <option value="Medicine">Medicine</option>
+                                            <option value="Nature">Nature</option>
+                                            <option value="Perception">Perception</option>
+                                            <option value="Performance">Performance</option>
+                                            <option value="Persuasion">Persuasion</option>
+                                            <option value="Religion">Religion</option>
+                                            <option value="Sleight of Hand">Sleight of Hand</option>
+                                            <option value="Stealth">Stealth</option>
+                                            <option value="Survival">Survival</option>
+                                        </select>
+                                        <select id="custom-job-skill1-stat">
+                                            <option value="strength">STR</option>
+                                            <option value="dexterity">DEX</option>
+                                            <option value="constitution">CON</option>
+                                            <option value="intelligence">INT</option>
+                                            <option value="wisdom">WIS</option>
+                                            <option value="charisma">CHA</option>
+                                        </select>
+                                    </div>
+                                    <input type="text" id="custom-job-skill1-name" placeholder="Custom skill name" style="display: none;">
+                                    
+                                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 8px;">
+                                        <select id="custom-job-skill2">
+                                            <option value="">Choose skill...</option>
+                                            <option value="custom">Custom Skill</option>
+                                            <option value="Acrobatics">Acrobatics</option>
+                                            <option value="Animal Handling">Animal Handling</option>
+                                            <option value="Arcana">Arcana</option>
+                                            <option value="Athletics">Athletics</option>
+                                            <option value="Deception">Deception</option>
+                                            <option value="History">History</option>
+                                            <option value="Insight">Insight</option>
+                                            <option value="Intimidation">Intimidation</option>
+                                            <option value="Investigation">Investigation</option>
+                                            <option value="Medicine">Medicine</option>
+                                            <option value="Nature">Nature</option>
+                                            <option value="Perception">Perception</option>
+                                            <option value="Performance">Performance</option>
+                                            <option value="Persuasion">Persuasion</option>
+                                            <option value="Religion">Religion</option>
+                                            <option value="Sleight of Hand">Sleight of Hand</option>
+                                            <option value="Stealth">Stealth</option>
+                                            <option value="Survival">Survival</option>
+                                        </select>
+                                        <select id="custom-job-skill2-stat">
+                                            <option value="strength">STR</option>
+                                            <option value="dexterity">DEX</option>
+                                            <option value="constitution">CON</option>
+                                            <option value="intelligence">INT</option>
+                                            <option value="wisdom">WIS</option>
+                                            <option value="charisma">CHA</option>
+                                        </select>
+                                    </div>
+                                    <input type="text" id="custom-job-skill2-name" placeholder="Custom skill name" style="display: none;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- New World Class -->
+                <div class="section-card">
+                    <h2 class="section-title">Wasteland Class</h2>
+                    <div class="form-group">
+                        <label for="class-select">Survival Specialization</label>
+                        <select id="class-select">
+                            <option value="">Choose your path...</option>
+                            <option value="fighter">Warrior</option>
+                            <option value="wizard">Tech-Mage</option>
+                            <option value="rogue">Scavenger</option>
+                            <option value="cleric">Healer</option>
+                            <option value="ranger">Wasteland Ranger</option>
+                            <option value="barbarian">Raider</option>
+                            <option value="bard">Storyteller</option>
+                            <option value="paladin">Guardian</option>
+                            <option value="warlock">Cult Initiate</option>
+                            <option value="sorcerer">Mutant</option>
+                            <option value="monk">Survivor</option>
+                            <option value="druid">Nature Speaker</option>
+                            <option value="gunslinger">Gunslinger</option>
+                            <option value="hacker">Data Runner</option>
+                            <option value="medic">Field Medic</option>
+                            <option value="engineer_class">Engineer</option>
+                            <option value="pilot">Vehicle Pilot</option>
+                            <option value="survivalist">Survivalist</option>
+                            <option value="custom_class">Custom Class</option>
+                        </select>
+                        <input type="text" id="custom-class" placeholder="Enter custom class" style="display: none; margin-top: 10px;">
+                        
+                        <!-- Custom Class Bonuses -->
+                        <div id="custom-class-bonuses" style="display: none; margin-top: 15px; padding: 15px; background: rgba(40, 40, 60, 0.8); border-radius: 8px;">
+                            <h4 style="color: #f4d03f; margin-bottom: 10px;">Custom Class Bonuses</h4>
+                            <div style="display: grid; gap: 10px;">
+                                <label style="font-size: 14px; color: #c0c0c0;">Choose 1-2 Attributes (1 = +3, 2 = +2/+1):</label>
+                                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                                    <label style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                                        <input type="checkbox" id="custom-class-str" onchange="updateCustomClassBonuses()"> STR
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                                        <input type="checkbox" id="custom-class-dex" onchange="updateCustomClassBonuses()"> DEX
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                                        <input type="checkbox" id="custom-class-con" onchange="updateCustomClassBonuses()"> CON
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                                        <input type="checkbox" id="custom-class-int" onchange="updateCustomClassBonuses()"> INT
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                                        <input type="checkbox" id="custom-class-wis" onchange="updateCustomClassBonuses()"> WIS
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                                        <input type="checkbox" id="custom-class-cha" onchange="updateCustomClassBonuses()"> CHA
+                                    </label>
+                                </div>
+                                
+                                <label style="font-size: 14px; color: #c0c0c0; margin-top: 10px;">Add 2 Skills:</label>
+                                <div style="display: grid; gap: 8px;">
+                                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 8px;">
+                                        <select id="custom-class-skill1">
+                                            <option value="">Choose skill...</option>
+                                            <option value="custom">Custom Skill</option>
+                                            <option value="Acrobatics">Acrobatics</option>
+                                            <option value="Animal Handling">Animal Handling</option>
+                                            <option value="Arcana">Arcana</option>
+                                            <option value="Athletics">Athletics</option>
+                                            <option value="Deception">Deception</option>
+                                            <option value="History">History</option>
+                                            <option value="Insight">Insight</option>
+                                            <option value="Intimidation">Intimidation</option>
+                                            <option value="Investigation">Investigation</option>
+                                            <option value="Medicine">Medicine</option>
+                                            <option value="Nature">Nature</option>
+                                            <option value="Perception">Perception</option>
+                                            <option value="Performance">Performance</option>
+                                            <option value="Persuasion">Persuasion</option>
+                                            <option value="Religion">Religion</option>
+                                            <option value="Sleight of Hand">Sleight of Hand</option>
+                                            <option value="Stealth">Stealth</option>
+                                            <option value="Survival">Survival</option>
+                                        </select>
+                                        <select id="custom-class-skill1-stat">
+                                            <option value="strength">STR</option>
+                                            <option value="dexterity">DEX</option>
+                                            <option value="constitution">CON</option>
+                                            <option value="intelligence">INT</option>
+                                            <option value="wisdom">WIS</option>
+                                            <option value="charisma">CHA</option>
+                                        </select>
+                                    </div>
+                                    <input type="text" id="custom-class-skill1-name" placeholder="Custom skill name" style="display: none;">
+                                    
+                                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 8px;">
+                                        <select id="custom-class-skill2">
+                                            <option value="">Choose skill...</option>
+                                            <option value="custom">Custom Skill</option>
+                                            <option value="Acrobatics">Acrobatics</option>
+                                            <option value="Animal Handling">Animal Handling</option>
+                                            <option value="Arcana">Arcana</option>
+                                            <option value="Athletics">Athletics</option>
+                                            <option value="Deception">Deception</option>
+                                            <option value="History">History</option>
+                                            <option value="Insight">Insight</option>
+                                            <option value="Intimidation">Intimidation</option>
+                                            <option value="Investigation">Investigation</option>
+                                            <option value="Medicine">Medicine</option>
+                                            <option value="Nature">Nature</option>
+                                            <option value="Perception">Perception</option>
+                                            <option value="Performance">Performance</option>
+                                            <option value="Persuasion">Persuasion</option>
+                                            <option value="Religion">Religion</option>
+                                            <option value="Sleight of Hand">Sleight of Hand</option>
+                                            <option value="Stealth">Stealth</option>
+                                            <option value="Survival">Survival</option>
+                                        </select>
+                                        <select id="custom-class-skill2-stat">
+                                            <option value="strength">STR</option>
+                                            <option value="dexterity">DEX</option>
+                                            <option value="constitution">CON</option>
+                                            <option value="intelligence">INT</option>
+                                            <option value="wisdom">WIS</option>
+                                            <option value="charisma">CHA</option>
+                                        </select>
+                                    </div>
+                                    <input type="text" id="custom-class-skill2-name" placeholder="Custom skill name" style="display: none;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Attributes -->
+                <div class="section-card">
+                    <h2 class="section-title">Attributes</h2>
+                    <div class="stats-header">
+                        <div class="points-display">
+                            <h3>Available Points</h3>
+                            <div class="points-value" id="available-points">3</div>
+                        </div>
+                    </div>
+                    
+                    <div class="health-magic-display">
+                        <div class="hp-mp-box hp-box">
+                            <h3>Health Points</h3>
+                            <div class="hp-mp-value" id="health-points">3</div>
+                            <div style="font-size: 12px; color: #8a8a8a; margin-top: 5px;">CON + Level</div>
+                        </div>
+                        <div class="hp-mp-box mp-box">
+                            <h3>Magic Points</h3>
+                            <div class="hp-mp-value" id="magic-points">4</div>
+                            <div style="font-size: 12px; color: #8a8a8a; margin-top: 5px;">WIS + INT</div>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid" id="stats-grid">
+                        <!-- Stats will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Active Bonuses Display -->
+                <div class="section-card" id="bonuses-display" style="display: none;">
+                    <h2 class="section-title">Active Bonuses</h2>
+                    <div id="bonuses-content">
+                        <!-- Bonuses will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Personal Details -->
+                <div class="section-card">
+                    <h2 class="section-title">Personal Details</h2>
+                    <div class="form-group">
+                        <label for="char-age">Age</label>
+                        <input type="number" id="char-age" placeholder="25">
+                    </div>
+                    <div class="form-group">
+                        <label for="char-backstory">Personal History</label>
+                        <textarea id="char-backstory" placeholder="Tell your character's story..." rows="4"></textarea>
+                    </div>
+                </div>
+
+                <!-- Save/Load -->
+                <div class="section-card">
+                    <button class="btn-primary" onclick="saveCharacter()">
+                        <i class="ra ra-save"></i> Save Character
+                    </button>
+                    <br><br>
+                    <button class="btn-secondary" onclick="loadCharacter()">
+                        <i class="ra ra-load"></i> Load Character
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Character Tab -->
+        <div class="tab-content" id="character">
+            <!-- Character Summary -->
+            <div class="section-card">
+                <h2 class="section-title" id="char-display-name">Character Overview</h2>
+                <div id="char-summary" style="text-align: center; color: #c0c0c0; margin-bottom: 15px;">
+                    <!-- Character summary will be populated by JavaScript -->
+                </div>
+                
+                <div class="health-magic-display">
+                    <div class="hp-mp-box hp-box">
+                        <h3>Health Points</h3>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <span style="font-size: 14px; color: #ff6b6b;">Current: <span id="char-current-hp">3</span></span>
+                            <span style="font-size: 14px; color: #ff6b6b;">Total: <span id="char-total-hp">3</span></span>
+                        </div>
+                        <div class="hp-mp-controls">
+                            <button class="control-btn" onclick="adjustCurrentHP(-1)">-</button>
+                            <button class="control-btn" onclick="adjustCurrentHP(1)">+</button>
+                        </div>
+                    </div>
+                    <div class="hp-mp-box mp-box">
+                        <h3>Magic Points</h3>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <span style="font-size: 14px; color: #da70d6;">Current: <span id="char-current-mp">4</span></span>
+                            <span style="font-size: 14px; color: #da70d6;">Total: <span id="char-total-mp">4</span></span>
+                        </div>
+                        <div class="hp-mp-controls">
+                            <button class="control-btn" onclick="adjustCurrentMP(-1)">-</button>
+                            <button class="control-btn" onclick="adjustCurrentMP(1)">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Compact Stats -->
+            <div class="section-card">
+                <h2 class="section-title"><i class="ra ra-muscle-up"></i> Attributes</h2>
+                <p style="text-align: center; color: #8a8a8a; font-size: 12px; margin-bottom: 15px;">Click any attribute to roll!</p>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;" id="char-stats-display">
+                    <!-- Character stats will be displayed here -->
+                </div>
+            </div>
+
+            <!-- Skills and Spells Section with Sub-tabs -->
+            <div class="section-card">
+                <h2 class="section-title"><i class="ra ra-gear"></i> Skills & Spells</h2>
+                <p style="text-align: center; color: #8a8a8a; font-size: 12px; margin-bottom: 15px;">Click any skill or spell to use!</p>
+                
+                <!-- Sub-tabs for Skills and Spells -->
+                <div class="char-sub-tabs">
+                    <button class="char-sub-tab active" data-sub-tab="skills">
+                        <i class="ra ra-gear"></i> Skills
+                    </button>
+                    <button class="char-sub-tab" data-sub-tab="spells">
+                        <i class="ra ra-lightning"></i> Spells
+                    </button>
+                </div>
+
+                <!-- Skills Content -->
+                <div class="char-sub-content active" id="skills-content">
+                    <div class="skills-grid" id="char-skills-grid">
+                        <!-- Skills will be populated by JavaScript -->
+                    </div>
+                    
+                    <h3 style="color: #f4d03f; margin: 20px 0 15px 0;"><i class="ra ra-plus-circle"></i> Add Custom Skill</h3>
+                    <div class="form-group">
+                        <input type="text" id="char-custom-skill-name" placeholder="Skill name" style="margin-bottom: 10px;">
+                        <select id="char-custom-skill-stat" style="margin-bottom: 10px;">
+                            <option value="strength">Strength</option>
+                            <option value="dexterity">Dexterity</option>
+                            <option value="constitution">Constitution</option>
+                            <option value="intelligence">Intelligence</option>
+                            <option value="wisdom">Wisdom</option>
+                            <option value="charisma">Charisma</option>
+                        </select>
+                        <button class="btn-secondary" onclick="addCustomSkillFromCharTab()"><i class="ra ra-plus"></i> Add Skill</button>
+                    </div>
+                </div>
+
+                <!-- Spells Content -->
+                <div class="char-sub-content" id="spells-content">
+                    <div id="char-spells-container">
+                        <!-- Spells will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Placeholder tabs -->
+        <div class="tab-content" id="inventory">
+            <div class="section-card">
+                <h2 class="section-title">Inventory System</h2>
+                <p style="text-align: center; color: #8a8a8a; padding: 40px;">
+                    Inventory system coming soon...
+                </p>
+            </div>
+        </div>
+
+        <div class="tab-content" id="magic">
+            <div class="section-card">
+                <h2 class="section-title"><i class="ra ra-lightning"></i> Magic System</h2>
+                
+                <div class="health-magic-display">
+                    <div class="hp-mp-box mp-box">
+                        <h3>Magic Points</h3>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <span style="font-size: 14px; color: #da70d6;">Current: <span id="magic-current-mp">4</span></span>
+                            <span style="font-size: 14px; color: #da70d6;">Total: <span id="magic-total-mp">4</span></span>
+                        </div>
+                        <div class="hp-mp-controls">
+                            <button class="control-btn" onclick="adjustMagicPointsInTab(-1)">-</button>
+                            <button class="control-btn" onclick="adjustMagicPointsInTab(1)">+</button>
+                        </div>
+                        <div style="font-size: 12px; color: #8a8a8a; margin-top: 8px; text-align: center;">WIS + INT</div>
+                    </div>
+                </div>
+
+                <div id="spells-container">
+                    <h3 style="color: #f4d03f; margin: 20px 0 15px 0;"><i class="ra ra-lightning"></i> Known Spells</h3>
+                    <div id="spells-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                        <!-- Spells will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <div style="background: rgba(60, 60, 80, 0.6); padding: 20px; border-radius: 10px; border: 1px solid #4a4a6a;">
+                    <h3 style="color: #f4d03f; margin-bottom: 15px;"><i class="ra ra-plus-circle"></i> Create New Spell</h3>
+                    
+                    <div style="display: grid; gap: 15px;">
+                        <div class="form-group">
+                            <label>Spell Name</label>
+                            <input type="text" id="spell-name" placeholder="Enter spell name">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Element</label>
+                            <select id="spell-element">
+                                <option value="fire">🔥 Fire</option>
+                                <option value="ice">❄️ Ice</option>
+                                <option value="lightning">⚡ Lightning</option>
+                                <option value="earth">🌍 Earth</option>
+                                <option value="air">💨 Air</option>
+                                <option value="water">💧 Water</option>
+                                <option value="light">☀️ Light</option>
+                                <option value="dark">🌑 Dark</option>
+                                <option value="arcane">🔮 Arcane</option>
+                                <option value="divine">✨ Divine</option>
+                                <option value="nature">🌿 Nature</option>
+                                <option value="psychic">🧠 Psychic</option>
+                                <option value="shadow">👤 Shadow</option>
+                                <option value="force">💥 Force</option>
+                            </select>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div class="form-group">
+                                <label>Damage Type</label>
+                                <select id="damage-type">
+                                    <option value="">No Damage</option>
+                                    <option value="fixed">Fixed Points (2 pts = 1 MP)</option>
+                                    <option value="d6">D6 Roll (3 MP)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Damage Amount</label>
+                                <input type="number" id="damage-amount" min="0" max="10" value="0" disabled>
+                            </div>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div class="form-group">
+                                <label>Healing Type</label>
+                                <select id="healing-type">
+                                    <option value="">No Healing</option>
+                                    <option value="fixed">Fixed Points (2 pts = 1 MP)</option>
+                                    <option value="d6">D6 Roll (3 MP)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Healing Amount</label>
+                                <input type="number" id="healing-amount" min="0" max="10" value="0" disabled>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Primary Effect</label>
+                            <select id="primary-effect">
+                                <option value="">No Primary Effect</option>
+                                <option value="stun">Stun Target</option>
+                                <option value="slow">Slow Target</option>
+                                <option value="blind">Blind Target</option>
+                                <option value="fear">Cause Fear</option>
+                                <option value="charm">Charm Target</option>
+                                <option value="sleep">Put to Sleep</option>
+                                <option value="paralyze">Paralyze Target</option>
+                                <option value="confusion">Confuse Target</option>
+                                <option value="weakness">Cause Weakness</option>
+                                <option value="poison">Poison Target</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Secondary Effect</label>
+                            <select id="secondary-effect">
+                                <option value="">No Secondary Effect</option>
+                                <option value="invisibility">Invisibility</option>
+                                <option value="flight">Flight</option>
+                                <option value="teleport">Teleport</option>
+                                <option value="shield">Magic Shield</option>
+                                <option value="haste">Haste</option>
+                                <option value="strength">Boost Strength</option>
+                                <option value="detect">Detect Magic</option>
+                                <option value="dispel">Dispel Magic</option>
+                                <option value="light_source">Create Light</option>
+                                <option value="darkness">Create Darkness</option>
+                                <option value="silence">Silence</option>
+                                <option value="levitation">Levitation</option>
+                                <option value="phase">Phase Through Matter</option>
+                                <option value="mirror_image">Mirror Image</option>
+                                <option value="time_slow">Slow Time</option>
+                            </select>
+                        </div>
+                        
+                        <div id="spell-cost-display" style="background: rgba(138, 74, 138, 0.2); padding: 12px; border-radius: 8px; border-left: 3px solid #da70d6; text-align: center;">
+                            <h4 style="color: #da70d6; margin-bottom: 8px;">Spell Cost Breakdown</h4>
+                            <div id="cost-breakdown" style="font-size: 14px; color: #c0c0c0;">
+                                Base Cost: 1 MP (activation)
+                            </div>
+                            <div style="font-size: 18px; font-weight: bold; color: #ffffff; margin-top: 8px;">
+                                Total: <span id="total-cost">1</span> MP
+                            </div>
+                        </div>
+                        
+                        <button class="btn-primary" onclick="createSpell()" id="create-spell-btn">
+                            <i class="ra ra-lightning"></i> Create Spell
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="rolling">
+            <div class="section-card">
+                <h2 class="section-title"><i class="ra ra-dice"></i> Roll History</h2>
+                <p style="text-align: center; color: #8a8a8a; font-size: 12px; margin-bottom: 15px;">
+                    Click attributes, skills, or spells in Character tab to roll! Level <span id="roll-level-display">1</span> dice system active.
+                </p>
+                
+                <div id="dice-system-info" style="background: rgba(74, 106, 138, 0.2); padding: 12px; border-radius: 8px; margin-bottom: 20px; border-left: 3px solid #4a6a8a;">
+                    <h4 style="color: #4a6a8a; margin-bottom: 8px; font-size: 14px;"><i class="ra ra-perspective-dice-six"></i> Dice System</h4>
+                    <div id="dice-explanation" style="font-size: 12px; color: #c0c0c0;">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <div id="roll-history-container">
+                    <div id="roll-history" style="max-height: 400px; overflow-y: auto;">
+                        <!-- Roll history will be populated by JavaScript -->
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 15px;">
+                        <button class="btn-secondary" onclick="clearRollHistory()">
+                            <i class="ra ra-cancel"></i> Clear History
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Character data structure
+        let character = {
+            name: '',
+            level: 1,
+            availablePoints: 3, // 3 points per level
+            stats: {
+                strength: 2,
+                dexterity: 2,
+                constitution: 2,
+                intelligence: 2,
+                wisdom: 2,
+                charisma: 2
+            },
+            healthPoints: 3, // CON + level (2+1)
+            currentHealthPoints: 3,
+            magicPoints: 4, // WIS + INT (2+2)
+            currentMagicPoints: 4,
+            customSkills: [],
+            personal: {
+                age: '',
+                backstory: '',
+                portrait: null
+            },
+            job: '',
+            customJob: '',
+            class: '',
+            customClass: '',
+            jobBonuses: [],
+            classBonuses: [],
+            customJobData: {
+                selectedStats: [],
+                skills: []
+            },
+            customClassData: {
+                selectedStats: [],
+                skills: []
+            },
+            rollHistory: [],
+            spells: []
+        };
+
+        // Standard D&D skills with their associated stats
+        const standardSkills = {
+            'Acrobatics': 'dexterity',
+            'Animal Handling': 'wisdom',
+            'Arcana': 'intelligence',
+            'Athletics': 'strength',
+            'Deception': 'charisma',
+            'History': 'intelligence',
+            'Insight': 'wisdom',
+            'Intimidation': 'charisma',
+            'Investigation': 'intelligence',
+            'Medicine': 'wisdom',
+            'Nature': 'intelligence',
+            'Perception': 'wisdom',
+            'Performance': 'charisma',
+            'Persuasion': 'charisma',
+            'Religion': 'intelligence',
+            'Sleight of Hand': 'dexterity',
+            'Stealth': 'dexterity',
+            'Survival': 'wisdom'
+        };
+
+        // Magic-capable classes and their casting stats
+        const magicClasses = {
+            wizard: 'intelligence',
+            techmage: 'intelligence',
+            sorcerer: 'charisma',
+            mutant: 'charisma',
+            warlock: 'charisma',
+            cult_initiate: 'charisma',
+            cleric: 'wisdom',
+            healer: 'wisdom',
+            druid: 'wisdom',
+            nature_speaker: 'wisdom',
+            bard: 'charisma',
+            storyteller: 'charisma',
+            paladin: 'charisma',
+            guardian: 'charisma',
+            ranger: 'wisdom',
+            wasteland_ranger: 'wisdom',
+            data_runner: 'intelligence'
+        };
+
+        // Job definitions
+        const jobs = {
+            engineer: {
+                name: 'Engineer',
+                statBonuses: { intelligence: 1 },
+                skills: [
+                    { name: 'Mechanical', stat: 'intelligence' },
+                    { name: 'Electrical', stat: 'intelligence' }
+                ]
+            },
+            doctor: {
+                name: 'Doctor',
+                statBonuses: { intelligence: 1, wisdom: 1 },
+                skills: [
+                    { name: 'Surgery', stat: 'dexterity' },
+                    { name: 'Diagnosis', stat: 'intelligence' }
+                ]
+            },
+            lawyer: {
+                name: 'Lawyer',
+                statBonuses: { intelligence: 1, charisma: 1 },
+                skills: [
+                    { name: 'Legal Knowledge', stat: 'intelligence' },
+                    { name: 'Negotiation', stat: 'charisma' }
+                ]
+            },
+            teacher: {
+                name: 'Teacher',
+                statBonuses: { wisdom: 1, charisma: 1 },
+                skills: [
+                    { name: 'Teaching', stat: 'charisma' },
+                    { name: 'Research', stat: 'intelligence' }
+                ]
+            },
+            mechanic: {
+                name: 'Mechanic',
+                statBonuses: { dexterity: 1, intelligence: 1 },
+                skills: [
+                    { name: 'Repair', stat: 'dexterity' },
+                    { name: 'Automotive', stat: 'intelligence' }
+                ]
+            },
+            police: {
+                name: 'Police Officer',
+                statBonuses: { constitution: 1, wisdom: 1 },
+                skills: [
+                    { name: 'Law Enforcement', stat: 'wisdom' },
+                    { name: 'Criminal Justice', stat: 'intelligence' }
+                ]
+            },
+            firefighter: {
+                name: 'Firefighter',
+                statBonuses: { strength: 1, constitution: 1 },
+                skills: [
+                    { name: 'Emergency Response', stat: 'wisdom' },
+                    { name: 'Physical Rescue', stat: 'strength' }
+                ]
+            },
+            chef: {
+                name: 'Chef',
+                statBonuses: { dexterity: 1, wisdom: 1 },
+                skills: [
+                    { name: 'Cooking', stat: 'dexterity' },
+                    { name: 'Food Knowledge', stat: 'intelligence' }
+                ]
+            },
+            artist: {
+                name: 'Artist',
+                statBonuses: { dexterity: 1, charisma: 1 },
+                skills: [
+                    { name: 'Visual Arts', stat: 'dexterity' },
+                    { name: 'Art History', stat: 'intelligence' }
+                ]
+            },
+            programmer: {
+                name: 'Programmer',
+                statBonuses: { intelligence: 2 },
+                skills: [
+                    { name: 'Programming', stat: 'intelligence' },
+                    { name: 'Systems Analysis', stat: 'intelligence' }
+                ]
+            },
+            soldier: {
+                name: 'Soldier',
+                statBonuses: { strength: 1, constitution: 1 },
+                skills: [
+                    { name: 'Military Tactics', stat: 'intelligence' },
+                    { name: 'Combat Training', stat: 'strength' }
+                ]
+            },
+            athlete: {
+                name: 'Athlete',
+                statBonuses: { strength: 1, dexterity: 1 },
+                skills: [
+                    { name: 'Sports', stat: 'dexterity' },
+                    { name: 'Physical Training', stat: 'constitution' }
+                ]
+            },
+            scientist: {
+                name: 'Scientist',
+                statBonuses: { intelligence: 2 },
+                skills: [
+                    { name: 'Research', stat: 'intelligence' },
+                    { name: 'Scientific Method', stat: 'wisdom' }
+                ]
+            },
+            musician: {
+                name: 'Musician',
+                statBonuses: { dexterity: 1, charisma: 1 },
+                skills: [
+                    { name: 'Musical Performance', stat: 'charisma' },
+                    { name: 'Music Theory', stat: 'intelligence' }
+                ]
+            },
+            writer: {
+                name: 'Writer',
+                statBonuses: { intelligence: 1, charisma: 1 },
+                skills: [
+                    { name: 'Writing', stat: 'intelligence' },
+                    { name: 'Research', stat: 'intelligence' }
+                ]
+            }
+        };
+
+        // Class definitions
+        const classes = {
+            // Original D&D Classes
+            fighter: {
+                name: 'Fighter',
+                statBonuses: { strength: 1, constitution: 1 },
+                skills: [
+                    { name: 'Weapon Mastery', stat: 'strength' },
+                    { name: 'Combat Tactics', stat: 'intelligence' }
+                ]
+            },
+            wizard: {
+                name: 'Wizard',
+                statBonuses: { intelligence: 2 },
+                skills: [
+                    { name: 'Spellcasting', stat: 'intelligence' },
+                    { name: 'Arcane Lore', stat: 'intelligence' }
+                ]
+            },
+            rogue: {
+                name: 'Rogue',
+                statBonuses: { dexterity: 2 },
+                skills: [
+                    { name: 'Sneak Attack', stat: 'dexterity' },
+                    { name: 'Lockpicking', stat: 'dexterity' }
+                ]
+            },
+            cleric: {
+                name: 'Cleric',
+                statBonuses: { wisdom: 1, charisma: 1 },
+                skills: [
+                    { name: 'Divine Magic', stat: 'wisdom' },
+                    { name: 'Healing', stat: 'wisdom' }
+                ]
+            },
+            ranger: {
+                name: 'Ranger',
+                statBonuses: { dexterity: 1, wisdom: 1 },
+                skills: [
+                    { name: 'Tracking', stat: 'wisdom' },
+                    { name: 'Wilderness Survival', stat: 'wisdom' }
+                ]
+            },
+            barbarian: {
+                name: 'Barbarian',
+                statBonuses: { strength: 1, constitution: 1 },
+                skills: [
+                    { name: 'Rage', stat: 'strength' },
+                    { name: 'Primal Instincts', stat: 'wisdom' }
+                ]
+            },
+            bard: {
+                name: 'Bard',
+                statBonuses: { charisma: 1, dexterity: 1 },
+                skills: [
+                    { name: 'Bardic Magic', stat: 'charisma' },
+                    { name: 'Inspiration', stat: 'charisma' }
+                ]
+            },
+            paladin: {
+                name: 'Paladin',
+                statBonuses: { strength: 1, charisma: 1 },
+                skills: [
+                    { name: 'Divine Combat', stat: 'strength' },
+                    { name: 'Lay on Hands', stat: 'charisma' }
+                ]
+            },
+            warlock: {
+                name: 'Warlock',
+                statBonuses: { charisma: 1, constitution: 1 },
+                skills: [
+                    { name: 'Eldritch Magic', stat: 'charisma' },
+                    { name: 'Pact Knowledge', stat: 'intelligence' }
+                ]
+            },
+            sorcerer: {
+                name: 'Sorcerer',
+                statBonuses: { charisma: 2 },
+                skills: [
+                    { name: 'Innate Magic', stat: 'charisma' },
+                    { name: 'Metamagic', stat: 'charisma' }
+                ]
+            },
+            monk: {
+                name: 'Monk',
+                statBonuses: { dexterity: 1, wisdom: 1 },
+                skills: [
+                    { name: 'Martial Arts', stat: 'dexterity' },
+                    { name: 'Ki Control', stat: 'wisdom' }
+                ]
+            },
+            druid: {
+                name: 'Druid',
+                statBonuses: { wisdom: 2 },
+                skills: [
+                    { name: 'Nature Magic', stat: 'wisdom' },
+                    { name: 'Animal Handling', stat: 'wisdom' }
+                ]
+            },
+            gunslinger: {
+                name: 'Gunslinger',
+                statBonuses: { dexterity: 1, constitution: 1 },
+                skills: [
+                    { name: 'Firearms', stat: 'dexterity' },
+                    { name: 'Quick Draw', stat: 'dexterity' }
+                ]
+            },
+            hacker: {
+                name: 'Data Runner',
+                statBonuses: { intelligence: 2 },
+                skills: [
+                    { name: 'Computer Systems', stat: 'intelligence' },
+                    { name: 'Digital Infiltration', stat: 'dexterity' }
+                ]
+            },
+            medic: {
+                name: 'Field Medic',
+                statBonuses: { wisdom: 1, intelligence: 1 },
+                skills: [
+                    { name: 'Field Medicine', stat: 'wisdom' },
+                    { name: 'Trauma Care', stat: 'dexterity' }
+                ]
+            },
+            engineer_class: {
+                name: 'Engineer',
+                statBonuses: { intelligence: 1, dexterity: 1 },
+                skills: [
+                    { name: 'Engineering', stat: 'intelligence' },
+                    { name: 'Technical Repair', stat: 'dexterity' }
+                ]
+            },
+            pilot: {
+                name: 'Vehicle Pilot',
+                statBonuses: { dexterity: 1, intelligence: 1 },
+                skills: [
+                    { name: 'Piloting', stat: 'dexterity' },
+                    { name: 'Navigation', stat: 'intelligence' }
+                ]
+            },
+            survivalist: {
+                name: 'Survivalist',
+                statBonuses: { constitution: 1, wisdom: 1 },
+                skills: [
+                    { name: 'Wilderness Survival', stat: 'wisdom' },
+                    { name: 'Foraging', stat: 'wisdom' }
+                ]
+            }
+        };
+
+        // Generate unique ID function (this was missing!)
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        }
+
+        // Initialize the character sheet
+        function initializeCharacterSheet() {
+            renderStats();
+            renderCharacterSkills();
+            renderCharacterSpells();
+            updateHealthMagicDisplay();
+            
+            // Add event listeners
+            document.getElementById('char-level').addEventListener('input', updateCharacterLevel);
+            document.getElementById('char-name').addEventListener('input', updateCharacterName);
+            document.getElementById('portrait-upload').addEventListener('change', handlePortraitUpload);
+            document.getElementById('job-select').addEventListener('change', handleJobSelection);
+            document.getElementById('class-select').addEventListener('change', handleClassSelection);
+            document.getElementById('custom-job').addEventListener('input', updateCustomJob);
+            document.getElementById('custom-class').addEventListener('input', updateCustomClass);
+            
+            // Custom skill dropdown listeners
+            ['custom-job-skill1', 'custom-job-skill2', 'custom-class-skill1', 'custom-class-skill2'].forEach(id => {
+                const select = document.getElementById(id);
+                if (select) {
+                    select.addEventListener('change', function() {
+                        const nameInput = document.getElementById(id + '-name');
+                        if (this.value === 'custom') {
+                            nameInput.style.display = 'block';
+                        } else {
+                            nameInput.style.display = 'none';
+                            nameInput.value = '';
+                        }
+                        
+                        // Update bonuses when skill selection changes
+                        if (id.includes('job')) {
+                            updateCustomJobBonuses();
+                        } else {
+                            updateCustomClassBonuses();
+                        }
+                    });
+                }
+            });
+            
+            // Custom skill name input listeners
+            ['custom-job-skill1-name', 'custom-job-skill2-name', 'custom-class-skill1-name', 'custom-class-skill2-name'].forEach(id => {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.addEventListener('input', function() {
+                        if (id.includes('job')) {
+                            updateCustomJobBonuses();
+                        } else {
+                            updateCustomClassBonuses();
+                        }
+                    });
+                }
+            });
+            
+            // Magic system event listeners
+            const magicInputs = ['damage-type', 'damage-amount', 'healing-type', 'healing-amount', 'primary-effect', 'secondary-effect'];
+            magicInputs.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('change', calculateSpellCost);
+                    element.addEventListener('input', calculateSpellCost);
+                }
+            });
+            
+            // Enable/disable amount inputs based on type selection
+            document.getElementById('damage-type').addEventListener('change', function() {
+                const amountInput = document.getElementById('damage-amount');
+                if (this.value === 'fixed') {
+                    amountInput.disabled = false;
+                    amountInput.value = amountInput.value || '2';
+                } else {
+                    amountInput.disabled = true;
+                    amountInput.value = '0';
+                }
+                calculateSpellCost();
+            });
+            
+            document.getElementById('healing-type').addEventListener('change', function() {
+                const amountInput = document.getElementById('healing-amount');
+                if (this.value === 'fixed') {
+                    amountInput.disabled = false;
+                    amountInput.value = amountInput.value || '2';
+                } else {
+                    amountInput.disabled = true;
+                    amountInput.value = '0';
+                }
+                calculateSpellCost();
+            });
+            
+            // Tab switching
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    switchTab(tab.dataset.tab);
+                });
+            });
+
+            // Sub-tab switching for character tab
+            document.querySelectorAll('.char-sub-tab').forEach(subTab => {
+                subTab.addEventListener('click', (e) => {
+                    switchCharSubTab(subTab.dataset.subTab);
+                });
+            });
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+            
+            // Update character display when switching to character tab
+            if (tabName === 'character') {
+                updateCharacterDisplay();
+            }
+            
+            // Update roll history when switching to rolling tab
+            if (tabName === 'rolling') {
+                updateDiceSystemInfo();
+                updateRollHistoryDisplay();
+            }
+            
+            // Update magic tab when switching to magic tab
+            if (tabName === 'magic') {
+                updateMagicTabDisplay();
+                renderSpells();
+                calculateSpellCost();
+            }
+        }
+
+        function switchCharSubTab(subTabName) {
+            document.querySelectorAll('.char-sub-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.char-sub-content').forEach(content => content.classList.remove('active'));
+            
+            document.querySelector(`[data-sub-tab="${subTabName}"]`).classList.add('active');
+            document.getElementById(`${subTabName}-content`).classList.add('active');
+            
+            // Update content when switching to spells tab
+            if (subTabName === 'spells') {
+                renderCharacterSpells();
+            }
+        }
+
+        function handlePortraitUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    character.personal.portrait = e.target.result;
+                    const portraitDisplay = document.getElementById('portrait-display');
+                    portraitDisplay.innerHTML = `<img src="${e.target.result}" alt="Character Portrait" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function handleJobSelection() {
+            const jobSelect = document.getElementById('job-select');
+            const customJobInput = document.getElementById('custom-job');
+            const customJobBonuses = document.getElementById('custom-job-bonuses');
+            
+            resetCharacterBonuses();
+            
+            if (jobSelect.value === 'custom') {
+                customJobInput.style.display = 'block';
+                customJobBonuses.style.display = 'block';
+                character.job = '';
+            } else {
+                customJobInput.style.display = 'none';
+                customJobBonuses.style.display = 'none';
+                character.job = jobSelect.value;
+                character.customJob = '';
+                customJobInput.value = '';
+                clearCustomJobSelections();
+            }
+            
+            applyJobBonuses();
+            applyClassBonuses();
+            updateBonusesDisplay();
+            updateHealthMagicDisplay();
+        }
+
+        function handleClassSelection() {
+            const classSelect = document.getElementById('class-select');
+            const customClassInput = document.getElementById('custom-class');
+            const customClassBonuses = document.getElementById('custom-class-bonuses');
+            
+            resetCharacterBonuses();
+            
+            if (classSelect.value === 'custom_class') {
+                customClassInput.style.display = 'block';
+                customClassBonuses.style.display = 'block';
+                character.class = '';
+            } else {
+                customClassInput.style.display = 'none';
+                customClassBonuses.style.display = 'none';
+                character.class = classSelect.value;
+                character.customClass = '';
+                customClassInput.value = '';
+                clearCustomClassSelections();
+            }
+            
+            applyJobBonuses();
+            applyClassBonuses();
+            updateBonusesDisplay();
+            updateHealthMagicDisplay();
+        }
+
+        function clearCustomJobSelections() {
+            ['str', 'dex', 'con', 'int', 'wis', 'cha'].forEach(stat => {
+                document.getElementById(`custom-job-${stat}`).checked = false;
+            });
+            document.getElementById('custom-job-skill1').value = '';
+            document.getElementById('custom-job-skill2').value = '';
+            document.getElementById('custom-job-skill1-name').style.display = 'none';
+            document.getElementById('custom-job-skill2-name').style.display = 'none';
+            document.getElementById('custom-job-skill1-name').value = '';
+            document.getElementById('custom-job-skill2-name').value = '';
+            
+            // Clear stored data
+            character.customJobData = {
+                selectedStats: [],
+                skills: []
+            };
+        }
+
+        function clearCustomClassSelections() {
+            ['str', 'dex', 'con', 'int', 'wis', 'cha'].forEach(stat => {
+                document.getElementById(`custom-class-${stat}`).checked = false;
+            });
+            document.getElementById('custom-class-skill1').value = '';
+            document.getElementById('custom-class-skill2').value = '';
+            document.getElementById('custom-class-skill1-name').style.display = 'none';
+            document.getElementById('custom-class-skill2-name').style.display = 'none';
+            document.getElementById('custom-class-skill1-name').value = '';
+            document.getElementById('custom-class-skill2-name').value = '';
+            
+            // Clear stored data
+            character.customClassData = {
+                selectedStats: [],
+                skills: []
+            };
+        }
+
+        function updateCustomJobBonuses() {
+            if (document.getElementById('job-select').value !== 'custom') return;
+            
+            // Get currently selected stats
+            const selectedStats = [];
+            ['str', 'dex', 'con', 'int', 'wis', 'cha'].forEach(stat => {
+                if (document.getElementById(`custom-job-${stat}`).checked) {
+                    selectedStats.push(stat);
+                }
+            });
+            
+            // Limit to 2 selections and update character data
+            if (selectedStats.length > 2) {
+                const lastStat = selectedStats.pop();
+                document.getElementById(`custom-job-${lastStat}`).checked = false;
+            }
+            
+            // Store the current custom selections
+            character.customJobData = {
+                selectedStats: selectedStats,
+                skills: []
+            };
+            
+            // Get custom skills
+            [1, 2].forEach(num => {
+                const skillSelect = document.getElementById(`custom-job-skill${num}`);
+                const skillStatSelect = document.getElementById(`custom-job-skill${num}-stat`);
+                const skillNameInput = document.getElementById(`custom-job-skill${num}-name`);
+                
+                if (skillSelect?.value && skillSelect.value !== '') {
+                    let skillName = skillSelect.value;
+                    let skillStat = skillStatSelect.value;
+                    
+                    if (skillSelect.value === 'custom' && skillNameInput.value.trim()) {
+                        skillName = skillNameInput.value.trim();
+                    }
+                    
+                    if (skillName && skillName !== 'custom') {
+                        character.customJobData.skills.push({
+                            name: skillName,
+                            stat: skillStat
+                        });
+                    }
+                }
+            });
+            
+            // Reapply all bonuses
+            resetCharacterBonuses();
+            applyJobBonuses();
+            applyClassBonuses();
+            updateBonusesDisplay();
+            updateHealthMagicDisplay();
+        }
+
+        function updateCustomClassBonuses() {
+            if (document.getElementById('class-select').value !== 'custom_class') return;
+            
+            // Get currently selected stats
+            const selectedStats = [];
+            ['str', 'dex', 'con', 'int', 'wis', 'cha'].forEach(stat => {
+                if (document.getElementById(`custom-class-${stat}`).checked) {
+                    selectedStats.push(stat);
+                }
+            });
+            
+            // Limit to 2 selections and update character data
+            if (selectedStats.length > 2) {
+                const lastStat = selectedStats.pop();
+                document.getElementById(`custom-class-${lastStat}`).checked = false;
+            }
+            
+            // Store the current custom selections
+            character.customClassData = {
+                selectedStats: selectedStats,
+                skills: []
+            };
+            
+            // Get custom skills
+            [1, 2].forEach(num => {
+                const skillSelect = document.getElementById(`custom-class-skill${num}`);
+                const skillStatSelect = document.getElementById(`custom-class-skill${num}-stat`);
+                const skillNameInput = document.getElementById(`custom-class-skill${num}-name`);
+                
+                if (skillSelect?.value && skillSelect.value !== '') {
+                    let skillName = skillSelect.value;
+                    let skillStat = skillStatSelect.value;
+                    
+                    if (skillSelect.value === 'custom' && skillNameInput.value.trim()) {
+                        skillName = skillNameInput.value.trim();
+                    }
+                    
+                    if (skillName && skillName !== 'custom') {
+                        character.customClassData.skills.push({
+                            name: skillName,
+                            stat: skillStat
+                        });
+                    }
+                }
+            });
+            
+            // Reapply all bonuses
+            resetCharacterBonuses();
+            applyJobBonuses();
+            applyClassBonuses();
+            updateBonusesDisplay();
+            updateHealthMagicDisplay();
+        }
+
+        function updateCustomJob() {
+            character.customJob = document.getElementById('custom-job').value;
+            updateBonusesDisplay();
+        }
+
+        function updateCustomClass() {
+            character.customClass = document.getElementById('custom-class').value;
+            updateBonusesDisplay();
+        }
+
+        function resetCharacterBonuses() {
+            // Simple approach: reset to base and restore available points
+            const currentTotal = Object.values(character.stats).reduce((sum, stat) => sum + stat, 0);
+            const baseTotal = 12; // 6 stats × 2 base each
+            const pointsUsed = currentTotal - baseTotal;
+            
+            // Reset stats to base values
+            character.stats = {
+                strength: 2,
+                dexterity: 2,
+                constitution: 2,
+                intelligence: 2,
+                wisdom: 2,
+                charisma: 2
+            };
+            
+            // Restore available points (but don't go above starting amount based on level)
+            const maxPoints = character.level * 3;
+            character.availablePoints = Math.min(maxPoints, pointsUsed);
+            
+            // Clear bonuses and custom skills from job/class
+            character.customSkills = character.customSkills.filter(skill => 
+                !skill.source || (skill.source !== 'job' && skill.source !== 'class')
+            );
+            
+            character.jobBonuses = [];
+            character.classBonuses = [];
+        }
+
+        function applyJobBonuses() {
+            if (character.job && jobs[character.job]) {
+                // Apply predefined job bonuses
+                const job = jobs[character.job];
+                
+                Object.entries(job.statBonuses).forEach(([stat, bonus]) => {
+                    character.stats[stat] += bonus;
+                    character.jobBonuses.push(`+${bonus} ${stat.charAt(0).toUpperCase() + stat.slice(1)} (${job.name})`);
+                });
+                
+                job.skills.forEach(skill => {
+                    if (!character.customSkills.find(s => s.name === skill.name)) {
+                        character.customSkills.push({
+                            name: skill.name,
+                            stat: skill.stat,
+                            source: 'job'
+                        });
+                        character.jobBonuses.push(`${skill.name} [${skill.stat.slice(0, 3).toUpperCase()}] skill (${job.name})`);
+                    }
+                });
+            } else if (document.getElementById('job-select')?.value === 'custom' && character.customJobData) {
+                // Apply custom job bonuses using stored data
+                const selectedStats = character.customJobData.selectedStats || [];
+                
+                if (selectedStats.length === 1) {
+                    const fullStatName = getFullStatName(selectedStats[0]);
+                    character.stats[fullStatName] += 3;
+                    character.jobBonuses.push(`+3 ${fullStatName.charAt(0).toUpperCase() + fullStatName.slice(1)} (Custom Background - single focus)`);
+                } else if (selectedStats.length === 2) {
+                    const fullStat1 = getFullStatName(selectedStats[0]);
+                    const fullStat2 = getFullStatName(selectedStats[1]);
+                    character.stats[fullStat1] += 2;
+                    character.stats[fullStat2] += 1;
+                    character.jobBonuses.push(`+2 ${fullStat1.charAt(0).toUpperCase() + fullStat1.slice(1)} (Custom Background - primary)`);
+                    character.jobBonuses.push(`+1 ${fullStat2.charAt(0).toUpperCase() + fullStat2.slice(1)} (Custom Background - secondary)`);
+                }
+                
+                // Apply custom skills using stored data
+                character.customJobData.skills.forEach(skillData => {
+                    if (!character.customSkills.find(s => s.name === skillData.name)) {
+                        character.customSkills.push({
+                            name: skillData.name,
+                            stat: skillData.stat,
+                            source: 'job'
+                        });
+                        character.jobBonuses.push(`${skillData.name} [${skillData.stat.slice(0, 3).toUpperCase()}] skill (Custom Background)`);
+                    }
+                });
+            }
+            
+            renderStats();
+            renderCharacterSkills();
+        }
+
+        function applyClassBonuses() {
+            if (character.class && classes[character.class]) {
+                // Apply predefined class bonuses
+                const charClass = classes[character.class];
+                
+                Object.entries(charClass.statBonuses).forEach(([stat, bonus]) => {
+                    character.stats[stat] += bonus;
+                    character.classBonuses.push(`+${bonus} ${stat.charAt(0).toUpperCase() + stat.slice(1)} (${charClass.name})`);
+                });
+                
+                charClass.skills.forEach(skill => {
+                    if (!character.customSkills.find(s => s.name === skill.name)) {
+                        character.customSkills.push({
+                            name: skill.name,
+                            stat: skill.stat,
+                            source: 'class'
+                        });
+                        character.classBonuses.push(`${skill.name} [${skill.stat.slice(0, 3).toUpperCase()}] skill (${charClass.name})`);
+                    }
+                });
+            } else if (document.getElementById('class-select')?.value === 'custom_class' && character.customClassData) {
+                // Apply custom class bonuses using stored data
+                const selectedStats = character.customClassData.selectedStats || [];
+                
+                if (selectedStats.length === 1) {
+                    const fullStatName = getFullStatName(selectedStats[0]);
+                    character.stats[fullStatName] += 3;
+                    character.classBonuses.push(`+3 ${fullStatName.charAt(0).toUpperCase() + fullStatName.slice(1)} (Custom Class - single focus)`);
+                } else if (selectedStats.length === 2) {
+                    const fullStat1 = getFullStatName(selectedStats[0]);
+                    const fullStat2 = getFullStatName(selectedStats[1]);
+                    character.stats[fullStat1] += 2;
+                    character.stats[fullStat2] += 1;
+                    character.classBonuses.push(`+2 ${fullStat1.charAt(0).toUpperCase() + fullStat1.slice(1)} (Custom Class - primary)`);
+                    character.classBonuses.push(`+1 ${fullStat2.charAt(0).toUpperCase() + fullStat2.slice(1)} (Custom Class - secondary)`);
+                }
+                
+                // Apply custom skills using stored data
+                character.customClassData.skills.forEach(skillData => {
+                    if (!character.customSkills.find(s => s.name === skillData.name)) {
+                        character.customSkills.push({
+                            name: skillData.name,
+                            stat: skillData.stat,
+                            source: 'class'
+                        });
+                        character.classBonuses.push(`${skillData.name} [${skillData.stat.slice(0, 3).toUpperCase()}] skill (Custom Class)`);
+                    }
+                });
+            }
+            
+            renderStats();
+            renderCharacterSkills();
+        }
+
+        function getFullStatName(shortName) {
+            const statMap = {
+                'str': 'strength',
+                'dex': 'dexterity', 
+                'con': 'constitution',
+                'int': 'intelligence',
+                'wis': 'wisdom',
+                'cha': 'charisma'
+            };
+            return statMap[shortName] || shortName;
+        }
+
+        function updateBonusesDisplay() {
+            const bonusesDisplay = document.getElementById('bonuses-display');
+            const bonusesContent = document.getElementById('bonuses-content');
+            const allBonuses = [...character.jobBonuses, ...character.classBonuses];
+            
+            if (allBonuses.length > 0) {
+                bonusesDisplay.style.display = 'block';
+                
+                // Show active bonuses
+                const bonusesHtml = allBonuses.map(bonus => 
+                    `<div style="background: rgba(244, 208, 63, 0.1); padding: 8px; border-radius: 5px; border: 1px solid #f4d03f; margin-bottom: 8px; font-size: 13px;"><strong style="color: #f4d03f;">+</strong> ${bonus}</div>`
+                ).join('');
+                
+                bonusesContent.innerHTML = bonusesHtml;
+            } else {
+                bonusesDisplay.style.display = 'none';
+            }
+        }
+
+        function renderStats() {
+            const statsGrid = document.getElementById('stats-grid');
+            statsGrid.innerHTML = '';
+            
+            Object.entries(character.stats).forEach(([stat, value]) => {
+                const statCard = document.createElement('div');
+                statCard.className = 'stat-card';
+                statCard.innerHTML = `
+                    <div class="stat-name">${stat.charAt(0).toUpperCase() + stat.slice(1)}</div>
+                    <div class="stat-value">${value}</div>
+                    <div class="stat-controls">
+                        <button class="control-btn" onclick="adjustStat('${stat}', -1)" ${value <= 1 ? 'disabled' : ''}>-</button>
+                        <button class="control-btn" onclick="adjustStat('${stat}', 1)" ${character.availablePoints <= 0 ? 'disabled' : ''}>+</button>
+                    </div>
+                `;
+                statsGrid.appendChild(statCard);
+            });
+            
+            document.getElementById('available-points').textContent = character.availablePoints;
+        }
+
+        function adjustStat(stat, change) {
+            const currentValue = character.stats[stat];
+            const newValue = currentValue + change;
+            
+            if (change > 0 && character.availablePoints > 0 && newValue <= 10) {
+                character.stats[stat] = newValue;
+                character.availablePoints--;
+            } else if (change < 0 && currentValue > 1) {
+                character.stats[stat] = newValue;
+                character.availablePoints++;
+            }
+            
+            // Update health/magic if constitution, wisdom, or intelligence changed
+            if (stat === 'constitution' || stat === 'wisdom' || stat === 'intelligence') {
+                updateHealthMagicDisplay();
+            }
+            
+            renderStats();
+            renderCharacterSkills();
+        }
+
+        function updateHealthMagicDisplay() {
+            // Calculate health points (CON + level)
+            character.healthPoints = character.stats.constitution + character.level;
+            character.currentHealthPoints = Math.min(character.currentHealthPoints, character.healthPoints);
+            
+            // Calculate magic points (WIS + INT)
+            character.magicPoints = character.stats.wisdom + character.stats.intelligence;
+            character.currentMagicPoints = Math.min(character.currentMagicPoints, character.magicPoints);
+            
+            document.getElementById('health-points').textContent = character.healthPoints;
+            document.getElementById('magic-points').textContent = character.magicPoints;
+            
+            // Update magic tab display if elements exist
+            const magicCurrentMP = document.getElementById('magic-current-mp');
+            const magicTotalMP = document.getElementById('magic-total-mp');
+            if (magicCurrentMP) magicCurrentMP.textContent = character.currentMagicPoints;
+            if (magicTotalMP) magicTotalMP.textContent = character.magicPoints;
+        }
+
+        function adjustCurrentHP(change) {
+            const newValue = character.currentHealthPoints + change;
+            if (newValue >= 0 && newValue <= character.healthPoints) {
+                character.currentHealthPoints = newValue;
+                updateCharacterDisplay();
+            }
+        }
+
+        function adjustCurrentMP(change) {
+            const newValue = character.currentMagicPoints + change;
+            if (newValue >= 0 && newValue <= character.magicPoints) {
+                character.currentMagicPoints = newValue;
+                updateCharacterDisplay();
+                updateMagicTabDisplay();
+                renderSpells(); // Update spell cast button states
+                renderCharacterSpells(); // Update character tab spells
+            }
+        }
+
+        function updateCharacterLevel() {
+            const newLevel = parseInt(document.getElementById('char-level').value);
+            const levelDiff = newLevel - character.level;
+            
+            // Adjust available points based on level change (3 points per level)
+            character.availablePoints += levelDiff * 3;
+            
+            // Ensure available points don't go negative
+            if (character.availablePoints < 0) {
+                character.availablePoints = 0;
+            }
+            
+            character.level = newLevel;
+            updateHealthMagicDisplay();
+            renderStats();
+            
+            // Update roll level display
+            const rollLevelDisplay = document.getElementById('roll-level-display');
+            if (rollLevelDisplay) rollLevelDisplay.textContent = character.level;
+        }
+
+        function updateCharacterName() {
+            character.name = document.getElementById('char-name').value;
+            updateCharacterDisplay();
+        }
+
+        function updateCharacterDisplay() {
+            const nameDisplay = document.getElementById('char-display-name');
+            if (character.name) {
+                nameDisplay.textContent = `${character.name} - Level ${character.level}`;
+            } else {
+                nameDisplay.textContent = 'Character Overview';
+            }
+            
+            // Update character summary
+            const charSummary = document.getElementById('char-summary');
+            const jobName = character.job ? jobs[character.job]?.name || character.job : character.customJob || 'Unknown';
+            const className = character.class ? classes[character.class]?.name || character.class : character.customClass || 'Unknown';
+            charSummary.innerHTML = `
+                <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 10px;">
+                    <span><strong>Background:</strong> ${jobName}</span>
+                    <span><strong>Class:</strong> ${className}</span>
+                    <span><strong>Level:</strong> ${character.level}</span>
+                </div>
+            `;
+            
+            // Update health and magic display in character tab
+            document.getElementById('char-current-hp').textContent = character.currentHealthPoints;
+            document.getElementById('char-total-hp').textContent = character.healthPoints;
+            document.getElementById('char-current-mp').textContent = character.currentMagicPoints;
+            document.getElementById('char-total-mp').textContent = character.magicPoints;
+            
+            // Render compact stats in character tab
+            const charStatsDisplay = document.getElementById('char-stats-display');
+            charStatsDisplay.innerHTML = '';
+            
+            Object.entries(character.stats).forEach(([stat, value]) => {
+                const statCard = document.createElement('div');
+                statCard.onclick = () => rollAttribute(stat, value);
+                statCard.style.cssText = `
+                    background: rgba(40, 40, 60, 0.9);
+                    border-radius: 8px;
+                    padding: 12px;
+                    text-align: center;
+                    border: 1px solid #4a4a6a;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                `;
+                statCard.onmouseenter = () => {
+                    statCard.style.borderColor = '#f4d03f';
+                    statCard.style.background = 'rgba(244, 208, 63, 0.1)';
+                    statCard.style.transform = 'translateY(-1px)';
+                };
+                statCard.onmouseleave = () => {
+                    statCard.style.borderColor = '#4a4a6a';
+                    statCard.style.background = 'rgba(40, 40, 60, 0.9)';
+                    statCard.style.transform = 'translateY(0)';
+                };
+                statCard.innerHTML = `
+                    <div style="font-weight: 600; color: #f4d03f; font-size: 11px; margin-bottom: 5px; text-transform: uppercase;">${stat.charAt(0).toUpperCase() + stat.slice(1)}</div>
+                    <div style="font-size: 20px; font-weight: bold; color: #ffffff;">${value}</div>
+                `;
+                charStatsDisplay.appendChild(statCard);
+            });
+        }
+
+        function renderCharacterSkills() {
+            const skillsGrid = document.getElementById('char-skills-grid');
+            if (!skillsGrid) return;
+            
+            skillsGrid.innerHTML = '';
+            
+            // Render standard skills
+            Object.entries(standardSkills).forEach(([skillName, stat]) => {
+                const skillValue = character.stats[stat];
+                const skillItem = document.createElement('div');
+                skillItem.className = 'skill-item rollable';
+                skillItem.onclick = () => rollSkill(skillName, stat, skillValue);
+                skillItem.innerHTML = `
+                    <div class="skill-info">
+                        <div class="skill-name"><i class="ra ra-gear"></i> ${skillName}</div>
+                        <div class="skill-stat">[${stat.substring(0, 3).toUpperCase()}]</div>
+                    </div>
+                    <div class="skill-value">+${skillValue}</div>
+                `;
+                skillsGrid.appendChild(skillItem);
+            });
+            
+            // Render custom skills
+            character.customSkills.forEach((skill, index) => {
+                const skillValue = character.stats[skill.stat];
+                const skillItem = document.createElement('div');
+                skillItem.className = 'skill-item rollable';
+                skillItem.onclick = () => rollSkill(skill.name, skill.stat, skillValue);
+                const sourceLabel = skill.source ? ` (${skill.source})` : ' (Custom)';
+                const iconClass = skill.source === 'job' ? 'ra-briefcase' : skill.source === 'class' ? 'ra-sword' : 'ra-star';
+                skillItem.innerHTML = `
+                    <div class="skill-info">
+                        <div class="skill-name"><i class="ra ${iconClass}"></i> ${skill.name}${sourceLabel}</div>
+                        <div class="skill-stat">[${skill.stat.substring(0, 3).toUpperCase()}]</div>
+                    </div>
+                    <div class="skill-value">+${skillValue}</div>
+                    ${!skill.source ? `<button class="control-btn" onclick="event.stopPropagation(); removeCustomSkillFromCharTab(${index})" style="width: 32px; height: 32px; font-size: 16px; margin-left: 10px;">×</button>` : ''}
+                `;
+                skillsGrid.appendChild(skillItem);
+            });
+        }
+
+        function renderCharacterSpells() {
+            const spellsContainer = document.getElementById('char-spells-container');
+            if (!spellsContainer) return;
+            
+            spellsContainer.innerHTML = '';
+            
+            if (character.spells.length === 0) {
+                spellsContainer.innerHTML = `
+                    <div style="text-align: center; color: #8a8a8a; padding: 40px;">
+                        <i class="ra ra-lightning" style="font-size: 3em; margin-bottom: 15px; display: block;"></i>
+                        No spells learned yet. Visit the Magic tab to create your first spell!
+                    </div>
+                `;
+                return;
+            }
+            
+            character.spells.forEach(spell => {
+                const canCast = character.currentMagicPoints >= spell.cost;
+                const spellItem = document.createElement('div');
+                spellItem.className = `spell-item ${canCast ? 'castable' : 'insufficient-mp'}`;
+                
+                if (canCast) {
+                    spellItem.onclick = () => castSpellFromCharTab(spell.id);
+                }
+                
+                const elementEmoji = getElementEmoji(spell.element);
+                
+                spellItem.innerHTML = `
+                    <div class="spell-info">
+                        <div class="spell-name">${elementEmoji} ${spell.name}</div>
+                        <div class="spell-element">${spell.element} | ${spell.effects.join(', ')}</div>
+                    </div>
+                    <div class="spell-cost">${spell.cost} MP</div>
+                `;
+                spellsContainer.appendChild(spellItem);
+            });
+        }
+
+        function addCustomSkillFromCharTab() {
+            const skillName = document.getElementById('char-custom-skill-name').value.trim();
+            const skillStat = document.getElementById('char-custom-skill-stat').value;
+            
+            if (skillName) {
+                character.customSkills.push({
+                    name: skillName,
+                    stat: skillStat
+                });
+                
+                document.getElementById('char-custom-skill-name').value = '';
+                renderCharacterSkills();
+            }
+        }
+
+        function removeCustomSkillFromCharTab(index) {
+            character.customSkills.splice(index, 1);
+            renderCharacterSkills();
+        }
+
+        // DICE ROLLING SYSTEM
+        function getDiceConfiguration(level) {
+            const tensDigit = Math.floor(level / 10);
+            const onesDigit = level % 10;
+            
+            let diceCount = Math.max(1, tensDigit);
+            let diceType = 10; // Default to d10
+            
+            // Handle special cases
+            if (level >= 80) {
+                // Cap at level 80+ to prevent insane rolls
+                diceCount = 8;
+                diceType = 10; // 8d10 max
+            } else if (level >= 11 && level <= 20) {
+                // Levels 11-20 use d20
+                diceCount = 1;
+                diceType = 20;
+            } else if (level >= 21) {
+                // Higher levels can use mixed dice or all d10s
+                // For simplicity, using all d10s based on tens digit
+                diceCount = Math.min(8, tensDigit); // Cap at 8 dice
+                diceType = 10;
+            }
+            
+            return {
+                diceCount: diceCount,
+                diceType: diceType,
+                levelBonus: onesDigit,
+                description: `${diceCount}d${diceType} + ${onesDigit} (Level ${level})`
+            };
+        }
+
+        function rollDice(diceCount, diceType) {
+            const rolls = [];
+            for (let i = 0; i < diceCount; i++) {
+                rolls.push(Math.floor(Math.random() * diceType) + 1);
+            }
+            return rolls;
+        }
+
+        function rollAttribute(statName, statValue) {
+            const config = getDiceConfiguration(character.level);
+            const diceRolls = rollDice(config.diceCount, config.diceType);
+            const diceTotal = diceRolls.reduce((sum, roll) => sum + roll, 0);
+            const finalTotal = diceTotal + config.levelBonus + statValue;
+            
+            const rollData = {
+                type: 'Attribute',
+                name: statName.charAt(0).toUpperCase() + statName.slice(1),
+                diceRolls: diceRolls,
+                diceTotal: diceTotal,
+                levelBonus: config.levelBonus,
+                statBonus: statValue,
+                finalTotal: finalTotal,
+                config: config,
+                timestamp: new Date().toLocaleTimeString()
+            };
+            
+            // Add to history
+            character.rollHistory.unshift(rollData);
+            if (character.rollHistory.length > 50) {
+                character.rollHistory = character.rollHistory.slice(0, 50); // Keep last 50 rolls
+            }
+            
+            // Show notification
+            showRollNotification(rollData);
+            
+            // Update roll history display if on rolling tab
+            updateRollHistoryDisplay();
+        }
+
+        function rollSkill(skillName, statName, statValue) {
+            const config = getDiceConfiguration(character.level);
+            const diceRolls = rollDice(config.diceCount, config.diceType);
+            const diceTotal = diceRolls.reduce((sum, roll) => sum + roll, 0);
+            const finalTotal = diceTotal + config.levelBonus + statValue;
+            
+            const rollData = {
+                type: 'Skill',
+                name: skillName,
+                stat: statName.charAt(0).toUpperCase() + statName.slice(1),
+                diceRolls: diceRolls,
+                diceTotal: diceTotal,
+                levelBonus: config.levelBonus,
+                statBonus: statValue,
+                finalTotal: finalTotal,
+                config: config,
+                timestamp: new Date().toLocaleTimeString()
+            };
+            
+            // Add to history
+            character.rollHistory.unshift(rollData);
+            if (character.rollHistory.length > 50) {
+                character.rollHistory = character.rollHistory.slice(0, 50);
+            }
+            
+            // Show notification
+            showRollNotification(rollData);
+            
+            // Update roll history display if on rolling tab
+            updateRollHistoryDisplay();
+        }
+
+        function showRollNotification(rollData) {
+            // Remove existing notification if any
+            const existingNotifications = document.querySelectorAll('.roll-notification, .spell-notification');
+            existingNotifications.forEach(notification => notification.remove());
+            
+            // Create notification
+            const notification = document.createElement('div');
+            notification.className = 'roll-notification';
+            
+            const diceDisplay = rollData.diceRolls.map(roll => `<span style="color: #f4d03f;">${roll}</span>`).join(' + ');
+            
+            notification.innerHTML = `
+                <h4><i class="ra ra-perspective-dice-six"></i> ${rollData.type} Roll: ${rollData.name}</h4>
+                <div class="roll-result">Total: ${rollData.finalTotal}</div>
+                <div class="roll-details">
+                    Dice: [${diceDisplay}] = ${rollData.diceTotal}<br>
+                    + Level Bonus: ${rollData.levelBonus}<br>
+                    + ${rollData.type} Bonus: ${rollData.statBonus}
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Show notification
+            setTimeout(() => notification.classList.add('show'), 100);
+            
+            // Hide notification after 4 seconds
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 300);
+            }, 4000);
+        }
+
+        function updateDiceSystemInfo() {
+            const diceExplanation = document.getElementById('dice-explanation');
+            if (!diceExplanation) return;
+            
+            const config = getDiceConfiguration(character.level);
+            
+            let explanation = `<strong>Level ${character.level}:</strong> ${config.description}<br>`;
+            explanation += `<em>Roll ${config.diceCount}d${config.diceType}, add ${config.levelBonus} (level bonus), plus attribute/skill bonus</em><br><br>`;
+            
+            explanation += '<strong>System Rules:</strong><br>';
+            explanation += '• Levels 1-10: Roll 1d10 + level<br>';
+            explanation += '• Levels 11-20: Roll 1d20 + level<br>';
+            explanation += '• Levels 21+: Roll dice equal to tens digit (e.g., Level 34 = 3d10)<br>';
+            explanation += '• Level 80+ capped at 8d10 maximum<br>';
+            explanation += '• Always add the ones digit of your level as bonus';
+            
+            diceExplanation.innerHTML = explanation;
+        }
+
+        function updateRollHistoryDisplay() {
+            const rollHistory = document.getElementById('roll-history');
+            if (!rollHistory) return;
+            
+            if (character.rollHistory.length === 0) {
+                rollHistory.innerHTML = `
+                    <div style="text-align: center; color: #8a8a8a; padding: 40px;">
+                        <i class="ra ra-perspective-dice-six" style="font-size: 3em; margin-bottom: 15px; display: block;"></i>
+                        No rolls yet! Click attributes, skills, or spells in the Character tab to start rolling.
+                    </div>
+                `;
+                return;
+            }
+            
+            rollHistory.innerHTML = character.rollHistory.map((roll, index) => {
+                const diceDisplay = roll.diceRolls.map(r => `<span style="color: #f4d03f;">${r}</span>`).join(' + ');
+                const typeIcon = roll.type === 'Attribute' ? 'ra-muscle-up' : roll.type === 'Skill' ? 'ra-gear' : 'ra-lightning';
+                const typeColor = roll.type === 'Attribute' ? '#4a6a8a' : roll.type === 'Skill' ? '#4a8a4a' : '#8a4a8a';
+                
+                return `
+                    <div style="background: rgba(40, 40, 60, 0.8); border-radius: 8px; padding: 15px; margin-bottom: 10px; border-left: 3px solid ${typeColor};">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <h4 style="color: #f4d03f; margin: 0; font-size: 14px;">
+                                <i class="ra ${typeIcon}"></i> ${roll.name} ${roll.type === 'Skill' ? `[${roll.stat}]` : ''}
+                            </h4>
+                            <span style="color: #8a8a8a; font-size: 12px;">${roll.timestamp}</span>
+                        </div>
+                        <div style="font-size: 18px; font-weight: bold; color: #ffffff; margin-bottom: 5px;">
+                            Result: ${roll.finalTotal}
+                        </div>
+                        <div style="font-size: 12px; color: #c0c0c0;">
+                            Dice: [${diceDisplay}] = ${roll.diceTotal} + Level: ${roll.levelBonus} + Bonus: ${roll.statBonus}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function clearRollHistory() {
+            character.rollHistory = [];
+            updateRollHistoryDisplay();
+        }
+
+        // MAGIC SYSTEM
+        function adjustMagicPointsInTab(change) {
+            const newValue = character.currentMagicPoints + change;
+            if (newValue >= 0 && newValue <= character.magicPoints) {
+                character.currentMagicPoints = newValue;
+                updateMagicTabDisplay();
+                updateCharacterDisplay(); // Update other tabs too
+                renderSpells(); // Re-render spells to update cast button states
+                renderCharacterSpells(); // Update character tab spells
+            }
+        }
+
+        function updateMagicTabDisplay() {
+            document.getElementById('magic-current-mp').textContent = character.currentMagicPoints;
+            document.getElementById('magic-total-mp').textContent = character.magicPoints;
+        }
+
+        function calculateSpellCost() {
+            let cost = 1; // Base activation cost
+            let breakdown = ['Base Cost: 1 MP (activation)'];
+            
+            // Damage cost
+            const damageType = document.getElementById('damage-type').value;
+            const damageAmount = parseInt(document.getElementById('damage-amount').value) || 0;
+            
+            if (damageType === 'fixed' && damageAmount > 0) {
+                const damageCost = Math.ceil(damageAmount / 2); // 2 points = 1 MP
+                cost += damageCost;
+                breakdown.push(`Damage: ${damageAmount} pts = ${damageCost} MP`);
+            } else if (damageType === 'd6') {
+                cost += 3;
+                breakdown.push('Damage: d6 roll = 3 MP');
+            }
+            
+            // Healing cost
+            const healingType = document.getElementById('healing-type').value;
+            const healingAmount = parseInt(document.getElementById('healing-amount').value) || 0;
+            
+            if (healingType === 'fixed' && healingAmount > 0) {
+                const healingCost = Math.ceil(healingAmount / 2); // 2 points = 1 MP
+                cost += healingCost;
+                breakdown.push(`Healing: ${healingAmount} pts = ${healingCost} MP`);
+            } else if (healingType === 'd6') {
+                cost += 3;
+                breakdown.push('Healing: d6 roll = 3 MP');
+            }
+            
+            // Primary effect cost
+            const primaryEffect = document.getElementById('primary-effect').value;
+            if (primaryEffect) {
+                cost += 1;
+                breakdown.push('Primary Effect: 1 MP');
+            }
+            
+            // Secondary effect cost
+            const secondaryEffect = document.getElementById('secondary-effect').value;
+            if (secondaryEffect) {
+                cost += 1;
+                breakdown.push('Secondary Effect: 1 MP');
+            }
+            
+            // Update display
+            document.getElementById('cost-breakdown').innerHTML = breakdown.join('<br>');
+            document.getElementById('total-cost').textContent = cost;
+            
+            // Enable/disable create button based on whether player can afford it
+            const createBtn = document.getElementById('create-spell-btn');
+            if (cost > character.magicPoints) {
+                createBtn.disabled = true;
+                createBtn.style.opacity = '0.5';
+                createBtn.innerHTML = `<i class="ra ra-lightning"></i> Create Spell (Need ${cost} MP Total)`;
+            } else {
+                createBtn.disabled = false;
+                createBtn.style.opacity = '1';
+                createBtn.innerHTML = '<i class="ra ra-lightning"></i> Create Spell';
+            }
+            
+            return cost;
+        }
+
+        function createSpell() {
+            const name = document.getElementById('spell-name').value.trim();
+            const element = document.getElementById('spell-element').value;
+            const damageType = document.getElementById('damage-type').value;
+            const damageAmount = parseInt(document.getElementById('damage-amount').value) || 0;
+            const healingType = document.getElementById('healing-type').value;
+            const healingAmount = parseInt(document.getElementById('healing-amount').value) || 0;
+            const primaryEffect = document.getElementById('primary-effect').value;
+            const secondaryEffect = document.getElementById('secondary-effect').value;
+            
+            if (!name) {
+                alert('Please enter a spell name!');
+                return;
+            }
+            
+            const cost = calculateSpellCost();
+            const effects = [];
+            
+            // Build effects array
+            if (damageType === 'fixed' && damageAmount > 0) {
+                effects.push(`${damageAmount} damage`);
+            } else if (damageType === 'd6') {
+                effects.push('d6 damage');
+            }
+            
+            if (healingType === 'fixed' && healingAmount > 0) {
+                effects.push(`${healingAmount} healing`);
+            } else if (healingType === 'd6') {
+                effects.push('d6 healing');
+            }
+            
+            if (primaryEffect) {
+                effects.push(primaryEffect.replace('_', ' '));
+            }
+            
+            if (secondaryEffect) {
+                effects.push(secondaryEffect.replace('_', ' '));
+            }
+            
+            if (effects.length === 0) {
+                effects.push('no effect');
+            }
+            
+            const spell = {
+                id: generateId(),
+                name: name,
+                element: element,
+                damageType: damageType,
+                damageAmount: damageAmount,
+                healingType: healingType,
+                healingAmount: healingAmount,
+                primaryEffect: primaryEffect,
+                secondaryEffect: secondaryEffect,
+                cost: cost,
+                effects: effects
+            };
+            
+            character.spells.push(spell);
+            
+            // Clear form
+            document.getElementById('spell-name').value = '';
+            document.getElementById('damage-amount').value = '0';
+            document.getElementById('healing-amount').value = '0';
+            document.getElementById('damage-type').value = '';
+            document.getElementById('healing-type').value = '';
+            document.getElementById('primary-effect').value = '';
+            document.getElementById('secondary-effect').value = '';
+            document.getElementById('damage-amount').disabled = true;
+            document.getElementById('healing-amount').disabled = true;
+            
+            renderSpells();
+            renderCharacterSpells(); // Update character tab
+            calculateSpellCost(); // Update cost display
+            
+            alert(`✨ Created spell: ${spell.name}!\nCost: ${spell.cost} MP\nEffects: ${spell.effects.join(', ')}`);
+        }
+
+        function renderSpells() {
+            const spellsGrid = document.getElementById('spells-grid');
+            if (!spellsGrid) return;
+            
+            spellsGrid.innerHTML = '';
+            
+            if (character.spells.length === 0) {
+                spellsGrid.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; color: #8a8a8a; padding: 40px;">
+                        <i class="ra ra-lightning" style="font-size: 3em; margin-bottom: 15px; display: block;"></i>
+                        No spells learned yet. Create your first spell below!
+                    </div>
+                `;
+                return;
+            }
+            
+            character.spells.forEach(spell => {
+                const spellDiv = document.createElement('div');
+                spellDiv.style.cssText = `
+                    background: rgba(40, 40, 60, 0.8);
+                    border: 1px solid #8a4a8a;
+                    border-radius: 12px;
+                    padding: 18px;
+                    transition: all 0.3s ease;
+                    position: relative;
+                `;
+                
+                spellDiv.onmouseenter = () => {
+                    spellDiv.style.borderColor = '#da70d6';
+                    spellDiv.style.background = 'rgba(218, 112, 214, 0.1)';
+                    spellDiv.style.transform = 'translateY(-2px)';
+                };
+                
+                spellDiv.onmouseleave = () => {
+                    spellDiv.style.borderColor = '#8a4a8a';
+                    spellDiv.style.background = 'rgba(40, 40, 60, 0.8)';
+                    spellDiv.style.transform = 'translateY(0)';
+                };
+                
+                const elementEmoji = getElementEmoji(spell.element);
+                const canCast = character.currentMagicPoints >= spell.cost;
+                
+                spellDiv.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                        <h4 style="color: #da70d6; margin: 0; font-size: 16px; font-weight: 600;">
+                            ${elementEmoji} ${spell.name}
+                        </h4>
+                        <button onclick="removeSpell('${spell.id}')" style="background: #8a4a4a; border: none; color: white; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 12px;">×</button>
+                    </div>
+                    
+                    <div style="font-size: 12px; color: #8a8a8a; margin-bottom: 10px; text-transform: capitalize;">
+                        ${spell.element} Magic
+                    </div>
+                    
+                    <div style="margin-bottom: 12px;">
+                        ${spell.effects.map(effect => 
+                            `<span style="background: rgba(138, 74, 138, 0.3); color: #da70d6; padding: 3px 8px; border-radius: 12px; font-size: 11px; margin-right: 6px; margin-bottom: 4px; display: inline-block;">${effect}</span>`
+                        ).join('')}
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+                        <div style="color: #f4d03f; font-weight: bold; font-size: 14px;">
+                            Cost: ${spell.cost} MP
+                        </div>
+                        <button onclick="castSpell('${spell.id}')" 
+                                style="background: ${canCast ? '#8a4a8a' : '#4a4a5a'}; 
+                                       border: none; 
+                                       color: ${canCast ? 'white' : '#6a6a8a'}; 
+                                       padding: 8px 16px; 
+                                       border-radius: 6px; 
+                                       cursor: ${canCast ? 'pointer' : 'not-allowed'}; 
+                                       font-size: 12px; 
+                                       transition: all 0.3s ease;
+                                       ${canCast ? '' : 'opacity: 0.5;'}"
+                                ${canCast ? '' : 'disabled'}>
+                            <i class="ra ra-lightning"></i> Cast
+                        </button>
+                    </div>
+                `;
+                
+                spellsGrid.appendChild(spellDiv);
+            });
+        }
+
+        function getElementEmoji(element) {
+            const emojis = {
+                fire: '🔥', ice: '❄️', lightning: '⚡', earth: '🌍',
+                air: '💨', water: '💧', light: '☀️', dark: '🌑',
+                arcane: '🔮', divine: '✨', nature: '🌿', psychic: '🧠',
+                shadow: '👤', force: '💥'
+            };
+            return emojis[element] || '✨';
+        }
+
+        function castSpell(spellId) {
+            const spell = character.spells.find(s => s.id === spellId);
+            if (!spell) return;
+            
+            if (character.currentMagicPoints < spell.cost) {
+                alert(`Not enough magic points! Need ${spell.cost} MP, have ${character.currentMagicPoints} MP.`);
+                return;
+            }
+            
+            // Deduct magic points
+            character.currentMagicPoints -= spell.cost;
+            
+            // Calculate results
+            let results = [];
+            let totalDamage = 0;
+            let totalHealing = 0;
+            
+            // Handle damage
+            if (spell.damageType === 'fixed' && spell.damageAmount > 0) {
+                totalDamage = spell.damageAmount;
+                results.push(`Dealt ${totalDamage} damage`);
+            } else if (spell.damageType === 'd6') {
+                totalDamage = Math.floor(Math.random() * 6) + 1;
+                results.push(`Dealt ${totalDamage} damage (d6 roll)`);
+            }
+            
+            // Handle healing
+            if (spell.healingType === 'fixed' && spell.healingAmount > 0) {
+                totalHealing = spell.healingAmount;
+                results.push(`Healed ${totalHealing} points`);
+            } else if (spell.healingType === 'd6') {
+                totalHealing = Math.floor(Math.random() * 6) + 1;
+                results.push(`Healed ${totalHealing} points (d6 roll)`);
+            }
+            
+            // Handle effects
+            if (spell.primaryEffect) {
+                results.push(`Applied ${spell.primaryEffect.replace('_', ' ')}`);
+            }
+            if (spell.secondaryEffect) {
+                results.push(`Applied ${spell.secondaryEffect.replace('_', ' ')}`);
+            }
+            
+            // Create spell cast history entry
+            const spellData = {
+                type: 'Spell',
+                name: spell.name,
+                element: spell.element,
+                cost: spell.cost,
+                results: results,
+                finalTotal: totalDamage || totalHealing || 'N/A',
+                timestamp: new Date().toLocaleTimeString()
+            };
+            
+            // Add to history
+            character.rollHistory.unshift(spellData);
+            if (character.rollHistory.length > 50) {
+                character.rollHistory = character.rollHistory.slice(0, 50);
+            }
+            
+            // Show spell notification
+            showSpellNotification(spellData);
+            
+            // Update displays
+            updateMagicTabDisplay();
+            updateCharacterDisplay();
+            renderSpells(); // Re-render to update cast button states
+            renderCharacterSpells(); // Update character tab
+        }
+
+        function castSpellFromCharTab(spellId) {
+            castSpell(spellId); // Use the same function
+        }
+
+        function showSpellNotification(spellData) {
+            // Remove existing notifications
+            const existingNotifications = document.querySelectorAll('.roll-notification, .spell-notification');
+            existingNotifications.forEach(notification => notification.remove());
+            
+            // Create notification
+            const notification = document.createElement('div');
+            notification.className = 'spell-notification';
+            
+            const elementEmoji = getElementEmoji(spellData.element);
+            
+            notification.innerHTML = `
+                <h4><i class="ra ra-lightning"></i> Spell Cast: ${elementEmoji} ${spellData.name}</h4>
+                <div class="spell-result">Cost: ${spellData.cost} MP</div>
+                <div class="spell-details">
+                    ${spellData.results.length > 0 ? spellData.results.join('<br>') : 'Spell cast successfully!'}
+                    <br>MP Remaining: ${character.currentMagicPoints}/${character.magicPoints}
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Show notification
+            setTimeout(() => notification.classList.add('show'), 100);
+            
+            // Hide notification after 4 seconds
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 300);
+            }, 4000);
+        }
+
+        function removeSpell(spellId) {
+            if (confirm('Are you sure you want to forget this spell?')) {
+                character.spells = character.spells.filter(spell => spell.id !== spellId);
+                renderSpells();
+                renderCharacterSpells(); // Update character tab
+            }
+        }
+
+        function saveCharacter() {
+            // Update personal details before saving
+            character.personal.age = document.getElementById('char-age').value;
+            character.personal.backstory = document.getElementById('char-backstory').value;
+            
+            const characterData = JSON.stringify(character, null, 2);
+            const blob = new Blob([characterData], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${character.name || 'character'}_wasteland.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function loadCharacter() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            character = JSON.parse(e.target.result);
+                            
+                            // Ensure all properties exist for backward compatibility
+                            if (!character.personal) character.personal = { age: '', backstory: '', portrait: null };
+                            if (!character.jobBonuses) character.jobBonuses = [];
+                            if (!character.classBonuses) character.classBonuses = [];
+                            if (!character.customSkills) character.customSkills = [];
+                            if (!character.customJobData) character.customJobData = { selectedStats: [], skills: [] };
+                            if (!character.customClassData) character.customClassData = { selectedStats: [], skills: [] };
+                            if (!character.rollHistory) character.rollHistory = [];
+                            if (!character.spells) character.spells = [];
+                            
+                            // Update UI elements
+                            document.getElementById('char-name').value = character.name || '';
+                            document.getElementById('char-level').value = character.level || 1;
+                            document.getElementById('char-age').value = character.personal?.age || '';
+                            document.getElementById('char-backstory').value = character.personal?.backstory || '';
+                            
+                            // Handle portrait
+                            if (character.personal?.portrait) {
+                                const portraitDisplay = document.getElementById('portrait-display');
+                                portraitDisplay.innerHTML = `<img src="${character.personal.portrait}" alt="Character Portrait" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">`;
+                            }
+                            
+                            // Handle job selection and restore custom data
+                            if (character.job) {
+                                document.getElementById('job-select').value = character.job;
+                            } else if (character.customJob) {
+                                document.getElementById('job-select').value = 'custom';
+                                document.getElementById('custom-job').style.display = 'block';
+                                document.getElementById('custom-job').value = character.customJob;
+                                document.getElementById('custom-job-bonuses').style.display = 'block';
+                                
+                                // Restore custom job selections
+                                if (character.customJobData && character.customJobData.selectedStats) {
+                                    character.customJobData.selectedStats.forEach(stat => {
+                                        const checkbox = document.getElementById(`custom-job-${stat}`);
+                                        if (checkbox) checkbox.checked = true;
+                                    });
+                                }
+                            }
+                            
+                            // Handle class selection and restore custom data
+                            if (character.class) {
+                                document.getElementById('class-select').value = character.class;
+                            } else if (character.customClass) {
+                                document.getElementById('class-select').value = 'custom_class';
+                                document.getElementById('custom-class').style.display = 'block';
+                                document.getElementById('custom-class').value = character.customClass;
+                                document.getElementById('custom-class-bonuses').style.display = 'block';
+                                
+                                // Restore custom class selections
+                                if (character.customClassData && character.customClassData.selectedStats) {
+                                    character.customClassData.selectedStats.forEach(stat => {
+                                        const checkbox = document.getElementById(`custom-class-${stat}`);
+                                        if (checkbox) checkbox.checked = true;
+                                    });
+                                }
+                            }
+                            
+                            renderStats();
+                            renderCharacterSkills();
+                            renderCharacterSpells();
+                            updateHealthMagicDisplay();
+                            updateCharacterDisplay();
+                            updateBonusesDisplay();
+                            renderSpells();
+                            updateMagicTabDisplay();
+                        } catch (error) {
+                            alert('Error loading character file: ' + error.message);
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        }
+
+        // Initialize when page loads
+        window.addEventListener('DOMContentLoaded', initializeCharacterSheet);
+    </script>
+</body>
+</html>
