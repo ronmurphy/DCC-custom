@@ -1,4 +1,9 @@
-        * {
+/*
+    * DCC Character Sheet - Custom CSS
+    * <!-- Update 96 - split CSS file, js file to external -->
+    */
+       
+       * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
