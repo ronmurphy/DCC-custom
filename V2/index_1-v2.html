@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>RPG Character Studio</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/rpg-awesome/0.2.0/css/rpg-awesome.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
+        <span class="material-icons">brightness_6</span>
+    </button>
+
+    <!-- Main Character Sheet -->
+    <div class="app-container">
+        <!-- Mobile Header -->
+        <header class="app-header">
+            <button class="header-btn menu-btn" onclick="backToCharacterSelect()" title="Character Menu">
+                <span class="material-icons">menu</span>
+            </button>
+            <h1 class="app-title">
+                <span class="character-name-display">New Character</span>
+                <span class="character-level-badge">Lv.1</span>
+            </h1>
+            <button class="header-btn save-btn" onclick="saveCharacterToStorage()" title="Save Character">
+                <span class="material-icons">save</span>
+            </button>
+        </header>
+
+        <!-- Tab Navigation -->
+        <nav class="tab-nav">
+            <button class="tab-btn active" data-tab="creation">
+                <span class="tab-icon"><i class="ra ra-quill-ink"></i></span>
+                <span class="tab-label">Create</span>
+            </button>
+            <button class="tab-btn" data-tab="character">
+                <span class="tab-icon"><i class="ra ra-player"></i></span>
+                <span class="tab-label">Stats</span>
+            </button>
+            <button class="tab-btn" data-tab="inventory">
+                <span class="tab-icon"><i class="ra ra-backpack"></i></span>
+                <span class="tab-label">Gear</span>
+            </button>
+            <button class="tab-btn" data-tab="magic">
+                <span class="tab-icon"><i class="ra ra-fairy-wand"></i></span>
+                <span class="tab-label">Magic</span>
+            </button>
+            <button class="tab-btn" data-tab="combat">
+                <span class="tab-icon"><i class="ra ra-crossed-swords"></i></span>
+                <span class="tab-label">Combat</span>
+            </button>
+            <button class="tab-btn" data-tab="notes">
+                <span class="tab-icon"><i class="ra ra-journal"></i></span>
+                <span class="tab-label">Notes</span>
+            </button>
+        </nav>
+
+        <!-- Tab Contents -->
+        <main class="tab-container">
+            <!-- Character Creation Tab -->
+            <section class="tab-content active" id="creation">
+                <div class="content-wrapper">
+                    <!-- Hero Section -->
+                    <div class="hero-card">
+                        <div class="portrait-section">
+                            <div id="portrait-display" class="portrait-container">
+                                <div class="portrait-placeholder">
+                                    <i class="ra ra-hood"></i>
+                                    <span>Tap to Upload</span>
+                                </div>
+                            </div>
+                            <input type="file" id="portrait-upload" accept="image/*" style="display: none;">
+                        </div>
+                        
+                        <div class="hero-info">
+                            <input type="text" id="char-name" class="hero-name-input" placeholder="Character Name" autocomplete="off">
+                            <div class="hero-meta">
+                                <div class="meta-item">
+                                    <label>Level</label>
+                                    <input type="number" id="char-level" class="compact-input" value="1" min="1" max="20">
+                                </div>
+                                <div class="meta-item">
+                                    <label>Age</label>
+                                    <input type="number" id="char-age" class="compact-input" placeholder="25">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Identity Cards -->
+                    <div class="card-grid">
+                        <!-- Race Card -->
+                        <div class="card race-card">
+                            <div class="card-header">
+                                <i class="ra ra-double-team"></i>
+                                <h3>Heritage</h3>
+                            </div>
+                            <select id="race-select" class="fancy-select">
+                                <option value="">Choose your heritage...</option>
+                                <optgroup label="Classic Fantasy">
+                                    <option value="human">👤 Human</option>
+                                    <option value="elf">🧝 Elf</option>
+                                    <option value="dwarf">⛏️ Dwarf</option>
+                                    <option value="orc">💪 Orc</option>
+                                    <option value="halfling">🍄 Halfling</option>
+                                    <option value="dragonborn">🐲 Dragonborn</option>
+                                    <option value="tiefling">😈 Tiefling</option>
+                                    <option value="gnome">🧙 Gnome</option>
+                                    <option value="goblin">👺 Goblin</option>
+                                    <option value="slime">💧 Slime</option>
+                                </optgroup>
+                                <optgroup label="Sci-Fi">
+                                    <option value="cyborg">🤖 Cyborg</option>
+                                    <option value="mutant">☢️ Mutant</option>
+                                    <option value="android">🦾 Android</option>
+                                    <option value="clone">🧬 Clone</option>
+                                </optgroup>
+                                <optgroup label="Post-Apocalyptic">
+                                    <option value="ghoul">☠️ Ghoul</option>
+                                    <option value="raider">⚔️ Raider</option>
+                                    <option value="vault_dweller">🏠 Vault Dweller</option>
+                                    <option value="synth">🔧 Synth</option>
+                                    <option value="beast_kin">🐺 Beast-kin</option>
+                                    <option value="plant_hybrid">🌿 Plant Hybrid</option>
+                                </optgroup>
+                                <option value="custom">✨ Custom Heritage</option>
+                            </select>
+                            
+                            <input type="text" id="custom-race" class="fancy-input" placeholder="Enter custom heritage" style="display: none;">
+                            
+                            <!-- Custom Race Builder -->
+                            <div id="custom-race-bonuses" class="custom-builder" style="display: none;">
+                                <h4>Custom Heritage Builder</h4>
+                                
+                                <div class="builder-section">
+                                    <label>Attribute Bonuses (Pick 1-2)</label>
+                                    <div class="checkbox-grid">
+                                        <label class="checkbox-pill">
+                                            <input type="checkbox" id="custom-race-str" onchange="updateCustomRaceBonuses()">
+                                            <span>STR</span>
+                                        </label>
+                                        <label class="checkbox-pill">
+                                            <input type="checkbox" id="custom-race-dex" onchange="updateCustomRaceBonuses()">
+                                            <span>DEX</span>
+                                        </label>
+                                        <label class="checkbox-pill">
+                                            <input type="checkbox" id="custom-race-con" onchange="updateCustomRaceBonuses()">
+                                            <span>CON</span>
+                                        </label>
+                                        <label class="checkbox-pill">
+                                            <input type="checkbox" id="custom-race-int" onchange="updateCustomRaceBonuses()">
+                                            <span>INT</span>
+                                        </label>
+                                        <label class="checkbox-pill">
+                                            <input type="checkbox" id="custom-race-wis" onchange="updateCustomRaceBonuses()">
+                                            <span>WIS</span>
+                                        </label>
+                                        <label class="checkbox-pill">
+                                            <input type="checkbox" id="custom-race-cha" onchange="updateCustomRaceBonuses()">
+                                            <span>CHA</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="builder-section">
+                                    <label>Attribute Limits</label>
+                                    <div class="stat-limit-grid">
+                                        <div class="limit-input">
+                                            <label>STR</label>
+                                            <input type="number" id="custom-race-max-str" value="15" min="5" max="25">
+                                        </div>
+                                        <div class="limit-input">
+                                            <label>DEX</label>
+                                            <input type="number" id="custom-race-max-dex" value="15" min="5" max="25">
+                                        </div>
+                                        <div class="limit-input">
+                                            <label>CON</label>
+                                            <input type="number" id="custom-race-max-con" value="15" min="5" max="25">
+                                        </div>
+                                        <div class="limit-input">
+                                            <label>INT</label>
+                                            <input type="number" id="custom-race-max-int" value="15" min="5" max="25">
+                                        </div>
+                                        <div class="limit-input">
+                                            <label>WIS</label>
+                                            <input type="number" id="custom-race-max-wis" value="15" min="5" max="25">
+                                        </div>
+                                        <div class="limit-input">
+                                            <label>CHA</label>
+                                            <input type="number" id="custom-race-max-cha" value="15" min="5" max="25">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="builder-section">
+                                    <label>Racial Abilities</label>
+                                    <div class="skill-builder">
+                                        <select id="custom-race-skill1" class="skill-select">
+                                            <option value="">First ability...</option>
+                                            <option value="custom">✏️ Custom</option>
+                                            <option value="Darkvision">👁️ Darkvision</option>
+                                            <option value="Flight">🦅 Flight</option>
+                                            <option value="Telepathy">🧠 Telepathy</option>
+                                            <option value="Regeneration">❤️‍🩹 Regeneration</option>
+                                            <option value="Natural Armor">🛡️ Natural Armor</option>
+                                            <option value="Keen Senses">👂 Keen Senses</option>
+                                            <option value="Camouflage">🌿 Camouflage</option>
+                                            <option value="Aquatic">🌊 Aquatic</option>
+                                        </select>
+                                        <select id="custom-race-skill1-stat" class="stat-select">
+                                            <option value="strength">STR</option>
+                                            <option value="dexterity">DEX</option>
+                                            <option value="constitution">CON</option>
+                                            <option value="intelligence">INT</option>
+                                            <option value="wisdom">WIS</option>
+                                            <option value="charisma">CHA</option>
+                                        </select>
+                                        <input type="text" id="custom-race-skill1-name" class="custom-skill-name" placeholder="Ability name" style="display: none;">
+                                    </div>
+                                    
+                                    <div class="skill-builder">
+                                        <select id="custom-race-skill2" class="skill-select">
+                                            <option value="">Second ability...</option>
+                                            <option value="custom">✏️ Custom</option>
+                                            <option value="Darkvision">👁️ Darkvision</option>
+                                            <option value="Flight">🦅 Flight</option>
+                                            <option value="Telepathy">🧠 Telepathy</option>
+                                            <option value="Regeneration">❤️‍🩹 Regeneration</option>
+                                            <option value="Natural Armor">🛡️ Natural Armor</option>
+                                            <option value="Keen Senses">👂 Keen Senses</option>
+                                            <option value="Camouflage">🌿 Camouflage</option>
+                                            <option value="Aquatic">🌊 Aquatic</option>
+                                        </select>
+                                        <select id="custom-race-skill2-stat" class="stat-select">
+                                            <option value="strength">STR</option>
+                                            <option value="dexterity">DEX</option>
+                                            <option value="constitution">CON</option>
+                                            <option value="intelligence">INT</option>
+                                            <option value="wisdom">WIS</option>
+                                            <option value="charisma">CHA</option>
+                                        </select>
+                                        <input type="text" id="custom-race-skill2-name" class="custom-skill-name" placeholder="Ability name" style="display: none;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Background Card -->
+                        <div class="card background-card">
+                            <div class="card-header">
+                                <i class="ra ra-scroll-unfurled"></i>
+                                <h3>Background</h3>
+                            </div>
+                            <select id="job-select" class="fancy-select">
+                                <option value="">Choose your past...</option>
+                                <optgroup label="Academic">
+                                    <option value="teacher">📚 Teacher</option>
+                                    <option value="scientist">🔬 Scientist</option>
+                                    <option value="doctor">⚕️ Doctor</option>
+                                    <option value="lawyer">⚖️ Lawyer</option>
+                                </optgroup>
+                                <optgroup label="Technical">
+                                    <option value="engineer">⚙️ Engineer</option>
+                                    <option value="mechanic">🔧 Mechanic</option>
+                                    <option value="programmer">💻 Programmer</option>
+                                </optgroup>
+                                <optgroup label="Service">
+                                    <option value="soldier">🎖️ Soldier</option>
+                                    <option value="police">👮 Police Officer</option>
+                                    <option value="firefighter">🚒 Firefighter</option>
+                                </optgroup>
+                                <optgroup label="Creative">
+                                    <option value="artist">🎨 Artist</option>
+                                    <option value="musician">🎵 Musician</option>
+                                    <option value="writer">✍️ Writer</option>
+                                    <option value="chef">👨‍🍳 Chef</option>
+                                </optgroup>
+                                <optgroup label="Physical">
+                                    <option value="athlete">🏃 Athlete</option>
+                                </optgroup>
+                                <option value="custom">✨ Custom Background</option>
+                            </select>
+                            
+                            <input type="text" id="custom-job" class="fancy-input" placeholder="Enter custom background" style="display: none;">
+                            
+                            <!-- Custom Job Builder (similar structure) -->
+                            <div id="custom-job-bonuses" class="custom-builder" style="display: none;">
+                                <!-- Similar to race builder but for jobs -->
+                            </div>
+                        </div>
+
+                        <!-- Class Card -->
+                        <div class="card class-card">
+                            <div class="card-header">
+                                <i class="ra ra-crossed-swords"></i>
+                                <h3>Class</h3>
+                            </div>
+                            <select id="class-select" class="fancy-select">
+                                <option value="">Choose your path...</option>
+                                <optgroup label="Warriors">
+                                    <option value="fighter">⚔️ Fighter</option>
+                                    <option value="barbarian">🪓 Barbarian</option>
+                                    <option value="paladin">🛡️ Paladin</option>
+                                    <option value="monk">🥋 Monk</option>
+                                </optgroup>
+                                <optgroup label="Rogues">
+                                    <option value="rogue">🗡️ Rogue</option>
+                                    <option value="ranger">🏹 Ranger</option>
+                                    <option value="gunslinger">🔫 Gunslinger</option>
+                                </optgroup>
+                                <optgroup label="Mages">
+                                    <option value="wizard">🧙 Wizard</option>
+                                    <option value="sorcerer">✨ Sorcerer</option>
+                                    <option value="warlock">👹 Warlock</option>
+                                    <option value="druid">🌳 Druid</option>
+                                </optgroup>
+                                <optgroup label="Support">
+                                    <option value="cleric">⛪ Cleric</option>
+                                    <option value="bard">🎭 Bard</option>
+                                    <option value="medic">🏥 Field Medic</option>
+                                </optgroup>
+                                <optgroup label="Tech">
+                                    <option value="hacker">💾 Data Runner</option>
+                                    <option value="engineer_class">🔨 Engineer</option>
+                                    <option value="pilot">✈️ Pilot</option>
+                                </optgroup>
+                                <optgroup label="Survival">
+                                    <option value="survivalist">🏕️ Survivalist</option>
+                                </optgroup>
+                                <option value="custom_class">✨ Custom Class</option>
+                            </select>
+                            
+                            <input type="text" id="custom-class" class="fancy-input" placeholder="Enter custom class" style="display: none;">
+                            
+                            <!-- Custom Class Builder (similar structure) -->
+                            <div id="custom-class-bonuses" class="custom-builder" style="display: none;">
+                                <!-- Similar to race builder but for classes -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Attributes Section -->
+                    <div class="card attributes-card">
+                        <div class="card-header">
+                            <i class="ra ra-muscle-up"></i>
+                            <h3>Attributes</h3>
+                            <div class="points-display">
+                                <span class="points-label">Points</span>
+                                <span class="points-value" id="available-points">3</span>
+                            </div>
+                        </div>
+                        
+                        <div class="attributes-grid" id="stats-grid">
+                            <!-- Stats will be rendered here -->
+                        </div>
+                        
+                        <div class="vital-stats">
+                            <div class="vital-stat hp-stat">
+                                <i class="ra ra-hearts"></i>
+                                <div class="vital-info">
+                                    <span class="vital-label">Health</span>
+                                    <span class="vital-value" id="health-points">3</span>
+                                </div>
+                            </div>
+                            <div class="vital-stat mp-stat">
+                                <i class="ra ra-crystal-wand"></i>
+                                <div class="vital-info">
+                                    <span class="vital-label">Magic</span>
+                                    <span class="vital-value" id="magic-points">4</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Active Bonuses -->
+                    <div class="card bonuses-card" id="bonuses-display" style="display: none;">
+                        <div class="card-header">
+                            <i class="ra ra-trophy"></i>
+                            <h3>Active Bonuses</h3>
+                        </div>
+                        <div id="bonuses-content" class="bonuses-list">
+                            <!-- Bonuses will be rendered here -->
+                        </div>
+                    </div>
+
+                    <!-- Story Section -->
+                    <div class="card story-card">
+                        <div class="card-header">
+                            <i class="ra ra-book"></i>
+                            <h3>Character Story</h3>
+                        </div>
+                        <textarea id="char-backstory" class="story-textarea" placeholder="Tell your character's story..." rows="6"></textarea>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="action-bar">
+                        <button class="action-btn primary-btn" onclick="saveCharacterToStorage()">
+                            <span class="material-icons">save</span>
+                            Save Character
+                        </button>
+                        <button class="action-btn secondary-btn" onclick="loadCharacterFromStorage()">
+                            <span class="material-icons">folder_open</span>
+                            Load
+                        </button>
+                        <button class="action-btn secondary-btn" onclick="exportCharacterToJSON()">
+                            <span class="material-icons">download</span>
+                            Export
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Character Stats Tab -->
+            <section class="tab-content" id="character">
+                <div class="content-wrapper">
+                    <!-- Character Overview -->
+                    <div class="character-overview">
+                        <h2 id="char-display-name">Character Overview</h2>
+                        <div id="char-summary" class="character-summary">
+                            <!-- Summary will be rendered here -->
+                        </div>
+                    </div>
+
+                    <!-- Vital Stats Display -->
+                    <div class="vitals-display">
+                        <!-- HP Card -->
+                        <div class="vital-card hp-card">
+                            <div class="vital-header">
+                                <i class="ra ra-hearts"></i>
+                                <h3>Health Points</h3>
+                            </div>
+                            <div class="vital-counter">
+                                <button class="counter-btn minus" onclick="adjustCurrentHP(-1)">
+                                    <span class="material-icons">remove</span>
+                                </button>
+                                <div class="vital-numbers">
+                                    <span class="current-value" id="char-current-hp">3</span>
+                                    <span class="divider">/</span>
+                                    <span class="max-value" id="char-total-hp">3</span>
+                                </div>
+                                <button class="counter-btn plus" onclick="adjustCurrentHP(1)">
+                                    <span class="material-icons">add</span>
+                                </button>
+                            </div>
+                            
+                            <!-- Damage Tester -->
+                            <div class="damage-tester">
+                                <input type="number" id="damage-input" class="damage-input" placeholder="Damage" value="5">
+                                <button class="damage-btn" onclick="testDamage()">
+                                    <i class="ra ra-sword"></i>
+                                    Take Damage
+                                </button>
+                                <span class="armor-display">
+                                    <i class="ra ra-shield"></i>
+                                    <span id="total-defense-display">0</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- MP Card -->
+                        <div class="vital-card mp-card">
+                            <div class="vital-header">
+                                <i class="ra ra-crystal-wand"></i>
+                                <h3>Magic Points</h3>
+                            </div>
+                            <div class="vital-counter">
+                                <button class="counter-btn minus" onclick="adjustCurrentMP(-1)">
+                                    <span class="material-icons">remove</span>
+                                </button>
+                                <div class="vital-numbers">
+                                    <span class="current-value" id="char-current-mp">4</span>
+                                    <span class="divider">/</span>
+                                    <span class="max-value" id="char-total-mp">4</span>
+                                </div>
+                                <button class="counter-btn plus" onclick="adjustCurrentMP(1)">
+                                    <span class="material-icons">add</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rest Options -->
+                    <div class="rest-options">
+                        <button class="rest-btn quick-rest" onclick="quickRest()">
+                            <i class="ra ra-campfire"></i>
+                            <span>Quick Rest</span>
+                            <small>+Half HP/MP</small>
+                        </button>
+                        <button class="rest-btn long-rest" onclick="longRest()">
+                            <i class="ra ra-moon-sun"></i>
+                            <span>Long Rest</span>
+                            <small>Full Recovery</small>
+                        </button>
+                    </div>
+
+                    <!-- Attributes Display -->
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="ra ra-muscle-up"></i>
+                            <h3>Attributes</h3>
+                        </div>
+                        <p class="hint-text">Tap any attribute to roll!</p>
+                        <div class="attributes-display" id="char-stats-display">
+                            <!-- Stats will be rendered here -->
+                        </div>
+                    </div>
+
+                    <!-- Abilities Navigation -->
+                    <div class="abilities-nav">
+                        <button class="ability-nav-btn active" data-ability="skills">
+                            <i class="ra ra-gears"></i>
+                            Skills
+                        </button>
+                        <button class="ability-nav-btn" data-ability="weapons">
+                            <i class="ra ra-crossed-swords"></i>
+                            Weapons
+                        </button>
+                        <button class="ability-nav-btn" data-ability="spells">
+                            <i class="ra ra-fairy-wand"></i>
+                            Spells
+                        </button>
+                    </div>
+
+                    <!-- Abilities Content -->
+                    <div class="abilities-content">
+                        <!-- Skills -->
+                        <div class="ability-panel active" id="skills-content">
+                            <div class="ability-grid" id="char-skills-grid">
+                                <!-- Skills will be rendered here -->
+                            </div>
+                            
+                            <div class="add-ability-section">
+                                <h4><i class="ra ra-plus-sword"></i> Add Custom Skill</h4>
+                                <div class="add-ability-form">
+                                    <input type="text" id="char-custom-skill-name" class="ability-name-input" placeholder="Skill name">
+                                    <select id="char-custom-skill-stat" class="ability-stat-select">
+                                        <option value="strength">STR</option>
+                                        <option value="dexterity">DEX</option>
+                                        <option value="constitution">CON</option>
+                                        <option value="intelligence">INT</option>
+                                        <option value="wisdom">WIS</option>
+                                        <option value="charisma">CHA</option>
+                                    </select>
+                                    <button class="add-ability-btn" onclick="addCustomSkillFromCharTab()">
+                                        <span class="material-icons">add</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Weapons -->
+                        <div class="ability-panel" id="weapons-content">
+                            <div id="char-weapons-container" class="weapons-container">
+                                <!-- Weapons will be rendered here -->
+                            </div>
+                        </div>
+
+                        <!-- Spells -->
+                        <div class="ability-panel" id="spells-content">
+                            <div id="char-spells-container" class="spells-container">
+                                <!-- Spells will be rendered here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Inventory Tab -->
+            <section class="tab-content" id="inventory">
+                <div class="content-wrapper">
+                    <!-- Equipment Slots -->
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="ra ra-vest"></i>
+                            <h3>Equipment</h3>
+                        </div>
+                        <div class="equipment-grid">
+                            <div class="equipment-slot" data-slot="mainHand" onclick="showEquipMenu('mainHand')">
+                                <div class="slot-icon"><i class="ra ra-sword"></i></div>
+                                <div class="slot-info">
+                                    <div class="slot-label">Main Hand</div>
+                                    <div class="slot-item" id="mainHand-item">Empty</div>
+                                    <div class="slot-stats" id="mainHand-stats"></div>
+                                </div>
+                            </div>
+                            <div class="equipment-slot" data-slot="offHand" onclick="showEquipMenu('offHand')">
+                                <div class="slot-icon"><i class="ra ra-shield"></i></div>
+                                <div class="slot-info">
+                                    <div class="slot-label">Off Hand</div>
+                                    <div class="slot-item" id="offHand-item">Empty</div>
+                                    <div class="slot-stats" id="offHand-stats"></div>
+                                </div>
+                            </div>
+                            <div class="equipment-slot" data-slot="armor" onclick="showEquipMenu('armor')">
+                                <div class="slot-icon"><i class="ra ra-vest"></i></div>
+                                <div class="slot-info">
+                                    <div class="slot-label">Armor</div>
+                                    <div class="slot-item" id="armor-item">Empty</div>
+                                    <div class="slot-stats" id="armor-stats"></div>
+                                </div>
+                            </div>
+                            <div class="equipment-slot" data-slot="accessory" onclick="showEquipMenu('accessory')">
+                                <div class="slot-icon"><i class="ra ra-gem-pendant"></i></div>
+                                <div class="slot-info">
+                                    <div class="slot-label">Accessory</div>
+                                    <div class="slot-item" id="accessory-item">Empty</div>
+                                    <div class="slot-stats" id="accessory-stats"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Inventory Grid -->
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="ra ra-backpack"></i>
+                            <h3>Inventory</h3>
+                        </div>
+                        <div class="inventory-grid" id="inventory-grid">
+                            <!-- Items will be rendered here -->
+                        </div>
+                        
+                        <!-- Add Item Form -->
+                        <div class="add-item-section">
+                            <h4><i class="ra ra-anvil"></i> Create New Item</h4>
+                            <div class="item-creator">
+                                <input type="text" id="item-name" class="item-input" placeholder="Item name">
+                                
+                                <div class="item-options">
+                                    <select id="item-type" class="item-select">
+                                        <option value="weapon">⚔️ Weapon</option>
+                                        <option value="armor">🛡️ Armor</option>
+                                        <option value="accessory">💍 Accessory</option>
+                                        <option value="consumable">🧪 Consumable</option>
+                                        <option value="misc">📦 Miscellaneous</option>
+                                    </select>
+                                    
+                                    <select id="weapon-size" class="item-select">
+                                        <option value="light">Light (d4)</option>
+                                        <option value="medium">Medium (d6)</option>
+                                        <option value="heavy">Heavy (d8)</option>
+                                    </select>
+                                    
+                                    <input type="number" id="item-defense" class="item-input" placeholder="Defense" min="0">
+                                </div>
+                                
+                                <div class="item-properties">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="item-twohanded">
+                                        <span>Two-Handed</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="item-ranged">
+                                        <span>Ranged</span>
+                                    </label>
+                                </div>
+                                
+                                <button class="create-item-btn" onclick="addItem()">
+                                    <i class="ra ra-hammer"></i>
+                                    Create Item
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Magic Tab -->
+            <section class="tab-content" id="magic">
+                <div class="content-wrapper">
+                    <!-- Magic Points Display -->
+                    <div class="magic-header">
+                        <div class="magic-pool">
+                            <i class="ra ra-crystal-wand"></i>
+                            <div class="magic-counter">
+                                <button class="counter-btn" onclick="adjustMagicPointsInTab(-1)">-</button>
+                                <div class="magic-display">
+                                    <span id="magic-current-mp">4</span>
+                                    <span>/</span>
+                                    <span id="magic-total-mp">4</span>
+                                </div>
+                                <button class="counter-btn" onclick="adjustMagicPointsInTab(1)">+</button>
+                            </div>
+                            <span class="magic-label">Magic Points</span>
+                        </div>
+                    </div>
+
+                    <!-- Known Spells -->
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="ra ra-scroll-unfurled"></i>
+                            <h3>Spell Book</h3>
+                        </div>
+                        <div id="spells-grid" class="spells-grid">
+                            <!-- Spells will be rendered here -->
+                        </div>
+                    </div>
+
+                    <!-- Spell Creator -->
+                    <div class="card spell-creator-card">
+                        <div class="card-header">
+                            <i class="ra ra-cauldron"></i>
+                            <h3>Craft New Spell</h3>
+                        </div>
+                        
+                        <div class="spell-creator">
+                            <input type="text" id="spell-name" class="spell-name-input" placeholder="Spell name">
+                            
+                            <div class="spell-element-select">
+                                <label>Element</label>
+                                <select id="spell-element" class="element-select">
+                                    <option value="fire">🔥 Fire</option>
+                                    <option value="ice">❄️ Ice</option>
+                                    <option value="lightning">⚡ Lightning</option>
+                                    <option value="earth">🌍 Earth</option>
+                                    <option value="air">💨 Air</option>
+                                    <option value="water">💧 Water</option>
+                                    <option value="light">☀️ Light</option>
+                                    <option value="dark">🌑 Dark</option>
+                                    <option value="arcane">🔮 Arcane</option>
+                                    <option value="divine">✨ Divine</option>
+                                    <option value="nature">🌿 Nature</option>
+                                    <option value="psychic">🧠 Psychic</option>
+                                    <option value="shadow">👤 Shadow</option>
+                                    <option value="force">💥 Force</option>
+                                </select>
+                            </div>
+                            
+                            <div class="spell-effects">
+                                <div class="effect-row">
+                                    <label>Damage</label>
+                                    <select id="damage-type" class="effect-select">
+                                        <option value="">None</option>
+                                        <option value="fixed">Fixed (2pts = 1MP)</option>
+                                        <option value="d6">D6 Roll (3MP)</option>
+                                    </select>
+                                    <input type="number" id="damage-amount" class="effect-amount" min="0" max="10" value="0" disabled>
+                                </div>
+                                
+                                <div class="effect-row">
+                                    <label>Healing</label>
+                                    <select id="healing-type" class="effect-select">
+                                        <option value="">None</option>
+                                        <option value="fixed">Fixed (2pts = 1MP)</option>
+                                        <option value="d6">D6 Roll (3MP)</option>
+                                    </select>
+                                    <input type="number" id="healing-amount" class="effect-amount" min="0" max="10" value="0" disabled>
+                                </div>
+                                
+                                <div class="effect-row">
+                                    <label>Primary Effect</label>
+                                    <select id="primary-effect" class="effect-select">
+                                        <option value="">None</option>
+                                        <option value="stun">⚡ Stun</option>
+                                        <option value="slow">🐌 Slow</option>
+                                        <option value="blind">👁️ Blind</option>
+                                        <option value="fear">😱 Fear</option>
+                                        <option value="charm">💕 Charm</option>
+                                        <option value="sleep">😴 Sleep</option>
+                                        <option value="paralyze">🥶 Paralyze</option>
+                                        <option value="confusion">🌀 Confuse</option>
+                                        <option value="weakness">💪 Weakness</option>
+                                        <option value="poison">🤢 Poison</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="effect-row">
+                                    <label>Secondary Effect</label>
+                                    <select id="secondary-effect" class="effect-select">
+                                        <option value="">None</option>
+                                        <option value="invisibility">👻 Invisibility</option>
+                                        <option value="flight">🦅 Flight</option>
+                                        <option value="teleport">🌀 Teleport</option>
+                                        <option value="shield">🛡️ Shield</option>
+                                        <option value="haste">⚡ Haste</option>
+                                        <option value="strength">💪 Strength</option>
+                                        <option value="detect">🔍 Detect Magic</option>
+                                        <option value="dispel">❌ Dispel</option>
+                                        <option value="light_source">💡 Light</option>
+                                        <option value="darkness">🌑 Darkness</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div id="spell-cost-display" class="spell-cost-display">
+                                <h4>Spell Cost</h4>
+                                <div id="cost-breakdown" class="cost-breakdown">
+                                    Base Cost: 1 MP
+                                </div>
+                                <div class="total-cost">
+                                    Total: <span id="total-cost">1</span> MP
+                                </div>
+                            </div>
+                            
+                            <button class="create-spell-btn" onclick="createSpell()" id="create-spell-btn">
+                                <i class="ra ra-sparkles"></i>
+                                Create Spell
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Combat Tab (Merged Status + Rolling) -->
+            <section class="tab-content" id="combat">
+                <div class="content-wrapper">
+                    <!-- Dice System Info -->
+                    <div class="card dice-info-card">
+                        <div class="card-header">
+                            <i class="ra ra-perspective-dice-six"></i>
+                            <h3>Dice System</h3>
+                        </div>
+                        <div id="dice-system-info" class="dice-info">
+                            <div id="dice-explanation">
+                                <!-- Dice system will be explained here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Roll History -->
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="ra ra-scroll-unfurled"></i>
+                            <h3>Roll History</h3>
+                            <button class="clear-btn" onclick="clearRollHistory()">
+                                <span class="material-icons">clear_all</span>
+                            </button>
+                        </div>
+                        <div id="roll-history" class="roll-history">
+                            <!-- Roll history will be rendered here -->
+                        </div>
+                    </div>
+
+                    <!-- Status Effects -->
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="ra ra-biohazard"></i>
+                            <h3>Status Effects</h3>
+                        </div>
+                        <div id="status-effects-grid" class="status-grid">
+                            <!-- Status effects will be rendered here -->
+                        </div>
+                        
+                        <!-- Add Status Effect -->
+                        <div class="add-status-section">
+                            <h4>Apply Status Effect</h4>
+                            <div class="status-form">
+                                <select id="status-effect-type" class="status-select">
+                                    <option value="bleeding">🩸 Bleeding</option>
+                                    <option value="poisoned">🤢 Poisoned</option>
+                                    <option value="radiation">☢️ Radiation</option>
+                                    <option value="exhausted">😴 Exhausted</option>
+                                    <option value="dehydrated">💧 Dehydrated</option>
+                                    <option value="hypothermia">🧊 Hypothermia</option>
+                                    <option value="heatstroke">🔥 Heat Exhaustion</option>
+                                    <option value="broken_bone">🦴 Broken Bone</option>
+                                    <option value="stunned">⚡ Stunned</option>
+                                    <option value="feared">😱 Feared</option>
+                                    <option value="inspired">✨ Inspired</option>
+                                    <option value="custom">⚙️ Custom</option>
+                                </select>
+                                
+                                <input type="text" id="custom-status-name" class="status-input" placeholder="Custom effect name" style="display: none;">
+                                
+                                <div class="status-options">
+                                    <input type="number" id="status-duration" class="duration-input" value="10" min="1" max="1440">
+                                    <span class="duration-label">minutes</span>
+                                </div>
+                                
+                                <input type="text" id="status-notes" class="status-notes" placeholder="Additional notes...">
+                                
+                                <button class="add-status-btn" onclick="addStatusEffect()">
+                                    <i class="ra ra-flask"></i>
+                                    Apply Effect
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Notes Tab -->
+            <section class="tab-content" id="notes">
+                <div class="content-wrapper">
+                    <div class="notes-header">
+                        <h2><i class="ra ra-journal"></i> Campaign Notes</h2>
+                        <button class="save-notes-btn" onclick="saveNotesToCharacter()">
+                            <span class="material-icons">save</span>
+                            Save Notes
+                        </button>
+                    </div>
+                    
+                    <div class="notes-grid">
+                        <div class="note-card">
+                            <div class="note-header">
+                                <i class="ra ra-hood"></i>
+                                <h3>Personal</h3>
+                            </div>
+                            <textarea id="personal-notes" class="note-textarea" placeholder="Character thoughts, development, personal goals..."></textarea>
+                        </div>
+                        
+                        <div class="note-card">
+                            <div class="note-header">
+                                <i class="ra ra-team"></i>
+                                <h3>Party</h3>
+                            </div>
+                            <textarea id="party-notes" class="note-textarea" placeholder="Party members, relationships, group dynamics..."></textarea>
+                        </div>
+                        
+                        <div class="note-card">
+                            <div class="note-header">
+                                <i class="ra ra-quill-ink"></i>
+                                <h3>Session</h3>
+                            </div>
+                            <textarea id="session-notes" class="note-textarea" placeholder="What happened this session..."></textarea>
+                        </div>
+                        
+                        <div class="note-card">
+                            <div class="note-header">
+                                <i class="ra ra-gold-bar"></i>
+                                <h3>Trade</h3>
+                            </div>
+                            <textarea id="barter-notes" class="note-textarea" placeholder="Merchants, deals, debts, opportunities..."></textarea>
+                        </div>
+                        
+                        <div class="note-card">
+                            <div class="note-header">
+                                <i class="ra ra-compass"></i>
+                                <h3>World</h3>
+                            </div>
+                            <textarea id="world-notes" class="note-textarea" placeholder="Locations, lore, important places..."></textarea>
+                        </div>
+                        
+                        <div class="note-card">
+                            <div class="note-header">
+                                <i class="ra ra-crossed-swords"></i>
+                                <h3>Combat</h3>
+                            </div>
+                            <textarea id="combat-notes" class="note-textarea" placeholder="Enemy tactics, weaknesses, strategies..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notification-container"></div>
+
+    <!-- Scripts -->
+    <script src="main.js"></script>
+    <script src="character-manager.js"></script>
+    <script>
+        // Theme Toggle
+        function toggleTheme() {
+            document.body.classList.toggle('dark-theme');
+            localStorage.setItem('theme', document.body.classList.contains('dark-theme') ? 'dark' : 'light');
+        }
+        
+        // Load saved theme
+        if (localStorage.getItem('theme') === 'dark' || 
+            (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.body.classList.add('dark-theme');
+        }
+        
+        // Mobile optimizations
+        document.addEventListener('DOMContentLoaded', () => {
+            // Prevent zoom on input focus (iOS)
+            const inputs = document.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                input.addEventListener('focus', () => {
+                    document.querySelector('meta[name="viewport"]').setAttribute('content', 
+                        'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+                });
+                input.addEventListener('blur', () => {
+                    document.querySelector('meta[name="viewport"]').setAttribute('content', 
+                        'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+                });
+            });
+            
+            // Tab navigation
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tabName = btn.dataset.tab;
+                    switchTab(tabName);
+                    
+                    // Update active states
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                });
+            });
+            
+            // Ability navigation
+            document.querySelectorAll('.ability-nav-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const abilityName = btn.dataset.ability;
+                    
+                    // Update active states
+                    document.querySelectorAll('.ability-nav-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.ability-panel').forEach(p => p.classList.remove('active'));
+                    
+                    btn.classList.add('active');
+                    document.getElementById(`${abilityName}-content`).classList.add('active');
+                });
+            });
+            
+            // Portrait upload
+            document.getElementById('portrait-display').addEventListener('click', () => {
+                document.getElementById('portrait-upload').click();
+            });
+        });
+    </script>
+</body>
+</html>
