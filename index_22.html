@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Post-Apocalyptic Character Sheet</title>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/rpg-awesome/0.2.0/css/rpg-awesome.min.css">
 
     <!-- Custom CSS -->
@@ -17,6 +18,10 @@
         <div class="header">
             <h1><i class="ra ra-knight-helmet"></i> Wasteland Chronicles</h1>
             <p>Post-Apocalyptic Character Manager</p>
+            <button class="back-to-select-btn" onclick="backToCharacterSelect()" title="Back to Character Select">
+    <span class="material-icons">arrow_back</span>
+    Character Select
+</button>
         </div>
 
         <div class="tabs">
@@ -36,14 +41,19 @@
                 <i class="ra ra-lightning"></i>
                 Magic
             </button>
-            <button class="tab" data-tab="rolling">
-                <i class="ra ra-dice"></i>
-                Rolling
-            </button>
             <button class="tab" data-tab="status">
                 <i class="ra ra-heart-broken"></i>
                 Status
             </button>
+            <button class="tab" data-tab="notes">
+                <i class="ra ra-scroll-unfurled"></i>
+                Notes
+            </button>
+            <button class="tab" data-tab="rolling">
+                <i class="ra ra-dice"></i>
+                Rolling
+            </button>
+
         </div>
 
         <!-- Character Creation Tab -->
@@ -384,15 +394,19 @@
                 </div>
 
                 <!-- Save/Load -->
-                <div class="section-card">
-                    <button class="btn-primary" onclick="saveCharacter()">
-                        <i class="ra ra-save"></i> Save Character
-                    </button>
-                    <br><br>
-                    <button class="btn-secondary" onclick="loadCharacter()">
-                        <i class="ra ra-load"></i> Load Character
-                    </button>
-                </div>
+<div class="section-card">
+    <button class="btn-primary" onclick="saveCharacter()">
+        <i class="ra ra-save"></i> Save Character
+    </button>
+    <br><br>
+    <button class="btn-secondary" onclick="loadCharacter()">
+        <i class="ra ra-load"></i> Load Character
+    </button>
+    <br><br>
+    <button class="btn-secondary" onclick="exportCharacterToJSON()">
+        <i class="ra ra-download"></i> Export to JSON
+    </button>
+</div>
             </div>
         </div>
 
@@ -828,9 +842,65 @@
                 </div>
             </div>
         </div>
+
+        <!-- Notes Tab -->
+        <div class="tab-content" id="notes">
+            <div class="section-card">
+                <h2 class="section-title"><i class="ra ra-scroll-unfurled"></i> Notes & Information</h2>
+                <p style="text-align: center; color: #8a8a8a; font-size: 12px; margin-bottom: 20px;">
+                    Keep track of important information, party details, and trading opportunities.
+                </p>
+                
+                <div class="notes-grid">
+                    <!-- Personal Notes -->
+                    <div class="notes-section">
+                        <h3 class="notes-section-title"><i class="ra ra-player"></i> Personal Notes</h3>
+                        <textarea id="personal-notes" class="notes-textarea" placeholder="Personal thoughts, character development, goals, backstory details..."></textarea>
+                    </div>
+
+                    <!-- Party Notes -->
+                    <div class="notes-section">
+                        <h3 class="notes-section-title"><i class="ra ra-team-up"></i> Party Notes</h3>
+                        <textarea id="party-notes" class="notes-textarea" placeholder="Party plans, group decisions, member information, shared goals..."></textarea>
+                    </div>
+
+                    <!-- Session Notes -->
+                    <div class="notes-section">
+                        <h3 class="notes-section-title"><i class="ra ra-book"></i> Session Notes</h3>
+                        <textarea id="session-notes" class="notes-textarea" placeholder="What happened this session, important events, NPC interactions..."></textarea>
+                    </div>
+
+                    <!-- Barter & Trade Notes -->
+                    <div class="notes-section">
+                        <h3 class="notes-section-title"><i class="ra ra-coins"></i> Barter & Trade</h3>
+                        <textarea id="barter-notes" class="notes-textarea" placeholder="Trading opportunities, merchants, item values, debts owed..."></textarea>
+                    </div>
+
+                    <!-- World Notes -->
+                    <div class="notes-section">
+                        <h3 class="notes-section-title"><i class="ra ra-map"></i> World Notes</h3>
+                        <textarea id="world-notes" class="notes-textarea" placeholder="Locations visited, important places, map details, rumors heard..."></textarea>
+                    </div>
+
+                    <!-- Combat Notes -->
+                    <div class="notes-section">
+                        <h3 class="notes-section-title"><i class="ra ra-crossed-swords"></i> Combat Notes</h3>
+                        <textarea id="combat-notes" class="notes-textarea" placeholder="Enemy weaknesses, combat strategies, tactics that work..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Quick Save Notes Button -->
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn-secondary" onclick="saveNotesToCharacter()" style="background: #4a6a8a;">
+                        <i class="ra ra-save"></i> Save All Notes
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="main.js"></script>
-    
+    <script src="character-manager.js"></script>
+
 </body>
 </html>

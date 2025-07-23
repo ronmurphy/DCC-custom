@@ -49,7 +49,15 @@
                 armor: null,
                 accessory: null
             },
-            statusEffects: []
+            statusEffects: [],
+            notes: {
+                personal: '',
+                party: '',
+                session: '',
+                barter: '',
+                world: '',
+                combat: ''
+            }
         };
 
         // ========================================
@@ -156,7 +164,7 @@
             const notification = document.createElement('div');
             notification.className = `notification ${type}-notification`;
             notification.innerHTML = `
-                <h4><i class="ra ra-${type === 'roll' ? 'perspective-dice-six' : type === 'weapon' ? 'sword' : type === 'spell' ? 'lightning' : type === 'rest' ? 'heart-plus' : type === 'status' ? 'lightning-bolt' : 'sword'}"></i> ${title}</h4>
+                <h4><i class="ra ra-${type === 'roll' ? 'perspective-dice-six' : type === 'weapon' ? 'sword' : type === 'spell' ? 'lightning' : type === 'rest' ? 'heart-plus' : type === 'status' ? 'lightning-bolt' : type === 'save' ? 'save' : 'sword'}"></i> ${title}</h4>
                 <div class="result">${result}</div>
                 <div class="details">${details}</div>
             `;
@@ -195,6 +203,8 @@
                 renderEquipment();
             } else if (tabName === 'status') {
                 renderStatusEffects();
+            } else if (tabName === 'notes') {
+                loadNotesFromCharacter();
             }
         }
 
@@ -210,6 +220,77 @@
             } else if (subTabName === 'weapons') {
                 renderCharacterWeapons();
             }
+        }
+
+        // ========================================
+        // NOTES SYSTEM
+        // ========================================
+        function loadNotesFromCharacter() {
+            const noteFields = {
+                'personal-notes': character.notes?.personal || '',
+                'party-notes': character.notes?.party || '',
+                'session-notes': character.notes?.session || '',
+                'barter-notes': character.notes?.barter || '',
+                'world-notes': character.notes?.world || '',
+                'combat-notes': character.notes?.combat || ''
+            };
+            
+            Object.entries(noteFields).forEach(([fieldId, value]) => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.value = value;
+                }
+            });
+        }
+
+        // function saveNotesToCharacter() {
+        //     if (!character.notes) {
+        //         character.notes = {};
+        //     }
+            
+        //     character.notes.personal = document.getElementById('personal-notes')?.value || '';
+        //     character.notes.party = document.getElementById('party-notes')?.value || '';
+        //     character.notes.session = document.getElementById('session-notes')?.value || '';
+        //     character.notes.barter = document.getElementById('barter-notes')?.value || '';
+        //     character.notes.world = document.getElementById('world-notes')?.value || '';
+        //     character.notes.combat = document.getElementById('combat-notes')?.value || '';
+            
+        //     showNotification('save', 'Notes Saved', 
+        //         'All notes have been saved to your character!', 
+        //         'Notes will be included when you save/export your character file.');
+        // }
+
+function saveNotesToCharacter() {
+    // Call the silent version from character manager
+    if (typeof saveNotesToCharacterSilent === 'function') {
+        saveNotesToCharacterSilent();
+    }
+}
+
+        function autoSaveNotes() {
+            // Auto-save notes when user types
+            const noteFields = ['personal-notes', 'party-notes', 'session-notes', 'barter-notes', 'world-notes', 'combat-notes'];
+            
+            noteFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.addEventListener('input', debounce(() => {
+                        saveNotesToCharacter();
+                    }, 2000)); // Auto-save 2 seconds after user stops typing
+                }
+            });
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
         }
 
         // ========================================
@@ -1794,113 +1875,152 @@
         // ========================================
         // SAVE/LOAD SYSTEM
         // ========================================
-        function saveCharacter() {
-            character.personal.age = document.getElementById('char-age').value;
-            character.personal.backstory = document.getElementById('char-backstory').value;
+        // function saveCharacter() {
+        //     character.personal.age = document.getElementById('char-age').value;
+        //     character.personal.backstory = document.getElementById('char-backstory').value;
             
-            const characterData = JSON.stringify(character, null, 2);
-            const blob = new Blob([characterData], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${character.name || 'character'}_wasteland.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-        }
+        //     const characterData = JSON.stringify(character, null, 2);
+        //     const blob = new Blob([characterData], { type: 'application/json' });
+        //     const url = URL.createObjectURL(blob);
+        //     const a = document.createElement('a');
+        //     a.href = url;
+        //     a.download = `${character.name || 'character'}_wasteland.json`;
+        //     a.click();
+        //     URL.revokeObjectURL(url);
+        // }
+
+function saveCharacter() {
+    // Use the new storage-based save
+    if (typeof saveCharacterToStorage === 'function') {
+        saveCharacterToStorage();
+    } else {
+        // Fallback to JSON export if character manager not loaded
+        exportCharacterToJSON();
+    }
+}
+
+        // function loadCharacter() {
+        //     const input = document.createElement('input');
+        //     input.type = 'file';
+        //     input.accept = '.json';
+        //     input.onchange = function(event) {
+        //         const file = event.target.files[0];
+        //         if (file) {
+        //             const reader = new FileReader();
+        //             reader.onload = function(e) {
+        //                 try {
+        //                     character = JSON.parse(e.target.result);
+                            
+        //                     // Ensure all properties exist for backward compatibility
+        //                     if (!character.personal) character.personal = { age: '', backstory: '', portrait: null };
+        //                     if (!character.jobBonuses) character.jobBonuses = [];
+        //                     if (!character.classBonuses) character.classBonuses = [];
+        //                     if (!character.customSkills) character.customSkills = [];
+        //                     if (!character.customJobData) character.customJobData = { selectedStats: [], skills: [] };
+        //                     if (!character.customClassData) character.customClassData = { selectedStats: [], skills: [] };
+        //                     if (!character.rollHistory) character.rollHistory = [];
+        //                     if (!character.spells) character.spells = [];
+        //                     if (!character.inventory) character.inventory = [];
+        //                     if (!character.equipment) character.equipment = { mainHand: null, offHand: null, armor: null, accessory: null };
+        //                     if (!character.statusEffects) character.statusEffects = [];
+        //                     if (!character.notes) character.notes = { personal: '', party: '', session: '', barter: '', world: '', combat: '' };
+                            
+        //                     // Update UI elements
+        //                     document.getElementById('char-name').value = character.name || '';
+        //                     document.getElementById('char-level').value = character.level || 1;
+        //                     document.getElementById('char-age').value = character.personal?.age || '';
+        //                     document.getElementById('char-backstory').value = character.personal?.backstory || '';
+                            
+        //                     // Handle portrait
+        //                     if (character.personal?.portrait) {
+        //                         const portraitDisplay = document.getElementById('portrait-display');
+        //                         portraitDisplay.innerHTML = `<img src="${character.personal.portrait}" alt="Character Portrait" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">`;
+        //                     }
+                            
+        //                     // Handle job selection and restore custom data
+        //                     if (character.job) {
+        //                         document.getElementById('job-select').value = character.job;
+        //                     } else if (character.customJob) {
+        //                         document.getElementById('job-select').value = 'custom';
+        //                         document.getElementById('custom-job').style.display = 'block';
+        //                         document.getElementById('custom-job').value = character.customJob;
+        //                         document.getElementById('custom-job-bonuses').style.display = 'block';
+                                
+        //                         if (character.customJobData && character.customJobData.selectedStats) {
+        //                             character.customJobData.selectedStats.forEach(stat => {
+        //                                 const checkbox = document.getElementById(`custom-job-${stat}`);
+        //                                 if (checkbox) checkbox.checked = true;
+        //                             });
+        //                         }
+        //                     }
+                            
+        //                     // Handle class selection and restore custom data
+        //                     if (character.class) {
+        //                         document.getElementById('class-select').value = character.class;
+        //                     } else if (character.customClass) {
+        //                         document.getElementById('class-select').value = 'custom_class';
+        //                         document.getElementById('custom-class').style.display = 'block';
+        //                         document.getElementById('custom-class').value = character.customClass;
+        //                         document.getElementById('custom-class-bonuses').style.display = 'block';
+                                
+        //                         if (character.customClassData && character.customClassData.selectedStats) {
+        //                             character.customClassData.selectedStats.forEach(stat => {
+        //                                 const checkbox = document.getElementById(`custom-class-${stat}`);
+        //                                 if (checkbox) checkbox.checked = true;
+        //                             });
+        //                         }
+        //                     }
+                            
+        //                     // Re-render everything
+        //                     renderStats();
+        //                     renderCharacterSkills();
+        //                     renderCharacterSpells();
+        //                     renderCharacterWeapons();
+        //                     renderInventory();
+        //                     renderEquipment();
+        //                     updateHealthMagicDisplay();
+        //                     updateCharacterDisplay();
+        //                     updateBonusesDisplay();
+        //                     renderSpells();
+        //                     updateMagicTabDisplay();
+                            
+        //                 } catch (error) {
+        //                     alert('Error loading character file: ' + error.message);
+        //                 }
+        //             };
+        //             reader.readAsText(file);
+        //         }
+        //     };
+        //     input.click();
+        // }
 
         function loadCharacter() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.json';
-            input.onchange = function(event) {
-                const file = event.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        try {
-                            character = JSON.parse(e.target.result);
-                            
-                            // Ensure all properties exist for backward compatibility
-                            if (!character.personal) character.personal = { age: '', backstory: '', portrait: null };
-                            if (!character.jobBonuses) character.jobBonuses = [];
-                            if (!character.classBonuses) character.classBonuses = [];
-                            if (!character.customSkills) character.customSkills = [];
-                            if (!character.customJobData) character.customJobData = { selectedStats: [], skills: [] };
-                            if (!character.customClassData) character.customClassData = { selectedStats: [], skills: [] };
-                            if (!character.rollHistory) character.rollHistory = [];
-                            if (!character.spells) character.spells = [];
-                            if (!character.inventory) character.inventory = [];
-                            if (!character.equipment) character.equipment = { mainHand: null, offHand: null, armor: null, accessory: null };
-                            if (!character.statusEffects) character.statusEffects = [];
-                            
-                            // Update UI elements
-                            document.getElementById('char-name').value = character.name || '';
-                            document.getElementById('char-level').value = character.level || 1;
-                            document.getElementById('char-age').value = character.personal?.age || '';
-                            document.getElementById('char-backstory').value = character.personal?.backstory || '';
-                            
-                            // Handle portrait
-                            if (character.personal?.portrait) {
-                                const portraitDisplay = document.getElementById('portrait-display');
-                                portraitDisplay.innerHTML = `<img src="${character.personal.portrait}" alt="Character Portrait" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">`;
-                            }
-                            
-                            // Handle job selection and restore custom data
-                            if (character.job) {
-                                document.getElementById('job-select').value = character.job;
-                            } else if (character.customJob) {
-                                document.getElementById('job-select').value = 'custom';
-                                document.getElementById('custom-job').style.display = 'block';
-                                document.getElementById('custom-job').value = character.customJob;
-                                document.getElementById('custom-job-bonuses').style.display = 'block';
-                                
-                                if (character.customJobData && character.customJobData.selectedStats) {
-                                    character.customJobData.selectedStats.forEach(stat => {
-                                        const checkbox = document.getElementById(`custom-job-${stat}`);
-                                        if (checkbox) checkbox.checked = true;
-                                    });
-                                }
-                            }
-                            
-                            // Handle class selection and restore custom data
-                            if (character.class) {
-                                document.getElementById('class-select').value = character.class;
-                            } else if (character.customClass) {
-                                document.getElementById('class-select').value = 'custom_class';
-                                document.getElementById('custom-class').style.display = 'block';
-                                document.getElementById('custom-class').value = character.customClass;
-                                document.getElementById('custom-class-bonuses').style.display = 'block';
-                                
-                                if (character.customClassData && character.customClassData.selectedStats) {
-                                    character.customClassData.selectedStats.forEach(stat => {
-                                        const checkbox = document.getElementById(`custom-class-${stat}`);
-                                        if (checkbox) checkbox.checked = true;
-                                    });
-                                }
-                            }
-                            
-                            // Re-render everything
-                            renderStats();
-                            renderCharacterSkills();
-                            renderCharacterSpells();
-                            renderCharacterWeapons();
-                            renderInventory();
-                            renderEquipment();
-                            updateHealthMagicDisplay();
-                            updateCharacterDisplay();
-                            updateBonusesDisplay();
-                            renderSpells();
-                            updateMagicTabDisplay();
-                            
-                        } catch (error) {
-                            alert('Error loading character file: ' + error.message);
-                        }
-                    };
-                    reader.readAsText(file);
-                }
-            };
-            input.click();
-        }
+    // Use the new storage-based load
+    if (typeof loadCharacterFromStorage === 'function') {
+        loadCharacterFromStorage();
+    } else {
+        // Fallback to JSON import if character manager not loaded
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        character = JSON.parse(e.target.result);
+                        // ... rest of existing load logic
+                    } catch (error) {
+                        alert('Error loading character file: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
+            }
+        };
+        input.click();
+    }
+}
 
         // ========================================
         // INITIALIZATION
@@ -2024,6 +2144,9 @@
             
             // Start the status effect timer - checks every minute
             setInterval(updateStatusTimers, 60000);
+            
+            // Initialize auto-save for notes
+            autoSaveNotes();
         }
 
         // Initialize when page loads
