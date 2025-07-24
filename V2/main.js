@@ -302,20 +302,25 @@ function getElementEmoji(element) {
 // NOTIFICATION SYSTEM
 // ========================================
 function showNotification(type, title, result, details) {
-    const existingNotifications = document.querySelectorAll('.notification');
-    existingNotifications.forEach(n => n.remove());
+    const container = document.getElementById('notification-container');
+    if (!container) return;
 
     const notification = document.createElement('div');
     notification.className = `notification ${type}-notification`;
     notification.innerHTML = `
-                <h4><i class="ra ra-${type === 'roll' ? 'perspective-dice-six' : type === 'weapon' ? 'sword' : type === 'spell' ? 'lightning' : type === 'rest' ? 'heart-plus' : type === 'status' ? 'lightning-bolt' : type === 'save' ? 'save' : 'sword'}"></i> ${title}</h4>
+                <h4><i class="ra ra-${type === 'roll' ? 'perspective-dice-six' : type === 'weapon' ? 'sword' : type === 'spell' ? 'lightning' : type === 'rest' ? 'heart-plus' : type === 'status' ? 'lightning-bolt' : type === 'save' ? 'save' : type === 'level' ? 'trophy' : 'sword'}"></i> ${title}</h4>
                 <div class="result">${result}</div>
                 <div class="details">${details}</div>
             `;
 
-    document.body.appendChild(notification);
+    container.appendChild(notification);
 
-    setTimeout(() => notification.classList.add('show'), 100);
+    // Force reflow to ensure animation plays
+    notification.offsetHeight;
+
+    setTimeout(() => notification.classList.add('show'), 10);
+    
+    // Remove notification after 4 seconds
     setTimeout(() => {
         notification.classList.remove('show');
         setTimeout(() => notification.remove(), 300);
@@ -2419,19 +2424,6 @@ function renderStatusEffects() {
 // ========================================
 // SAVE/LOAD SYSTEM
 // ========================================
-// function saveCharacter() {
-//     character.personal.age = document.getElementById('char-age').value;
-//     character.personal.backstory = document.getElementById('char-backstory').value;
-
-//     const characterData = JSON.stringify(character, null, 2);
-//     const blob = new Blob([characterData], { type: 'application/json' });
-//     const url = URL.createObjectURL(blob);
-//     const a = document.createElement('a');
-//     a.href = url;
-//     a.download = `${character.name || 'character'}_wasteland.json`;
-//     a.click();
-//     URL.revokeObjectURL(url);
-// }
 
 function saveCharacter() {
     // Use the new storage-based save
