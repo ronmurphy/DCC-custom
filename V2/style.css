@@ -754,14 +754,14 @@ body {
     margin-bottom: var(--spacing-lg);
 }
 
-.overview-header {
+.overview-combined {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: var(--spacing-lg);
-    margin-bottom: var(--spacing-lg);
     background: var(--bg-secondary);
     padding: var(--spacing-lg);
     border-radius: var(--radius-lg);
+    box-shadow: 0 2px 8px var(--shadow-color);
 }
 
 .overview-portrait {
@@ -795,11 +795,11 @@ body {
     font-size: 2.5rem;
 }
 
-.overview-info {
+.overview-content {
     flex: 1;
 }
 
-.overview-info h2 {
+.overview-content h2 {
     font-family: 'Playfair Display', serif;
     font-size: 1.75rem;
     color: var(--primary);
@@ -809,7 +809,8 @@ body {
 .character-summary {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--spacing-md);
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
 }
 
 .character-summary span {
@@ -819,38 +820,35 @@ body {
     font-size: 0.875rem;
 }
 
-/* Combined Vitals Display */
-.vitals-combined {
-    background: var(--bg-card);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-lg);
-    box-shadow: 0 2px 8px var(--shadow-color);
+.armor-stat {
+    color: var(--success);
+    font-weight: 600;
 }
 
-.vital-row {
+/* Inline Vitals */
+.vitals-inline {
     display: flex;
     align-items: center;
-    gap: var(--spacing-md);
-    padding: var(--spacing-md) 0;
-    border-bottom: 1px solid var(--border-color);
+    gap: var(--spacing-lg);
+    flex-wrap: wrap;
 }
 
-.vital-row:last-of-type {
-    border-bottom: none;
+.vital-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
 }
 
-.hp-row .vital-icon {
+.vital-item i {
+    font-size: 1.25rem;
+}
+
+.vital-item:first-child i {
     color: var(--danger);
 }
 
-.mp-row .vital-icon {
+.vital-item:nth-child(2) i {
     color: var(--info);
-}
-
-.vital-icon {
-    font-size: 2rem;
-    width: 48px;
-    text-align: center;
 }
 
 .vital-label {
@@ -858,88 +856,76 @@ body {
     text-transform: uppercase;
     font-size: 0.75rem;
     color: var(--text-secondary);
-    width: 80px;
 }
 
-.vital-counter {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--spacing-md);
-}
-
-.vital-numbers {
-    display: flex;
-    align-items: baseline;
-    gap: var(--spacing-xs);
-    min-width: 120px;
-    justify-content: center;
-}
-
-.current-value {
-    font-size: 2rem;
+.vital-value {
+    font-size: 1.25rem;
     font-weight: 700;
     color: var(--text-primary);
 }
 
-.divider {
-    font-size: 1.5rem;
-    color: var(--text-tertiary);
-}
-
-.max-value {
-    font-size: 1.5rem;
-    color: var(--text-secondary);
-}
-
-.damage-tester-row {
+.damage-tester-inline {
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
-    margin-top: var(--spacing-md);
-    padding-top: var(--spacing-md);
-    border-top: 1px solid var(--border-color);
-    flex-wrap: wrap;
-    justify-content: center;
+    gap: var(--spacing-xs);
+    margin-left: auto;
+}
+
+.damage-tester-inline .damage-input {
+    width: 60px;
+    padding: var(--spacing-xs);
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    text-align: center;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.damage-tester-inline .damage-btn {
+    background: var(--danger);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-weight: 500;
+    font-size: 0.875rem;
+}
+
+.damage-tester-inline .damage-btn:hover {
+    background: var(--danger);
+    opacity: 0.9;
 }
 
 /* Mobile adjustments */
 @media (max-width: 768px) {
-    .overview-header {
+    .overview-combined {
         flex-direction: column;
         text-align: center;
     }
     
-    .vital-row {
-        flex-wrap: wrap;
+    .vitals-inline {
+        justify-content: center;
     }
     
-    .vital-label {
-        width: 60px;
-        font-size: 0.625rem;
-    }
-    
-    .vital-icon {
-        font-size: 1.5rem;
-        width: 36px;
-    }
-    
-    .current-value {
-        font-size: 1.5rem;
-    }
-    
-    .max-value {
-        font-size: 1.25rem;
+    .damage-tester-inline {
+        margin-left: 0;
+        margin-top: var(--spacing-sm);
     }
 }
 
 /* Remove old styles */
-.vitals-display {
-    display: none;
-}
-
-.vital-card {
+.overview-header,
+.overview-info,
+.vitals-combined,
+.vital-row,
+.vital-counter,
+.damage-tester-row {
     display: none;
 }
 
