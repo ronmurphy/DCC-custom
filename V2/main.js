@@ -319,7 +319,7 @@ function showNotification(type, title, result, details) {
     notification.offsetHeight;
 
     setTimeout(() => notification.classList.add('show'), 10);
-    
+
     // Remove notification after 4 seconds
     setTimeout(() => {
         notification.classList.remove('show');
@@ -341,6 +341,9 @@ function switchTab(tabName) {
     if (tabName === 'character') {
         updateCharacterDisplay();
     } else if (tabName === 'rolling') {
+        updateDiceSystemInfo();
+        updateRollHistoryDisplay();
+    } else if (tabName === 'combat') {
         updateDiceSystemInfo();
         updateRollHistoryDisplay();
     } else if (tabName === 'magic') {
@@ -1002,36 +1005,39 @@ function updateCharacterDisplay() {
             `;
         }
     }
-    
+
     // Update character summary display
     const charSummary = document.getElementById('char-summary');
     const raceName = character.race ? races[character.race]?.name || character.race : character.customRace || 'Unknown';
     const jobName = character.job ? jobs[character.job]?.name || character.job : character.customJob || 'Unknown';
     const className = character.class ? classes[character.class]?.name || character.class : character.customClass || 'Unknown';
+    const totalDefense = calculateTotalDefense();
+
     charSummary.innerHTML = `
-        <span><strong>Race:</strong> ${raceName}</span>
-        <span><strong>Background:</strong> ${jobName}</span>
-        <span><strong>Class:</strong> ${className}</span>
-        <span><strong>Level:</strong> ${character.level}</span>
-        ${character.level < 20 ? `
-            <div style="flex-basis: 100%; margin-top: 10px;">
-                <button class="btn-secondary" onclick="levelUp()" style="background: #f4d03f; color: #2a2a4a; font-weight: bold;">
-                    <i class="ra ra-trophy"></i> Level Up
-                </button>
-            </div>
-        ` : ''}
-    `;
+    <span><strong>Race:</strong> ${raceName}</span>
+    <span><strong>Background:</strong> ${jobName}</span>
+    <span><strong>Class:</strong> ${className}</span>
+    <span><strong>Level:</strong> ${character.level}</span>
+    <span class="armor-stat"><i class="ra ra-shield"></i> <strong>Armor:</strong> ${totalDefense}</span>
+    ${character.level < 20 ? `
+        <div style="flex-basis: 100%; margin-top: 10px;">
+            <button class="btn-secondary" onclick="levelUp()" style="background: #f4d03f; color: #2a2a4a; font-weight: bold;">
+                <i class="ra ra-trophy"></i> Level Up
+            </button>
+        </div>
+    ` : ''}
+`;
 
     document.getElementById('char-current-hp').textContent = character.currentHealthPoints;
     document.getElementById('char-total-hp').textContent = character.healthPoints;
     document.getElementById('char-current-mp').textContent = character.currentMagicPoints;
     document.getElementById('char-total-mp').textContent = character.magicPoints;
 
-    const totalDefense = calculateTotalDefense();
-    const defenseDisplay = document.getElementById('total-defense-display');
-    if (defenseDisplay) {
-        defenseDisplay.textContent = totalDefense;
-    }
+    // const totalDefense = calculateTotalDefense();
+    // const defenseDisplay = document.getElementById('total-defense-display');
+    // if (defenseDisplay) {
+    //     defenseDisplay.textContent = totalDefense;
+    // }
 
     renderCharacterStats();
 }
@@ -1073,61 +1079,12 @@ function renderCharacterStats() {
 // ========================================
 // SKILLS SYSTEM
 // ========================================
-// function renderCharacterSkills() {
-//     const skillsGrid = document.getElementById('char-skills-grid');
-//     if (!skillsGrid) return;
 
-//     skillsGrid.innerHTML = '';
 
-//     Object.entries(standardSkills).forEach(([skillName, stat]) => {
-//         const skillValue = character.stats[stat];
-//         const skillItem = createInteractiveItem('skill', {
-//             name: skillName,
-//             stat: stat,
-//             value: skillValue,
-//             icon: 'ra-gear',
-//             onClick: () => rollSkill(skillName, stat, skillValue)
-//         });
-//         skillsGrid.appendChild(skillItem);
-//     });
-
-//     character.customSkills.forEach((skill, index) => {
-//         const skillValue = character.stats[skill.stat];
-//         let sourceLabel = '';
-//         let iconClass = 'ra-star';
-
-//         if (skill.source === 'race') {
-//             sourceLabel = ' (Racial)';
-//             iconClass = 'ra-double-team';
-//         } else if (skill.source === 'job') {
-//             sourceLabel = ' (Background)';
-//             iconClass = 'ra-briefcase';
-//         } else if (skill.source === 'class') {
-//             sourceLabel = ' (Class)';
-//             iconClass = 'ra-sword';
-//         } else if (skill.source === 'levelup') {
-//             sourceLabel = ' (Level Up)';
-//             iconClass = 'ra-trophy';
-//         } else {
-//             sourceLabel = ' (Custom)';
-//         }
-
-//         const skillItem = createInteractiveItem('skill', {
-//             name: skill.name + sourceLabel,
-//             stat: skill.stat,
-//             value: skillValue,
-//             icon: iconClass,
-//             onClick: () => rollSkill(skill.name, skill.stat, skillValue),
-//             removeButton: !skill.source ? () => removeCustomSkillFromCharTab(index) : null
-//         });
-//         skillsGrid.appendChild(skillItem);
-//     });
-// }
-
-// Add this function to consolidate skills
+// Function to consolidate skills
 function consolidateSkills() {
     const skillMap = new Map();
-    
+
     // Add standard skills
     Object.entries(standardSkills).forEach(([skillName, stat]) => {
         skillMap.set(skillName.toLowerCase(), {
@@ -1137,21 +1094,21 @@ function consolidateSkills() {
             baseSkill: true
         });
     });
-    
+
     // Process custom skills and mark sources
     character.customSkills.forEach(skill => {
         const key = skill.name.toLowerCase();
-        
+
         // Check if this matches a standard skill
         let matchedStandard = null;
         for (const [stdName, stdStat] of Object.entries(standardSkills)) {
-            if (key === stdName.toLowerCase() || 
+            if (key === stdName.toLowerCase() ||
                 (key.includes(stdName.toLowerCase()) || stdName.toLowerCase().includes(key))) {
                 matchedStandard = stdName;
                 break;
             }
         }
-        
+
         if (matchedStandard) {
             const existing = skillMap.get(matchedStandard.toLowerCase());
             if (skill.source === 'race') existing.sources.push('H');
@@ -1175,7 +1132,7 @@ function consolidateSkills() {
             else if (skill.source === 'levelup') existing.sources.push('L');
         }
     });
-    
+
     return skillMap;
 }
 
@@ -1185,13 +1142,13 @@ function renderCharacterSkills() {
     if (!skillsGrid) return;
 
     skillsGrid.innerHTML = '';
-    
+
     const consolidatedSkills = consolidateSkills();
-    
+
     consolidatedSkills.forEach((skillData, key) => {
         const skillValue = character.stats[skillData.stat];
         const sourceLabel = skillData.sources.length > 0 ? ` [${skillData.sources.join(',')}]` : '';
-        
+
         const skillItem = createInteractiveItem('skill', {
             name: skillData.name + sourceLabel,
             stat: skillData.stat,
@@ -1201,7 +1158,7 @@ function renderCharacterSkills() {
         });
         skillsGrid.appendChild(skillItem);
     });
-    
+
     // Add non-source custom skills
     character.customSkills.filter(skill => !skill.source).forEach((skill, index) => {
         const skillValue = character.stats[skill.stat];
@@ -1559,6 +1516,70 @@ function createSpell() {
     // alert(`✨ Created spell: ${spell.name}!\nCost: ${spell.cost} MP\nEffects: ${spell.effects.join(', ')}`);
 }
 
+// function castSpell(spellId) {
+//     const spell = character.spells.find(s => s.id === spellId);
+//     if (!spell) return;
+
+//     if (character.currentMagicPoints < spell.cost) {
+//         alert(`Not enough magic points! Need ${spell.cost} MP, have ${character.currentMagicPoints} MP.`);
+//         return;
+//     }
+
+//     character.currentMagicPoints -= spell.cost;
+
+//     let results = [];
+//     let totalDamage = 0;
+//     let totalHealing = 0;
+
+//     if (spell.damageType === 'fixed' && spell.damageAmount > 0) {
+//         totalDamage = spell.damageAmount;
+//         results.push(`Dealt ${totalDamage} damage`);
+//     } else if (spell.damageType === 'd6') {
+//         totalDamage = Math.floor(Math.random() * 6) + 1;
+//         results.push(`Dealt ${totalDamage} damage (d6 roll)`);
+//     }
+
+//     if (spell.healingType === 'fixed' && spell.healingAmount > 0) {
+//         totalHealing = spell.healingAmount;
+//         results.push(`Healed ${totalHealing} points`);
+//     } else if (spell.healingType === 'd6') {
+//         totalHealing = Math.floor(Math.random() * 6) + 1;
+//         results.push(`Healed ${totalHealing} points (d6 roll)`);
+//     }
+
+//     if (spell.primaryEffect) {
+//         results.push(`Applied ${spell.primaryEffect.replace('_', ' ')}`);
+//     }
+//     if (spell.secondaryEffect) {
+//         results.push(`Applied ${spell.secondaryEffect.replace('_', ' ')}`);
+//     }
+
+//     const spellData = {
+//         type: 'Spell',
+//         name: spell.name,
+//         element: spell.element,
+//         cost: spell.cost,
+//         results: results,
+//         finalTotal: totalDamage || totalHealing || 'N/A',
+//         timestamp: new Date().toLocaleTimeString()
+//     };
+
+//     character.rollHistory.unshift(spellData);
+//     if (character.rollHistory.length > 50) {
+//         character.rollHistory = character.rollHistory.slice(0, 50);
+//     }
+
+//     const elementEmoji = getElementEmoji(spellData.element);
+//     showNotification('spell', `Spell Cast: ${elementEmoji} ${spellData.name}`,
+//         `Cost: ${spellData.cost} MP`,
+//         `${spellData.results.length > 0 ? spellData.results.join('<br>') : 'Spell cast successfully!'}<br>MP Remaining: ${character.currentMagicPoints}/${character.magicPoints}`);
+
+//     updateMagicTabDisplay();
+//     updateCharacterDisplay();
+//     renderSpells();
+//     renderCharacterSpells();
+// }
+
 function castSpell(spellId) {
     const spell = character.spells.find(s => s.id === spellId);
     if (!spell) return;
@@ -1573,13 +1594,31 @@ function castSpell(spellId) {
     let results = [];
     let totalDamage = 0;
     let totalHealing = 0;
+    let toHitRoll = null;
 
-    if (spell.damageType === 'fixed' && spell.damageAmount > 0) {
-        totalDamage = spell.damageAmount;
-        results.push(`Dealt ${totalDamage} damage`);
-    } else if (spell.damageType === 'd6') {
-        totalDamage = Math.floor(Math.random() * 6) + 1;
-        results.push(`Dealt ${totalDamage} damage (d6 roll)`);
+    // Check if spell does damage
+    if (spell.damageType && spell.damageType !== '') {
+        // Roll to hit for damage spells
+        toHitRoll = rollToHit('intelligence'); // Spells use INT for to-hit
+        results.push(`To Hit: d10(${toHitRoll.d10Roll}) + INT(${toHitRoll.statBonus}) + Lv(${toHitRoll.levelBonus}) = ${toHitRoll.total}`);
+
+        if (toHitRoll.isCrit) {
+            results.push('💥 CRITICAL HIT!');
+        }
+
+        if (spell.damageType === 'fixed' && spell.damageAmount > 0) {
+            totalDamage = spell.damageAmount;
+            if (toHitRoll.isCrit) {
+                totalDamage += 5;
+            }
+            results.push(`Dealt ${totalDamage} damage${toHitRoll.isCrit ? ' (includes +5 crit bonus)' : ''}`);
+        } else if (spell.damageType === 'd6') {
+            totalDamage = Math.floor(Math.random() * 6) + 1;
+            if (toHitRoll.isCrit) {
+                totalDamage += 5;
+            }
+            results.push(`Dealt ${totalDamage} damage (d6 roll${toHitRoll.isCrit ? ' + 5 crit bonus' : ''})`);
+        }
     }
 
     if (spell.healingType === 'fixed' && spell.healingAmount > 0) {
@@ -1604,7 +1643,8 @@ function castSpell(spellId) {
         cost: spell.cost,
         results: results,
         finalTotal: totalDamage || totalHealing || 'N/A',
-        timestamp: new Date().toLocaleTimeString()
+        timestamp: new Date().toLocaleTimeString(),
+        toHit: toHitRoll
     };
 
     character.rollHistory.unshift(spellData);
@@ -1613,7 +1653,9 @@ function castSpell(spellId) {
     }
 
     const elementEmoji = getElementEmoji(spellData.element);
-    showNotification('spell', `Spell Cast: ${elementEmoji} ${spellData.name}`,
+    const title = toHitRoll && toHitRoll.isCrit ? `💥 CRITICAL! ${elementEmoji} ${spellData.name}` : `Spell Cast: ${elementEmoji} ${spellData.name}`;
+
+    showNotification('spell', title,
         `Cost: ${spellData.cost} MP`,
         `${spellData.results.length > 0 ? spellData.results.join('<br>') : 'Spell cast successfully!'}<br>MP Remaining: ${character.currentMagicPoints}/${character.magicPoints}`);
 
@@ -1687,7 +1729,7 @@ function useConsumable(itemId) {
         const oldHP = character.currentHealthPoints;
         character.currentHealthPoints = Math.min(character.healthPoints, character.currentHealthPoints + healAmount);
         const actualHealed = character.currentHealthPoints - oldHP;
-        
+
         showNotification('rest', `Used ${item.name}`,
             `Healed ${actualHealed} HP`,
             `${character.currentHealthPoints}/${character.healthPoints} HP`);
@@ -1695,7 +1737,7 @@ function useConsumable(itemId) {
 
     // Remove the consumable from inventory
     character.inventory = character.inventory.filter(invItem => invItem.id !== itemId);
-    
+
     updateCharacterDisplay();
     renderInventory();
 }
@@ -1743,21 +1785,21 @@ function renderInventory() {
         if (item.twoHanded) stats.push('2H');
         if (item.ranged) stats.push('RNG');
 
-itemDiv.innerHTML = `
+        itemDiv.innerHTML = `
     <div class="item-name">${item.name}</div>
     <div class="item-type">${item.type} ${item.size ? `(${weaponSizes[item.size].name})` : ''}</div>
     <div class="item-stats">
         ${stats.map(stat => `<span class="item-stat">${stat}</span>`).join('')}
     </div>
     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
-        ${item.type === 'consumable' ? 
-            `<button class="btn-secondary" onclick="useConsumable('${item.id}')" style="font-size: 11px; padding: 4px 8px; min-height: auto;">
+        ${item.type === 'consumable' ?
+                `<button class="btn-secondary" onclick="useConsumable('${item.id}')" style="font-size: 11px; padding: 4px 8px; min-height: auto;">
                 Use
-            </button>` : 
-            `<button class="btn-secondary" onclick="selectItem('${item.id}')" style="font-size: 11px; padding: 4px 8px; min-height: auto;">
+            </button>` :
+                `<button class="btn-secondary" onclick="selectItem('${item.id}')" style="font-size: 11px; padding: 4px 8px; min-height: auto;">
                 ${isItemEquipped(item.id) ? 'Unequip' : 'Equip'}
             </button>`
-        }
+            }
         <button class="remove-btn" onclick="removeItem('${item.id}')" title="Delete Item">
             <i class="ra ra-cancel"></i>
         </button>
@@ -2001,6 +2043,23 @@ function rollDice(diceCount, diceType) {
     return rolls;
 }
 
+// To Hit System
+function rollToHit(attackStat, isCrit = false) {
+    const d10Roll = Math.floor(Math.random() * 10) + 1;
+    const statBonus = character.stats[attackStat];
+    const levelBonus = character.level;
+    const toHitTotal = d10Roll + statBonus + levelBonus;
+
+    return {
+        d10Roll: d10Roll,
+        isCrit: d10Roll === 10,
+        statBonus: statBonus,
+        levelBonus: levelBonus,
+        total: toHitTotal,
+        statUsed: attackStat
+    };
+}
+
 function rollAttribute(statName, statValue) {
     const config = getDiceConfiguration(character.level);
     const diceRolls = rollDice(config.diceCount, config.diceType);
@@ -2070,10 +2129,18 @@ function rollWeaponDamage(weaponId) {
 
     const weaponSize = weaponSizes[weapon.size] || weaponSizes.medium;
     const statUsed = weapon.ranged ? 'dexterity' : 'strength';
-    const statValue = character.stats[statUsed];
 
+    // Roll to hit
+    const toHitRoll = rollToHit(statUsed);
+
+    // Roll damage
     const damageRoll = Math.floor(Math.random() * weaponSize.dice) + 1;
-    const totalDamage = damageRoll + statValue;
+    let totalDamage = damageRoll + character.stats[statUsed];
+
+    // Apply critical hit bonus
+    if (toHitRoll.isCrit) {
+        totalDamage += 5;
+    }
 
     const weaponData = {
         type: 'Weapon',
@@ -2081,10 +2148,11 @@ function rollWeaponDamage(weaponId) {
         weaponSize: weaponSize.name,
         statUsed: statUsed,
         damageRoll: damageRoll,
-        statBonus: statValue,
+        statBonus: character.stats[statUsed],
         totalDamage: totalDamage,
         diceType: weaponSize.dice,
         isRanged: weapon.ranged,
+        toHit: toHitRoll,
         timestamp: new Date().toLocaleTimeString()
     };
 
@@ -2094,8 +2162,11 @@ function rollWeaponDamage(weaponId) {
     }
 
     showNotification('weapon', `${weaponData.name} Attack`,
-        `Damage: ${weaponData.totalDamage}`,
-        `d${weaponData.diceType} roll: ${weaponData.damageRoll}<br>+ ${weaponData.statUsed.charAt(0).toUpperCase() + weaponData.statUsed.slice(1)}: ${weaponData.statBonus}<br>${weaponData.weaponSize} ${weaponData.isRanged ? 'Ranged' : 'Melee'} Weapon`);
+        `${toHitRoll.isCrit ? '💥 CRITICAL HIT!' : 'Hit!'} Damage: ${weaponData.totalDamage}`,
+        `To Hit: d10(${toHitRoll.d10Roll}) + ${statUsed.charAt(0).toUpperCase() + statUsed.slice(1)}(${toHitRoll.statBonus}) + Lv(${toHitRoll.levelBonus}) = ${toHitRoll.total}<br>` +
+        `Damage: d${weaponData.diceType}(${weaponData.damageRoll}) + ${weaponData.statUsed.charAt(0).toUpperCase() + weaponData.statUsed.slice(1)}(${weaponData.statBonus})${toHitRoll.isCrit ? ' + Crit(5)' : ''}<br>` +
+        `${weaponData.weaponSize} ${weaponData.isRanged ? 'Ranged' : 'Melee'} Weapon`);
+
     updateRollHistoryDisplay();
 }
 
@@ -2125,17 +2196,18 @@ function updateDiceSystemInfo() {
     diceExplanation.innerHTML = explanation;
 }
 
+
 function updateRollHistoryDisplay() {
     const rollHistory = document.getElementById('roll-history');
     if (!rollHistory) return;
 
     if (character.rollHistory.length === 0) {
         rollHistory.innerHTML = `
-                    <div style="text-align: center; color: #8a8a8a; padding: 40px;">
-                        <i class="ra ra-perspective-dice-six" style="font-size: 3em; margin-bottom: 15px; display: block;"></i>
-                        No rolls yet! Click attributes, skills, weapons, or spells in the Character tab to start rolling.
-                    </div>
-                `;
+            <div style="text-align: center; color: #8a8a8a; padding: 40px;">
+                <i class="ra ra-perspective-dice-six" style="font-size: 3em; margin-bottom: 15px; display: block;"></i>
+                No rolls yet! Click attributes, skills, weapons, or spells in the Character tab to start rolling.
+            </div>
+        `;
         return;
     }
 
@@ -2148,47 +2220,88 @@ function updateRollHistoryDisplay() {
             typeIcon = 'ra-sword';
             typeColor = '#d4af37';
             content = `
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <h4 style="color: #d4af37; margin: 0; font-size: 14px;">
-                                <i class="ra ${typeIcon}"></i> ${roll.name} Damage
-                            </h4>
-                            <span style="color: #8a8a8a; font-size: 12px;">${roll.timestamp}</span>
-                        </div>
-                        <div style="font-size: 18px; font-weight: bold; color: #ffffff; margin-bottom: 5px;">
-                            Damage: ${roll.totalDamage}
-                        </div>
-                        <div style="font-size: 12px; color: #c0c0c0;">
-                            d${roll.diceType} roll: ${roll.damageRoll} + ${roll.statUsed}: ${roll.statBonus}<br>
-                            ${roll.weaponSize} ${roll.isRanged ? 'Ranged' : 'Melee'} Weapon
-                        </div>
-                    `;
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <h4 style="color: #d4af37; margin: 0; font-size: 14px;">
+                        <i class="ra ${typeIcon}"></i> ${roll.name} Attack ${roll.toHit?.isCrit ? '💥' : ''}
+                    </h4>
+                    <span style="color: #8a8a8a; font-size: 12px;">${roll.timestamp}</span>
+                </div>
+                ${roll.toHit?.isCrit ? '<div style="color: #ffd700; font-weight: bold; font-size: 12px; margin-bottom: 5px;">CRITICAL HIT!</div>' : ''}
+                <div style="font-size: 16px; font-weight: bold; color: #ffffff; margin-bottom: 5px;">
+                    To Hit: ${roll.toHit?.total || 'N/A'} | Damage: ${roll.totalDamage}
+                </div>
+                <div style="font-size: 12px; color: #c0c0c0;">
+                    To Hit: d10(${roll.toHit?.d10Roll || '?'}) + ${roll.statUsed.substring(0, 3).toUpperCase()}(${roll.toHit?.statBonus || '?'}) + Lv(${roll.toHit?.levelBonus || '?'})<br>
+                    Damage: d${roll.diceType}(${roll.damageRoll}) + ${roll.statUsed.substring(0, 3).toUpperCase()}(${roll.statBonus})${roll.toHit?.isCrit ? ' + Crit(5)' : ''}<br>
+                    ${roll.weaponSize} ${roll.isRanged ? 'Ranged' : 'Melee'} Weapon
+                </div>
+            `;
+        } else if (roll.type === 'Spell' && roll.toHit) {
+            typeIcon = 'ra-lightning';
+            typeColor = '#8a4a8a';
+            const diceDisplay = roll.diceRolls ? roll.diceRolls.map(r => `<span style="color: #f4d03f;">${r}</span>`).join(' + ') : 'N/A';
+
+            content = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <h4 style="color: #8a4a8a; margin: 0; font-size: 14px;">
+                        <i class="ra ${typeIcon}"></i> ${roll.name} ${roll.toHit?.isCrit ? '💥' : ''}
+                    </h4>
+                    <span style="color: #8a8a8a; font-size: 12px;">${roll.timestamp}</span>
+                </div>
+                ${roll.toHit?.isCrit ? '<div style="color: #ffd700; font-weight: bold; font-size: 12px; margin-bottom: 5px;">CRITICAL HIT!</div>' : ''}
+                <div style="font-size: 16px; font-weight: bold; color: #ffffff; margin-bottom: 5px;">
+                    ${roll.element} Magic | Cost: ${roll.cost} MP
+                </div>
+                <div style="font-size: 12px; color: #c0c0c0;">
+                    ${roll.results ? roll.results.join('<br>') : 'Spell cast successfully!'}
+                </div>
+            `;
+        } else if (roll.type === 'Spell') {
+            // Non-damage spell
+            typeIcon = 'ra-lightning';
+            typeColor = '#8a4a8a';
+            content = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <h4 style="color: #8a4a8a; margin: 0; font-size: 14px;">
+                        <i class="ra ${typeIcon}"></i> ${roll.name}
+                    </h4>
+                    <span style="color: #8a8a8a; font-size: 12px;">${roll.timestamp}</span>
+                </div>
+                <div style="font-size: 16px; font-weight: bold; color: #ffffff; margin-bottom: 5px;">
+                    ${roll.element} Magic | Cost: ${roll.cost} MP
+                </div>
+                <div style="font-size: 12px; color: #c0c0c0;">
+                    ${roll.results ? roll.results.join('<br>') : 'Spell cast successfully!'}
+                </div>
+            `;
         } else {
+            // Attribute/Skill rolls
             typeIcon = roll.type === 'Attribute' ? 'ra-muscle-up' : roll.type === 'Skill' ? 'ra-gear' : 'ra-lightning';
             typeColor = roll.type === 'Attribute' ? '#4a6a8a' : roll.type === 'Skill' ? '#4a8a4a' : '#8a4a8a';
             const diceDisplay = roll.diceRolls ? roll.diceRolls.map(r => `<span style="color: #f4d03f;">${r}</span>`).join(' + ') : 'N/A';
 
             content = `
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <h4 style="color: #f4d03f; margin: 0; font-size: 14px;">
-                                <i class="ra ${typeIcon}"></i> ${roll.name} ${roll.type === 'Skill' ? `[${roll.stat}]` : ''}
-                            </h4>
-                            <span style="color: #8a8a8a; font-size: 12px;">${roll.timestamp}</span>
-                        </div>
-                        <div style="font-size: 18px; font-weight: bold; color: #ffffff; margin-bottom: 5px;">
-                            Result: ${roll.finalTotal}
-                        </div>
-                        <div style="font-size: 12px; color: #c0c0c0;">
-                            ${roll.diceRolls ? `Dice: [${diceDisplay}] = ${roll.diceTotal} + Level: ${roll.levelBonus} + Bonus: ${roll.statBonus}` :
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <h4 style="color: #f4d03f; margin: 0; font-size: 14px;">
+                        <i class="ra ${typeIcon}"></i> ${roll.name} ${roll.type === 'Skill' ? `[${roll.stat}]` : ''}
+                    </h4>
+                    <span style="color: #8a8a8a; font-size: 12px;">${roll.timestamp}</span>
+                </div>
+                <div style="font-size: 18px; font-weight: bold; color: #ffffff; margin-bottom: 5px;">
+                    Result: ${roll.finalTotal}
+                </div>
+                <div style="font-size: 12px; color: #c0c0c0;">
+                    ${roll.diceRolls ? `Dice: [${diceDisplay}] = ${roll.diceTotal} + Level: ${roll.levelBonus} + Bonus: ${roll.statBonus}` :
                     roll.results ? roll.results.join('<br>') : 'Spell cast successfully!'}
-                        </div>
-                    `;
+                </div>
+            `;
         }
 
         return `
-                    <div style="background: rgba(40, 40, 60, 0.8); border-radius: 8px; padding: 15px; margin-bottom: 10px; border-left: 3px solid ${typeColor};">
-                        ${content}
-                    </div>
-                `;
+            <div style="background: rgba(40, 40, 60, 0.8); border-radius: 8px; padding: 15px; margin-bottom: 10px; border-left: 3px solid ${typeColor};">
+                ${content}
+            </div>
+        `;
     }).join('');
 }
 
@@ -2790,14 +2903,14 @@ function initializeCharacterSheet() {
     });
 
     // consumable healing items
-    document.getElementById('item-type').addEventListener('change', function() {
-    const healingContainer = document.getElementById('healing-consumable-container');
-    if (this.value === 'consumable') {
-        healingContainer.style.display = 'flex';
-    } else {
-        healingContainer.style.display = 'none';
-    }
-});
+    document.getElementById('item-type').addEventListener('change', function () {
+        const healingContainer = document.getElementById('healing-consumable-container');
+        if (this.value === 'consumable') {
+            healingContainer.style.display = 'flex';
+        } else {
+            healingContainer.style.display = 'none';
+        }
+    });
 
     // Enable/disable amount inputs based on type selection
     document.getElementById('damage-type').addEventListener('change', function () {
