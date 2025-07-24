@@ -1556,7 +1556,7 @@ function createSpell() {
     renderCharacterSpells();
     calculateSpellCost();
 
-    alert(`✨ Created spell: ${spell.name}!\nCost: ${spell.cost} MP\nEffects: ${spell.effects.join(', ')}`);
+    // alert(`✨ Created spell: ${spell.name}!\nCost: ${spell.cost} MP\nEffects: ${spell.effects.join(', ')}`);
 }
 
 function castSpell(spellId) {
@@ -1720,7 +1720,7 @@ function removeItem(itemId) {
 
     character.inventory = character.inventory.filter(invItem => invItem.id !== itemId);
     renderInventory();
-    alert(`Deleted "${item.name}".`);
+    // alert(`Deleted "${item.name}".`);
 }
 
 function renderInventory() {
