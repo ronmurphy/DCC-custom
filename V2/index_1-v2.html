@@ -16,17 +16,15 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Theme Toggle -->
-    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
-        <span class="material-icons">brightness_6</span>
-    </button>
-
-    <!-- Main Character Sheet -->
+    <!-- Main Character Sheet (Initially hidden by JS) -->
     <div class="app-container">
         <!-- Mobile Header -->
         <header class="app-header">
             <button class="header-btn menu-btn" onclick="backToCharacterSelect()" title="Character Menu">
                 <span class="material-icons">menu</span>
+            </button>
+            <button class="header-btn theme-btn" onclick="toggleTheme()" title="Toggle Theme">
+                <span class="material-icons">brightness_6</span>
             </button>
             <h1 class="app-title">
                 <span class="character-name-display">New Character</span>
@@ -91,7 +89,7 @@
                                 </div>
                                 <div class="meta-item">
                                     <label>Age</label>
-                                    <input type="number" id="char-age" class="compact-input" placeholder="25">
+                                    <input type="number" id="char-age" class="compact-input" placeholder="25" min="0">
                                 </div>
                             </div>
                         </div>
@@ -349,7 +347,6 @@
                         </div>
                     </div>
 
-                    <!-- moved active bonuses to here-->
                     <!-- Active Bonuses -->
                     <div class="card bonuses-card" id="bonuses-display" style="display: none;">
                         <div class="card-header">
@@ -394,8 +391,6 @@
                         </div>
                     </div>
 
-                    <!-- active bonuses was here...-->
-
                     <!-- Story Section -->
                     <div class="card story-card">
                         <div class="card-header">
@@ -428,37 +423,65 @@
                 <div class="content-wrapper">
                     <!-- Character Overview -->
                     <div class="character-overview">
-                        <h2 id="char-display-name">Character Overview</h2>
-                        <div id="char-summary" class="character-summary">
-                            <!-- Summary will be rendered here -->
-                        </div>
-                    </div>
-
-                    <!-- Vital Stats Display -->
-                    <div class="vitals-display">
-                        <!-- HP Card -->
-                        <div class="vital-card hp-card">
-                            <div class="vital-header">
-                                <i class="ra ra-hearts"></i>
-                                <h3>Health Points</h3>
-                            </div>
-                            <div class="vital-counter">
-                                <button class="counter-btn minus" onclick="adjustCurrentHP(-1)">
-                                    <span class="material-icons">remove</span>
-                                </button>
-                                <div class="vital-numbers">
-                                    <span class="current-value" id="char-current-hp">3</span>
-                                    <span class="divider">/</span>
-                                    <span class="max-value" id="char-total-hp">3</span>
+                        <div class="overview-header">
+                            <div class="overview-portrait" id="overview-portrait">
+                                <div class="portrait-placeholder">
+                                    <i class="ra ra-hood"></i>
                                 </div>
-                                <button class="counter-btn plus" onclick="adjustCurrentHP(1)">
-                                    <span class="material-icons">add</span>
-                                </button>
+                            </div>
+                            <div class="overview-info">
+                                <h2 id="char-display-name">Character Overview</h2>
+                                <div id="char-summary" class="character-summary">
+                                    <!-- Summary will be rendered here -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Combined Vitals Display -->
+                        <div class="vitals-combined">
+                            <div class="vital-row hp-row">
+                                <div class="vital-icon">
+                                    <i class="ra ra-hearts"></i>
+                                </div>
+                                <div class="vital-label">Health</div>
+                                <div class="vital-counter">
+                                    <button class="counter-btn minus" onclick="adjustCurrentHP(-1)">
+                                        <span class="material-icons">remove</span>
+                                    </button>
+                                    <div class="vital-numbers">
+                                        <span class="current-value" id="char-current-hp">3</span>
+                                        <span class="divider">/</span>
+                                        <span class="max-value" id="char-total-hp">3</span>
+                                    </div>
+                                    <button class="counter-btn plus" onclick="adjustCurrentHP(1)">
+                                        <span class="material-icons">add</span>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="vital-row mp-row">
+                                <div class="vital-icon">
+                                    <i class="ra ra-crystal-wand"></i>
+                                </div>
+                                <div class="vital-label">Magic</div>
+                                <div class="vital-counter">
+                                    <button class="counter-btn minus" onclick="adjustCurrentMP(-1)">
+                                        <span class="material-icons">remove</span>
+                                    </button>
+                                    <div class="vital-numbers">
+                                        <span class="current-value" id="char-current-mp">4</span>
+                                        <span class="divider">/</span>
+                                        <span class="max-value" id="char-total-mp">4</span>
+                                    </div>
+                                    <button class="counter-btn plus" onclick="adjustCurrentMP(1)">
+                                        <span class="material-icons">add</span>
+                                    </button>
+                                </div>
                             </div>
                             
                             <!-- Damage Tester -->
-                            <div class="damage-tester">
-                                <input type="number" id="damage-input" class="damage-input" placeholder="Damage" value="5">
+                            <div class="damage-tester-row">
+                                <input type="number" id="damage-input" class="damage-input" placeholder="Damage" value="5" min="1">
                                 <button class="damage-btn" onclick="testDamage()">
                                     <i class="ra ra-sword"></i>
                                     Take Damage
@@ -467,27 +490,6 @@
                                     <i class="ra ra-shield"></i>
                                     <span id="total-defense-display">0</span>
                                 </span>
-                            </div>
-                        </div>
-
-                        <!-- MP Card -->
-                        <div class="vital-card mp-card">
-                            <div class="vital-header">
-                                <i class="ra ra-crystal-wand"></i>
-                                <h3>Magic Points</h3>
-                            </div>
-                            <div class="vital-counter">
-                                <button class="counter-btn minus" onclick="adjustCurrentMP(-1)">
-                                    <span class="material-icons">remove</span>
-                                </button>
-                                <div class="vital-numbers">
-                                    <span class="current-value" id="char-current-mp">4</span>
-                                    <span class="divider">/</span>
-                                    <span class="max-value" id="char-total-mp">4</span>
-                                </div>
-                                <button class="counter-btn plus" onclick="adjustCurrentMP(1)">
-                                    <span class="material-icons">add</span>
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -665,6 +667,10 @@
                                     <label class="checkbox-label">
                                         <input type="checkbox" id="item-ranged">
                                         <span>Ranged</span>
+                                    </label>
+                                    <label class="checkbox-label" id="healing-consumable-container" style="display: none;">
+                                        <input type="checkbox" id="item-healing">
+                                        <span>Healing</span>
                                     </label>
                                 </div>
                                 
@@ -959,6 +965,37 @@
 
     <!-- Notification Container -->
     <div id="notification-container"></div>
+
+    <!-- Character Landing Screen (Initially visible, managed by JS) -->
+    <div id="character-landing" class="character-landing" style="display: none;">
+        <div class="landing-header">
+            <h1><i class="ra ra-knight-helmet"></i> RPG Character Studio</h1>
+            <p>Choose your character or create a new one</p>
+        </div>
+        
+        <div class="landing-actions">
+            <button class="landing-btn primary-btn" onclick="createNewCharacter()">
+                <span class="material-icons">person_add</span>
+                New Character
+            </button>
+            <button class="landing-btn secondary-btn" onclick="importCharacterToManager()">
+                <span class="material-icons">upload</span>
+                Import Character
+            </button>
+            <button class="landing-btn secondary-btn" onclick="exportAllCharacters()">
+                <span class="material-icons">download</span>
+                Export All
+            </button>
+        </div>
+        
+        <div class="characters-grid" id="characters-grid">
+            <!-- Character cards will be populated here -->
+        </div>
+        
+        <div class="landing-footer">
+            <p>Characters are saved locally in your browser. Use Export to backup your characters.</p>
+        </div>
+    </div>
 
     <!-- Scripts -->
     <script src="main.js"></script>

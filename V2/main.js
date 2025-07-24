@@ -989,25 +989,38 @@ function updateCharacterDisplay() {
         nameDisplay.textContent = 'Character Overview';
     }
 
+    // Add portrait to overview
+    const overviewPortrait = document.getElementById('overview-portrait');
+    if (overviewPortrait) {
+        if (character.personal?.portrait) {
+            overviewPortrait.innerHTML = `<img src="${character.personal.portrait}" alt="Character Portrait">`;
+        } else {
+            overviewPortrait.innerHTML = `
+                <div class="portrait-placeholder">
+                    <i class="ra ra-hood"></i>
+                </div>
+            `;
+        }
+    }
+    
+    // Update character summary display
     const charSummary = document.getElementById('char-summary');
     const raceName = character.race ? races[character.race]?.name || character.race : character.customRace || 'Unknown';
     const jobName = character.job ? jobs[character.job]?.name || character.job : character.customJob || 'Unknown';
     const className = character.class ? classes[character.class]?.name || character.class : character.customClass || 'Unknown';
     charSummary.innerHTML = `
-                <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 10px;">
-                    <span><strong>Race:</strong> ${raceName}</span>
-                    <span><strong>Background:</strong> ${jobName}</span>
-                    <span><strong>Class:</strong> ${className}</span>
-                    <span><strong>Level:</strong> ${character.level}</span>
-                </div>
-                ${character.level < 20 ? `
-                    <div style="margin-top: 10px; text-align: center;">
-                        <button class="btn-secondary" onclick="levelUp()" style="background: #f4d03f; color: #2a2a4a; font-weight: bold;">
-                            <i class="ra ra-trophy"></i> Level Up
-                        </button>
-                    </div>
-                ` : ''}
-            `;
+        <span><strong>Race:</strong> ${raceName}</span>
+        <span><strong>Background:</strong> ${jobName}</span>
+        <span><strong>Class:</strong> ${className}</span>
+        <span><strong>Level:</strong> ${character.level}</span>
+        ${character.level < 20 ? `
+            <div style="flex-basis: 100%; margin-top: 10px;">
+                <button class="btn-secondary" onclick="levelUp()" style="background: #f4d03f; color: #2a2a4a; font-weight: bold;">
+                    <i class="ra ra-trophy"></i> Level Up
+                </button>
+            </div>
+        ` : ''}
+    `;
 
     document.getElementById('char-current-hp').textContent = character.currentHealthPoints;
     document.getElementById('char-total-hp').textContent = character.healthPoints;
@@ -1060,52 +1073,145 @@ function renderCharacterStats() {
 // ========================================
 // SKILLS SYSTEM
 // ========================================
+// function renderCharacterSkills() {
+//     const skillsGrid = document.getElementById('char-skills-grid');
+//     if (!skillsGrid) return;
+
+//     skillsGrid.innerHTML = '';
+
+//     Object.entries(standardSkills).forEach(([skillName, stat]) => {
+//         const skillValue = character.stats[stat];
+//         const skillItem = createInteractiveItem('skill', {
+//             name: skillName,
+//             stat: stat,
+//             value: skillValue,
+//             icon: 'ra-gear',
+//             onClick: () => rollSkill(skillName, stat, skillValue)
+//         });
+//         skillsGrid.appendChild(skillItem);
+//     });
+
+//     character.customSkills.forEach((skill, index) => {
+//         const skillValue = character.stats[skill.stat];
+//         let sourceLabel = '';
+//         let iconClass = 'ra-star';
+
+//         if (skill.source === 'race') {
+//             sourceLabel = ' (Racial)';
+//             iconClass = 'ra-double-team';
+//         } else if (skill.source === 'job') {
+//             sourceLabel = ' (Background)';
+//             iconClass = 'ra-briefcase';
+//         } else if (skill.source === 'class') {
+//             sourceLabel = ' (Class)';
+//             iconClass = 'ra-sword';
+//         } else if (skill.source === 'levelup') {
+//             sourceLabel = ' (Level Up)';
+//             iconClass = 'ra-trophy';
+//         } else {
+//             sourceLabel = ' (Custom)';
+//         }
+
+//         const skillItem = createInteractiveItem('skill', {
+//             name: skill.name + sourceLabel,
+//             stat: skill.stat,
+//             value: skillValue,
+//             icon: iconClass,
+//             onClick: () => rollSkill(skill.name, skill.stat, skillValue),
+//             removeButton: !skill.source ? () => removeCustomSkillFromCharTab(index) : null
+//         });
+//         skillsGrid.appendChild(skillItem);
+//     });
+// }
+
+// Add this function to consolidate skills
+function consolidateSkills() {
+    const skillMap = new Map();
+    
+    // Add standard skills
+    Object.entries(standardSkills).forEach(([skillName, stat]) => {
+        skillMap.set(skillName.toLowerCase(), {
+            name: skillName,
+            stat: stat,
+            sources: [],
+            baseSkill: true
+        });
+    });
+    
+    // Process custom skills and mark sources
+    character.customSkills.forEach(skill => {
+        const key = skill.name.toLowerCase();
+        
+        // Check if this matches a standard skill
+        let matchedStandard = null;
+        for (const [stdName, stdStat] of Object.entries(standardSkills)) {
+            if (key === stdName.toLowerCase() || 
+                (key.includes(stdName.toLowerCase()) || stdName.toLowerCase().includes(key))) {
+                matchedStandard = stdName;
+                break;
+            }
+        }
+        
+        if (matchedStandard) {
+            const existing = skillMap.get(matchedStandard.toLowerCase());
+            if (skill.source === 'race') existing.sources.push('H');
+            else if (skill.source === 'job') existing.sources.push('B');
+            else if (skill.source === 'class') existing.sources.push('C');
+            else if (skill.source === 'levelup') existing.sources.push('L');
+        } else {
+            // It's a unique skill
+            if (!skillMap.has(key)) {
+                skillMap.set(key, {
+                    name: skill.name,
+                    stat: skill.stat,
+                    sources: [],
+                    baseSkill: false
+                });
+            }
+            const existing = skillMap.get(key);
+            if (skill.source === 'race') existing.sources.push('H');
+            else if (skill.source === 'job') existing.sources.push('B');
+            else if (skill.source === 'class') existing.sources.push('C');
+            else if (skill.source === 'levelup') existing.sources.push('L');
+        }
+    });
+    
+    return skillMap;
+}
+
+// Update renderCharacterSkills function
 function renderCharacterSkills() {
     const skillsGrid = document.getElementById('char-skills-grid');
     if (!skillsGrid) return;
 
     skillsGrid.innerHTML = '';
-
-    Object.entries(standardSkills).forEach(([skillName, stat]) => {
-        const skillValue = character.stats[stat];
+    
+    const consolidatedSkills = consolidateSkills();
+    
+    consolidatedSkills.forEach((skillData, key) => {
+        const skillValue = character.stats[skillData.stat];
+        const sourceLabel = skillData.sources.length > 0 ? ` [${skillData.sources.join(',')}]` : '';
+        
         const skillItem = createInteractiveItem('skill', {
-            name: skillName,
-            stat: stat,
+            name: skillData.name + sourceLabel,
+            stat: skillData.stat,
             value: skillValue,
-            icon: 'ra-gear',
-            onClick: () => rollSkill(skillName, stat, skillValue)
+            icon: skillData.baseSkill ? 'ra-gear' : 'ra-star',
+            onClick: () => rollSkill(skillData.name, skillData.stat, skillValue)
         });
         skillsGrid.appendChild(skillItem);
     });
-
-    character.customSkills.forEach((skill, index) => {
+    
+    // Add non-source custom skills
+    character.customSkills.filter(skill => !skill.source).forEach((skill, index) => {
         const skillValue = character.stats[skill.stat];
-        let sourceLabel = '';
-        let iconClass = 'ra-star';
-
-        if (skill.source === 'race') {
-            sourceLabel = ' (Racial)';
-            iconClass = 'ra-double-team';
-        } else if (skill.source === 'job') {
-            sourceLabel = ' (Background)';
-            iconClass = 'ra-briefcase';
-        } else if (skill.source === 'class') {
-            sourceLabel = ' (Class)';
-            iconClass = 'ra-sword';
-        } else if (skill.source === 'levelup') {
-            sourceLabel = ' (Level Up)';
-            iconClass = 'ra-trophy';
-        } else {
-            sourceLabel = ' (Custom)';
-        }
-
         const skillItem = createInteractiveItem('skill', {
-            name: skill.name + sourceLabel,
+            name: skill.name + ' (Custom)',
             stat: skill.stat,
             value: skillValue,
-            icon: iconClass,
+            icon: 'ra-star',
             onClick: () => rollSkill(skill.name, skill.stat, skillValue),
-            removeButton: !skill.source ? () => removeCustomSkillFromCharTab(index) : null
+            removeButton: () => removeCustomSkillFromCharTab(index)
         });
         skillsGrid.appendChild(skillItem);
     });
@@ -1539,6 +1645,7 @@ function addItem() {
     const defense = parseInt(document.getElementById('item-defense').value) || 0;
     const twoHanded = document.getElementById('item-twohanded').checked;
     const ranged = document.getElementById('item-ranged').checked;
+    const healing = document.getElementById('item-healing').checked;
 
     if (!name) {
         alert('Please enter an item name!');
@@ -1552,18 +1659,45 @@ function addItem() {
         size: type === 'weapon' ? size : null,
         defense: defense,
         twoHanded: twoHanded,
-        ranged: ranged
+        ranged: ranged,
+        healing: type === 'consumable' ? healing : false
     };
 
     character.inventory.push(item);
 
+    // Reset form
     document.getElementById('item-name').value = '';
     document.getElementById('item-defense').value = '';
     document.getElementById('item-twohanded').checked = false;
     document.getElementById('item-ranged').checked = false;
+    document.getElementById('item-healing').checked = false;
+    document.getElementById('healing-consumable-container').style.display = 'none';
 
     renderInventory();
-    alert(`Created ${item.name}!`);
+    // alert(`Created ${item.name}!`);
+}
+
+// Add consumable use function
+function useConsumable(itemId) {
+    const item = getItemById(itemId);
+    if (!item || item.type !== 'consumable') return;
+
+    if (item.healing) {
+        const healAmount = 10 + character.level;
+        const oldHP = character.currentHealthPoints;
+        character.currentHealthPoints = Math.min(character.healthPoints, character.currentHealthPoints + healAmount);
+        const actualHealed = character.currentHealthPoints - oldHP;
+        
+        showNotification('rest', `Used ${item.name}`,
+            `Healed ${actualHealed} HP`,
+            `${character.currentHealthPoints}/${character.healthPoints} HP`);
+    }
+
+    // Remove the consumable from inventory
+    character.inventory = character.inventory.filter(invItem => invItem.id !== itemId);
+    
+    updateCharacterDisplay();
+    renderInventory();
 }
 
 function removeItem(itemId) {
@@ -1609,21 +1743,26 @@ function renderInventory() {
         if (item.twoHanded) stats.push('2H');
         if (item.ranged) stats.push('RNG');
 
-        itemDiv.innerHTML = `
-                    <div class="item-name">${item.name}</div>
-                    <div class="item-type">${item.type} ${item.size ? `(${weaponSizes[item.size].name})` : ''}</div>
-                    <div class="item-stats">
-                        ${stats.map(stat => `<span class="item-stat">${stat}</span>`).join('')}
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
-                        <button class="btn-secondary" onclick="selectItem('${item.id}')" style="font-size: 11px; padding: 4px 8px; min-height: auto;">
-                            ${isItemEquipped(item.id) ? 'Unequip' : 'Equip'}
-                        </button>
-                        <button class="remove-btn" onclick="removeItem('${item.id}')" title="Delete Item">
-                            <i class="ra ra-cancel"></i>
-                        </button>
-                    </div>
-                `;
+itemDiv.innerHTML = `
+    <div class="item-name">${item.name}</div>
+    <div class="item-type">${item.type} ${item.size ? `(${weaponSizes[item.size].name})` : ''}</div>
+    <div class="item-stats">
+        ${stats.map(stat => `<span class="item-stat">${stat}</span>`).join('')}
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+        ${item.type === 'consumable' ? 
+            `<button class="btn-secondary" onclick="useConsumable('${item.id}')" style="font-size: 11px; padding: 4px 8px; min-height: auto;">
+                Use
+            </button>` : 
+            `<button class="btn-secondary" onclick="selectItem('${item.id}')" style="font-size: 11px; padding: 4px 8px; min-height: auto;">
+                ${isItemEquipped(item.id) ? 'Unequip' : 'Equip'}
+            </button>`
+        }
+        <button class="remove-btn" onclick="removeItem('${item.id}')" title="Delete Item">
+            <i class="ra ra-cancel"></i>
+        </button>
+    </div>
+`;
         inventoryGrid.appendChild(itemDiv);
     });
 }
@@ -2649,6 +2788,16 @@ function initializeCharacterSheet() {
             element.addEventListener('input', calculateSpellCost);
         }
     });
+
+    // consumable healing items
+    document.getElementById('item-type').addEventListener('change', function() {
+    const healingContainer = document.getElementById('healing-consumable-container');
+    if (this.value === 'consumable') {
+        healingContainer.style.display = 'flex';
+    } else {
+        healingContainer.style.display = 'none';
+    }
+});
 
     // Enable/disable amount inputs based on type selection
     document.getElementById('damage-type').addEventListener('change', function () {
