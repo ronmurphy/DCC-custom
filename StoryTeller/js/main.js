@@ -156,9 +156,9 @@ function saveSession() {
         localStorage.setItem(sessionKey, JSON.stringify(currentSession));
         localStorage.setItem('st-current-session', sessionKey);
         
-        // showNotification('success', 'Session Saved', 
-        //     `Saved: ${currentSession.name}`, 
-        //     'Your campaign data is safe!');
+        showNotification('success', 'Session Saved', 
+            `Saved: ${currentSession.name}`, 
+            'Your campaign data is safe!');
         
         return true;
     } catch (error) {
@@ -394,7 +394,7 @@ function updateSessionDisplay() {
 function hasSessionContent() {
     return currentSession.npcs.length > 0 || 
            currentSession.quests.length > 0 || 
-           currentSession.items.length > 0 || 
+           (currentSession.items && currentSession.items.length > 0) || 
            currentSession.maps.length > 0;
 }
 
