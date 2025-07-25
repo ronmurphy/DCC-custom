@@ -120,12 +120,12 @@ function generateRandomNPC() {
     
     // Generate stats (2-5 range for NPCs, simpler than player characters)
     const baseStats = {
-        strength: rollDice(4) + 1,      // 2-5
-        dexterity: rollDice(4) + 1,     // 2-5
-        constitution: rollDice(4) + 1,   // 2-5
-        intelligence: rollDice(4) + 1,   // 2-5
-        wisdom: rollDice(4) + 1,        // 2-5
-        charisma: rollDice(4) + 1       // 2-5
+        strength: rollDice(4) + level,      // 2-5
+        dexterity: rollDice(4) + level,     // 2-5
+        constitution: rollDice(4) + level,   // 2-5
+        intelligence: rollDice(4) + level,   // 2-5
+        wisdom: rollDice(4) + level,        // 2-5
+        charisma: rollDice(4) + level       // 2-5
     };
     
     // Apply racial bonus
