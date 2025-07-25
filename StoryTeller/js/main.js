@@ -156,6 +156,29 @@ function saveSession() {
         localStorage.setItem(sessionKey, JSON.stringify(currentSession));
         localStorage.setItem('st-current-session', sessionKey);
         
+        showNotification('success', 'Session Saved', 
+            `Saved: ${currentSession.name}`, 
+           'Your campaign data is safe!');
+        
+        return true;
+    } catch (error) {
+        console.error('Error saving session:', error);
+        showNotification('error', 'Save Failed', 
+            'Could not save session', 
+            'Check your browser storage settings');
+        
+        return false;
+    }
+}
+
+function saveSessionSilent() {
+    currentSession.lastModified = new Date().toISOString();
+    
+    try {
+        const sessionKey = `st-session-${currentSession.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
+        localStorage.setItem(sessionKey, JSON.stringify(currentSession));
+        localStorage.setItem('st-current-session', sessionKey);
+        
   //      showNotification('success', 'Session Saved', 
    //         `Saved: ${currentSession.name}`, 
  //           'Your campaign data is safe!');
@@ -530,6 +553,6 @@ window.copyToClipboard = copyToClipboard;
 // Auto-save every 30 seconds if there's content
 setInterval(() => {
     if (hasSessionContent()) {
-        saveSession();
+        saveSessionSilent();
     }
 }, 30000);
