@@ -166,12 +166,79 @@
             <!-- Quest Generator Tab -->
             <section class="tab-content" id="quest">
                 <div class="content-wrapper">
+                    <!-- Quest Generator Card -->
+                    <div class="card quest-generator-card">
+                        <div class="card-header">
+                            <i class="ra ra-scroll-unfurled"></i>
+                            <h3>Quest Generator</h3>
+                            <div class="quest-generator-controls">
+                                <button class="generate-quest-btn" onclick="generateRandomQuest()">
+                                    <i class="ra ra-perspective-dice-six"></i>
+                                    Generate Random Quest
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Generated Quest Display -->
+                        <div class="quest-display" id="generated-quest">
+                            <div class="quest-placeholder">
+                                <i class="ra ra-scroll-unfurled" style="font-size: 3em; margin-bottom: 15px; color: #6b7280;"></i>
+                                <p>Click "Generate Random Quest" to create a new quest or plot hook</p>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="quest-actions" id="quest-actions" style="display: none;">
+                            <button class="action-btn save-quest-btn" onclick="saveCurrentQuest()">
+                                <i class="material-icons">bookmark_add</i>
+                                Save Quest
+                            </button>
+                            <button class="action-btn copy-quest-btn" onclick="copyQuestToClipboard()">
+                                <i class="material-icons">content_copy</i>
+                                Copy Quest
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Session Quest Stats -->
                     <div class="card">
                         <div class="card-header">
-                            <i class="ra ra-quill-ink"></i>
-                            <h3>Quest Generator</h3>
+                            <i class="ra ra-chart"></i>
+                            <h3>Quest Statistics</h3>
                         </div>
-                        <p>Quest generator coming soon...</p>
+                        <div class="quest-stats">
+                            <div class="quest-stat-item">
+                                <div class="quest-stat-value" id="total-quests">0</div>
+                                <div class="quest-stat-label">Total Quests</div>
+                            </div>
+                            <div class="quest-stat-item">
+                                <div class="quest-stat-value" id="avg-difficulty">0</div>
+                                <div class="quest-stat-label">Avg Difficulty</div>
+                            </div>
+                            <div class="quest-stat-item">
+                                <div class="quest-stat-value" id="most-common-type">None</div>
+                                <div class="quest-stat-label">Common Type</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Saved Quests -->
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="ra ra-book"></i>
+                            <h3>Campaign Quests</h3>
+                            <div class="saved-controls">
+                                <button class="clear-btn" onclick="clearAllQuests()" title="Clear All Quests">
+                                    <i class="material-icons">clear_all</i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="saved-quests-container" id="saved-quests-container">
+                            <div class="no-quests">
+                                <i class="ra ra-scroll-unfurled" style="font-size: 3em; margin-bottom: 15px; color: #6b7280;"></i>
+                                <p>No saved quests yet. Generate and save some quests to build your campaign!</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
