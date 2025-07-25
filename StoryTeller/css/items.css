@@ -1,0 +1,28 @@
+/* ========================================
+   ITEM GENERATOR STYLES
+   ======================================== */
+
+/* ========================================
+   PLACEHOLDER STYLES
+   Will be implemented when item generator is built
+   ======================================== */
+
+.items-placeholder {
+    text-align: center;
+    color: var(--text-tertiary);
+    padding: var(--spacing-2xl);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    border: 2px dashed var(--border-color);
+}
+
+.items-placeholder i {
+    font-size: 4rem;
+    margin-bottom: var(--spacing-md);
+    color: var(--text-tertiary);
+}
+
+.items-placeholder p {
+    font-size: 1.1rem;
+    margin: 0;
+}
