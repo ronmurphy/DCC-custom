@@ -97,7 +97,31 @@ const standardSkills = {
     'Religion': 'intelligence',
     'Sleight of Hand': 'dexterity',
     'Stealth': 'dexterity',
-    'Survival': 'wisdom'
+    'Survival': 'wisdom',
+    
+    // DCC-Specific Skills
+    'Powerful Strike': 'strength',
+    'Iron Punch': 'strength',
+    'Pugilism': 'strength',
+    'Aiming': 'dexterity',
+    'Cat-like Reflexes': 'dexterity',
+    'Light on Your Feet': 'dexterity',
+    'Iron Stomach': 'constitution',
+    'Regeneration': 'constitution',
+    'Nine Lives': 'constitution',
+    'Night Vision': 'wisdom',
+    'Character Actor': 'charisma',
+    'Negotiation': 'charisma',
+    'Crowd Blast': 'charisma',
+    'Basic Electrical Repair': 'intelligence',
+    'IED': 'intelligence',
+    'Bomb Surgeon': 'intelligence',
+    'Alien Technology': 'intelligence',
+    'Diplomatic Immunity': 'charisma',
+    'Flight': 'dexterity',
+    'Scavenging': 'wisdom',
+    'Shape Shifting': 'constitution',
+    'Enhanced Senses': 'wisdom'
 };
 
 const weaponSizes = {
@@ -107,6 +131,85 @@ const weaponSizes = {
 };
 
 const races = {
+    // DCC-Specific Races
+    bopca: {
+        name: 'Bopca',
+        statBonuses: { intelligence: 1, charisma: 1 },
+        skills: [
+            { name: 'Diplomatic Immunity', stat: 'charisma' },
+            { name: 'Alien Technology', stat: 'intelligence' }
+        ],
+        maximums: { 
+            strength: 12, dexterity: 14, constitution: 13, 
+            intelligence: 18, wisdom: 16, charisma: 17 
+        }
+    },
+    skyfowl: {
+        name: 'Skyfowl',
+        statBonuses: { dexterity: 2, wisdom: 1 },
+        skills: [
+            { name: 'Flight', stat: 'dexterity' },
+            { name: 'Aerial Combat', stat: 'dexterity' },
+            { name: 'Storm Resistance', stat: 'constitution' }
+        ],
+        maximums: { 
+            strength: 14, dexterity: 18, constitution: 15, 
+            intelligence: 14, wisdom: 17, charisma: 12 
+        }
+    },
+    rat_kin: {
+        name: 'Rat-kin',
+        statBonuses: { dexterity: 1, constitution: 1, wisdom: 1 },
+        skills: [
+            { name: 'Scavenging', stat: 'wisdom' },
+            { name: 'Disease Resistance', stat: 'constitution' },
+            { name: 'Tunnel Navigation', stat: 'wisdom' }
+        ],
+        maximums: { 
+            strength: 13, dexterity: 17, constitution: 16, 
+            intelligence: 14, wisdom: 16, charisma: 12 
+        }
+    },
+    hellspawn_familiar: {
+        name: 'Hellspawn Familiar',
+        statBonuses: { strength: 1, constitution: 1, charisma: 1 },
+        skills: [
+            { name: 'Demonic Heritage', stat: 'charisma' },
+            { name: 'Wing Growth', stat: 'constitution' },
+            { name: 'Fire Resistance', stat: 'constitution' }
+        ],
+        maximums: { 
+            strength: 16, dexterity: 15, constitution: 17, 
+            intelligence: 14, wisdom: 13, charisma: 16 
+        }
+    },
+    primal: {
+        name: 'Primal',
+        statBonuses: { strength: 2, constitution: 2, intelligence: 2 },
+        skills: [
+            { name: 'Universal Skill Training', stat: 'intelligence' },
+            { name: 'Cosmic Knowledge', stat: 'wisdom' },
+            { name: 'Progenitor Heritage', stat: 'charisma' }
+        ],
+        maximums: { 
+            strength: 20, dexterity: 20, constitution: 20, 
+            intelligence: 20, wisdom: 20, charisma: 20 
+        }
+    },
+    were_creature: {
+        name: 'Were-creature',
+        statBonuses: { strength: 2, constitution: 1 },
+        skills: [
+            { name: 'Shape Shifting', stat: 'constitution' },
+            { name: 'Enhanced Senses', stat: 'wisdom' },
+            { name: 'Lunar Affinity', stat: 'wisdom' }
+        ],
+        maximums: { 
+            strength: 18, dexterity: 16, constitution: 17, 
+            intelligence: 14, wisdom: 15, charisma: 13 
+        }
+    },
+    
     // Fantasy Races
     human: {
         name: 'Human',
@@ -253,6 +356,171 @@ const jobs = {
 };
 
 const classes = {
+    // DCC-Specific Classes
+    compensated_anarchist: {
+        name: 'Compensated Anarchist',
+        statBonuses: { strength: 1, charisma: 1, constitution: 1 },
+        skills: [
+            { name: 'Riot Control', stat: 'strength' },
+            { name: 'Crowd Manipulation', stat: 'charisma' },
+            { name: 'Urban Warfare', stat: 'intelligence' }
+        ]
+    },
+    bomb_squad_tech: {
+        name: 'Bomb Squad Tech',
+        statBonuses: { intelligence: 2, dexterity: 1 },
+        skills: [
+            { name: 'IED', stat: 'intelligence' },
+            { name: 'Bomb Surgeon', stat: 'intelligence' },
+            { name: 'Incendiary Device Handling', stat: 'intelligence' }
+        ]
+    },
+    prizefighter: {
+        name: 'Prizefighter',
+        statBonuses: { strength: 2, constitution: 1 },
+        skills: [
+            { name: 'Pugilism', stat: 'strength' },
+            { name: 'Iron Punch', stat: 'strength' },
+            { name: 'Powerful Strike', stat: 'strength' }
+        ]
+    },
+    artist_alley_mogul: {
+        name: 'Artist Alley Mogul',
+        statBonuses: { charisma: 2, intelligence: 1 },
+        skills: [
+            { name: 'Character Actor', stat: 'charisma' },
+            { name: 'Mascot', stat: 'charisma' },
+            { name: 'Performance', stat: 'charisma' }
+        ]
+    },
+    former_child_actor: {
+        name: 'Former Child Actor',
+        statBonuses: { charisma: 1, dexterity: 1, intelligence: 1 },
+        skills: [
+            { name: 'Character Actor', stat: 'charisma' },
+            { name: 'Performance', stat: 'charisma' },
+            { name: 'Stealth', stat: 'dexterity' }
+        ]
+    },
+    roller_derby_jammer: {
+        name: 'Roller Derby Jammer',
+        statBonuses: { dexterity: 2, constitution: 1 },
+        skills: [
+            { name: 'Light on Your Feet', stat: 'dexterity' },
+            { name: 'Crowd Navigation', stat: 'dexterity' },
+            { name: 'Momentum Control', stat: 'dexterity' }
+        ]
+    },
+    football_hooligan: {
+        name: 'Football Hooligan',
+        statBonuses: { strength: 1, constitution: 1, charisma: 1 },
+        skills: [
+            { name: 'Crowd Fighting', stat: 'strength' },
+            { name: 'Intimidation', stat: 'charisma' },
+            { name: 'Team Coordination', stat: 'charisma' }
+        ]
+    },
+    kabaddi_raider: {
+        name: 'Kabaddi Raider',
+        statBonuses: { dexterity: 1, constitution: 1, strength: 1 },
+        skills: [
+            { name: 'Grappling', stat: 'strength' },
+            { name: 'Breath Control', stat: 'constitution' },
+            { name: 'Team Tactics', stat: 'intelligence' }
+        ]
+    },
+    monster_truck_driver: {
+        name: 'Monster Truck Driver',
+        statBonuses: { strength: 2, constitution: 2 },
+        skills: [
+            { name: 'Vehicle Operation', stat: 'dexterity' },
+            { name: 'Ramming', stat: 'strength' },
+            { name: 'Mechanical Repair', stat: 'intelligence' }
+        ]
+    },
+    vape_shop_counter_jockey: {
+        name: 'Vape Shop Counter Jockey',
+        statBonuses: { charisma: 1, dexterity: 1 },
+        skills: [
+            { name: 'Customer Service', stat: 'charisma' },
+            { name: 'Product Knowledge', stat: 'intelligence' },
+            { name: 'Hipster Culture', stat: 'charisma' }
+        ]
+    },
+    freelance_psychiatrist: {
+        name: 'Freelance Psychiatrist',
+        statBonuses: { intelligence: 2, wisdom: 1 },
+        skills: [
+            { name: 'Mind Reading', stat: 'wisdom' },
+            { name: 'Psychological Manipulation', stat: 'charisma' },
+            { name: 'Therapy', stat: 'wisdom' }
+        ]
+    },
+    banana_farmer: {
+        name: 'Banana Farmer',
+        statBonuses: { wisdom: 1, constitution: 1, dexterity: 1 },
+        skills: [
+            { name: 'Plant Growth', stat: 'wisdom' },
+            { name: 'Seed Shooting', stat: 'dexterity' },
+            { name: 'Agricultural Knowledge', stat: 'intelligence' }
+        ]
+    },
+    necrobard: {
+        name: 'NecroBard',
+        statBonuses: { charisma: 1, intelligence: 1, wisdom: 1 },
+        skills: [
+            { name: 'Death Magic', stat: 'intelligence' },
+            { name: 'Performance', stat: 'charisma' },
+            { name: 'Undead Control', stat: 'wisdom' }
+        ]
+    },
+    feral_cat_berserker: {
+        name: 'Feral Cat Berserker',
+        statBonuses: { dexterity: 2, constitution: 1 },
+        skills: [
+            { name: 'Cat-like Reflexes', stat: 'dexterity' },
+            { name: 'Feral Rage', stat: 'strength' },
+            { name: 'Nine Lives', stat: 'constitution' }
+        ]
+    },
+    animal_test_subject: {
+        name: 'Animal Test Subject',
+        statBonuses: { constitution: 2, intelligence: 1 },
+        skills: [
+            { name: 'Poison Resistance', stat: 'constitution' },
+            { name: 'Chemical Knowledge', stat: 'intelligence' },
+            { name: 'Mutation', stat: 'constitution' }
+        ]
+    },
+    glass_cannon: {
+        name: 'Glass Cannon',
+        statBonuses: { constitution: 1, intelligence: 2 },
+        skills: [
+            { name: 'Spell Acceleration', stat: 'intelligence' },
+            { name: 'Magic Efficiency', stat: 'intelligence' },
+            { name: 'Power Channeling', stat: 'constitution' }
+        ]
+    },
+    legendary_diva: {
+        name: 'Legendary Diva',
+        statBonuses: { charisma: 3 },
+        skills: [
+            { name: 'Stage Presence', stat: 'charisma' },
+            { name: 'Crowd Control', stat: 'charisma' },
+            { name: 'Performance Magic', stat: 'charisma' }
+        ]
+    },
+    viper_queen: {
+        name: 'Viper Queen',
+        statBonuses: { dexterity: 1, constitution: 1, charisma: 1 },
+        skills: [
+            { name: 'Spit Poison', stat: 'constitution' },
+            { name: 'Serpentine Movement', stat: 'dexterity' },
+            { name: 'Venomous Bite', stat: 'constitution' }
+        ]
+    },
+    
+    // Traditional Classes
     fighter: { name: 'Fighter', statBonuses: { strength: 1, constitution: 1 }, skills: [{ name: 'Weapon Mastery', stat: 'strength' }, { name: 'Combat Tactics', stat: 'intelligence' }] },
     wizard: { name: 'Wizard', statBonuses: { intelligence: 2 }, skills: [{ name: 'Spellcasting', stat: 'intelligence' }, { name: 'Arcane Lore', stat: 'intelligence' }] },
     rogue: { name: 'Rogue', statBonuses: { dexterity: 2 }, skills: [{ name: 'Sneak Attack', stat: 'dexterity' }, { name: 'Lockpicking', stat: 'dexterity' }] },
@@ -331,11 +599,15 @@ function showNotification(type, title, result, details) {
 // TAB SYSTEM
 // ========================================
 function switchTab(tabName) {
-    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+    // Update both tab-btn and sidebar-tab classes
+    document.querySelectorAll('.tab-btn, .sidebar-tab').forEach(tab => tab.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
 
     document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
     document.getElementById(tabName).classList.add('active');
+
+    // Close sidebar after navigation on mobile
+    closeSidebar();
 
     // Update content based on active tab
     if (tabName === 'character') {
@@ -357,6 +629,33 @@ function switchTab(tabName) {
         renderStatusEffects();
     } else if (tabName === 'notes') {
         loadNotesFromCharacter();
+    }
+}
+
+// ========================================
+// SIDEBAR DRAWER SYSTEM
+// ========================================
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    
+    if (sidebar && overlay) {
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('open');
+        
+        // Toggle body scroll lock
+        document.body.classList.toggle('sidebar-open');
+    }
+}
+
+function closeSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    
+    if (sidebar && overlay) {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('open');
+        document.body.classList.remove('sidebar-open');
     }
 }
 
@@ -549,6 +848,365 @@ function resetCharacterBonuses() {
     character.raceBonuses = [];
     character.jobBonuses = [];
     character.classBonuses = [];
+}
+
+// ========================================
+// NEW CHARACTER CREATION
+// ========================================
+function createNewCharacter() {
+    // Reset character to default state
+    character = {
+        name: '',
+        level: 1,
+        availablePoints: 3,
+        stats: {
+            strength: 2,
+            dexterity: 2,
+            constitution: 2,
+            intelligence: 2,
+            wisdom: 2,
+            charisma: 2
+        },
+        statMaximums: {
+            strength: 15,
+            dexterity: 15,
+            constitution: 15,
+            intelligence: 15,
+            wisdom: 15,
+            charisma: 15
+        },
+        healthPoints: 3,
+        currentHealthPoints: 3,
+        magicPoints: 4,
+        currentMagicPoints: 4,
+        customSkills: [],
+        personal: {
+            age: '',
+            backstory: '',
+            portrait: null
+        },
+        race: '',
+        customRace: '',
+        raceBonuses: [],
+        customRaceData: {
+            selectedStats: [],
+            skills: [],
+            maximums: {}
+        },
+        job: '',
+        customJob: '',
+        class: '',
+        customClass: '',
+        jobBonuses: [],
+        classBonuses: [],
+        customJobData: {
+            selectedStats: [],
+            skills: []
+        },
+        customClassData: {
+            selectedStats: [],
+            skills: []
+        },
+        rollHistory: [],
+        spells: [],
+        inventory: [],
+        equipment: {
+            mainHand: null,
+            offHand: null,
+            armor: null,
+            accessory: null
+        },
+        statusEffects: [],
+        notes: {
+            personal: '',
+            party: '',
+            session: '',
+            barter: '',
+            world: '',
+            combat: ''
+        }
+    };
+
+    // Clear all form fields thoroughly
+    resetAllFormFields();
+    
+    // Hide and clear all dynamic displays
+    clearDynamicDisplays();
+    
+    // Switch to creation tab and refresh UI
+    switchTab('creation');
+    
+    // Re-render all components with fresh data
+    renderStats();
+    renderCharacterSkills();
+    renderCharacterSpells();
+    renderCharacterWeapons();
+    renderInventory();
+    renderEquipment();
+    updateHealthMagicDisplay();
+    updateCharacterDisplay();
+    updateBonusesDisplay();
+    
+    // Clear portrait display
+    resetPortraitDisplay();
+    
+    // Clear header character info
+    const characterInfoDisplay = document.querySelector('.character-info-display');
+    if (characterInfoDisplay) {
+        characterInfoDisplay.textContent = '';
+    }
+    
+    // Force refresh of the creation tab UI
+    refreshCreationTabUI();
+    
+    console.log('New character created - all data and displays cleared');
+}
+
+function refreshCreationTabUI() {
+    // Force update all form fields to reflect the reset character data
+    const charName = document.getElementById('char-name');
+    if (charName) {
+        charName.value = character.name || '';
+        charName.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    
+    const charLevel = document.getElementById('char-level');
+    if (charLevel) {
+        charLevel.value = character.level || 1;
+        charLevel.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    
+    const charAge = document.getElementById('char-age');
+    if (charAge) {
+        charAge.value = character.personal.age || '';
+        charAge.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    
+    const charBackstory = document.getElementById('char-backstory');
+    if (charBackstory) {
+        charBackstory.value = character.personal.backstory || '';
+        charBackstory.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    
+    // Reset all dropdowns to first option (empty) and trigger change events
+    const raceSelect = document.getElementById('race-select');
+    if (raceSelect) {
+        raceSelect.selectedIndex = 0;
+        raceSelect.value = '';
+        raceSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    
+    const jobSelect = document.getElementById('job-select');
+    if (jobSelect) {
+        jobSelect.selectedIndex = 0;
+        jobSelect.value = '';
+        jobSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    
+    const classSelect = document.getElementById('class-select');
+    if (classSelect) {
+        classSelect.selectedIndex = 0;
+        classSelect.value = '';
+        classSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    
+    // Hide all custom input fields
+    const customFields = ['custom-race', 'custom-job', 'custom-class'];
+    customFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.style.display = 'none';
+            field.value = '';
+        }
+    });
+    
+    // Hide all custom bonus builders
+    const customBuilders = ['custom-race-bonuses', 'custom-job-bonuses', 'custom-class-bonuses'];
+    customBuilders.forEach(builderId => {
+        const builder = document.getElementById(builderId);
+        if (builder) {
+            builder.style.display = 'none';
+        }
+    });
+    
+    // Force refresh of stats display in creation tab with a small delay
+    setTimeout(() => {
+        renderStats();
+        updateBonusesDisplay();
+        updateHealthMagicDisplay();
+        
+        // Update available points display
+        const availablePointsDisplay = document.getElementById('available-points');
+        if (availablePointsDisplay) {
+            availablePointsDisplay.textContent = character.availablePoints;
+        }
+        
+        // Force re-render of any character-specific displays
+        if (typeof updateCharacterDisplay === 'function') {
+            updateCharacterDisplay();
+        }
+        
+        console.log('Creation tab UI fully refreshed');
+    }, 100);
+    
+    console.log('Creation tab UI refresh initiated');
+}
+
+function resetAllFormFields() {
+    // Reset character info fields
+    const fields = [
+        'char-name', 'char-level', 'custom-race', 'custom-job', 'custom-class',
+        'race-select', 'job-select', 'class-select', 'char-age', 'char-backstory'
+    ];
+    
+    fields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            if (field.type === 'select-one') {
+                field.value = '';
+                field.selectedIndex = 0;
+            } else if (field.type === 'number') {
+                field.value = fieldId === 'char-level' ? '1' : '';
+            } else if (field.tagName.toLowerCase() === 'textarea') {
+                field.value = '';
+            } else {
+                field.value = '';
+            }
+            
+            // Trigger change events to update any dependent UI
+            field.dispatchEvent(new Event('change', { bubbles: true }));
+            field.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+    });
+    
+    // Reset custom skill dropdowns and inputs
+    const customSkillFields = [
+        'custom-race-skill1', 'custom-race-skill2', 
+        'custom-job-skill1', 'custom-job-skill2',
+        'custom-class-skill1', 'custom-class-skill2'
+    ];
+    
+    customSkillFields.forEach(fieldId => {
+        const select = document.getElementById(fieldId);
+        const nameInput = document.getElementById(fieldId + '-name');
+        
+        if (select) {
+            select.value = '';
+            select.selectedIndex = 0;
+        }
+        if (nameInput) {
+            nameInput.value = '';
+            nameInput.style.display = 'none';
+        }
+    });
+    
+    // Reset portrait upload
+    const portraitUpload = document.getElementById('portrait-upload');
+    if (portraitUpload) portraitUpload.value = '';
+}
+
+function clearDynamicDisplays() {
+    // Hide and clear Active Bonuses display
+    const bonusesDisplay = document.getElementById('bonuses-display');
+    if (bonusesDisplay) {
+        bonusesDisplay.style.display = 'none';
+        const bonusesContent = bonusesDisplay.querySelector('.bonuses-content');
+        if (bonusesContent) {
+            bonusesContent.innerHTML = '';
+        }
+    }
+    
+    // Hide custom bonus builders
+    const customBuilders = [
+        'custom-race-bonuses',
+        'custom-job-bonuses', 
+        'custom-class-bonuses'
+    ];
+    
+    customBuilders.forEach(builderId => {
+        const builder = document.getElementById(builderId);
+        if (builder) {
+            builder.style.display = 'none';
+            // Clear any content inside
+            const inputs = builder.querySelectorAll('input, select');
+            inputs.forEach(input => {
+                if (input.type === 'select-one') {
+                    input.selectedIndex = 0;
+                } else {
+                    input.value = '';
+                }
+            });
+        }
+    });
+    
+    // Hide custom input fields
+    const customInputs = [
+        'custom-race',
+        'custom-job', 
+        'custom-class'
+    ];
+    
+    customInputs.forEach(inputId => {
+        const input = document.getElementById(inputId);
+        if (input) {
+            input.style.display = 'none';
+            input.value = '';
+        }
+    });
+    
+    // Clear stats grid (will be repopulated by renderStats())
+    const statsGrid = document.getElementById('stats-grid');
+    if (statsGrid) {
+        statsGrid.innerHTML = '';
+    }
+    
+    // Clear any skill displays
+    const skillDisplays = document.querySelectorAll('.skill-display, .skills-list, .character-skills');
+    skillDisplays.forEach(display => {
+        if (display) {
+            display.innerHTML = '';
+        }
+    });
+    
+    // Clear any equipment displays
+    const equipmentSlots = ['mainHand', 'offHand', 'armor', 'accessory'];
+    equipmentSlots.forEach(slot => {
+        const slotElement = document.getElementById(slot);
+        if (slotElement) {
+            slotElement.innerHTML = `
+                <div class="equipment-placeholder">
+                    <i class="ra ra-crossed-swords"></i>
+                    <span>Empty</span>
+                </div>
+            `;
+        }
+    });
+    
+    // Clear inventory display
+    const inventoryContainer = document.querySelector('.inventory-container, .inventory-list, #inventory-display');
+    if (inventoryContainer) {
+        inventoryContainer.innerHTML = '';
+    }
+    
+    // Clear spell displays
+    const spellContainers = document.querySelectorAll('.spells-container, .spells-list, #spells-display');
+    spellContainers.forEach(container => {
+        if (container) {
+            container.innerHTML = '';
+        }
+    });
+}
+
+function resetPortraitDisplay() {
+    const portraitDisplay = document.getElementById('portrait-display');
+    if (portraitDisplay) {
+        portraitDisplay.innerHTML = `
+            <div class="portrait-placeholder">
+                <i class="ra ra-hood"></i>
+                <span>Tap to Upload</span>
+            </div>
+        `;
+    }
 }
 
 function applyRaceBonuses() {
@@ -2585,11 +3243,17 @@ function addStatusEffect() {
     document.getElementById('status-effect-type').value = 'bleeding';
 
     renderStatusEffects();
+    startHeaderStatusTimer(); // Start the header timer when effects are added
 }
 
 function removeStatusEffect(effectId) {
     character.statusEffects = character.statusEffects.filter(effect => effect.id !== effectId);
     renderStatusEffects();
+    
+    // Stop header timer if no more effects
+    if (character.statusEffects.length === 0) {
+        stopHeaderStatusTimer();
+    }
 }
 
 function updateStatusTimers() {
@@ -2613,6 +3277,11 @@ function updateStatusTimers() {
         });
 
         renderStatusEffects();
+        
+        // Stop header timer if all effects have expired
+        if (character.statusEffects.length === 0) {
+            stopHeaderStatusTimer();
+        }
     }
 }
 
@@ -2671,6 +3340,72 @@ function renderStatusEffects() {
 
         statusGrid.appendChild(effectDiv);
     });
+    
+    // Update header display after rendering
+    updateHeaderStatusDisplay();
+}
+
+// ========================================
+// HEADER STATUS EFFECTS DISPLAY
+// ========================================
+function updateHeaderStatusDisplay() {
+    const headerContainer = document.getElementById('status-header-container');
+    if (!headerContainer) return;
+
+    headerContainer.innerHTML = '';
+
+    if (!character.statusEffects || character.statusEffects.length === 0) {
+        return;
+    }
+
+    character.statusEffects.forEach(effect => {
+        const timeElapsed = Math.floor((Date.now() - effect.startTime) / 60000);
+        const timeRemaining = Math.max(0, effect.duration - timeElapsed);
+        
+        if (timeRemaining <= 0) return; // Skip expired effects
+
+        const progressPercent = (timeRemaining / effect.duration) * 100;
+        const isCritical = timeRemaining <= 2; // Last 2 minutes are critical
+
+        const statusItem = document.createElement('div');
+        statusItem.className = `status-header-item ${isCritical ? 'critical' : ''}`;
+        statusItem.style.position = 'relative';
+        statusItem.style.overflow = 'hidden';
+
+        const minutes = Math.floor(timeRemaining);
+        const seconds = Math.floor((timeRemaining % 1) * 60);
+        const timeDisplay = minutes > 0 ? `${minutes}m` : `${seconds}s`;
+
+        statusItem.innerHTML = `
+            <span class="status-header-icon">${effect.icon}</span>
+            <span class="status-header-name" title="${effect.name}">${effect.name}</span>
+            <span class="status-header-timer">${timeDisplay}</span>
+            <div class="status-progress-bar" style="width: ${progressPercent}%"></div>
+        `;
+
+        headerContainer.appendChild(statusItem);
+    });
+}
+
+function startHeaderStatusTimer() {
+    // Update header display every second for more accurate countdown
+    if (window.statusHeaderTimer) {
+        clearInterval(window.statusHeaderTimer);
+    }
+    
+    window.statusHeaderTimer = setInterval(() => {
+        updateHeaderStatusDisplay();
+        
+        // Also check for expired effects more frequently
+        updateStatusTimers();
+    }, 1000);
+}
+
+function stopHeaderStatusTimer() {
+    if (window.statusHeaderTimer) {
+        clearInterval(window.statusHeaderTimer);
+        window.statusHeaderTimer = null;
+    }
 }
 
 // ========================================
@@ -2937,8 +3672,8 @@ function initializeCharacterSheet() {
         calculateSpellCost();
     });
 
-    // Tab switching
-    document.querySelectorAll('.tab').forEach(tab => {
+    // Tab switching - supports both bottom tabs and sidebar tabs
+    document.querySelectorAll('.tab-btn, .sidebar-tab').forEach(tab => {
         tab.addEventListener('click', (e) => {
             switchTab(tab.dataset.tab);
         });
@@ -2967,6 +3702,12 @@ function initializeCharacterSheet() {
 
     // Start the status effect timer - checks every minute
     setInterval(updateStatusTimers, 60000);
+    
+    // Initialize header status display and start timer if effects exist
+    renderStatusEffects(); // This will call updateHeaderStatusDisplay
+    if (character.statusEffects && character.statusEffects.length > 0) {
+        startHeaderStatusTimer();
+    }
 
     // Initialize auto-save for notes
     autoSaveNotes();
