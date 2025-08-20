@@ -90,6 +90,10 @@
                     <span class="tab-icon"><i class="ra ra-scroll-unfurled"></i></span>
                     <span class="tab-label">Notes & Backstory</span>
                 </button>
+                <button class="sidebar-tab" data-tab="reference">
+                    <span class="tab-icon"><i class="material-icons">help_outline</i></span>
+                    <span class="tab-label">How the Game Works</span>
+                </button>
             </div>
         </nav>
 
@@ -1103,6 +1107,25 @@
                             </div>
                             <textarea id="combat-notes" class="note-textarea"
                                 placeholder="Enemy tactics, weaknesses, strategies..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Reference/How the Game Works Tab -->
+            <section class="tab-content" id="reference">
+                <div class="content-wrapper">
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="material-icons">help_outline</i>
+                            <h3>How the Game Works</h3>
+                        </div>
+                        <div class="reference-loading">
+                            <div class="loading-spinner"></div>
+                            <p>Loading game reference...</p>
+                        </div>
+                        <div class="reference-content" id="reference-content" style="display: none;">
+                            <!-- Markdown content will be loaded here -->
                         </div>
                     </div>
                 </div>

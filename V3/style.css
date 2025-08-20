@@ -2033,6 +2033,122 @@ body.sidebar-open {
 }
 
 /* ========================================
+   REFERENCE GUIDE STYLES
+   ======================================== */
+.reference-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--spacing-xl);
+    color: var(--text-secondary);
+}
+
+.loading-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border-color);
+    border-top: 3px solid var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: var(--spacing-md);
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.reference-content {
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: var(--spacing-md);
+    line-height: 1.8;
+}
+
+.reference-content h1 {
+    color: var(--primary);
+    border-bottom: 2px solid var(--primary);
+    padding-bottom: var(--spacing-sm);
+    margin-bottom: var(--spacing-lg);
+}
+
+.reference-content h2 {
+    color: var(--secondary);
+    margin-top: var(--spacing-xl);
+    margin-bottom: var(--spacing-md);
+    border-left: 4px solid var(--secondary);
+    padding-left: var(--spacing-md);
+}
+
+.reference-content h3 {
+    color: var(--accent);
+    margin-top: var(--spacing-lg);
+    margin-bottom: var(--spacing-sm);
+}
+
+.reference-content h4 {
+    color: var(--primary-light);
+    margin-top: var(--spacing-md);
+    margin-bottom: var(--spacing-xs);
+}
+
+.reference-content code {
+    background: var(--bg-tertiary);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    color: var(--accent);
+}
+
+.reference-content pre {
+    background: var(--bg-tertiary);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    overflow-x: auto;
+    margin: var(--spacing-md) 0;
+    border-left: 4px solid var(--primary);
+}
+
+.reference-content pre code {
+    background: none;
+    padding: 0;
+}
+
+.reference-content blockquote {
+    border-left: 4px solid var(--secondary);
+    padding-left: var(--spacing-md);
+    margin: var(--spacing-md) 0;
+    font-style: italic;
+    color: var(--text-secondary);
+}
+
+.reference-content ul, .reference-content ol {
+    margin: var(--spacing-md) 0;
+    padding-left: var(--spacing-lg);
+}
+
+.reference-content li {
+    margin-bottom: var(--spacing-xs);
+}
+
+.reference-content strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.reference-content em {
+    color: var(--secondary);
+}
+
+.reference-content hr {
+    border: none;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+    margin: var(--spacing-xl) 0;
+}
+
+/* ========================================
    ACTION BAR
    ======================================== */
 .action-bar {
