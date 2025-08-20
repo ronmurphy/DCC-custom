@@ -272,6 +272,11 @@ function createNewCharacter() {
     
     hideLandingScreen();
     
+    // Switch to creation tab when creating a new character
+    if (typeof switchTab === 'function') {
+        switchTab('creation');
+    }
+    
     // Auto-save periodically
     startAutoSave();
 }
@@ -340,6 +345,17 @@ function loadCharacterFromManager(characterId) {
     }
     
     hideLandingScreen();
+    
+    // Switch to character tab when loading an existing character (character overview)
+    if (typeof switchTab === 'function') {
+        switchTab('character');
+    }
+    
+    // Re-render everything AFTER switching tabs to ensure character content is visible
+    setTimeout(() => {
+        refreshCharacterSheet();
+    }, 100);
+    
     startAutoSave();
 }
 

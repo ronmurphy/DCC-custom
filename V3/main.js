@@ -2664,6 +2664,13 @@ function renderInventory() {
         </button>
     </div>
 `;
+        
+        // Add equipment bonus indicators for weapons and armor
+        if (item.type === 'weapon' || item.type === 'armor') {
+            const itemType = item.type === 'weapon' ? (item.ranged ? 'ranged weapon' : 'melee weapon') : item.type;
+            addEquipmentBonusIndicators(itemDiv, item.name, itemType);
+        }
+        
         inventoryGrid.appendChild(itemDiv);
     });
 }
@@ -2982,6 +2989,128 @@ function rollSkill(skillName, statName, statValue) {
     updateRollHistoryDisplay();
 }
 
+// ========================================
+// EQUIPMENT BONUS SYSTEM
+// ========================================
+
+// Get equipment bonuses from achievements and skills
+function getEquipmentBonuses(itemName, itemType) {
+    const bonuses = {
+        damage: 0,
+        toHit: 0,
+        sources: []
+    };
+
+    // Check achievements for equipment bonuses
+    if (character.achievements) {
+        character.achievements.forEach(achievement => {
+            const achievementBonuses = parseEquipmentBonuses(achievement.effect, itemName, itemType);
+            if (achievementBonuses.damage > 0 || achievementBonuses.toHit > 0) {
+                bonuses.damage += achievementBonuses.damage;
+                bonuses.toHit += achievementBonuses.toHit;
+                bonuses.sources.push({
+                    type: 'achievement',
+                    name: achievement.name,
+                    damage: achievementBonuses.damage,
+                    toHit: achievementBonuses.toHit
+                });
+            }
+        });
+    }
+
+    // Check skills for equipment bonuses (future enhancement)
+    // This could be expanded to check skill descriptions for equipment bonuses
+
+    return bonuses;
+}
+
+// Parse equipment bonuses from text (achievements/skills)
+function parseEquipmentBonuses(effectText, itemName, itemType) {
+    const bonuses = { damage: 0, toHit: 0 };
+    if (!effectText) return bonuses;
+
+    const itemNameLower = itemName.toLowerCase();
+    const itemTypeLower = itemType.toLowerCase();
+    const effectLower = effectText.toLowerCase();
+
+    // Patterns for equipment bonuses
+    const bonusPatterns = [
+        // Specific weapon bonuses: "+2 damage with Rusty Sword"
+        new RegExp(`\\+(\\d+)\\s+damage\\s+with\\s+${itemNameLower.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}`, 'gi'),
+        // Weapon type bonuses: "+1 to hit with swords", "+2 damage with ranged weapons"
+        new RegExp(`\\+(\\d+)\\s+(?:to hit|hit)\\s+with\\s+.*${itemTypeLower}`, 'gi'),
+        new RegExp(`\\+(\\d+)\\s+damage\\s+with\\s+.*${itemTypeLower}`, 'gi'),
+        // General weapon bonuses: "+1 to all weapon attacks"
+        /\+(\d+)\s+(?:to hit|hit)\s+(?:with\s+)?(?:all\s+)?weapons?/gi,
+        /\+(\d+)\s+damage\s+(?:with\s+)?(?:all\s+)?weapons?/gi,
+        // Shield bonuses for armor with "shield" in name
+        ...(itemNameLower.includes('shield') ? [
+            /\+(\d+)\s+(?:to\s+)?(?:ac|armor|protection)\s+(?:with\s+)?shields?/gi,
+            /\+(\d+)\s+(?:to\s+)?defense\s+(?:with\s+)?shields?/gi
+        ] : [])
+    ];
+
+    // Check for specific item name matches
+    if (effectLower.includes(itemNameLower)) {
+        const damageMatch = effectText.match(new RegExp(`\\+(\\d+)\\s+(?:to\\s+)?damage\\s+.*${itemNameLower.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}`, 'gi'));
+        const hitMatch = effectText.match(new RegExp(`\\+(\\d+)\\s+(?:to\\s+)?hit\\s+.*${itemNameLower.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}`, 'gi'));
+        
+        if (damageMatch) bonuses.damage += parseInt(damageMatch[0].match(/\d+/)[0]);
+        if (hitMatch) bonuses.toHit += parseInt(hitMatch[0].match(/\d+/)[0]);
+    }
+
+    // Check general patterns
+    bonusPatterns.forEach(pattern => {
+        let match;
+        while ((match = pattern.exec(effectText)) !== null) {
+            const bonus = parseInt(match[1]);
+            if (pattern.source.includes('damage')) {
+                bonuses.damage += bonus;
+            } else if (pattern.source.includes('hit')) {
+                bonuses.toHit += bonus;
+            }
+        }
+    });
+
+    return bonuses;
+}
+
+// Add visual indicators to equipment display
+function addEquipmentBonusIndicators(itemElement, itemName, itemType) {
+    const bonuses = getEquipmentBonuses(itemName, itemType);
+    
+    if (bonuses.sources.length > 0) {
+        // Add bonus indicator
+        const bonusIndicator = document.createElement('div');
+        bonusIndicator.className = 'equipment-bonus-indicator';
+        bonusIndicator.style.cssText = `
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            cursor: help;
+            z-index: 2;
+        `;
+        bonusIndicator.textContent = '⚡';
+        bonusIndicator.title = bonuses.sources.map(source => 
+            `${source.name}: ${source.damage > 0 ? `+${source.damage} damage` : ''}${source.damage > 0 && source.toHit > 0 ? ', ' : ''}${source.toHit > 0 ? `+${source.toHit} to hit` : ''}`
+        ).join('\n');
+        
+        // Make sure the item element has relative positioning
+        itemElement.style.position = 'relative';
+        itemElement.appendChild(bonusIndicator);
+    }
+}
+
 function rollWeaponDamage(weaponId) {
     const weapon = getItemById(weaponId);
     if (!weapon) return;
@@ -2989,12 +3118,17 @@ function rollWeaponDamage(weaponId) {
     const weaponSize = weaponSizes[weapon.size] || weaponSizes.medium;
     const statUsed = weapon.ranged ? 'dexterity' : 'strength';
 
-    // Roll to hit
+    // Get equipment bonuses
+    const equipmentBonuses = getEquipmentBonuses(weapon.name, weapon.ranged ? 'ranged weapon' : 'melee weapon');
+
+    // Roll to hit (with equipment bonuses)
     const toHitRoll = rollToHit(statUsed);
+    toHitRoll.total += equipmentBonuses.toHit;
+    toHitRoll.equipmentBonus = equipmentBonuses.toHit;
 
     // Roll damage
     const damageRoll = Math.floor(Math.random() * weaponSize.dice) + 1;
-    let totalDamage = damageRoll + character.stats[statUsed];
+    let totalDamage = damageRoll + character.stats[statUsed] + equipmentBonuses.damage;
 
     // Apply critical hit bonus
     if (toHitRoll.isCrit) {
@@ -3008,10 +3142,12 @@ function rollWeaponDamage(weaponId) {
         statUsed: statUsed,
         damageRoll: damageRoll,
         statBonus: character.stats[statUsed],
+        equipmentBonus: equipmentBonuses.damage,
         totalDamage: totalDamage,
         diceType: weaponSize.dice,
         isRanged: weapon.ranged,
         toHit: toHitRoll,
+        equipmentBonusSources: equipmentBonuses.sources,
         timestamp: new Date().toLocaleTimeString()
     };
 
@@ -3020,11 +3156,15 @@ function rollWeaponDamage(weaponId) {
         character.rollHistory = character.rollHistory.slice(0, 50);
     }
 
+    // Build bonus description for notification
+    const equipmentBonusText = equipmentBonuses.sources.length > 0 ? 
+        `<br>Equipment Bonuses: ${equipmentBonuses.sources.map(s => `${s.name} (+${s.damage > 0 ? s.damage + ' dmg' : ''}${s.damage > 0 && s.toHit > 0 ? ', ' : ''}${s.toHit > 0 ? s.toHit + ' hit' : ''})`).join(', ')}` : '';
+
     showNotification('weapon', `${weaponData.name} Attack`,
         `${toHitRoll.isCrit ? '💥 CRITICAL HIT!' : 'Hit!'} Damage: ${weaponData.totalDamage}`,
-        `To Hit: d10(${toHitRoll.d10Roll}) + ${statUsed.charAt(0).toUpperCase() + statUsed.slice(1)}(${toHitRoll.statBonus}) + Lv(${toHitRoll.levelBonus}) = ${toHitRoll.total}<br>` +
-        `Damage: d${weaponData.diceType}(${weaponData.damageRoll}) + ${weaponData.statUsed.charAt(0).toUpperCase() + weaponData.statUsed.slice(1)}(${weaponData.statBonus})${toHitRoll.isCrit ? ' + Crit(5)' : ''}<br>` +
-        `${weaponData.weaponSize} ${weaponData.isRanged ? 'Ranged' : 'Melee'} Weapon`);
+        `To Hit: d10(${toHitRoll.d10Roll}) + ${statUsed.charAt(0).toUpperCase() + statUsed.slice(1)}(${toHitRoll.statBonus}) + Lv(${toHitRoll.levelBonus})${equipmentBonuses.toHit > 0 ? ` + Equipment(${equipmentBonuses.toHit})` : ''} = ${toHitRoll.total}<br>` +
+        `Damage: d${weaponData.diceType}(${weaponData.damageRoll}) + ${weaponData.statUsed.charAt(0).toUpperCase() + weaponData.statUsed.slice(1)}(${weaponData.statBonus})${equipmentBonuses.damage > 0 ? ` + Equipment(${equipmentBonuses.damage})` : ''}${toHitRoll.isCrit ? ' + Crit(5)' : ''}<br>` +
+        `${weaponData.weaponSize} ${weaponData.isRanged ? 'Ranged' : 'Melee'} Weapon${equipmentBonusText}`);
 
     updateRollHistoryDisplay();
 }
