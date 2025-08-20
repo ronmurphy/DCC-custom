@@ -633,6 +633,8 @@ function switchTab(tabName) {
         renderStatusEffects();
     } else if (tabName === 'notes') {
         loadNotesFromCharacter();
+    } else if (tabName === 'reference') {
+        loadGameReference();
     }
 }
 
@@ -5066,6 +5068,116 @@ function applySelectedSkillsToCharacter() {
     // Re-render character skills
     renderCharacterSkills();
 }
+
+// ========================================
+// GAME REFERENCE SYSTEM
+// ========================================
+
+let gameReferenceLoaded = false;
+
+// Simple markdown parser for basic formatting
+function parseMarkdown(text) {
+    let html = text;
+    
+    // Headers
+    html = html.replace(/^### (.*$)/gm, '<h3>$1</h3>');
+    html = html.replace(/^## (.*$)/gm, '<h2>$1</h2>');
+    html = html.replace(/^# (.*$)/gm, '<h1>$1</h1>');
+    html = html.replace(/^#### (.*$)/gm, '<h4>$1</h4>');
+    
+    // Bold and italic
+    html = html.replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>');
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    
+    // Code blocks
+    html = html.replace(/```[\s\S]*?```/g, function(match) {
+        const code = match.replace(/```/g, '').trim();
+        return `<pre><code>${code}</code></pre>`;
+    });
+    
+    // Inline code
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+    
+    // Horizontal rules
+    html = html.replace(/^---$/gm, '<hr>');
+    
+    // Lists
+    html = html.replace(/^- (.*$)/gm, '<li>$1</li>');
+    html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+    
+    // Numbered lists
+    html = html.replace(/^\d+\. (.*$)/gm, '<li>$1</li>');
+    html = html.replace(/(<li>.*<\/li>)/s, function(match) {
+        if (!match.includes('<ul>')) {
+            return '<ol>' + match + '</ol>';
+        }
+        return match;
+    });
+    
+    // Line breaks
+    html = html.replace(/\n\n/g, '</p><p>');
+    html = '<p>' + html + '</p>';
+    
+    // Clean up empty paragraphs
+    html = html.replace(/<p><\/p>/g, '');
+    html = html.replace(/<p>(<h[1-6]>)/g, '$1');
+    html = html.replace(/(<\/h[1-6]>)<\/p>/g, '$1');
+    html = html.replace(/<p>(<hr>)<\/p>/g, '$1');
+    html = html.replace(/<p>(<ul>)/g, '$1');
+    html = html.replace(/(<\/ul>)<\/p>/g, '$1');
+    html = html.replace(/<p>(<ol>)/g, '$1');
+    html = html.replace(/(<\/ol>)<\/p>/g, '$1');
+    html = html.replace(/<p>(<pre>)/g, '$1');
+    html = html.replace(/(<\/pre>)<\/p>/g, '$1');
+    
+    return html;
+}
+
+// Load and display the game reference markdown
+async function loadGameReference() {
+    if (gameReferenceLoaded) {
+        return; // Already loaded
+    }
+    
+    const loadingElement = document.querySelector('.reference-loading');
+    const contentElement = document.getElementById('reference-content');
+    
+    try {
+        loadingElement.style.display = 'flex';
+        contentElement.style.display = 'none';
+        
+        const response = await fetch('./game-reference.md');
+        if (!response.ok) {
+            throw new Error(`Failed to load reference: ${response.status}`);
+        }
+        
+        const markdownText = await response.text();
+        const htmlContent = parseMarkdown(markdownText);
+        
+        contentElement.innerHTML = htmlContent;
+        
+        // Hide loading and show content
+        loadingElement.style.display = 'none';
+        contentElement.style.display = 'block';
+        
+        gameReferenceLoaded = true;
+        
+    } catch (error) {
+        console.error('Error loading game reference:', error);
+        loadingElement.innerHTML = `
+            <div style="text-align: center; color: var(--error);">
+                <i class="material-icons" style="font-size: 2rem; margin-bottom: 1rem;">error_outline</i>
+                <p>Failed to load game reference</p>
+                <p style="font-size: 0.9em; opacity: 0.7;">Check your internet connection and try again</p>
+            </div>
+        `;
+    }
+}
+
+// ========================================
+// INITIALIZATION
+// ========================================
 
 function initializeCharacterSheet() {
     renderStats();
