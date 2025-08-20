@@ -1,10 +1,19 @@
 // Cache Management Utilities
 console.log('🗄️ Cache management utilities loaded');
 
-// Function to clear all caches
+// Function to clear all caches AND unregister service workers
 async function clearAllCaches() {
     try {
-        console.log('🧹 Starting cache cleanup...');
+        console.log('🧹 Starting complete cache cleanup...');
+        
+        // Unregister all service workers first
+        if ('serviceWorker' in navigator) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            for (let registration of registrations) {
+                console.log('🚫 Unregistering service worker:', registration.scope);
+                await registration.unregister();
+            }
+        }
         
         // Get all cache names
         const cacheNames = await caches.keys();
@@ -18,18 +27,18 @@ async function clearAllCaches() {
         
         await Promise.all(deletePromises);
         
-        // Also clear localStorage if needed
+        // Show cache info
         const localStorageKeys = Object.keys(localStorage);
         console.log('💾 LocalStorage keys found:', localStorageKeys.length);
         
         // Show success message
-        console.log('✅ All caches cleared successfully!');
+        console.log('✅ All caches and service workers cleared successfully!');
         
         // Show user notification
         if (window.showNotification) {
-            showNotification('success', 'Cache Cleared', 'All cached data has been cleared. The app will reload with fresh content.');
+            showNotification('success', 'Cache Cleared', 'All cached data and service workers cleared. The app will reload with fresh content.');
         } else {
-            alert('✅ Cache cleared successfully! The page will reload with fresh content.');
+            alert('✅ Cache and service workers cleared! The page will reload with fresh content.');
         }
         
         // Reload the page to get fresh content

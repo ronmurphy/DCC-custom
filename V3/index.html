@@ -1084,7 +1084,8 @@
     <script src="achievements.js"></script>
     <script src="debug-dcc.js"></script>
     <script>
-        // PWA Service Worker Registration
+        // PWA Service Worker Registration - DISABLED TO PREVENT CACHING ISSUES
+        /* 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function () {
                 navigator.serviceWorker.register('./sw.js')
@@ -1096,6 +1097,8 @@
                     });
             });
         }
+        */
+        console.log('🚫 Service Worker disabled - using browser cache only for better development experience');
 
         // PWA Install Prompt
         let deferredPrompt;
