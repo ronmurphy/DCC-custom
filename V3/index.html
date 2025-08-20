@@ -475,6 +475,87 @@
                             placeholder="Tell your character's story..." rows="6"></textarea>
                     </div>
 
+                    <!-- Skills Selection Section -->
+                    <div class="card skills-selection-card">
+                        <div class="card-header">
+                            <i class="ra ra-gears"></i>
+                            <h3>Starting Skills</h3>
+                            <div class="skills-counter">
+                                <span class="skills-label">Selected</span>
+                                <span class="skills-value" id="selected-skills-count">0</span>
+                                <span class="skills-max">/5</span>
+                            </div>
+                        </div>
+                        <p class="hint-text">Choose up to 5 skills from the list below, or create your own custom skills. Skills based on your class and job attributes get bonus dice!</p>
+                        
+                        <div class="skills-tabs">
+                            <button class="skills-tab-btn active" data-skills-tab="existing">
+                                <i class="ra ra-book"></i>
+                                Existing Skills
+                            </button>
+                            <button class="skills-tab-btn" data-skills-tab="custom">
+                                <i class="ra ra-quill-ink"></i>
+                                Custom Skills
+                            </button>
+                        </div>
+
+                        <!-- Existing Skills Tab -->
+                        <div class="skills-tab-content active" id="existing-skills-tab">
+                            <div class="skills-filter">
+                                <select id="skills-filter-stat" class="filter-select">
+                                    <option value="">Filter by attribute...</option>
+                                    <option value="strength">Strength</option>
+                                    <option value="dexterity">Dexterity</option>
+                                    <option value="constitution">Constitution</option>
+                                    <option value="intelligence">Intelligence</option>
+                                    <option value="wisdom">Wisdom</option>
+                                    <option value="charisma">Charisma</option>
+                                </select>
+                                <input type="text" id="skills-search" class="search-input" placeholder="Search skills...">
+                            </div>
+                            <div class="skills-selection-grid" id="skills-selection-grid">
+                                <!-- Available skills will be rendered here -->
+                            </div>
+                        </div>
+
+                        <!-- Custom Skills Tab -->
+                        <div class="skills-tab-content" id="custom-skills-tab">
+                            <div class="custom-skills-creator">
+                                <h4>Create Custom Skills</h4>
+                                <div class="custom-skill-form">
+                                    <input type="text" id="custom-skill-name" class="skill-name-input" 
+                                           placeholder="Skill name (e.g., 'Spaceship Piloting')">
+                                    <select id="custom-skill-stat" class="skill-stat-select">
+                                        <option value="strength">Strength</option>
+                                        <option value="dexterity">Dexterity</option>
+                                        <option value="constitution">Constitution</option>
+                                        <option value="intelligence">Intelligence</option>
+                                        <option value="wisdom">Wisdom</option>
+                                        <option value="charisma">Charisma</option>
+                                    </select>
+                                    <button class="add-custom-skill-btn" onclick="addCustomSkillToSelection()">
+                                        <span class="material-icons">add</span>
+                                        Add Skill
+                                    </button>
+                                </div>
+                                <div class="custom-skills-list" id="custom-skills-list">
+                                    <!-- Custom skills will appear here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Selected Skills Display -->
+                        <div class="selected-skills-section">
+                            <h4>Your Selected Skills</h4>
+                            <div class="selected-skills-grid" id="selected-skills-grid">
+                                <div class="no-skills-message">
+                                    <i class="ra ra-help"></i>
+                                    <p>No skills selected yet. Choose up to 5 skills above!</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Action Buttons -->
                     <div class="action-bar">
                         <button class="action-btn new-char-btn" onclick="createNewCharacter()">

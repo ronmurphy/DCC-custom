@@ -524,6 +524,8 @@ function triggerAchievementSelection(character) {
 }
 
 // Hook into existing level up system
+// COMMENTED OUT: Now using integrated achievement system in main.js Level Up modal
+/*
 function enhanceLevelUpWithAchievements() {
     // Override the existing confirmLevelUp function to include achievements
     const originalConfirmLevelUp = window.confirmLevelUp;
@@ -539,6 +541,7 @@ function enhanceLevelUpWithAchievements() {
         };
     }
 }
+*/
 
 // ========================================
 // ACHIEVEMENT STYLES
@@ -772,7 +775,7 @@ async function initializeAchievementSystem() {
     
     await loadAchievements();
     addAchievementStyles();
-    enhanceLevelUpWithAchievements();
+    // enhanceLevelUpWithAchievements(); // COMMENTED OUT: Now using integrated achievement system in main.js
     
     // Add achievements tab when character is loaded
     if (character) {

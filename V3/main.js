@@ -79,6 +79,10 @@ let character = {
 // ========================================
 // GAME DATA DEFINITIONS
 // ========================================
+
+// Achievements data will be loaded by achievements.js
+// (loadAchievements function is also provided by achievements.js)
+
 const standardSkills = {
     'Acrobatics': 'dexterity',
     'Animal Handling': 'wisdom',
@@ -731,23 +735,152 @@ function debounce(func, wait) {
 // ========================================
 // CHARACTER STATS SYSTEM
 // ========================================
+// ========================================
+// BONUS CALCULATION HELPERS
+// ========================================
+function getSelectedRaceBonuses() {
+    const raceSelect = document.getElementById('race-select');
+    if (!raceSelect || !raceSelect.value) return {};
+    
+    const selectedRace = raceSelect.value;
+    
+    // Check for DCC races if improvements.js is loaded
+    if (typeof dccRaces !== 'undefined' && dccRaces[selectedRace]) {
+        return dccRaces[selectedRace].statBonuses || {};
+    }
+    
+    // Handle custom race bonuses
+    if (selectedRace === 'custom') {
+        const bonuses = {};
+        ['str', 'dex', 'con', 'int', 'wis', 'cha'].forEach(stat => {
+            const checkbox = document.getElementById(`custom-race-${stat}`);
+            if (checkbox && checkbox.checked) {
+                const fullStatName = getFullStatName(stat);
+                bonuses[fullStatName] = 1; // Custom races give +1 to selected stats
+            }
+        });
+        return bonuses;
+    }
+    
+    return {};
+}
+
+function getSelectedJobBonuses() {
+    const jobSelect = document.getElementById('job-select');
+    if (!jobSelect || !jobSelect.value) return {};
+    
+    const selectedJob = jobSelect.value;
+    
+    // Check for DCC classes if improvements.js is loaded  
+    if (typeof dccClasses !== 'undefined' && dccClasses[selectedJob]) {
+        return dccClasses[selectedJob].statBonuses || {};
+    }
+    
+    // Handle custom job bonuses
+    if (selectedJob === 'custom') {
+        const bonuses = {};
+        ['str', 'dex', 'con', 'int', 'wis', 'cha'].forEach(stat => {
+            const checkbox = document.getElementById(`custom-job-${stat}`);
+            if (checkbox && checkbox.checked) {
+                const fullStatName = getFullStatName(stat);
+                bonuses[fullStatName] = 1; // Custom jobs give +1 to selected stats
+            }
+        });
+        return bonuses;
+    }
+    
+    return {};
+}
+
+function getSelectedClassBonuses() {
+    const classSelect = document.getElementById('class-select');
+    if (!classSelect || !classSelect.value) return {};
+    
+    const selectedClass = classSelect.value;
+    
+    // Check for DCC classes if improvements.js is loaded
+    if (typeof dccClasses !== 'undefined' && dccClasses[selectedClass]) {
+        return dccClasses[selectedClass].statBonuses || {};
+    }
+    
+    // Handle custom class bonuses
+    if (selectedClass === 'custom') {
+        const bonuses = {};
+        ['str', 'dex', 'con', 'int', 'wis', 'cha'].forEach(stat => {
+            const checkbox = document.getElementById(`custom-class-${stat}`);
+            if (checkbox && checkbox.checked) {
+                const fullStatName = getFullStatName(stat);
+                bonuses[fullStatName] = 1; // Custom classes give +1 to selected stats
+            }
+        });
+        return bonuses;
+    }
+    
+    return {};
+}
+
+function getFullStatName(shortName) {
+    const statMap = {
+        'str': 'strength',
+        'dex': 'dexterity', 
+        'con': 'constitution',
+        'int': 'intelligence',
+        'wis': 'wisdom',
+        'cha': 'charisma'
+    };
+    return statMap[shortName] || shortName;
+}
+
 function renderStats() {
     const statsGrid = document.getElementById('stats-grid');
     statsGrid.innerHTML = '';
 
     Object.entries(character.stats).forEach(([stat, value]) => {
         const maxValue = character.statMaximums[stat] || 15;
+        
+        // Get bonuses from race, job, and class
+        const raceBonuses = getSelectedRaceBonuses();
+        const jobBonuses = getSelectedJobBonuses();
+        const classBonuses = getSelectedClassBonuses();
+        
+        // Calculate total bonuses for this stat
+        const raceBonus = raceBonuses[stat] || 0;
+        const jobBonus = jobBonuses[stat] || 0;
+        const classBonus = classBonuses[stat] || 0;
+        
+        // Check if job and class both give bonuses to same stat (double bonus = gold)
+        const hasDoubleBonus = (jobBonus !== 0 && classBonus !== 0);
+        
         const statCard = document.createElement('div');
-        statCard.className = 'stat-card';
+        statCard.className = `stat-card ${hasDoubleBonus ? 'double-bonus' : ''}`;
+        
+        // Build bonus indicators HTML
+        let bonusIndicators = '';
+        
+        // Left side: Job/Background bonuses
+        if (jobBonus > 0) {
+            bonusIndicators += '<span class="bonus-indicator job-bonus positive top-left"><span class="material-icons">add</span></span>';
+        } else if (jobBonus < 0) {
+            bonusIndicators += '<span class="bonus-indicator job-bonus negative bottom-left"><span class="material-icons">remove</span></span>';
+        }
+        
+        // Right side: Class bonuses  
+        if (classBonus > 0) {
+            bonusIndicators += '<span class="bonus-indicator class-bonus positive top-right"><span class="material-icons">add</span></span>';
+        } else if (classBonus < 0) {
+            bonusIndicators += '<span class="bonus-indicator class-bonus negative bottom-right"><span class="material-icons">remove</span></span>';
+        }
+        
         statCard.innerHTML = `
-                    <div class="stat-name">${stat.charAt(0).toUpperCase() + stat.slice(1)}</div>
-                    <div class="stat-value">${value}</div>
-                    <div class="stat-max">Max: ${maxValue}</div>
-                    <div class="stat-controls">
-                        <button class="control-btn" onclick="adjustStat('${stat}', -1)" ${value <= 1 ? 'disabled' : ''}>-</button>
-                        <button class="control-btn" onclick="adjustStat('${stat}', 1)" ${character.availablePoints <= 0 || value >= maxValue ? 'disabled' : ''}>+</button>
-                    </div>
-                `;
+            ${bonusIndicators}
+            <div class="stat-name">${stat.charAt(0).toUpperCase() + stat.slice(1)}</div>
+            <div class="stat-value">${value}</div>
+            <div class="stat-max">Max: ${maxValue}</div>
+            <div class="stat-controls">
+                <button class="control-btn" onclick="adjustStat('${stat}', -1)" ${value <= 1 ? 'disabled' : ''}>-</button>
+                <button class="control-btn" onclick="adjustStat('${stat}', 1)" ${character.availablePoints <= 0 || value >= maxValue ? 'disabled' : ''}>+</button>
+            </div>
+        `;
         statsGrid.appendChild(statCard);
     });
 
@@ -854,6 +987,9 @@ function resetCharacterBonuses() {
 // NEW CHARACTER CREATION
 // ========================================
 function createNewCharacter() {
+    // Apply selected skills before reset
+    applySelectedSkillsToCharacter();
+    
     // Reset character to default state
     character = {
         name: '',
@@ -955,6 +1091,12 @@ function createNewCharacter() {
     if (characterInfoDisplay) {
         characterInfoDisplay.textContent = '';
     }
+    
+    // Reset skills selection
+    selectedSkills = [];
+    updateSelectedSkillsDisplay();
+    updateSkillsCounter();
+    renderAvailableSkills();
     
     // Force refresh of the creation tab UI
     refreshCreationTabUI();
@@ -1704,32 +1846,75 @@ function renderCharacterStats() {
     const charStatsDisplay = document.getElementById('char-stats-display');
     charStatsDisplay.innerHTML = '';
 
+    // Get bonuses from race, job, and class
+    const raceBonuses = getSelectedRaceBonuses();
+    const jobBonuses = getSelectedJobBonuses();
+    const classBonuses = getSelectedClassBonuses();
+
     Object.entries(character.stats).forEach(([stat, value]) => {
+        // Calculate bonuses for this stat
+        const raceBonus = raceBonuses[stat] || 0;
+        const jobBonus = jobBonuses[stat] || 0;
+        const classBonus = classBonuses[stat] || 0;
+        
+        // Check if job and class both give bonuses to same stat (double bonus = gold)
+        const hasDoubleBonus = (jobBonus !== 0 && classBonus !== 0);
+        
         const statCard = document.createElement('div');
         statCard.onclick = () => rollAttribute(stat, value);
         statCard.style.cssText = `
-                    background: rgba(40, 40, 60, 0.9);
-                    border-radius: 8px;
-                    padding: 12px;
-                    text-align: center;
-                    border: 1px solid #4a4a6a;
-                    cursor: pointer;
-                    transition: all 0.3s ease;
-                `;
+            background: ${hasDoubleBonus ? 'rgba(255, 215, 0, 0.15)' : 'rgba(40, 40, 60, 0.9)'};
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            border: 1px solid ${hasDoubleBonus ? '#ffd700' : '#4a4a6a'};
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: visible;
+            ${hasDoubleBonus ? 'box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);' : ''}
+        `;
+        
+        // Build bonus indicators HTML
+        let bonusIndicators = '';
+        
+        // Left side: Job/Background bonuses
+        if (jobBonus > 0) {
+            bonusIndicators += '<span style="position: absolute; top: 4px; left: 4px; width: 14px; height: 14px; background: #4a8a4a; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; z-index: 10;">+</span>';
+        } else if (jobBonus < 0) {
+            bonusIndicators += '<span style="position: absolute; bottom: 4px; left: 4px; width: 14px; height: 14px; background: #8a4a4a; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; z-index: 10;">-</span>';
+        }
+        
+        // Right side: Class bonuses  
+        if (classBonus > 0) {
+            bonusIndicators += '<span style="position: absolute; top: 4px; right: 4px; width: 14px; height: 14px; background: #4a6a8a; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; z-index: 10;">+</span>';
+        } else if (classBonus < 0) {
+            bonusIndicators += '<span style="position: absolute; bottom: 4px; right: 4px; width: 14px; height: 14px; background: #8a4a6a; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; z-index: 10;">-</span>';
+        }
+        
         statCard.onmouseenter = () => {
-            statCard.style.borderColor = '#f4d03f';
-            statCard.style.background = 'rgba(244, 208, 63, 0.1)';
+            statCard.style.borderColor = hasDoubleBonus ? '#ffd700' : '#f4d03f';
+            statCard.style.background = hasDoubleBonus ? 'rgba(255, 215, 0, 0.25)' : 'rgba(244, 208, 63, 0.1)';
             statCard.style.transform = 'translateY(-1px)';
+            if (hasDoubleBonus) {
+                statCard.style.boxShadow = '0 0 15px rgba(255, 215, 0, 0.5)';
+            }
         };
         statCard.onmouseleave = () => {
-            statCard.style.borderColor = '#4a4a6a';
-            statCard.style.background = 'rgba(40, 40, 60, 0.9)';
+            statCard.style.borderColor = hasDoubleBonus ? '#ffd700' : '#4a4a6a';
+            statCard.style.background = hasDoubleBonus ? 'rgba(255, 215, 0, 0.15)' : 'rgba(40, 40, 60, 0.9)';
             statCard.style.transform = 'translateY(0)';
+            if (hasDoubleBonus) {
+                statCard.style.boxShadow = '0 0 10px rgba(255, 215, 0, 0.3)';
+            } else {
+                statCard.style.boxShadow = 'none';
+            }
         };
         statCard.innerHTML = `
-                    <div style="font-weight: 600; color: #f4d03f; font-size: 11px; margin-bottom: 5px; text-transform: uppercase;">${stat.charAt(0).toUpperCase() + stat.slice(1)}</div>
-                    <div style="font-size: 20px; font-weight: bold; color: #ffffff;">${value}</div>
-                `;
+            ${bonusIndicators}
+            <div style="font-weight: 600; color: ${hasDoubleBonus ? '#ffd700' : '#f4d03f'}; font-size: 11px; margin-bottom: 5px; text-transform: uppercase;">${stat.charAt(0).toUpperCase() + stat.slice(1)}</div>
+            <div style="font-size: 20px; font-weight: bold; color: #ffffff;">${value}</div>
+        `;
         charStatsDisplay.appendChild(statCard);
     });
 }
@@ -1742,16 +1927,6 @@ function renderCharacterStats() {
 // Function to consolidate skills
 function consolidateSkills() {
     const skillMap = new Map();
-
-    // Add standard skills
-    Object.entries(standardSkills).forEach(([skillName, stat]) => {
-        skillMap.set(skillName.toLowerCase(), {
-            name: skillName,
-            stat: stat,
-            sources: [],
-            baseSkill: true
-        });
-    });
 
     // Process custom skills and mark sources
     character.customSkills.forEach(skill => {
@@ -1768,6 +1943,15 @@ function consolidateSkills() {
         }
 
         if (matchedStandard) {
+            // Use the matched standard skill data
+            if (!skillMap.has(matchedStandard.toLowerCase())) {
+                skillMap.set(matchedStandard.toLowerCase(), {
+                    name: matchedStandard,
+                    stat: standardSkills[matchedStandard],
+                    sources: [],
+                    baseSkill: true
+                });
+            }
             const existing = skillMap.get(matchedStandard.toLowerCase());
             if (skill.source === 'race') existing.sources.push('H');
             else if (skill.source === 'job') existing.sources.push('B');
@@ -1802,16 +1986,26 @@ function renderCharacterSkills() {
     skillsGrid.innerHTML = '';
 
     const consolidatedSkills = consolidateSkills();
+    
+    // Get bonuses to check for double bonuses
+    const jobBonuses = getSelectedJobBonuses();
+    const classBonuses = getSelectedClassBonuses();
 
     consolidatedSkills.forEach((skillData, key) => {
         const skillValue = character.stats[skillData.stat];
         const sourceLabel = skillData.sources.length > 0 ? ` [${skillData.sources.join(',')}]` : '';
+        
+        // Check if this skill gets double bonus (both job and class affect same stat)
+        const jobBonus = jobBonuses[skillData.stat] || 0;
+        const classBonus = classBonuses[skillData.stat] || 0;
+        const hasDoubleBonus = (jobBonus !== 0 && classBonus !== 0);
 
         const skillItem = createInteractiveItem('skill', {
             name: skillData.name + sourceLabel,
             stat: skillData.stat,
             value: skillValue,
             icon: skillData.baseSkill ? 'ra-gear' : 'ra-star',
+            hasDoubleBonus: hasDoubleBonus,
             onClick: () => rollSkill(skillData.name, skillData.stat, skillValue)
         });
         skillsGrid.appendChild(skillItem);
@@ -1820,11 +2014,18 @@ function renderCharacterSkills() {
     // Add non-source custom skills
     character.customSkills.filter(skill => !skill.source).forEach((skill, index) => {
         const skillValue = character.stats[skill.stat];
+        
+        // Check for double bonus on custom skills too
+        const jobBonus = jobBonuses[skill.stat] || 0;
+        const classBonus = classBonuses[skill.stat] || 0;
+        const hasDoubleBonus = (jobBonus !== 0 && classBonus !== 0);
+        
         const skillItem = createInteractiveItem('skill', {
             name: skill.name + ' (Custom)',
             stat: skill.stat,
             value: skillValue,
             icon: 'ra-star',
+            hasDoubleBonus: hasDoubleBonus,
             onClick: () => rollSkill(skill.name, skill.stat, skillValue),
             removeButton: () => removeCustomSkillFromCharTab(index)
         });
@@ -1834,7 +2035,7 @@ function renderCharacterSkills() {
 
 function createInteractiveItem(type, options) {
     const item = document.createElement('div');
-    item.className = `interactive-item ${type}-item`;
+    item.className = `interactive-item ${type}-item ${options.hasDoubleBonus ? 'double-bonus' : ''}`;
     item.onclick = options.onClick;
 
     const statDisplay = options.stat ? `[${options.stat.substring(0, 3).toUpperCase()}]` : '';
@@ -2969,6 +3170,204 @@ function clearRollHistory() {
 }
 
 // ========================================
+// ACHIEVEMENT SYSTEM
+// ========================================
+
+// Calculate rarity chances based on character level (designed for levels 1-50+)
+function getAchievementRarityChances(level) {
+    // Base chances - common is always most likely
+    let commonChance = Math.max(50 - level, 20); // 50% at level 1, down to 20% at level 30+
+    let uncommonChance = Math.min(20 + level * 0.5, 35); // 20% at level 1, up to 35% at level 30
+    let rareChance = Math.min(5 + level * 0.4, 25); // 5% at level 1, up to 25% at level 50
+    let epicChance = Math.min(Math.max(level - 10, 0) * 0.3, 15); // 0% before level 10, up to 15% at level 50
+    let legendaryChance = Math.min(Math.max(level - 20, 0) * 0.2, 5); // 0% before level 20, up to 5% at level 45
+
+    // Normalize to 100%
+    const total = commonChance + uncommonChance + rareChance + epicChance + legendaryChance;
+    if (total > 0) {
+        commonChance = (commonChance / total) * 100;
+        uncommonChance = (uncommonChance / total) * 100;
+        rareChance = (rareChance / total) * 100;
+        epicChance = (epicChance / total) * 100;
+        legendaryChance = (legendaryChance / total) * 100;
+    }
+
+    return { commonChance, uncommonChance, rareChance, epicChance, legendaryChance };
+}
+
+// Select 3 achievements based on level and rarity
+async function selectAchievementsForLevel(level) {
+    // Ensure achievements are loaded
+    await loadAchievements();
+    
+    if (!achievementsData) {
+        console.error('Achievements data not properly loaded');
+        return [];
+    }
+
+    // Gather all available achievements from all categories
+    const allAchievements = [];
+    
+    // Add achievements from all available categories
+    if (achievementsData.general) allAchievements.push(...achievementsData.general);
+    if (achievementsData.skill_based) allAchievements.push(...achievementsData.skill_based);
+    if (achievementsData.race_based) allAchievements.push(...achievementsData.race_based);
+    if (achievementsData.class_based) allAchievements.push(...achievementsData.class_based);
+    if (achievementsData.weapon_based) allAchievements.push(...achievementsData.weapon_based);
+    if (achievementsData.absurd) allAchievements.push(...achievementsData.absurd);
+    if (achievementsData.legendary) allAchievements.push(...achievementsData.legendary);
+    
+    if (allAchievements.length === 0) {
+        console.warn('No achievements found in loaded data');
+        return [];
+    }
+
+    console.log(`🎯 Found ${allAchievements.length} total achievements for level ${level} selection`);
+
+    const rarityChances = getAchievementRarityChances(level);
+    const selectedAchievements = [];
+
+    for (let i = 0; i < 3; i++) {
+        const roll = Math.random() * 100;
+        let targetRarity = 'common';
+
+        if (roll <= rarityChances.legendaryChance) targetRarity = 'legendary';
+        else if (roll <= rarityChances.legendaryChance + rarityChances.epicChance) targetRarity = 'epic';
+        else if (roll <= rarityChances.legendaryChance + rarityChances.epicChance + rarityChances.rareChance) targetRarity = 'rare';
+        else if (roll <= 100 - rarityChances.commonChance) targetRarity = 'uncommon';
+
+        // Filter achievements by rarity
+        const availableAchievements = allAchievements.filter(achievement => 
+            achievement.rarity === targetRarity && 
+            !selectedAchievements.find(selected => selected.id === achievement.id)
+        );
+
+        if (availableAchievements.length > 0) {
+            const randomIndex = Math.floor(Math.random() * availableAchievements.length);
+            selectedAchievements.push(availableAchievements[randomIndex]);
+        } else {
+            // Fallback to any available achievement
+            const fallbackAchievements = allAchievements.filter(achievement => 
+                !selectedAchievements.find(selected => selected.id === achievement.id)
+            );
+            if (fallbackAchievements.length > 0) {
+                const randomIndex = Math.floor(Math.random() * fallbackAchievements.length);
+                selectedAchievements.push(fallbackAchievements[randomIndex]);
+            }
+        }
+    }
+
+    console.log(`🏆 Selected ${selectedAchievements.length} achievements:`, selectedAchievements.map(a => `${a.name} (${a.rarity})`));
+    return selectedAchievements;
+}
+
+// Get rarity color for UI display
+function getRarityColor(rarity) {
+    switch (rarity) {
+        case 'common': return '#8a8a8a';
+        case 'uncommon': return '#4a8a4a';
+        case 'rare': return '#4a6a8a';
+        case 'epic': return '#8a4a8a';
+        case 'legendary': return '#f4d03f';
+        default: return '#8a8a8a';
+    }
+}
+
+// Render achievements in the level-up modal
+async function renderLevelUpAchievements(level) {
+    const achievementsGrid = document.getElementById('levelup-achievements-grid');
+    if (!achievementsGrid) return;
+
+    const selectedAchievements = await selectAchievementsForLevel(level);
+    achievementsGrid.innerHTML = '';
+
+    selectedAchievements.forEach(achievement => {
+        const rarityColor = getRarityColor(achievement.rarity);
+        const achievementDiv = document.createElement('div');
+        achievementDiv.className = 'levelup-achievement-item';
+        achievementDiv.style.cssText = `
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: var(--spacing-sm);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--bg-secondary);
+            margin-bottom: var(--spacing-xs);
+        `;
+
+        achievementDiv.innerHTML = `
+            <div class="achievement-name" style="font-weight: bold; color: ${rarityColor}; margin-bottom: 4px;">
+                <i class="ra ra-medal"></i> ${achievement.name}
+            </div>
+            <div class="achievement-rarity" style="font-size: 11px; color: ${rarityColor}; text-transform: uppercase; margin-bottom: 6px;">
+                ${achievement.rarity}
+            </div>
+            <div class="achievement-description" style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">
+                ${achievement.description}
+            </div>
+            <div class="achievement-effect" style="font-size: 12px; color: var(--primary-color); font-weight: bold;">
+                ${achievement.effect}
+            </div>
+        `;
+
+        achievementDiv.onclick = () => selectLevelUpAchievementInModal(achievement);
+        achievementsGrid.appendChild(achievementDiv);
+    });
+}
+
+// Select achievement in modal
+window.selectLevelUpAchievementInModal = function(achievement) {
+    // Remove previous selection styling
+    document.querySelectorAll('.levelup-achievement-item').forEach(item => {
+        item.style.borderColor = 'var(--border-color)';
+        item.style.background = 'var(--bg-secondary)';
+    });
+
+    // Add selection styling to clicked achievement
+    event.target.closest('.levelup-achievement-item').style.borderColor = 'var(--primary-color)';
+    event.target.closest('.levelup-achievement-item').style.background = 'rgba(var(--primary-rgb), 0.1)';
+
+    // Store selected achievement
+    window.selectedLevelUpAchievement = achievement;
+
+    // Update display
+    const selectedDisplay = document.getElementById('selected-achievement-display');
+    if (selectedDisplay) {
+        selectedDisplay.textContent = achievement.name;
+        selectedDisplay.parentElement.style.display = 'block';
+    }
+
+    // Update confirm button state
+    updateLevelUpConfirmButton();
+};
+
+// Update the confirm button based on selections
+function updateLevelUpConfirmButton() {
+    const confirmBtn = document.getElementById('confirm-levelup-btn');
+    const remainingPoints = parseInt(document.getElementById('levelup-points-remaining').textContent);
+    
+    if (!confirmBtn) return;
+
+    let canConfirm = remainingPoints === 0;
+    
+    // Check if on a skill level and skill is required but not selected
+    const isSkillLevel = document.getElementById('skill-selection-section') && 
+                        document.getElementById('skill-selection-section').style.display !== 'none';
+    
+    if (isSkillLevel && !window.selectedLevelUpSkill) {
+        canConfirm = false;
+    }
+
+    // Always require achievement selection now
+    if (!window.selectedLevelUpAchievement) {
+        canConfirm = false;
+    }
+
+    confirmBtn.disabled = !canConfirm;
+    confirmBtn.style.opacity = canConfirm ? '1' : '0.5';
+}
+
+// ========================================
 // LEVEL UP SYSTEM
 // ========================================
 function levelUp() {
@@ -3063,22 +3462,52 @@ function showLevelUpModal(pointsGained, bonuses, isSkillLevel, newLevel) {
                         ${Object.keys(character.stats).map(stat => createStatRow(stat)).join('')}
                     </div>
                     
-                    ${isSkillLevel ? `
-                        <div class="level-up-skill-section">
-                            <h4><i class="ra ra-gear"></i> New Skill (Level ${newLevel} Bonus)</h4>
-                            <div class="form-group">
-                                <input type="text" id="levelup-skill-name" placeholder="Skill name" style="margin-bottom: 10px;">
-                                <select id="levelup-skill-stat" style="margin-bottom: 10px;">
-                                    <option value="strength">Strength</option>
-                                    <option value="dexterity">Dexterity</option>
-                                    <option value="constitution">Constitution</option>
-                                    <option value="intelligence">Intelligence</option>
-                                    <option value="wisdom">Wisdom</option>
-                                    <option value="charisma">Charisma</option>
-                                </select>
+                    <div class="level-up-rewards-section">
+                        <h4><i class="ra ra-star"></i> Level ${newLevel} Rewards</h4>
+                        <p style="color: var(--text-secondary); margin-bottom: var(--spacing-md);">Choose your rewards for reaching level ${newLevel}:</p>
+                        
+                        <!-- Tab Navigation -->
+                        <div class="reward-tabs" style="display: flex; border-bottom: 2px solid var(--border-color); margin-bottom: var(--spacing-md);">
+                            <button class="reward-tab" id="achievement-tab" onclick="switchRewardTab('achievement')" 
+                                    style="flex: 1; padding: var(--spacing-sm); border: none; background: var(--primary-color); color: white; cursor: pointer; border-radius: var(--radius-sm) var(--radius-sm) 0 0;">
+                                <i class="ra ra-medal"></i> Achievement
+                            </button>
+                            ${isSkillLevel ? `
+                                <button class="reward-tab" id="skill-tab" onclick="switchRewardTab('skill')" 
+                                        style="flex: 1; padding: var(--spacing-sm); border: none; background: var(--bg-secondary); color: var(--text-primary); cursor: pointer; border-radius: var(--radius-sm) var(--radius-sm) 0 0;">
+                                    <i class="ra ra-gears"></i> New Skill
+                                </button>
+                            ` : ''}
+                        </div>
+                        
+                        <!-- Achievement Selection -->
+                        <div id="achievement-selection-section">
+                            <h5 style="color: var(--primary-color); margin-bottom: var(--spacing-sm);">Choose an Achievement:</h5>
+                            <div class="achievement-selector-container" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: var(--spacing-sm);">
+                                <div id="levelup-achievements-grid" class="levelup-achievements-grid">
+                                    <!-- Achievements will be rendered here -->
+                                </div>
+                            </div>
+                            <div class="selected-levelup-achievement" id="selected-levelup-achievement" style="margin-top: var(--spacing-sm); padding: var(--spacing-sm); background: var(--bg-secondary); border-radius: var(--radius-sm); display: none;">
+                                <strong>Selected Achievement:</strong> <span id="selected-achievement-display">None</span>
                             </div>
                         </div>
-                    ` : ''}
+                        
+                        <!-- Skill Selection (only on skill levels) -->
+                        ${isSkillLevel ? `
+                            <div id="skill-selection-section" style="display: none;">
+                                <h5 style="color: var(--primary-color); margin-bottom: var(--spacing-sm);">Choose a New Skill:</h5>
+                                <div class="skill-selector-container" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: var(--spacing-sm);">
+                                    <div id="levelup-skills-grid" class="levelup-skills-grid">
+                                        <!-- Skills will be rendered here -->
+                                    </div>
+                                </div>
+                                <div class="selected-levelup-skill" id="selected-levelup-skill" style="margin-top: var(--spacing-sm); padding: var(--spacing-sm); background: var(--bg-secondary); border-radius: var(--radius-sm); display: none;">
+                                    <strong>Selected Skill:</strong> <span id="selected-skill-display">None</span>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
                     
                     <div class="level-up-preview">
                         <h4>Preview</h4>
@@ -3103,7 +3532,161 @@ function showLevelUpModal(pointsGained, bonuses, isSkillLevel, newLevel) {
     window.tempLevelUpStats = tempStats;
     window.tempLevelUpPoints = tempAvailablePoints;
     window.originalStats = { ...character.stats };
+    window.selectedLevelUpSkill = null;
+    window.selectedLevelUpAchievement = null;
+    
+    // Always render achievements first (default tab)
+    renderLevelUpAchievements(newLevel);
+    
+    // If it's a skill level, render the skills too (but start with achievement tab)
+    if (isSkillLevel) {
+        renderLevelUpSkills();
+    }
 }
+
+// Global functions for level-up modal
+window.switchRewardTab = function(tabType) {
+    const achievementTab = document.getElementById('achievement-tab');
+    const skillTab = document.getElementById('skill-tab');
+    const achievementSection = document.getElementById('achievement-selection-section');
+    const skillSection = document.getElementById('skill-selection-section');
+    
+    if (tabType === 'achievement') {
+        // Style achievement tab as active
+        achievementTab.style.background = 'var(--primary-color)';
+        achievementTab.style.color = 'white';
+        
+        // Style skill tab as inactive
+        if (skillTab) {
+            skillTab.style.background = 'var(--bg-secondary)';
+            skillTab.style.color = 'var(--text-primary)';
+        }
+        
+        // Show/hide sections
+        achievementSection.style.display = 'block';
+        if (skillSection) skillSection.style.display = 'none';
+        
+    } else if (tabType === 'skill') {
+        // Style skill tab as active
+        if (skillTab) {
+            skillTab.style.background = 'var(--primary-color)';
+            skillTab.style.color = 'white';
+        }
+        
+        // Style achievement tab as inactive
+        achievementTab.style.background = 'var(--bg-secondary)';
+        achievementTab.style.color = 'var(--text-primary)';
+        
+        // Show/hide sections
+        if (skillSection) skillSection.style.display = 'block';
+        achievementSection.style.display = 'none';
+    }
+    
+    updateLevelUpConfirmButton();
+};
+
+window.selectRewardType = function(type) {
+    // This function is now replaced by switchRewardTab, but keeping for backward compatibility
+    switchRewardTab(type);
+};
+
+function renderLevelUpSkills() {
+    const skillsGrid = document.getElementById('levelup-skills-grid');
+    if (!skillsGrid) return;
+    
+    skillsGrid.innerHTML = '';
+    
+    // Get available skills (same logic as character creation)
+    let availableSkills = {};
+    
+    // Get skills from skills.json if available
+    if (typeof skills !== 'undefined' && skills.skills) {
+        Object.values(skills.skills).forEach(category => {
+            if (category.skills) {
+                Object.values(category.skills).forEach(skill => {
+                    // Only show skills the player doesn't already have
+                    const hasSkill = character.customSkills.some(cs => cs.name === skill.name);
+                    if (!hasSkill) {
+                        availableSkills[skill.name] = {
+                            stat: skill.stat,
+                            description: skill.description || 'A useful skill for adventurers'
+                        };
+                    }
+                });
+            }
+        });
+    }
+    
+    // Add DCC skills they don't have
+    if (typeof dccSkills !== 'undefined') {
+        Object.entries(dccSkills).forEach(([skillName, skillStat]) => {
+            const hasSkill = character.customSkills.some(cs => cs.name === skillName);
+            if (!hasSkill && !availableSkills[skillName]) {
+                availableSkills[skillName] = {
+                    stat: skillStat,
+                    description: getSkillDescription(skillName, skillStat)
+                };
+            }
+        });
+    }
+    
+    // Get bonuses to check for double bonuses
+    const jobBonuses = getSelectedJobBonuses();
+    const classBonuses = getSelectedClassBonuses();
+    
+    Object.entries(availableSkills).forEach(([skillName, skillData]) => {
+        // Check if this skill gets double bonus
+        const jobBonus = jobBonuses[skillData.stat] || 0;
+        const classBonus = classBonuses[skillData.stat] || 0;
+        const hasDoubleBonus = (jobBonus !== 0 && classBonus !== 0);
+        
+        const skillItem = document.createElement('div');
+        skillItem.className = 'levelup-skill-item';
+        skillItem.style.cssText = `
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: var(--spacing-sm);
+            margin-bottom: var(--spacing-xs);
+            cursor: pointer;
+            transition: all var(--transition-base);
+        `;
+        
+        skillItem.onclick = () => selectLevelUpSkillInModal(skillName, skillData.stat);
+        
+        skillItem.innerHTML = `
+            <div style="font-weight: 500; margin-bottom: 2px;">${skillName}</div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 2px;">
+                [${skillData.stat.substring(0, 3).toUpperCase()}] ${hasDoubleBonus ? '<span style="color: #ffd700;">+2 Bonus!</span>' : ''}
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-secondary); font-style: italic;">${skillData.description}</div>
+        `;
+        
+        skillsGrid.appendChild(skillItem);
+    });
+}
+
+window.selectLevelUpSkillInModal = function(skillName, skillStat) {
+    // Update selection
+    window.selectedLevelUpSkill = { name: skillName, stat: skillStat };
+    
+    // Update visual selection
+    document.querySelectorAll('.levelup-skill-item').forEach(item => {
+        item.style.borderColor = 'var(--border-color)';
+        item.style.background = 'var(--bg-secondary)';
+    });
+    
+    event.target.closest('.levelup-skill-item').style.borderColor = 'var(--primary-color)';
+    event.target.closest('.levelup-skill-item').style.background = 'rgba(var(--primary-rgb), 0.1)';
+    
+    // Update selected skill display
+    const selectedDisplay = document.getElementById('selected-levelup-skill');
+    const skillDisplay = document.getElementById('selected-skill-display');
+    if (selectedDisplay && skillDisplay) {
+        selectedDisplay.style.display = 'block';
+        skillDisplay.textContent = `${skillName} [${skillStat.substring(0, 3).toUpperCase()}]`;
+    }
+};
 
 window.adjustLevelUpStat = function (stat, change) {
     const currentValue = window.tempLevelUpStats[stat];
@@ -3143,15 +3726,23 @@ window.adjustLevelUpStat = function (stat, change) {
     document.getElementById('levelup-mp-preview').textContent = window.tempLevelUpStats.wisdom + window.tempLevelUpStats.intelligence;
 
     // Enable/disable confirm button
-    document.getElementById('confirm-levelup-btn').disabled = window.tempLevelUpPoints > 0;
+    updateLevelUpConfirmButton();
 };
 
 window.confirmLevelUp = function (newLevel, isSkillLevel) {
-    // Validate skill if it's a skill level
+    // Always require achievement selection
+    if (!window.selectedLevelUpAchievement) {
+        alert('Please select an achievement for your level ' + newLevel + ' reward!');
+        return;
+    }
+
+    // Validate skill selection if it's a skill level and we're on the skill tab
     if (isSkillLevel) {
-        const skillName = document.getElementById('levelup-skill-name')?.value.trim();
-        if (!skillName) {
-            alert('Please enter a skill name for your level ' + newLevel + ' bonus!');
+        const skillSection = document.getElementById('skill-selection-section');
+        const isOnSkillTab = skillSection && skillSection.style.display !== 'none';
+        
+        if (isOnSkillTab && !window.selectedLevelUpSkill) {
+            alert('Please select a skill for your level ' + newLevel + ' reward!');
             return;
         }
     }
@@ -3160,14 +3751,27 @@ window.confirmLevelUp = function (newLevel, isSkillLevel) {
     character.level = newLevel;
     character.stats = { ...window.tempLevelUpStats };
 
-    // Add skill if applicable
-    if (isSkillLevel) {
-        const skillName = document.getElementById('levelup-skill-name').value.trim();
-        const skillStat = document.getElementById('levelup-skill-stat').value;
+    // Add achievement (always)
+    if (!character.achievements) {
+        character.achievements = [];
+    }
+    character.achievements.push({
+        ...window.selectedLevelUpAchievement,
+        earnedAt: newLevel,
+        earnedDate: new Date().toISOString()
+    });
 
+    // Process achievement effects - grant any skills referenced in the achievement
+    const grantedSkills = processAchievementSkills(window.selectedLevelUpAchievement);
+    
+    // Add skill if applicable and selected
+    const skillSection = document.getElementById('skill-selection-section');
+    const isOnSkillTab = skillSection && skillSection.style.display !== 'none';
+    
+    if (isSkillLevel && isOnSkillTab && window.selectedLevelUpSkill) {
         character.customSkills.push({
-            name: skillName,
-            stat: skillStat,
+            name: window.selectedLevelUpSkill.name,
+            stat: window.selectedLevelUpSkill.stat,
             source: 'levelup'
         });
     }
@@ -3185,9 +3789,13 @@ window.confirmLevelUp = function (newLevel, isSkillLevel) {
     updateDiceSystemInfo();
 
     // Show notification
+    const skillMessage = (isSkillLevel && isOnSkillTab && window.selectedLevelUpSkill) ? ` | New skill: ${window.selectedLevelUpSkill.name}!` : '';
+    const achievementMessage = window.selectedLevelUpAchievement ? ` | Achievement: ${window.selectedLevelUpAchievement.name}!` : '';
+    const grantedSkillsMessage = grantedSkills.length > 0 ? ` | Granted skills: ${grantedSkills.join(', ')}!` : '';
+    
     showNotification('level', 'Level Up Complete!',
         `You are now level ${newLevel}!`,
-        `HP: ${character.healthPoints} | MP: ${character.magicPoints}${isSkillLevel ? ' | New skill gained!' : ''}`);
+        `HP: ${character.healthPoints} | MP: ${character.magicPoints}${skillMessage}${achievementMessage}${grantedSkillsMessage}`);
 
     // Close modal
     document.querySelector('.level-up-modal-overlay').remove();
@@ -3197,6 +3805,129 @@ window.confirmLevelUp = function (newLevel, isSkillLevel) {
     delete window.tempLevelUpPoints;
     delete window.originalStats;
 };
+
+// ========================================
+// ACHIEVEMENT SKILL PROCESSING
+// ========================================
+
+// Parse achievement effects and grant referenced skills
+function processAchievementSkills(achievement) {
+    if (!achievement || !achievement.effect) return;
+
+    // Regular expressions to match skill bonuses in achievement effects
+    const skillPatterns = [
+        /\+(\d+) to ([^,]+?) skill/gi,  // "+3 to Pathfinder skill"
+        /\+(\d+) to ([^,]+) skill/gi,   // "+2 to Basic Electrical Repair skill"
+    ];
+
+    const grantedSkills = [];
+    
+    skillPatterns.forEach(pattern => {
+        let match;
+        while ((match = pattern.exec(achievement.effect)) !== null) {
+            const bonus = parseInt(match[1]);
+            const skillName = match[2].trim();
+            
+            // Check if player already has this skill
+            const hasSkill = character.customSkills.some(skill => 
+                skill.name.toLowerCase() === skillName.toLowerCase()
+            );
+            
+            if (!hasSkill) {
+                // Determine the appropriate stat for this skill
+                const skillStat = determineSkillStat(skillName);
+                
+                // Add the skill to the character
+                character.customSkills.push({
+                    name: skillName,
+                    stat: skillStat,
+                    source: 'achievement',
+                    grantedBy: achievement.name
+                });
+                
+                grantedSkills.push(skillName);
+                console.log(`🎯 Achievement "${achievement.name}" granted skill: ${skillName} (${skillStat})`);
+            }
+        }
+    });
+    
+    return grantedSkills;
+}
+
+// Determine the most appropriate stat for a skill based on its name and existing skill mappings
+function determineSkillStat(skillName) {
+    // First check if it matches a standard D&D skill
+    const standardSkillMatch = Object.keys(standardSkills).find(skill => 
+        skill.toLowerCase() === skillName.toLowerCase()
+    );
+    if (standardSkillMatch) {
+        return standardSkills[standardSkillMatch];
+    }
+    
+    // Check DCC skills if available
+    if (typeof dccSkills !== 'undefined') {
+        const dccSkillMatch = Object.keys(dccSkills).find(skill => 
+            skill.toLowerCase() === skillName.toLowerCase()
+        );
+        if (dccSkillMatch) {
+            return dccSkills[dccSkillMatch];
+        }
+    }
+    
+    // Skill name-based heuristics for common patterns
+    const skillNameLower = skillName.toLowerCase();
+    
+    // Physical/Combat skills -> Strength or Dexterity
+    if (skillNameLower.includes('combat') || skillNameLower.includes('weapon') || 
+        skillNameLower.includes('martial') || skillNameLower.includes('fighting')) {
+        return 'strength';
+    }
+    
+    // Stealth/Agility skills -> Dexterity
+    if (skillNameLower.includes('stealth') || skillNameLower.includes('agility') || 
+        skillNameLower.includes('reflexes') || skillNameLower.includes('acrobat') ||
+        skillNameLower.includes('dodge') || skillNameLower.includes('quick')) {
+        return 'dexterity';
+    }
+    
+    // Survival/Health skills -> Constitution
+    if (skillNameLower.includes('survival') || skillNameLower.includes('endurance') || 
+        skillNameLower.includes('stomach') || skillNameLower.includes('hardy') ||
+        skillNameLower.includes('tough') || skillNameLower.includes('cockroach')) {
+        return 'constitution';
+    }
+    
+    // Knowledge/Technical skills -> Intelligence
+    if (skillNameLower.includes('knowledge') || skillNameLower.includes('technical') || 
+        skillNameLower.includes('electrical') || skillNameLower.includes('computer') ||
+        skillNameLower.includes('engineering') || skillNameLower.includes('science') ||
+        skillNameLower.includes('repair') || skillNameLower.includes('programming') ||
+        skillNameLower.includes('ied') || skillNameLower.includes('bomb') ||
+        skillNameLower.includes('remote') || skillNameLower.includes('operating')) {
+        return 'intelligence';
+    }
+    
+    // Perception/Wisdom skills -> Wisdom
+    if (skillNameLower.includes('perception') || skillNameLower.includes('aware') || 
+        skillNameLower.includes('insight') || skillNameLower.includes('pathfinder') ||
+        skillNameLower.includes('navigation') || skillNameLower.includes('tracking') ||
+        skillNameLower.includes('medicine') || skillNameLower.includes('animal')) {
+        return 'wisdom';
+    }
+    
+    // Social/Performance skills -> Charisma
+    if (skillNameLower.includes('social') || skillNameLower.includes('persuasion') || 
+        skillNameLower.includes('performance') || skillNameLower.includes('actor') ||
+        skillNameLower.includes('charm') || skillNameLower.includes('vampire') ||
+        skillNameLower.includes('deception') || skillNameLower.includes('intimidation') ||
+        skillNameLower.includes('leadership')) {
+        return 'charisma';
+    }
+    
+    // Default to Intelligence for unknown skills
+    console.log(`⚠️ Unknown skill type for "${skillName}", defaulting to Intelligence`);
+    return 'intelligence';
+}
 
 // ========================================
 // STATUS EFFECTS SYSTEM
@@ -3413,6 +4144,9 @@ function stopHeaderStatusTimer() {
 // ========================================
 
 function saveCharacter() {
+    // Apply selected skills to character before saving
+    applySelectedSkillsToCharacter();
+    
     // Use the new storage-based save
     if (typeof saveCharacterToStorage === 'function') {
         saveCharacterToStorage();
@@ -3559,6 +4293,340 @@ function loadCharacter() {
 // ========================================
 // INITIALIZATION
 // ========================================
+// ========================================
+// SKILLS SELECTION SYSTEM
+// ========================================
+let selectedSkills = [];
+const MAX_SELECTED_SKILLS = 5;
+
+function initializeSkillsSelection() {
+    // Initialize skills tabs
+    document.querySelectorAll('.skills-tab-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const targetTab = this.dataset.skillsTab;
+            switchSkillsTab(targetTab);
+        });
+    });
+    
+    // Initialize filters
+    document.getElementById('skills-filter-stat').addEventListener('change', filterSkills);
+    document.getElementById('skills-search').addEventListener('input', filterSkills);
+    
+    // Render available skills
+    renderAvailableSkills();
+    updateSelectedSkillsDisplay();
+}
+
+function switchSkillsTab(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('.skills-tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.skillsTab === tabName);
+    });
+    
+    // Update tab content
+    document.querySelectorAll('.skills-tab-content').forEach(content => {
+        content.classList.toggle('active', content.id === `${tabName}-skills-tab`);
+    });
+}
+
+function renderAvailableSkills() {
+    const skillsGrid = document.getElementById('skills-selection-grid');
+    if (!skillsGrid) return;
+    
+    skillsGrid.innerHTML = '';
+    
+    // Get skills from multiple sources
+    let availableSkills = {};
+    
+    // First, try to load from skills.json structure
+    if (typeof skills !== 'undefined' && skills.skills) {
+        Object.values(skills.skills).forEach(category => {
+            if (category.skills) {
+                Object.values(category.skills).forEach(skill => {
+                    availableSkills[skill.name] = {
+                        stat: skill.stat,
+                        description: skill.description || 'A useful skill for adventurers'
+                    };
+                });
+            }
+        });
+    }
+    
+    // Then add DCC skills from improvements.js if available
+    if (typeof dccSkills !== 'undefined') {
+        Object.entries(dccSkills).forEach(([skillName, skillStat]) => {
+            if (!availableSkills[skillName]) {
+                // Add description based on skill name and type
+                let description = getSkillDescription(skillName, skillStat);
+                availableSkills[skillName] = {
+                    stat: skillStat,
+                    description: description
+                };
+            }
+        });
+    }
+    
+    // Add some basic D&D skills if nothing else is available
+    if (Object.keys(availableSkills).length === 0) {
+        availableSkills = {
+            'Stealth': { stat: 'dexterity', description: 'Move silently and hide from enemies' },
+            'Athletics': { stat: 'strength', description: 'Climb, jump, and perform physical feats' },
+            'Persuasion': { stat: 'charisma', description: 'Convince others through charm and logic' },
+            'Investigation': { stat: 'intelligence', description: 'Search for clues and analyze evidence' },
+            'Perception': { stat: 'wisdom', description: 'Notice hidden details and detect danger' },
+            'Survival': { stat: 'wisdom', description: 'Navigate wilderness and find food/shelter' },
+            'Lockpicking': { stat: 'dexterity', description: 'Open locks and disable mechanical traps' },
+            'Medicine': { stat: 'wisdom', description: 'Treat wounds and diagnose illnesses' },
+            'Technology': { stat: 'intelligence', description: 'Operate and repair technological devices' },
+            'Intimidation': { stat: 'charisma', description: 'Frighten or coerce through threats' }
+        };
+    }
+    
+    // Get bonuses to check for double bonuses
+    const jobBonuses = getSelectedJobBonuses();
+    const classBonuses = getSelectedClassBonuses();
+    
+    Object.entries(availableSkills).forEach(([skillName, skillData]) => {
+        const isSelected = selectedSkills.some(skill => skill.name === skillName);
+        const canSelect = selectedSkills.length < MAX_SELECTED_SKILLS || isSelected;
+        
+        // Check if this skill gets double bonus
+        const jobBonus = jobBonuses[skillData.stat] || 0;
+        const classBonus = classBonuses[skillData.stat] || 0;
+        const hasDoubleBonus = (jobBonus !== 0 && classBonus !== 0);
+        
+        const skillItem = document.createElement('div');
+        skillItem.className = `skill-selection-item ${isSelected ? 'selected' : ''} ${!canSelect ? 'disabled' : ''}`;
+        
+        skillItem.innerHTML = `
+            <input type="checkbox" class="skill-selection-checkbox" 
+                   ${isSelected ? 'checked' : ''} 
+                   ${!canSelect ? 'disabled' : ''}
+                   onchange="toggleSkillSelection('${skillName}', '${skillData.stat}', this.checked)">
+            <div class="skill-selection-info">
+                <div class="skill-selection-name">${skillName}</div>
+                <div class="skill-selection-stat">[${skillData.stat.substring(0, 3).toUpperCase()}]</div>
+                <div class="skill-selection-description">${skillData.description}</div>
+            </div>
+            ${hasDoubleBonus ? '<span class="skill-selection-bonus">+2 Bonus!</span>' : ''}
+        `;
+        
+        skillsGrid.appendChild(skillItem);
+    });
+    
+    // Apply current filters
+    filterSkills();
+}
+
+// Helper function to generate descriptions for DCC skills
+function getSkillDescription(skillName, skillStat) {
+    const descriptions = {
+        // Combat Skills
+        'Powerful Strike': 'Devastating melee attacks that break through armor',
+        'Iron Punch': 'Unarmed combat expertise with deadly fists',
+        'Back Claw': 'Sneaky rear attacks that bypass defenses',
+        'Smush': 'Overwhelming crushing attacks that flatten enemies',
+        'Pugilism': 'Professional boxing and ring fighting techniques',
+        'Aiming': 'Precision targeting for critical ranged attacks',
+        'Soul Reaper': 'Dark magic that drains enemy life force',
+        'Catcher': 'Intercepting projectiles and thrown objects',
+        'Cesta Punta': 'Jai alai sport techniques adapted for combat',
+        'Light on Your Feet': 'Enhanced agility and movement speed',
+        'Cat-like Reflexes': 'Lightning-fast reaction times',
+        
+        // Survival Skills
+        'Breathing': 'Controlled breathing for stamina and endurance',
+        'Iron Stomach': 'Resistance to poisons and inedible food',
+        'Regeneration': 'Accelerated healing and injury recovery',
+        'Nine Lives': 'Supernatural survival instincts',
+        'Night Vision': 'Enhanced vision in low-light conditions',
+        'Acute Ears': 'Exceptional hearing for detecting danger',
+        'Pathfinder': 'Navigation and wilderness survival',
+        'Mind Balance': 'Mental stability and focus under pressure',
+        
+        // Technical Skills
+        'Basic Electrical Repair': 'Fix and maintain electrical systems',
+        'IED': 'Improvised explosive device creation and disposal',
+        'Incendiary Device Handling': 'Safe handling of fire-based weapons',
+        'Bomb Surgeon': 'Expert bomb disposal and defusing',
+        'Metal Detecting': 'Finding hidden metal objects and treasure',
+        'Biplane Pilot': 'Flying vintage aircraft and aerial maneuvers',
+        'Chopper Pilot': 'Helicopter operation and combat flying',
+        'Infusion': 'Magical item enhancement and enchantment',
+        
+        // Social Skills
+        'Character Actor': 'Convincing disguises and role-playing',
+        'Love Vampire': 'Charming and manipulating through attraction',
+        'Mascot': 'Inspiring allies and boosting team morale',
+        'Negotiation': 'Diplomatic bargaining and deal-making',
+        'Marked For Death': 'Surviving when targeted for assassination',
+        
+        // Absurd DCC Skills
+        'Cockroach': 'Surviving impossible situations like a cockroach',
+        'Frogger': 'Dodging through traffic and moving obstacles',
+        'Operating Sony RMVLZ620 Universal Remote': 'Mastering complex remote controls',
+        'Lacing Boots': 'Quickly and efficiently tying footwear',
+        'Scutelliphily': 'Collecting and identifying shields and emblems',
+        'Crowd Blast': 'Managing and controlling large groups',
+        'Backfire': 'Surviving when plans go horribly wrong',
+        'Walk on Air': 'Mystical levitation and air walking',
+        'Tent the House': 'Pest control and fumigation expertise'
+    };
+    
+    return descriptions[skillName] || `A specialized ${skillStat}-based skill for adventurers`;
+}
+
+function toggleSkillSelection(skillName, skillStat, isChecked) {
+    if (isChecked) {
+        if (selectedSkills.length < MAX_SELECTED_SKILLS) {
+            selectedSkills.push({ name: skillName, stat: skillStat, source: 'selected' });
+        } else {
+            // Revert checkbox if limit reached
+            event.target.checked = false;
+            showNotification('error', 'Skill Limit Reached', 
+                `You can only select ${MAX_SELECTED_SKILLS} skills.`, 
+                'Remove a skill first if you want to select a different one.');
+            return;
+        }
+    } else {
+        selectedSkills = selectedSkills.filter(skill => skill.name !== skillName);
+    }
+    
+    updateSelectedSkillsDisplay();
+    updateSkillsCounter();
+    renderAvailableSkills(); // Re-render to update disabled states
+}
+
+function updateSelectedSkillsDisplay() {
+    const selectedGrid = document.getElementById('selected-skills-grid');
+    if (!selectedGrid) return;
+    
+    selectedGrid.innerHTML = '';
+    
+    if (selectedSkills.length === 0) {
+        selectedGrid.innerHTML = `
+            <div class="no-skills-message">
+                <i class="ra ra-help"></i>
+                <p>No skills selected yet. Choose up to 5 skills above!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Get bonuses to check for double bonuses
+    const jobBonuses = getSelectedJobBonuses();
+    const classBonuses = getSelectedClassBonuses();
+    
+    selectedSkills.forEach((skill, index) => {
+        // Check if this skill gets double bonus
+        const jobBonus = jobBonuses[skill.stat] || 0;
+        const classBonus = classBonuses[skill.stat] || 0;
+        const hasDoubleBonus = (jobBonus !== 0 && classBonus !== 0);
+        
+        const skillItem = document.createElement('div');
+        skillItem.className = `selected-skill-item ${hasDoubleBonus ? 'double-bonus' : ''}`;
+        
+        skillItem.innerHTML = `
+            <div class="selected-skill-info">
+                <div class="selected-skill-name">${skill.name}</div>
+                <div class="selected-skill-stat">[${skill.stat.substring(0, 3).toUpperCase()}] ${hasDoubleBonus ? '+2 Bonus!' : ''}</div>
+            </div>
+            <button class="remove-skill-btn" onclick="removeSelectedSkill(${index})" title="Remove skill">
+                <span class="material-icons">close</span>
+            </button>
+        `;
+        
+        selectedGrid.appendChild(skillItem);
+    });
+}
+
+function removeSelectedSkill(index) {
+    selectedSkills.splice(index, 1);
+    updateSelectedSkillsDisplay();
+    updateSkillsCounter();
+    renderAvailableSkills(); // Re-render to update checkboxes
+}
+
+function updateSkillsCounter() {
+    const counter = document.getElementById('selected-skills-count');
+    if (counter) {
+        counter.textContent = selectedSkills.length;
+    }
+}
+
+function filterSkills() {
+    const statFilter = document.getElementById('skills-filter-stat').value;
+    const searchText = document.getElementById('skills-search').value.toLowerCase();
+    
+    document.querySelectorAll('.skill-selection-item').forEach(item => {
+        const skillName = item.querySelector('.skill-selection-name').textContent.toLowerCase();
+        const skillStat = item.querySelector('.skill-selection-stat').textContent.toLowerCase();
+        
+        const matchesSearch = skillName.includes(searchText);
+        const matchesStat = !statFilter || skillStat.includes(statFilter.substring(0, 3));
+        
+        item.style.display = (matchesSearch && matchesStat) ? 'flex' : 'none';
+    });
+}
+
+function addCustomSkillToSelection() {
+    const nameInput = document.getElementById('custom-skill-name');
+    const statSelect = document.getElementById('custom-skill-stat');
+    
+    const skillName = nameInput.value.trim();
+    const skillStat = statSelect.value;
+    
+    if (!skillName) {
+        showNotification('error', 'Invalid Skill', 'Please enter a skill name.', '');
+        return;
+    }
+    
+    if (selectedSkills.length >= MAX_SELECTED_SKILLS) {
+        showNotification('error', 'Skill Limit Reached', 
+            `You can only select ${MAX_SELECTED_SKILLS} skills.`, 
+            'Remove a skill first if you want to add a custom one.');
+        return;
+    }
+    
+    // Check if skill already exists
+    if (selectedSkills.some(skill => skill.name.toLowerCase() === skillName.toLowerCase())) {
+        showNotification('error', 'Duplicate Skill', 'This skill is already selected.', '');
+        return;
+    }
+    
+    // Add custom skill
+    selectedSkills.push({ name: skillName, stat: skillStat, source: 'custom' });
+    
+    // Clear form
+    nameInput.value = '';
+    statSelect.value = 'strength';
+    
+    updateSelectedSkillsDisplay();
+    updateSkillsCounter();
+    renderAvailableSkills();
+    
+    showNotification('success', 'Custom Skill Added', 
+        `${skillName} has been added to your skills.`, '');
+}
+
+// Apply selected skills to character
+function applySelectedSkillsToCharacter() {
+    // Clear existing selected skills
+    character.customSkills = character.customSkills.filter(skill => skill.source !== 'selected' && skill.source !== 'custom');
+    
+    // Add selected skills to character
+    selectedSkills.forEach(skill => {
+        character.customSkills.push({
+            name: skill.name,
+            stat: skill.stat,
+            source: skill.source
+        });
+    });
+    
+    // Re-render character skills
+    renderCharacterSkills();
+}
+
 function initializeCharacterSheet() {
     renderStats();
     renderCharacterSkills();
@@ -3708,6 +4776,12 @@ function initializeCharacterSheet() {
     if (character.statusEffects && character.statusEffects.length > 0) {
         startHeaderStatusTimer();
     }
+    
+    // Initialize skills selection system
+    initializeSkillsSelection();
+
+    // Initialize achievements system
+    loadAchievements();
 
     // Initialize auto-save for notes
     autoSaveNotes();
