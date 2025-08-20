@@ -34,7 +34,7 @@
     <div class="app-container">
         <!-- Mobile Header -->
         <header class="app-header">
-            <button class="header-btn menu-btn" onclick="backToCharacterSelect()" title="Character Menu">
+            <button class="header-btn menu-btn" onclick="toggleSidebar()" title="Open Navigation Menu">
                 <span class="material-icons">menu</span>
             </button>
             <button class="header-btn theme-btn" onclick="toggleTheme()" title="Toggle Theme">
@@ -44,7 +44,10 @@
                 <span class="material-icons">refresh</span>
             </button>
             <h1 class="app-title">
-                <span class="character-info-display"><!-- Available for future character info --></span>
+                <span class="character-info-display"></span>
+                <div class="status-header-container" id="status-header-container">
+                    <!-- Active status effects with timers will appear here -->
+                </div>
             </h1>
             <button class="header-btn trophy-btn" onclick="showAchievementsModal()" title="View Achievements">
                 <span class="material-icons">emoji_events</span>
@@ -54,33 +57,44 @@
             </button>
         </header>
 
-        <!-- Tab Navigation -->
-        <nav class="tab-nav">
-            <button class="tab-btn active" data-tab="creation">
-                <span class="tab-icon"><i class="ra ra-quill-ink"></i></span>
-                <span class="tab-label">Create</span>
-            </button>
-            <button class="tab-btn" data-tab="character">
-                <span class="tab-icon"><i class="ra ra-player"></i></span>
-                <span class="tab-label">Stats</span>
-            </button>
-            <button class="tab-btn" data-tab="inventory">
-                <span class="tab-icon"><i class="ra ra-book"></i></span>
-                <span class="tab-label">Gear</span>
-            </button>
-            <button class="tab-btn" data-tab="magic">
-                <span class="tab-icon"><i class="ra ra-fairy-wand"></i></span>
-                <span class="tab-label">Magic</span>
-            </button>
-            <button class="tab-btn" data-tab="combat">
-                <span class="tab-icon"><i class="ra ra-crossed-swords"></i></span>
-                <span class="tab-label">Combat</span>
-            </button>
-            <button class="tab-btn" data-tab="notes">
-                <span class="tab-icon"><i class="ra ra-scroll-unfurled"></i></span>
-                <span class="tab-label">Notes</span>
-            </button>
+        <!-- Sidebar Navigation Drawer -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>Navigation</h2>
+                <button class="close-sidebar" onclick="toggleSidebar()" title="Close Menu">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="sidebar-content">
+                <button class="sidebar-tab active" data-tab="creation">
+                    <span class="tab-icon"><i class="ra ra-quill-ink"></i></span>
+                    <span class="tab-label">Create Character</span>
+                </button>
+                <button class="sidebar-tab" data-tab="character">
+                    <span class="tab-icon"><i class="ra ra-player"></i></span>
+                    <span class="tab-label">Character Stats</span>
+                </button>
+                <button class="sidebar-tab" data-tab="inventory">
+                    <span class="tab-icon"><i class="ra ra-book"></i></span>
+                    <span class="tab-label">Inventory & Gear</span>
+                </button>
+                <button class="sidebar-tab" data-tab="magic">
+                    <span class="tab-icon"><i class="ra ra-fairy-wand"></i></span>
+                    <span class="tab-label">Magic & Spells</span>
+                </button>
+                <button class="sidebar-tab" data-tab="combat">
+                    <span class="tab-icon"><i class="ra ra-crossed-swords"></i></span>
+                    <span class="tab-label">Combat & Dice</span>
+                </button>
+                <button class="sidebar-tab" data-tab="notes">
+                    <span class="tab-icon"><i class="ra ra-scroll-unfurled"></i></span>
+                    <span class="tab-label">Notes & Backstory</span>
+                </button>
+            </div>
         </nav>
+
+        <!-- Sidebar Overlay for Mobile -->
+        <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
 
         <!-- Tab Contents -->
         <main class="tab-container">
@@ -126,6 +140,14 @@
                             </div>
                             <select id="race-select" class="fancy-select">
                                 <option value="">Choose your heritage...</option>
+                                <optgroup label="Dungeon Crawler">
+                                    <option value="bopca">🛸 Bopca</option>
+                                    <option value="skyfowl">🦅 Skyfowl</option>
+                                    <option value="rat_kin">🐀 Rat-kin</option>
+                                    <option value="hellspawn_familiar">👹 Hellspawn Familiar</option>
+                                    <option value="primal">✨ Primal</option>
+                                    <option value="were_creature">🐺 Were-creature</option>
+                                </optgroup>
                                 <optgroup label="Classic Fantasy">
                                     <option value="human">👤 Human</option>
                                     <option value="elf">🧝 Elf</option>
@@ -336,6 +358,26 @@
                             </div>
                             <select id="class-select" class="fancy-select">
                                 <option value="">Choose your path...</option>
+                                <optgroup label="Dungeon Crawler">
+                                    <option value="compensated_anarchist">💥 Compensated Anarchist</option>
+                                    <option value="bomb_squad_tech">💣 Bomb Squad Tech</option>
+                                    <option value="prizefighter">👊 Prizefighter</option>
+                                    <option value="artist_alley_mogul">🎨 Artist Alley Mogul</option>
+                                    <option value="former_child_actor">🎭 Former Child Actor</option>
+                                    <option value="roller_derby_jammer">🛼 Roller Derby Jammer</option>
+                                    <option value="football_hooligan">⚽ Football Hooligan</option>
+                                    <option value="kabaddi_raider">🤼 Kabaddi Raider</option>
+                                    <option value="monster_truck_driver">🚚 Monster Truck Driver</option>
+                                    <option value="vape_shop_counter_jockey">💨 Vape Shop Counter Jockey</option>
+                                    <option value="freelance_psychiatrist">🧠 Freelance Psychiatrist</option>
+                                    <option value="banana_farmer">🍌 Banana Farmer</option>
+                                    <option value="necrobard">💀 NecroBard</option>
+                                    <option value="feral_cat_berserker">🐱 Feral Cat Berserker</option>
+                                    <option value="animal_test_subject">🧪 Animal Test Subject</option>
+                                    <option value="glass_cannon">🔮 Glass Cannon</option>
+                                    <option value="legendary_diva">👑 Legendary Diva</option>
+                                    <option value="viper_queen">🐍 Viper Queen</option>
+                                </optgroup>
                                 <optgroup label="Warriors">
                                     <option value="fighter">⚔️ Fighter</option>
                                     <option value="barbarian">🪓 Barbarian</option>
@@ -435,6 +477,10 @@
 
                     <!-- Action Buttons -->
                     <div class="action-bar">
+                        <button class="action-btn new-char-btn" onclick="createNewCharacter()">
+                            <span class="material-icons">person_add</span>
+                            New Character
+                        </button>
                         <button class="action-btn primary-btn" onclick="saveCharacterToStorage()">
                             <span class="material-icons">save</span>
                             Save Character
@@ -986,7 +1032,7 @@
     <!-- Character Landing Screen (Initially visible, managed by JS) -->
     <div id="character-landing" class="character-landing" style="display: none;">
         <div class="landing-header">
-            <h1><i class="ra ra-knight-helmet"></i> RPG Character Studio</h1>
+            <h1><i class="ra ra-knight-helmet"></i> Dungeon Crawler</h1>
             <p>Choose your character or create a new one</p>
         </div>
 
