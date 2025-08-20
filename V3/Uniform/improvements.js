@@ -1,9 +1,8 @@
 // ========================================
-// DUNGEON CRAWLER CARL IMPROVEMENTS - UNIFIED VERSION v2.0
+// DUNGEON CRAWLER CARL IMPROVEMENTS
 // ========================================
 // This file enhances the existing character sheet system with elements from the DCC book series
 // while preserving the existing custom creation features.
-// UPDATED: Fixed skillLevelSystem redeclaration and merged working button functionality
 
 // ========================================
 // DCC-SPECIFIC SKILLS (90+ skills from the books)
