@@ -181,9 +181,29 @@ body {
     font-size: 24px;
 }
 
+.header-btn.trophy-btn .material-icons {
+    color: #FFD700; /* Gold color for trophy */
+    font-size: 24px;
+}
+
+.header-btn.trophy-btn:hover .material-icons {
+    color: #FFA500; /* Slightly darker gold on hover */
+}
+
 .app-title {
     text-align: center;
     flex: 1;
+    min-height: 40px; /* Maintain header height even when empty */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.character-info-display {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    font-weight: 600;
+    opacity: 0.8;
 }
 
 .character-name-display {
@@ -2107,6 +2127,7 @@ body {
     justify-content: center;
     z-index: 10000;
     padding: var(--spacing-md);
+    backdrop-filter: blur(4px);
 }
 
 .modal-content,
@@ -2116,10 +2137,46 @@ body {
     border-radius: var(--radius-xl);
     max-width: 600px;
     width: 100%;
-    max-height: 80vh;
+    max-height: 90vh;
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    border: 2px solid var(--border-color);
+    margin: auto;
+}
+
+/* Mobile-first responsive modal sizing */
+@media (max-width: 768px) {
+    .modal-overlay,
+    .character-modal-overlay,
+    .level-up-modal-overlay {
+        padding: var(--spacing-sm);
+    }
+    
+    .modal-content,
+    .character-modal-content,
+    .level-up-modal-content {
+        max-height: 95vh;
+        width: 100%;
+        max-width: none;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .modal-content,
+    .character-modal-content,
+    .level-up-modal-content {
+        max-width: 700px;
+    }
+}
+
+@media (min-width: 1025px) {
+    .modal-content,
+    .character-modal-content,
+    .level-up-modal-content {
+        max-width: 800px;
+    }
 }
 
 .modal-header {
@@ -2339,6 +2396,93 @@ body {
 
 .preview-stats div {
     text-align: center;
+}
+
+/* DCC Book Selection Modals */
+.weapon-template-grid,
+.spell-template-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-md);
+}
+
+.weapon-template-btn,
+.spell-template-btn {
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    text-align: left;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    color: var(--text-primary);
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+.weapon-template-btn:hover,
+.spell-template-btn:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.weapon-template-btn strong,
+.spell-template-btn strong {
+    color: var(--primary);
+    font-size: 1.1rem;
+    margin-bottom: var(--spacing-xs);
+}
+
+.weapon-template-btn small,
+.spell-template-btn small {
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.weapon-template-btn em,
+.spell-template-btn em {
+    color: var(--accent);
+    font-style: italic;
+    margin-top: var(--spacing-xs);
+}
+
+.dcc-book-btn {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white !important;
+    border: none;
+    margin-bottom: var(--spacing-md);
+}
+
+.dcc-book-btn:hover {
+    background: linear-gradient(135deg, var(--primary-dark), var(--secondary));
+    transform: translateY(-2px);
+}
+
+.dcc-weapon-button,
+.dcc-spell-button {
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 2px solid var(--border-color);
+}
+
+/* Mobile responsiveness for DCC modals */
+@media (max-width: 768px) {
+    .weapon-template-grid,
+    .spell-template-grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-sm);
+    }
+    
+    .weapon-template-btn,
+    .spell-template-btn {
+        min-height: 80px;
+        padding: var(--spacing-sm);
+    }
 }
 
 /* ========================================

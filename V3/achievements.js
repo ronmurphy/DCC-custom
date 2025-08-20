@@ -162,31 +162,36 @@ function showAchievementSelectionModal(character, achievements) {
     }
     
     const modal = document.createElement('div');
-    modal.className = 'modal achievement-modal';
+    modal.className = 'modal achievement-modal level-up-modal-overlay';
     modal.style.display = 'block';
     modal.innerHTML = `
-        <div class="modal-content" style="max-width: 900px;">
-            <h2>🏆 Achievement Unlocked!</h2>
-            <p>Choose one achievement to unlock. Each provides permanent benefits to your character:</p>
-            <div class="achievement-selection-grid">
-                ${achievements.map((ach, index) => `
-                    <div class="achievement-option ${ach.rarity}" onclick="selectAchievement('${ach.id}', ${index})">
-                        <div class="achievement-header">
-                            <h3>${getRarityEmoji(ach.rarity)} ${ach.name}</h3>
-                            <span class="achievement-rarity">${ach.rarity.toUpperCase()}</span>
-                        </div>
-                        <p class="achievement-description">${ach.description}</p>
-                        <div class="achievement-effect">
-                            <strong>Effect:</strong> ${ach.effect}
-                        </div>
-                        <div class="achievement-category">
-                            <small>Category: ${ach.category}</small>
-                        </div>
-                    </div>
-                `).join('')}
+        <div class="modal-content level-up-modal-content" style="max-width: 900px;">
+            <div class="modal-header level-up-header">
+                <h3><i class="ra ra-trophy"></i> Level Up Bonus: Choose Achievement!</h3>
+                <div class="level-display">Level ${character.level} Achievement Bonus</div>
             </div>
-            <div class="modal-actions">
-                <button onclick="closeAchievementModal()" class="secondary-btn">Skip (No Achievement)</button>
+            <div class="modal-body">
+                <p>As part of leveling up, choose one achievement to unlock. Each provides permanent benefits to your character:</p>
+                <div class="achievement-selection-grid">
+                    ${achievements.map((ach, index) => `
+                        <div class="achievement-option ${ach.rarity}" onclick="selectAchievement('${ach.id}', ${index})">
+                            <div class="achievement-header">
+                                <h3>${getRarityEmoji(ach.rarity)} ${ach.name}</h3>
+                                <span class="achievement-rarity">${ach.rarity.toUpperCase()}</span>
+                            </div>
+                            <p class="achievement-description">${ach.description}</p>
+                            <div class="achievement-effect">
+                                <strong>Effect:</strong> ${ach.effect}
+                            </div>
+                            <div class="achievement-category">
+                                <small>Category: ${ach.category}</small>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeAchievementModal()" class="btn-secondary">Skip (No Achievement)</button>
             </div>
         </div>
     `;
@@ -335,6 +340,94 @@ function closeAchievementModal() {
     window.currentAchievementOptions = null;
 }
 
+// Show all character achievements modal
+function showAchievementsModal() {
+    if (!character || !character.achievements || character.achievements.length === 0) {
+        // Show empty state
+        const modal = document.createElement('div');
+        modal.className = 'modal achievement-modal level-up-modal-overlay';
+        modal.style.display = 'block';
+        modal.innerHTML = `
+            <div class="modal-content level-up-modal-content" style="max-width: 600px;">
+                <div class="modal-header level-up-header">
+                    <h3><i class="ra ra-trophy"></i> Achievements</h3>
+                    <div class="level-display">No achievements yet</div>
+                </div>
+                <div class="modal-body">
+                    <div style="text-align: center; padding: 2rem;">
+                        <div style="font-size: 4em; opacity: 0.3;">🏆</div>
+                        <h4>No Achievements Yet</h4>
+                        <p>Level up to unlock achievements based on your character's skills, race, class, and equipment!</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" onclick="closeAchievementModal()">Close</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        return;
+    }
+
+    // Group achievements by rarity
+    const groupedAchievements = character.achievements.reduce((groups, achievement) => {
+        const rarity = achievement.rarity || 'common';
+        if (!groups[rarity]) groups[rarity] = [];
+        groups[rarity].push(achievement);
+        return groups;
+    }, {});
+
+    // Sort rarities from common to legendary
+    const rarityOrder = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal achievement-modal level-up-modal-overlay';
+    modal.style.display = 'block';
+    modal.innerHTML = `
+        <div class="modal-content level-up-modal-content" style="max-width: 900px;">
+            <div class="modal-header level-up-header">
+                <h3><i class="ra ra-trophy"></i> Achievements</h3>
+                <div class="level-display">${character.achievements.length} earned</div>
+            </div>
+            <div class="modal-body">
+                <div class="achievements-display">
+                    ${rarityOrder.map(rarity => {
+                        const achievements = groupedAchievements[rarity];
+                        if (!achievements || achievements.length === 0) return '';
+                        
+                        return `
+                            <div class="achievement-rarity-section">
+                                <h4 class="rarity-header ${rarity}">
+                                    ${getRarityEmoji(rarity)} ${rarity.toUpperCase()} (${achievements.length})
+                                </h4>
+                                <div class="achievements-grid">
+                                    ${achievements.map(achievement => `
+                                        <div class="achievement-display ${achievement.rarity}">
+                                            <div class="achievement-header">
+                                                <h5>${getRarityEmoji(achievement.rarity)} ${achievement.name}</h5>
+                                                <small class="achievement-date">${new Date(achievement.dateEarned).toLocaleDateString()}</small>
+                                            </div>
+                                            <p class="achievement-description">${achievement.description}</p>
+                                            <div class="achievement-effect">
+                                                <strong>Effect:</strong> ${achievement.effect}
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeAchievementModal()">Close</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
 // ========================================
 // ACHIEVEMENT DISPLAY FUNCTIONS
 // ========================================
@@ -432,17 +525,17 @@ function triggerAchievementSelection(character) {
 
 // Hook into existing level up system
 function enhanceLevelUpWithAchievements() {
-    // Override the existing level up function to include achievements
-    const originalLevelUp = window.levelUp;
-    if (originalLevelUp) {
-        window.levelUp = function() {
-            // Call original level up
-            originalLevelUp();
+    // Override the existing confirmLevelUp function to include achievements
+    const originalConfirmLevelUp = window.confirmLevelUp;
+    if (originalConfirmLevelUp) {
+        window.confirmLevelUp = function(newLevel, isSkillLevel) {
+            // Call original confirm level up
+            originalConfirmLevelUp(newLevel, isSkillLevel);
             
-            // Trigger achievement selection after a short delay
+            // Trigger achievement selection immediately after level up is confirmed
             setTimeout(() => {
                 triggerAchievementSelection(character);
-            }, 1000);
+            }, 100);
         };
     }
 }
@@ -575,6 +668,64 @@ function addAchievementStyles() {
         .secondary-btn:hover {
             background: #777;
         }
+        
+        /* Achievement display modal styling */
+        .achievements-display {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .achievement-rarity-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .rarity-header {
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+        
+        .rarity-header.common { border-color: #8B4513; }
+        .rarity-header.uncommon { border-color: #228B22; }
+        .rarity-header.rare { border-color: #1E90FF; }
+        .rarity-header.epic { border-color: #8A2BE2; }
+        .rarity-header.legendary { border-color: #FFD700; }
+        
+        .achievements-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 0.75rem;
+        }
+        
+        .achievement-display .achievement-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.5rem;
+        }
+        
+        .achievement-display h5 {
+            margin: 0;
+            font-size: 1em;
+        }
+        
+        .achievement-date {
+            opacity: 0.6;
+            font-size: 0.8em;
+        }
+        
+        .achievement-display .achievement-description {
+            margin: 0.5rem 0;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        
+        .achievement-display .achievement-effect {
+            background: rgba(255, 107, 53, 0.1);
+            padding: 0.4rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+        }
     `;
     
     document.head.appendChild(style);
@@ -645,6 +796,7 @@ window.achievementSystem = {
 window.selectAchievement = selectAchievement;
 window.closeAchievementModal = closeAchievementModal;
 window.triggerAchievementSelection = triggerAchievementSelection;
+window.showAchievementsModal = showAchievementsModal;
 
 // Auto-initialize when the script loads
 if (document.readyState === 'loading') {
