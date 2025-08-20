@@ -687,56 +687,6 @@ const dccStatusEffects = {
 };
 
 // ========================================
-// SKILL LEVEL SYSTEM
-// ========================================
-const skillLevelSystem = {
-    maxLevel: 15,
-    primalMaxLevel: 20,
-    
-    getRequiredExperience: function(level) {
-        if (level <= 10) return level * 100;
-        if (level <= 15) return (level - 10) * 500 + 1000;
-        return (level - 15) * 1000 + 3500; // Levels 16-20 for Primals
-    },
-    
-    getMaxSkillLevel: function(character, skillName) {
-        let maxLevel = this.maxLevel;
-        
-        // Primal race gets +5 to all skills
-        if (character.race === 'primal') {
-            maxLevel = this.primalMaxLevel;
-        }
-        
-        return maxLevel;
-    },
-    
-    trainSkill: function(character, skillName, experienceGained) {
-        if (!character.skillLevels) {
-            character.skillLevels = {};
-        }
-        
-        if (!character.skillLevels[skillName]) {
-            character.skillLevels[skillName] = { level: 1, experience: 0 };
-        }
-        
-        const skill = character.skillLevels[skillName];
-        skill.experience += experienceGained;
-        
-        const requiredExp = this.getRequiredExperience(skill.level);
-        if (skill.experience >= requiredExp) {
-            const maxLevel = this.getMaxSkillLevel(character, skillName);
-            if (skill.level < maxLevel) {
-                skill.level++;
-                skill.experience -= requiredExp;
-                return true; // Level up occurred
-            }
-        }
-        
-        return false;
-    }
-};
-
-// ========================================
 // ENHANCEMENT FUNCTIONS
 // ========================================
 
@@ -798,47 +748,52 @@ function enhanceSpellSystem() {
 
 // Add DCC weapon button to inventory creation section
 function addDCCWeaponButton() {
-    // Look for the add-item-section in inventory tab
-    const addItemSection = document.querySelector('#inventory .add-item-section');
+    console.log('🔧 Adding DCC weapon templates button...');
+    const inventoryGrid = document.getElementById('inventory-grid');
+    if (!inventoryGrid || inventoryGrid.querySelector('.dcc-templates-btn')) {
+        console.log('✅ DCC weapon button already exists or grid not found');
+        return;
+    }
     
-    if (!addItemSection || addItemSection.querySelector('.dcc-weapon-button')) return;
-    
-    const dccButton = document.createElement('div');
-    dccButton.className = 'dcc-weapon-button';
-    dccButton.innerHTML = `
-        <button class="create-item-btn dcc-book-btn" onclick="showDCCWeaponTemplates()">
-            <i class="ra ra-book"></i>
-            DCC Book Weapons
-        </button>
+    console.log('🔧 Creating DCC weapon button...');
+    const templatesBtn = document.createElement('div');
+    templatesBtn.className = 'dcc-templates-btn inventory-item';
+    templatesBtn.innerHTML = `
+        <div style="text-align: center; padding: 20px; border: 2px dashed #ff6b35; background: rgba(255, 107, 53, 0.1); border-radius: 8px;">
+            <i class="ra ra-book" style="font-size: 2em; color: #ff6b35; margin-bottom: 10px; display: block;"></i>
+            <strong>📚 DCC Book Weapons</strong>
+            <br><small>Click to add weapons from the books</small>
+        </div>
     `;
+    templatesBtn.onclick = showDCCWeaponTemplates;
     
-    // Insert at the beginning of the add-item-section
-    addItemSection.insertBefore(dccButton, addItemSection.firstChild);
+    inventoryGrid.insertBefore(templatesBtn, inventoryGrid.firstChild);
+    console.log('✅ DCC weapon button added successfully');
 }
 
 // Add DCC spell button to magic creation section  
 function addDCCSpellButton() {
-    // Look for the spell-creator in magic tab
-    const spellCreator = document.querySelector('#magic .spell-creator-card');
-    
-    if (!spellCreator || spellCreator.querySelector('.dcc-spell-button')) return;
-    
-    const dccButton = document.createElement('div');
-    dccButton.className = 'dcc-spell-button';
-    dccButton.innerHTML = `
-        <button class="create-spell-btn dcc-book-btn" onclick="showDCCSpellTemplates()">
-            <i class="ra ra-lightning"></i>
-            DCC Book Spells
-        </button>
-    `;
-    
-    // Insert at the beginning of the spell creator card, after the header
-    const cardHeader = spellCreator.querySelector('.card-header');
-    if (cardHeader && cardHeader.nextSibling) {
-        spellCreator.insertBefore(dccButton, cardHeader.nextSibling);
-    } else {
-        spellCreator.appendChild(dccButton);
+    console.log('🔧 Adding DCC spell templates button...');
+    const spellsGrid = document.getElementById('spells-grid');
+    if (!spellsGrid || spellsGrid.querySelector('.dcc-spell-templates-btn')) {
+        console.log('✅ DCC spell button already exists or grid not found');
+        return;
     }
+    
+    console.log('🔧 Creating DCC spell button...');
+    const templatesBtn = document.createElement('div');
+    templatesBtn.className = 'dcc-spell-templates-btn';
+    templatesBtn.innerHTML = `
+        <div style="text-align: center; padding: 20px; border: 2px dashed #ff6b35; background: rgba(255, 107, 53, 0.1); border-radius: 8px; margin-bottom: 20px;">
+            <i class="ra ra-lightning" style="font-size: 2em; color: #ff6b35; margin-bottom: 10px; display: block;"></i>
+            <strong>📚 DCC Book Spells</strong>
+            <br><small>Click to add spells from the books</small>
+        </div>
+    `;
+    templatesBtn.onclick = showDCCSpellTemplates;
+    
+    spellsGrid.insertBefore(templatesBtn, spellsGrid.firstChild);
+    console.log('✅ DCC spell button added successfully');
 }
 
 // Show DCC weapon templates modal
@@ -878,6 +833,15 @@ function showDCCWeaponTemplates() {
             closeDCCModal();
         }
     });
+    
+    // Close modal on escape key
+    const escapeHandler = (e) => {
+        if (e.key === 'Escape') {
+            closeDCCModal();
+            document.removeEventListener('keydown', escapeHandler);
+        }
+    };
+    document.addEventListener('keydown', escapeHandler);
     
     document.body.appendChild(modal);
 }
@@ -919,6 +883,15 @@ function showDCCSpellTemplates() {
             closeDCCModal();
         }
     });
+    
+    // Close modal on escape key
+    const escapeHandler = (e) => {
+        if (e.key === 'Escape') {
+            closeDCCModal();
+            document.removeEventListener('keydown', escapeHandler);
+        }
+    };
+    document.addEventListener('keydown', escapeHandler);
     
     document.body.appendChild(modal);
 }
@@ -1547,7 +1520,6 @@ if (document.readyState === 'loading') {
 
 // Make functions globally available
 window.dccImprovements = {
-    skillLevelSystem,
     showDCCWeaponTemplates,
     showDCCSpellTemplates,
     addDCCWeapon,
