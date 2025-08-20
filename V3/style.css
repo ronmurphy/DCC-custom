@@ -1307,6 +1307,18 @@ body.sidebar-open {
     margin-bottom: var(--spacing-lg);
 }
 
+/* Bonus Sources Display */
+.bonus-sources-display {
+    margin-top: var(--spacing-md);
+}
+
+.bonus-sources-display .bonus-info {
+    background: rgba(40, 40, 60, 0.6);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+}
+
 /* ========================================
    ABILITIES NAVIGATION
    ======================================== */
@@ -1579,6 +1591,29 @@ body.sidebar-open {
 .inventory-item.equipped {
     border-color: var(--success);
     background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+}
+
+/* Inventory Item Icons */
+.item-icon-name {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-xs);
+}
+
+.item-icon {
+    font-size: 1.2rem !important;
+    color: var(--primary);
+    min-width: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.item-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    flex: 1;
 }
 
 /* ========================================

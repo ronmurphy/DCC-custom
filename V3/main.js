@@ -1917,6 +1917,59 @@ function renderCharacterStats() {
         `;
         charStatsDisplay.appendChild(statCard);
     });
+
+    // Render bonus sources information
+    renderBonusSources(raceBonuses, jobBonuses, classBonuses);
+}
+
+function renderBonusSources(raceBonuses, jobBonuses, classBonuses) {
+    const bonusSourcesDisplay = document.getElementById('bonus-sources-display');
+    if (!bonusSourcesDisplay) return;
+
+    bonusSourcesDisplay.innerHTML = '';
+
+    // Collect all attributes that have bonuses
+    const attributesWithBonuses = new Set();
+    Object.keys(raceBonuses).forEach(stat => raceBonuses[stat] !== 0 && attributesWithBonuses.add(stat));
+    Object.keys(jobBonuses).forEach(stat => jobBonuses[stat] !== 0 && attributesWithBonuses.add(stat));
+    Object.keys(classBonuses).forEach(stat => classBonuses[stat] !== 0 && attributesWithBonuses.add(stat));
+
+    if (attributesWithBonuses.size === 0) return;
+
+    const bonusInfo = document.createElement('div');
+    bonusInfo.style.cssText = `
+        margin-top: 15px;
+        padding: 12px;
+        background: rgba(40, 40, 60, 0.6);
+        border-radius: 8px;
+        border: 1px solid #4a4a6a;
+    `;
+
+    let bonusHTML = '<div style="font-size: 12px; color: #f4d03f; font-weight: 600; margin-bottom: 8px; text-align: center;">Attribute Bonuses</div>';
+    
+    Array.from(attributesWithBonuses).forEach(stat => {
+        const raceBonus = raceBonuses[stat] || 0;
+        const jobBonus = jobBonuses[stat] || 0;
+        const classBonus = classBonuses[stat] || 0;
+        
+        const sources = [];
+        if (raceBonus !== 0) sources.push(`${character.race} (${raceBonus > 0 ? '+' : ''}${raceBonus})`);
+        if (jobBonus !== 0) sources.push(`${character.job} (${jobBonus > 0 ? '+' : ''}${jobBonus})`);
+        if (classBonus !== 0) sources.push(`${character.class} (${classBonus > 0 ? '+' : ''}${classBonus})`);
+        
+        if (sources.length > 0) {
+            const hasDoubleBonus = (jobBonus !== 0 && classBonus !== 0);
+            bonusHTML += `
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; padding: 3px 6px; background: ${hasDoubleBonus ? 'rgba(255, 215, 0, 0.1)' : 'rgba(50, 50, 70, 0.5)'}; border-radius: 4px;">
+                    <span style="font-size: 11px; color: ${hasDoubleBonus ? '#ffd700' : '#cbd5e1'}; font-weight: 500; text-transform: capitalize;">${stat}:</span>
+                    <span style="font-size: 10px; color: #94a3b8;">${sources.join(', ')}</span>
+                </div>
+            `;
+        }
+    });
+
+    bonusInfo.innerHTML = bonusHTML;
+    bonusSourcesDisplay.appendChild(bonusInfo);
 }
 
 // ========================================
@@ -2043,9 +2096,14 @@ function createInteractiveItem(type, options) {
         type === 'spell' ? `${options.value} MP` :
             `d${options.diceType || 6}+${options.value}`;
 
+    // Handle both Material icons and RPGAwesome icons
+    const iconHtml = options.iconType === 'material' ? 
+        `<span class="material-icons">${options.icon}</span>` : 
+        `<i class="ra ${options.icon}"></i>`;
+
     item.innerHTML = `
                 <div class="item-info">
-                    <div class="item-name"><i class="ra ${options.icon}"></i> ${options.name}</div>
+                    <div class="item-name">${iconHtml} ${options.name}</div>
                     <div class="item-stat">${statDisplay}${options.description || ''}</div>
                 </div>
                 <div class="item-value">${valueText}</div>
@@ -2145,12 +2203,16 @@ function renderCharacterWeapons() {
         const statValue = character.stats[statUsed];
         const weaponSize = weaponSizes[weapon.size] || weaponSizes.medium;
 
+        // Get intelligent icon for this weapon
+        const weaponIcon = getItemIcon(weapon.name, weapon.type);
+
         const weaponItem = createInteractiveItem('weapon', {
             name: weapon.name,
             description: `${weaponSize.name} • d${weaponSize.dice} + ${statUsed.slice(0, 3).toUpperCase()}(${statValue}) ${weapon.ranged ? '• Ranged' : '• Melee'}`,
             value: statValue,
             diceType: weaponSize.dice,
-            icon: 'ra-sword',
+            icon: weaponIcon,
+            iconType: 'material', // Use Material icons instead of RPGAwesome
             onClick: () => rollWeaponDamage(weapon.id)
         });
 
@@ -2624,6 +2686,211 @@ function removeItem(itemId) {
     // alert(`Deleted "${item.name}".`);
 }
 
+// ========================================
+// INTELLIGENT ICON SYSTEM FOR EQUIPMENT
+// ========================================
+
+// Intelligent Icon Database for Equipment
+const itemIconDatabase = {
+    // Weapons - Material Icons
+    weapons: {
+        // Firearms
+        pistol: 'sports_martial_arts',
+        gun: 'sports_martial_arts', 
+        rifle: 'sports_martial_arts',
+        musket: 'sports_martial_arts',
+        firearm: 'sports_martial_arts',
+        blunderbuss: 'sports_martial_arts',
+        
+        // Bows and Ranged
+        bow: 'sports_martial_arts',
+        crossbow: 'sports_martial_arts',
+        sling: 'sports_martial_arts',
+        dart: 'sports_martial_arts',
+        javelin: 'sports_martial_arts',
+        spear: 'sports_martial_arts',
+        
+        // Blades
+        sword: 'sports_martial_arts',
+        blade: 'sports_martial_arts',
+        dagger: 'sports_martial_arts',
+        knife: 'sports_martial_arts',
+        scimitar: 'sports_martial_arts',
+        rapier: 'sports_martial_arts',
+        shortsword: 'sports_martial_arts',
+        longsword: 'sports_martial_arts',
+        bastard: 'sports_martial_arts',
+        
+        // Blunt Weapons
+        mace: 'gavel',
+        hammer: 'build',
+        club: 'gavel',
+        staff: 'straighten',
+        rod: 'straighten',
+        wand: 'auto_fix_high',
+        
+        // Polearms
+        pike: 'straighten',
+        halberd: 'straighten',
+        glaive: 'straighten',
+        lance: 'straighten',
+        
+        // Axes
+        axe: 'carpenter',
+        hatchet: 'carpenter',
+        battleaxe: 'carpenter',
+        
+        // Default weapon
+        default: 'sports_martial_arts'
+    },
+    
+    // Armor - Material Icons
+    armor: {
+        // Body Armor
+        armor: 'security',
+        mail: 'security',
+        plate: 'security',
+        leather: 'security',
+        chainmail: 'security',
+        studded: 'security',
+        brigandine: 'security',
+        
+        // Clothing/Robes
+        robe: 'checkroom',
+        cloak: 'checkroom',
+        tunic: 'checkroom',
+        garb: 'checkroom',
+        vestment: 'checkroom',
+        
+        // Default armor
+        default: 'security'
+    },
+    
+    // Shields and Off-hand Items - Material Icons
+    offhand: {
+        // Shields
+        shield: 'shield',
+        buckler: 'shield',
+        targe: 'shield',
+        
+        // Potions and Consumables
+        potion: 'science',
+        flask: 'science',
+        vial: 'science',
+        elixir: 'science',
+        brew: 'science',
+        tonic: 'science',
+        
+        // Tools
+        torch: 'flashlight_on',
+        lantern: 'lightbulb',
+        lamp: 'lightbulb',
+        
+        // Books and Scrolls
+        book: 'menu_book',
+        tome: 'menu_book',
+        grimoire: 'menu_book',
+        scroll: 'description',
+        parchment: 'description',
+        
+        // Magical Items
+        orb: 'bubble_chart',
+        crystal: 'bubble_chart',
+        gem: 'diamond',
+        stone: 'circle',
+        
+        // Default offhand
+        default: 'shield'
+    },
+    
+    // Accessories - Material Icons
+    accessories: {
+        // Jewelry
+        ring: 'panorama_fish_eye',
+        amulet: 'favorite',
+        necklace: 'favorite',
+        pendant: 'favorite',
+        charm: 'favorite',
+        talisman: 'favorite',
+        
+        // Clothing
+        cloak: 'checkroom',
+        cape: 'checkroom',
+        belt: 'fitness_center',
+        sash: 'fitness_center',
+        gloves: 'back_hand',
+        gauntlets: 'back_hand',
+        boots: 'directions_walk',
+        
+        // Default accessory
+        default: 'star'
+    }
+};
+
+// Function to get intelligent icon for an item based on name scanning
+function getItemIcon(itemName, itemType, slot) {
+    if (!itemName) return getDefaultIcon(itemType, slot);
+    
+    const name = itemName.toLowerCase();
+    let iconDatabase;
+    
+    // Determine which database to search based on type and slot
+    if (itemType === 'weapon' || slot === 'mainHand') {
+        iconDatabase = itemIconDatabase.weapons;
+    } else if (itemType === 'armor' || slot === 'armor') {
+        iconDatabase = itemIconDatabase.armor;
+    } else if (slot === 'offHand') {
+        iconDatabase = itemIconDatabase.offhand;
+    } else {
+        iconDatabase = itemIconDatabase.accessories;
+    }
+    
+    // Search for keywords in the item name (like VB6 InStr functionality)
+    for (const keyword in iconDatabase) {
+        if (keyword !== 'default' && name.includes(keyword)) {
+            return iconDatabase[keyword];
+        }
+    }
+    
+    // Cross-reference other categories for better matches
+    // Check if weapon keywords appear in non-weapon items
+    if (slot !== 'mainHand' && itemType !== 'weapon') {
+        for (const keyword in itemIconDatabase.weapons) {
+            if (keyword !== 'default' && name.includes(keyword)) {
+                return itemIconDatabase.weapons[keyword];
+            }
+        }
+    }
+    
+    // Check offhand items for any slot
+    for (const keyword in itemIconDatabase.offhand) {
+        if (keyword !== 'default' && name.includes(keyword)) {
+            return itemIconDatabase.offhand[keyword];
+        }
+    }
+    
+    // Return default icon for the category
+    return iconDatabase.default || getDefaultIcon(itemType, slot);
+}
+
+// Function to get default icons when no match is found
+function getDefaultIcon(itemType, slot) {
+    switch (itemType) {
+        case 'weapon': return 'sports_martial_arts';
+        case 'armor': return 'security';
+        case 'accessory': return 'star';
+        case 'consumable': return 'science';
+        default:
+            switch (slot) {
+                case 'mainHand': return 'sports_martial_arts';
+                case 'offHand': return 'shield';
+                case 'armor': return 'security';
+                case 'accessory': return 'star';
+                default: return 'help_outline';
+            }
+    }
+}
+
 function renderInventory() {
     const inventoryGrid = document.getElementById('inventory-grid');
     inventoryGrid.innerHTML = '';
@@ -2644,8 +2911,14 @@ function renderInventory() {
         if (item.twoHanded) stats.push('2H');
         if (item.ranged) stats.push('RNG');
 
+        // Get intelligent icon for this item
+        const itemIcon = getItemIcon(item.name, item.type);
+
         itemDiv.innerHTML = `
-    <div class="item-name">${item.name}</div>
+    <div class="item-icon-name">
+        <span class="material-icons item-icon">${itemIcon}</span>
+        <div class="item-name">${item.name}</div>
+    </div>
     <div class="item-type">${item.type} ${item.size ? `(${weaponSizes[item.size].name})` : ''}</div>
     <div class="item-stats">
         ${stats.map(stat => `<span class="item-stat">${stat}</span>`).join('')}
@@ -2739,6 +3012,7 @@ function renderEquipment() {
         const itemElement = document.getElementById(`${slot}-item`);
         const statsElement = document.getElementById(`${slot}-stats`);
         const slotElement = document.querySelector(`[data-slot="${slot}"]`);
+        const slotIconElement = slotElement.querySelector('.slot-icon i');
 
         const itemId = character.equipment[slot];
         if (itemId) {
@@ -2757,13 +3031,39 @@ function renderEquipment() {
 
                 statsElement.textContent = stats.join(', ');
                 slotElement.classList.add('equipped');
+
+                // Update the slot icon to match the equipped item
+                const itemIcon = getItemIcon(item.name, item.type, slot);
+                slotIconElement.className = `material-icons`;
+                slotIconElement.textContent = itemIcon;
             }
         } else {
             itemElement.textContent = 'Empty';
             statsElement.textContent = '';
             slotElement.classList.remove('equipped');
+            
+            // Reset to default slot icon when empty
+            const defaultIcon = getDefaultSlotIcon(slot);
+            if (defaultIcon.type === 'material') {
+                slotIconElement.className = `material-icons`;
+                slotIconElement.textContent = defaultIcon.icon;
+            } else {
+                slotIconElement.className = `ra ra-${defaultIcon.icon}`;
+                slotIconElement.textContent = '';
+            }
         }
     });
+}
+
+// Function to get default icons for empty equipment slots
+function getDefaultSlotIcon(slot) {
+    switch (slot) {
+        case 'mainHand': return { type: 'rpg', icon: 'sword' };
+        case 'offHand': return { type: 'rpg', icon: 'shield' };
+        case 'armor': return { type: 'rpg', icon: 'armor' };
+        case 'accessory': return { type: 'material', icon: 'star' };
+        default: return { type: 'material', icon: 'help_outline' };
+    }
 }
 
 function showEquipMenu(slot) {
