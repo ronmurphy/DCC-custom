@@ -1,9 +1,9 @@
 // ========================================
-// DUNGEON CRAWLER CARL IMPROVEMENTS - SYNCED v4.0
+// DUNGEON CRAWLER CARL IMPROVEMENTS - WORKING UNIFORM VERSION v3.0
 // ========================================
 // This file enhances the existing character sheet system with elements from the DCC book series
 // while preserving the existing custom creation features.
-// FIXED: Force-copied from working Uniform-v3 version
+// RESTORED: Using clean Uniform-v3 version without skillLevelSystem conflicts
 
 // ========================================
 // DCC-SPECIFIC SKILLS (90+ skills from the books)
@@ -1092,49 +1092,6 @@ function getSkillSlotsForLevel(level) {
     return 1;
 }
 
-// Update skill selection validation
-function updateSkillSelection() {
-    const checkboxes = document.querySelectorAll('.skill-option input:checked');
-    const maxSkills = getSkillSlotsForLevel(character.level);
-    const confirmBtn = document.getElementById('confirmSkillBtn');
-    
-    if (confirmBtn) {
-        confirmBtn.disabled = checkboxes.length !== maxSkills;
-    }
-}
-
-// Confirm skill selection
-function confirmSkillSelection() {
-    const checkboxes = document.querySelectorAll('.skill-option input:checked');
-    
-    checkboxes.forEach(checkbox => {
-        const skillName = checkbox.value;
-        const stat = standardSkills[skillName];
-        
-        // Add to character's custom skills
-        character.customSkills.push({
-            name: skillName,
-            stat: stat
-        });
-        
-        // Initialize skill level
-        if (!character.skillLevels) character.skillLevels = {};
-        character.skillLevels[skillName] = { level: 1, experience: 0 };
-    });
-    
-    character.skillSelectionComplete = true;
-    closeModal();
-    updateCharacterDisplay();
-}
-
-// Close modal
-function closeModal() {
-    const modal = document.querySelector('.modal');
-    if (modal) {
-        modal.remove();
-    }
-}
-
 // Add DCC styling
 function addDCCStyles() {
     const style = document.createElement('style');
@@ -1526,9 +1483,6 @@ window.dccImprovements = {
     addDCCWeapon,
     addDCCSpell,
     closeDCCModal,
-    updateSkillSelection,
-    confirmSkillSelection,
-    closeModal,
     addLevelUpSkillSelection
 };
 
@@ -1541,7 +1495,4 @@ window.closeDCCModal = closeDCCModal;
 window.getElementEmoji = getElementEmoji;
 window.generateId = generateId;
 window.enhanceModalSystem = enhanceModalSystem;
-window.updateSkillSelection = updateSkillSelection;
-window.confirmSkillSelection = confirmSkillSelection;
-window.closeModal = closeModal;
 

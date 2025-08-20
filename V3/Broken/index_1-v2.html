@@ -1,34 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
-    <!-- Add after existing meta tags -->
-    <meta name="format-detection" content="telephone=no">
-    <meta name="msapplication-tap-highlight" content="no">
-
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#ff6b35">
-    <meta name="apple-mobile-web-app-title" content="DCC Sheet">
-    <link rel="apple-touch-icon" href="icon-192.png">
     <title>RPG Character Studio</title>
-
+    
     <!-- Fonts -->
-    <link
-        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/rpg-awesome/0.2.0/css/rpg-awesome.min.css">
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
     <!-- Main Character Sheet (Initially hidden by JS) -->
     <div class="app-container">
@@ -40,15 +26,10 @@
             <button class="header-btn theme-btn" onclick="toggleTheme()" title="Toggle Theme">
                 <span class="material-icons">brightness_6</span>
             </button>
-            <button class="header-btn cache-btn" onclick="clearAllCaches()" title="Clear Cache (Fix Loading Issues)">
-                <span class="material-icons">refresh</span>
-            </button>
             <h1 class="app-title">
-                <span class="character-info-display"><!-- Available for future character info --></span>
+                <span class="character-name-display">New Character</span>
+                <span class="character-level-badge">Lv.1</span>
             </h1>
-            <button class="header-btn trophy-btn" onclick="showAchievementsModal()" title="View Achievements">
-                <span class="material-icons">emoji_events</span>
-            </button>
             <button class="header-btn save-btn" onclick="saveCharacterToStorage()" title="Save Character">
                 <span class="material-icons">save</span>
             </button>
@@ -98,15 +79,13 @@
                             </div>
                             <input type="file" id="portrait-upload" accept="image/*" style="display: none;">
                         </div>
-
+                        
                         <div class="hero-info">
-                            <input type="text" id="char-name" class="hero-name-input" placeholder="Character Name"
-                                autocomplete="off">
+                            <input type="text" id="char-name" class="hero-name-input" placeholder="Character Name" autocomplete="off">
                             <div class="hero-meta">
                                 <div class="meta-item">
                                     <label>Level</label>
-                                    <input type="number" id="char-level" class="compact-input" value="1" min="1"
-                                        max="20">
+                                    <input type="number" id="char-level" class="compact-input" value="1" min="1" max="20">
                                 </div>
                                 <div class="meta-item">
                                     <label>Age</label>
@@ -154,50 +133,43 @@
                                 </optgroup>
                                 <option value="custom">✨ Custom Heritage</option>
                             </select>
-
-                            <input type="text" id="custom-race" class="fancy-input" placeholder="Enter custom heritage"
-                                style="display: none;">
-
+                            
+                            <input type="text" id="custom-race" class="fancy-input" placeholder="Enter custom heritage" style="display: none;">
+                            
                             <!-- Custom Race Builder -->
                             <div id="custom-race-bonuses" class="custom-builder" style="display: none;">
                                 <h4>Custom Heritage Builder</h4>
-
+                                
                                 <div class="builder-section">
                                     <label>Attribute Bonuses (Pick 1-2)</label>
                                     <div class="checkbox-grid">
                                         <label class="checkbox-pill">
-                                            <input type="checkbox" id="custom-race-str"
-                                                onchange="updateCustomRaceBonuses()">
+                                            <input type="checkbox" id="custom-race-str" onchange="updateCustomRaceBonuses()">
                                             <span>STR</span>
                                         </label>
                                         <label class="checkbox-pill">
-                                            <input type="checkbox" id="custom-race-dex"
-                                                onchange="updateCustomRaceBonuses()">
+                                            <input type="checkbox" id="custom-race-dex" onchange="updateCustomRaceBonuses()">
                                             <span>DEX</span>
                                         </label>
                                         <label class="checkbox-pill">
-                                            <input type="checkbox" id="custom-race-con"
-                                                onchange="updateCustomRaceBonuses()">
+                                            <input type="checkbox" id="custom-race-con" onchange="updateCustomRaceBonuses()">
                                             <span>CON</span>
                                         </label>
                                         <label class="checkbox-pill">
-                                            <input type="checkbox" id="custom-race-int"
-                                                onchange="updateCustomRaceBonuses()">
+                                            <input type="checkbox" id="custom-race-int" onchange="updateCustomRaceBonuses()">
                                             <span>INT</span>
                                         </label>
                                         <label class="checkbox-pill">
-                                            <input type="checkbox" id="custom-race-wis"
-                                                onchange="updateCustomRaceBonuses()">
+                                            <input type="checkbox" id="custom-race-wis" onchange="updateCustomRaceBonuses()">
                                             <span>WIS</span>
                                         </label>
                                         <label class="checkbox-pill">
-                                            <input type="checkbox" id="custom-race-cha"
-                                                onchange="updateCustomRaceBonuses()">
+                                            <input type="checkbox" id="custom-race-cha" onchange="updateCustomRaceBonuses()">
                                             <span>CHA</span>
                                         </label>
                                     </div>
                                 </div>
-
+                                
                                 <div class="builder-section">
                                     <label>Attribute Limits</label>
                                     <div class="stat-limit-grid">
@@ -227,7 +199,7 @@
                                         </div>
                                     </div>
                                 </div>
-
+                                
                                 <div class="builder-section">
                                     <label>Racial Abilities</label>
                                     <div class="skill-builder">
@@ -251,10 +223,9 @@
                                             <option value="wisdom">WIS</option>
                                             <option value="charisma">CHA</option>
                                         </select>
-                                        <input type="text" id="custom-race-skill1-name" class="custom-skill-name"
-                                            placeholder="Ability name" style="display: none;">
+                                        <input type="text" id="custom-race-skill1-name" class="custom-skill-name" placeholder="Ability name" style="display: none;">
                                     </div>
-
+                                    
                                     <div class="skill-builder">
                                         <select id="custom-race-skill2" class="skill-select">
                                             <option value="">Second ability...</option>
@@ -276,8 +247,7 @@
                                             <option value="wisdom">WIS</option>
                                             <option value="charisma">CHA</option>
                                         </select>
-                                        <input type="text" id="custom-race-skill2-name" class="custom-skill-name"
-                                            placeholder="Ability name" style="display: none;">
+                                        <input type="text" id="custom-race-skill2-name" class="custom-skill-name" placeholder="Ability name" style="display: none;">
                                     </div>
                                 </div>
                             </div>
@@ -318,10 +288,9 @@
                                 </optgroup>
                                 <option value="custom">✨ Custom Background</option>
                             </select>
-
-                            <input type="text" id="custom-job" class="fancy-input" placeholder="Enter custom background"
-                                style="display: none;">
-
+                            
+                            <input type="text" id="custom-job" class="fancy-input" placeholder="Enter custom background" style="display: none;">
+                            
                             <!-- Custom Job Builder (similar structure) -->
                             <div id="custom-job-bonuses" class="custom-builder" style="display: none;">
                                 <!-- Similar to race builder but for jobs -->
@@ -368,10 +337,9 @@
                                 </optgroup>
                                 <option value="custom_class">✨ Custom Class</option>
                             </select>
-
-                            <input type="text" id="custom-class" class="fancy-input" placeholder="Enter custom class"
-                                style="display: none;">
-
+                            
+                            <input type="text" id="custom-class" class="fancy-input" placeholder="Enter custom class" style="display: none;">
+                            
                             <!-- Custom Class Builder (similar structure) -->
                             <div id="custom-class-bonuses" class="custom-builder" style="display: none;">
                                 <!-- Similar to race builder but for classes -->
@@ -400,11 +368,11 @@
                                 <span class="points-value" id="available-points">3</span>
                             </div>
                         </div>
-
+                        
                         <div class="attributes-grid" id="stats-grid">
                             <!-- Stats will be rendered here -->
                         </div>
-
+                        
                         <div class="vital-stats">
                             <div class="vital-stat hp-stat">
                                 <i class="ra ra-hearts"></i>
@@ -429,8 +397,7 @@
                             <i class="ra ra-book"></i>
                             <h3>Character Story</h3>
                         </div>
-                        <textarea id="char-backstory" class="story-textarea"
-                            placeholder="Tell your character's story..." rows="6"></textarea>
+                        <textarea id="char-backstory" class="story-textarea" placeholder="Tell your character's story..." rows="6"></textarea>
                     </div>
 
                     <!-- Action Buttons -->
@@ -454,45 +421,75 @@
             <!-- Character Stats Tab -->
             <section class="tab-content" id="character">
                 <div class="content-wrapper">
-                    <!-- Character Overview with Merged Vitals -->
+                    <!-- Character Overview -->
                     <div class="character-overview">
-                        <div class="overview-combined">
+                        <div class="overview-header">
                             <div class="overview-portrait" id="overview-portrait">
                                 <div class="portrait-placeholder">
                                     <i class="ra ra-hood"></i>
                                 </div>
                             </div>
-                            <div class="overview-content">
+                            <div class="overview-info">
                                 <h2 id="char-display-name">Character Overview</h2>
                                 <div id="char-summary" class="character-summary">
                                     <!-- Summary will be rendered here -->
                                 </div>
-
-                                <!-- Vitals Display -->
-                                <div class="vitals-inline">
-                                    <div class="vital-item">
-                                        <i class="ra ra-hearts"></i>
-                                        <span class="vital-label">HP</span>
-                                        <span class="vital-value">
-                                            <span id="char-current-hp">3</span>/<span id="char-total-hp">3</span>
-                                        </span>
-                                    </div>
-                                    <div class="vital-item">
-                                        <i class="ra ra-crystal-wand"></i>
-                                        <span class="vital-label">MP</span>
-                                        <span class="vital-value">
-                                            <span id="char-current-mp">4</span>/<span id="char-total-mp">4</span>
-                                        </span>
-                                    </div>
-                                    <div class="damage-tester-inline">
-                                        <input type="number" id="damage-input" class="damage-input" placeholder="DMG"
-                                            value="5" min="1">
-                                        <button class="damage-btn" onclick="testDamage()">
-                                            <i class="ra ra-sword"></i>
-                                            Take
-                                        </button>
-                                    </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Combined Vitals Display -->
+                        <div class="vitals-combined">
+                            <div class="vital-row hp-row">
+                                <div class="vital-icon">
+                                    <i class="ra ra-hearts"></i>
                                 </div>
+                                <div class="vital-label">Health</div>
+                                <div class="vital-counter">
+                                    <button class="counter-btn minus" onclick="adjustCurrentHP(-1)">
+                                        <span class="material-icons">remove</span>
+                                    </button>
+                                    <div class="vital-numbers">
+                                        <span class="current-value" id="char-current-hp">3</span>
+                                        <span class="divider">/</span>
+                                        <span class="max-value" id="char-total-hp">3</span>
+                                    </div>
+                                    <button class="counter-btn plus" onclick="adjustCurrentHP(1)">
+                                        <span class="material-icons">add</span>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="vital-row mp-row">
+                                <div class="vital-icon">
+                                    <i class="ra ra-crystal-wand"></i>
+                                </div>
+                                <div class="vital-label">Magic</div>
+                                <div class="vital-counter">
+                                    <button class="counter-btn minus" onclick="adjustCurrentMP(-1)">
+                                        <span class="material-icons">remove</span>
+                                    </button>
+                                    <div class="vital-numbers">
+                                        <span class="current-value" id="char-current-mp">4</span>
+                                        <span class="divider">/</span>
+                                        <span class="max-value" id="char-total-mp">4</span>
+                                    </div>
+                                    <button class="counter-btn plus" onclick="adjustCurrentMP(1)">
+                                        <span class="material-icons">add</span>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Damage Tester -->
+                            <div class="damage-tester-row">
+                                <input type="number" id="damage-input" class="damage-input" placeholder="Damage" value="5" min="1">
+                                <button class="damage-btn" onclick="testDamage()">
+                                    <i class="ra ra-sword"></i>
+                                    Take Damage
+                                </button>
+                                <span class="armor-display">
+                                    <i class="ra ra-shield"></i>
+                                    <span id="total-defense-display">0</span>
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -546,12 +543,11 @@
                             <div class="ability-grid" id="char-skills-grid">
                                 <!-- Skills will be rendered here -->
                             </div>
-
+                            
                             <div class="add-ability-section">
                                 <h4><i class="ra ra-plus-sword"></i> Add Custom Skill</h4>
                                 <div class="add-ability-form">
-                                    <input type="text" id="char-custom-skill-name" class="ability-name-input"
-                                        placeholder="Skill name">
+                                    <input type="text" id="char-custom-skill-name" class="ability-name-input" placeholder="Skill name">
                                     <select id="char-custom-skill-stat" class="ability-stat-select">
                                         <option value="strength">STR</option>
                                         <option value="dexterity">DEX</option>
@@ -638,13 +634,13 @@
                         <div class="inventory-grid" id="inventory-grid">
                             <!-- Items will be rendered here -->
                         </div>
-
+                        
                         <!-- Add Item Form -->
                         <div class="add-item-section">
                             <h4><i class="ra ra-anvil"></i> Create New Item</h4>
                             <div class="item-creator">
                                 <input type="text" id="item-name" class="item-input" placeholder="Item name">
-
+                                
                                 <div class="item-options">
                                     <select id="item-type" class="item-select">
                                         <option value="weapon">⚔️ Weapon</option>
@@ -653,17 +649,16 @@
                                         <option value="consumable">🧪 Consumable</option>
                                         <option value="misc">📦 Miscellaneous</option>
                                     </select>
-
+                                    
                                     <select id="weapon-size" class="item-select">
                                         <option value="light">Light (d4)</option>
                                         <option value="medium">Medium (d6)</option>
                                         <option value="heavy">Heavy (d8)</option>
                                     </select>
-
-                                    <input type="number" id="item-defense" class="item-input" placeholder="Defense"
-                                        min="0">
+                                    
+                                    <input type="number" id="item-defense" class="item-input" placeholder="Defense" min="0">
                                 </div>
-
+                                
                                 <div class="item-properties">
                                     <label class="checkbox-label">
                                         <input type="checkbox" id="item-twohanded">
@@ -673,13 +668,12 @@
                                         <input type="checkbox" id="item-ranged">
                                         <span>Ranged</span>
                                     </label>
-                                    <label class="checkbox-label" id="healing-consumable-container"
-                                        style="display: none;">
+                                    <label class="checkbox-label" id="healing-consumable-container" style="display: none;">
                                         <input type="checkbox" id="item-healing">
                                         <span>Healing</span>
                                     </label>
                                 </div>
-
+                                
                                 <button class="create-item-btn" onclick="addItem()">
                                     <i class="ra ra-hammer"></i>
                                     Create Item
@@ -727,10 +721,10 @@
                             <i class="ra ra-cauldron"></i>
                             <h3>Craft New Spell</h3>
                         </div>
-
+                        
                         <div class="spell-creator">
                             <input type="text" id="spell-name" class="spell-name-input" placeholder="Spell name">
-
+                            
                             <div class="spell-element-select">
                                 <label>Element</label>
                                 <select id="spell-element" class="element-select">
@@ -750,7 +744,7 @@
                                     <option value="force">💥 Force</option>
                                 </select>
                             </div>
-
+                            
                             <div class="spell-effects">
                                 <div class="effect-row">
                                     <label>Damage</label>
@@ -759,10 +753,9 @@
                                         <option value="fixed">Fixed (2pts = 1MP)</option>
                                         <option value="d6">D6 Roll (3MP)</option>
                                     </select>
-                                    <input type="number" id="damage-amount" class="effect-amount" min="0" max="10"
-                                        value="0" disabled>
+                                    <input type="number" id="damage-amount" class="effect-amount" min="0" max="10" value="0" disabled>
                                 </div>
-
+                                
                                 <div class="effect-row">
                                     <label>Healing</label>
                                     <select id="healing-type" class="effect-select">
@@ -770,10 +763,9 @@
                                         <option value="fixed">Fixed (2pts = 1MP)</option>
                                         <option value="d6">D6 Roll (3MP)</option>
                                     </select>
-                                    <input type="number" id="healing-amount" class="effect-amount" min="0" max="10"
-                                        value="0" disabled>
+                                    <input type="number" id="healing-amount" class="effect-amount" min="0" max="10" value="0" disabled>
                                 </div>
-
+                                
                                 <div class="effect-row">
                                     <label>Primary Effect</label>
                                     <select id="primary-effect" class="effect-select">
@@ -790,7 +782,7 @@
                                         <option value="poison">🤢 Poison</option>
                                     </select>
                                 </div>
-
+                                
                                 <div class="effect-row">
                                     <label>Secondary Effect</label>
                                     <select id="secondary-effect" class="effect-select">
@@ -808,7 +800,7 @@
                                     </select>
                                 </div>
                             </div>
-
+                            
                             <div id="spell-cost-display" class="spell-cost-display">
                                 <h4>Spell Cost</h4>
                                 <div id="cost-breakdown" class="cost-breakdown">
@@ -818,7 +810,7 @@
                                     Total: <span id="total-cost">1</span> MP
                                 </div>
                             </div>
-
+                            
                             <button class="create-spell-btn" onclick="createSpell()" id="create-spell-btn">
                                 <i class="ra ra-sparkles"></i>
                                 Create Spell
@@ -867,7 +859,7 @@
                         <div id="status-effects-grid" class="status-grid">
                             <!-- Status effects will be rendered here -->
                         </div>
-
+                        
                         <!-- Add Status Effect -->
                         <div class="add-status-section">
                             <h4>Apply Status Effect</h4>
@@ -886,19 +878,16 @@
                                     <option value="inspired">✨ Inspired</option>
                                     <option value="custom">⚙️ Custom</option>
                                 </select>
-
-                                <input type="text" id="custom-status-name" class="status-input"
-                                    placeholder="Custom effect name" style="display: none;">
-
+                                
+                                <input type="text" id="custom-status-name" class="status-input" placeholder="Custom effect name" style="display: none;">
+                                
                                 <div class="status-options">
-                                    <input type="number" id="status-duration" class="duration-input" value="10" min="1"
-                                        max="1440">
+                                    <input type="number" id="status-duration" class="duration-input" value="10" min="1" max="1440">
                                     <span class="duration-label">minutes</span>
                                 </div>
-
-                                <input type="text" id="status-notes" class="status-notes"
-                                    placeholder="Additional notes...">
-
+                                
+                                <input type="text" id="status-notes" class="status-notes" placeholder="Additional notes...">
+                                
                                 <button class="add-status-btn" onclick="addStatusEffect()">
                                     <i class="ra ra-flask"></i>
                                     Apply Effect
@@ -919,60 +908,54 @@
                             Save Notes
                         </button>
                     </div>
-
+                    
                     <div class="notes-grid">
                         <div class="note-card">
                             <div class="note-header">
                                 <i class="ra ra-hood"></i>
                                 <h3>Personal</h3>
                             </div>
-                            <textarea id="personal-notes" class="note-textarea"
-                                placeholder="Character thoughts, development, personal goals..."></textarea>
+                            <textarea id="personal-notes" class="note-textarea" placeholder="Character thoughts, development, personal goals..."></textarea>
                         </div>
-
+                        
                         <div class="note-card">
                             <div class="note-header">
-                                <i class="ra ra-key"></i>
+                                <i class="ra ra-team"></i>
                                 <h3>Party</h3>
                             </div>
-                            <textarea id="party-notes" class="note-textarea"
-                                placeholder="Party members, relationships, group dynamics..."></textarea>
+                            <textarea id="party-notes" class="note-textarea" placeholder="Party members, relationships, group dynamics..."></textarea>
                         </div>
-
+                        
                         <div class="note-card">
                             <div class="note-header">
                                 <i class="ra ra-quill-ink"></i>
                                 <h3>Session</h3>
                             </div>
-                            <textarea id="session-notes" class="note-textarea"
-                                placeholder="What happened this session..."></textarea>
+                            <textarea id="session-notes" class="note-textarea" placeholder="What happened this session..."></textarea>
                         </div>
-
+                        
                         <div class="note-card">
                             <div class="note-header">
                                 <i class="ra ra-gold-bar"></i>
                                 <h3>Trade</h3>
                             </div>
-                            <textarea id="barter-notes" class="note-textarea"
-                                placeholder="Merchants, deals, debts, opportunities..."></textarea>
+                            <textarea id="barter-notes" class="note-textarea" placeholder="Merchants, deals, debts, opportunities..."></textarea>
                         </div>
-
+                        
                         <div class="note-card">
                             <div class="note-header">
                                 <i class="ra ra-compass"></i>
                                 <h3>World</h3>
                             </div>
-                            <textarea id="world-notes" class="note-textarea"
-                                placeholder="Locations, lore, important places..."></textarea>
+                            <textarea id="world-notes" class="note-textarea" placeholder="Locations, lore, important places..."></textarea>
                         </div>
-
+                        
                         <div class="note-card">
                             <div class="note-header">
                                 <i class="ra ra-crossed-swords"></i>
                                 <h3>Combat</h3>
                             </div>
-                            <textarea id="combat-notes" class="note-textarea"
-                                placeholder="Enemy tactics, weaknesses, strategies..."></textarea>
+                            <textarea id="combat-notes" class="note-textarea" placeholder="Enemy tactics, weaknesses, strategies..."></textarea>
                         </div>
                     </div>
                 </div>
@@ -989,7 +972,7 @@
             <h1><i class="ra ra-knight-helmet"></i> RPG Character Studio</h1>
             <p>Choose your character or create a new one</p>
         </div>
-
+        
         <div class="landing-actions">
             <button class="landing-btn primary-btn" onclick="createNewCharacter()">
                 <span class="material-icons">person_add</span>
@@ -1004,11 +987,11 @@
                 Export All
             </button>
         </div>
-
+        
         <div class="characters-grid" id="characters-grid">
             <!-- Character cards will be populated here -->
         </div>
-
+        
         <div class="landing-footer">
             <p>Characters are saved locally in your browser. Use Export to backup your characters.</p>
         </div>
@@ -1017,121 +1000,65 @@
     <!-- Scripts -->
     <script src="main.js"></script>
     <script src="character-manager.js"></script>
-    <script src="cache-manager.js"></script>
     <script>
         // Theme Toggle
         function toggleTheme() {
             document.body.classList.toggle('dark-theme');
             localStorage.setItem('theme', document.body.classList.contains('dark-theme') ? 'dark' : 'light');
         }
-
+        
         // Load saved theme
-        if (localStorage.getItem('theme') === 'dark' ||
+        if (localStorage.getItem('theme') === 'dark' || 
             (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.body.classList.add('dark-theme');
         }
-
+        
         // Mobile optimizations
         document.addEventListener('DOMContentLoaded', () => {
             // Prevent zoom on input focus (iOS)
             const inputs = document.querySelectorAll('input, select, textarea');
             inputs.forEach(input => {
                 input.addEventListener('focus', () => {
-                    document.querySelector('meta[name="viewport"]').setAttribute('content',
+                    document.querySelector('meta[name="viewport"]').setAttribute('content', 
                         'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
                 });
                 input.addEventListener('blur', () => {
-                    document.querySelector('meta[name="viewport"]').setAttribute('content',
+                    document.querySelector('meta[name="viewport"]').setAttribute('content', 
                         'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
                 });
             });
-
+            
             // Tab navigation
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const tabName = btn.dataset.tab;
                     switchTab(tabName);
-
+                    
                     // Update active states
                     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
                 });
             });
-
+            
             // Ability navigation
             document.querySelectorAll('.ability-nav-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const abilityName = btn.dataset.ability;
-
+                    
                     // Update active states
                     document.querySelectorAll('.ability-nav-btn').forEach(b => b.classList.remove('active'));
                     document.querySelectorAll('.ability-panel').forEach(p => p.classList.remove('active'));
-
+                    
                     btn.classList.add('active');
                     document.getElementById(`${abilityName}-content`).classList.add('active');
                 });
             });
-
+            
             // Portrait upload
             document.getElementById('portrait-display').addEventListener('click', () => {
                 document.getElementById('portrait-upload').click();
             });
         });
     </script>
-
-    <script src="skills.js"></script>
-    <script src="improvements.js"></script>
-    <script src="achievements.js"></script>
-    <script src="debug-dcc.js"></script>
-    <script>
-        // PWA Service Worker Registration
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function () {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(function (registration) {
-                        console.log('DCC Character Sheet: Service Worker registered successfully:', registration.scope);
-                    })
-                    .catch(function (error) {
-                        console.log('DCC Character Sheet: Service Worker registration failed:', error);
-                    });
-            });
-        }
-
-        // PWA Install Prompt
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-
-            // Show install button
-            const installBtn = document.createElement('button');
-            installBtn.textContent = '📱 Install App';
-            installBtn.style.cssText = `
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            z-index: 10000;
-            background: #ff6b35;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-        `;
-            installBtn.onclick = () => {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        console.log('User accepted the install prompt');
-                    }
-                    deferredPrompt = null;
-                    installBtn.remove();
-                });
-            };
-            document.body.appendChild(installBtn);
-        });
-    </script>
 </body>
-
 </html>

@@ -1,5 +1,5 @@
 // DCC Character Sheet Service Worker
-const CACHE_NAME = 'dcc-character-sheet-v2.0.0';
+const CACHE_NAME = 'dcc-character-sheet-v1.0.0';
 const urlsToCache = [
   './',
   './index.html',
@@ -28,41 +28,19 @@ self.addEventListener('install', function(event) {
   );
 });
 
-// Fetch event - intelligent caching strategy
+// Fetch event - serve from cache when offline
 self.addEventListener('fetch', function(event) {
-  // For JavaScript files, always try network first to get updates
-  if (event.request.url.endsWith('.js')) {
-    event.respondWith(
-      fetch(event.request)
-        .then(function(networkResponse) {
-          // Update cache with new version
-          if (networkResponse.ok) {
-            const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then(function(cache) {
-              cache.put(event.request, responseClone);
-            });
-          }
-          return networkResponse;
-        })
-        .catch(function() {
-          // Fallback to cache if network fails
-          return caches.match(event.request);
-        })
-    );
-  } else {
-    // For other files, use cache-first strategy
-    event.respondWith(
-      caches.match(event.request)
-        .then(function(response) {
-          // Return cached version or fetch from network
-          if (response) {
-            return response;
-          }
-          return fetch(event.request);
+  event.respondWith(
+    caches.match(event.request)
+      .then(function(response) {
+        // Return cached version or fetch from network
+        if (response) {
+          return response;
         }
-      )
-    );
-  }
+        return fetch(event.request);
+      }
+    )
+  );
 });
 
 // Activate event - clean up old caches
