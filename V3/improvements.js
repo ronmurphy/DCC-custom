@@ -771,12 +771,12 @@ function enhanceWeaponSystem() {
     // Add predefined DCC weapons as templates
     window.dccWeaponTemplates = dccWeapons;
     
-    // Add templates to inventory tab when it's shown
+    // Add button to inventory creation area when tab is rendered
     const originalRenderInventory = window.renderInventory;
     if (originalRenderInventory) {
         window.renderInventory = function() {
             originalRenderInventory();
-            addDCCWeaponTemplatesButton();
+            setTimeout(addDCCWeaponButton, 50); // Small delay to ensure DOM is ready
         };
     }
 }
@@ -786,77 +786,98 @@ function enhanceSpellSystem() {
     // Add predefined DCC spells as templates
     window.dccSpellTemplates = dccSpells;
     
-    // Add templates to magic tab when it's shown
+    // Add button to magic creation area when tab is rendered
     const originalRenderSpells = window.renderSpells;
     if (originalRenderSpells) {
         window.renderSpells = function() {
             originalRenderSpells();
-            addDCCSpellTemplatesButton();
+            setTimeout(addDCCSpellButton, 50); // Small delay to ensure DOM is ready
         };
     }
 }
 
-// Add DCC weapon templates button to inventory section
-function addDCCWeaponTemplatesButton() {
-    const inventoryGrid = document.getElementById('inventory-grid');
-    if (!inventoryGrid || inventoryGrid.querySelector('.dcc-templates-btn')) return;
+// Add DCC weapon button to inventory creation section
+function addDCCWeaponButton() {
+    // Look for the add-item-section in inventory tab
+    const addItemSection = document.querySelector('#inventory .add-item-section');
     
-    const templatesBtn = document.createElement('div');
-    templatesBtn.className = 'dcc-templates-btn inventory-item';
-    templatesBtn.innerHTML = `
-        <div style="text-align: center; padding: 20px; border: 2px dashed #ff6b35; background: rgba(255, 107, 53, 0.1);">
-            <i class="ra ra-book" style="font-size: 2em; color: #ff6b35; margin-bottom: 10px; display: block;"></i>
-            <strong>📚 DCC Book Weapons</strong>
-            <br><small>Click to add weapons from the books</small>
-        </div>
+    if (!addItemSection || addItemSection.querySelector('.dcc-weapon-button')) return;
+    
+    const dccButton = document.createElement('div');
+    dccButton.className = 'dcc-weapon-button';
+    dccButton.innerHTML = `
+        <button class="create-item-btn dcc-book-btn" onclick="showDCCWeaponTemplates()">
+            <i class="ra ra-book"></i>
+            DCC Book Weapons
+        </button>
     `;
-    templatesBtn.onclick = showDCCWeaponTemplates;
     
-    inventoryGrid.insertBefore(templatesBtn, inventoryGrid.firstChild);
+    // Insert at the beginning of the add-item-section
+    addItemSection.insertBefore(dccButton, addItemSection.firstChild);
 }
 
-// Add DCC spell templates button to magic section
-function addDCCSpellTemplatesButton() {
-    const spellsGrid = document.getElementById('spells-grid');
-    if (!spellsGrid || spellsGrid.querySelector('.dcc-spell-templates-btn')) return;
+// Add DCC spell button to magic creation section  
+function addDCCSpellButton() {
+    // Look for the spell-creator in magic tab
+    const spellCreator = document.querySelector('#magic .spell-creator-card');
     
-    const templatesBtn = document.createElement('div');
-    templatesBtn.className = 'dcc-spell-templates-btn';
-    templatesBtn.innerHTML = `
-        <div style="text-align: center; padding: 20px; border: 2px dashed #ff6b35; background: rgba(255, 107, 53, 0.1); border-radius: 8px; margin-bottom: 20px;">
-            <i class="ra ra-lightning" style="font-size: 2em; color: #ff6b35; margin-bottom: 10px; display: block;"></i>
-            <strong>📚 DCC Book Spells</strong>
-            <br><small>Click to add spells from the books</small>
-        </div>
+    if (!spellCreator || spellCreator.querySelector('.dcc-spell-button')) return;
+    
+    const dccButton = document.createElement('div');
+    dccButton.className = 'dcc-spell-button';
+    dccButton.innerHTML = `
+        <button class="create-spell-btn dcc-book-btn" onclick="showDCCSpellTemplates()">
+            <i class="ra ra-lightning"></i>
+            DCC Book Spells
+        </button>
     `;
-    templatesBtn.onclick = showDCCSpellTemplates;
     
-    spellsGrid.insertBefore(templatesBtn, spellsGrid.firstChild);
+    // Insert at the beginning of the spell creator card, after the header
+    const cardHeader = spellCreator.querySelector('.card-header');
+    if (cardHeader && cardHeader.nextSibling) {
+        spellCreator.insertBefore(dccButton, cardHeader.nextSibling);
+    } else {
+        spellCreator.appendChild(dccButton);
+    }
 }
 
 // Show DCC weapon templates modal
 function showDCCWeaponTemplates() {
     const modal = document.createElement('div');
-    modal.className = 'modal';
+    modal.className = 'modal level-up-modal-overlay';
     modal.style.display = 'block';
     modal.innerHTML = `
-        <div class="modal-content" style="max-width: 800px;">
-            <h2>📚 DCC Book Weapons</h2>
-            <p>Choose a weapon from the Dungeon Crawler Carl books to add to your inventory:</p>
-            <div class="weapon-template-grid">
-                ${Object.entries(dccWeapons).map(([key, weapon]) => `
-                    <button class="weapon-template-btn" onclick="addDCCWeapon('${key}')">
-                        <strong>${weapon.name}</strong>
-                        <br><small>${weapon.damage} damage • ${weapon.description}</small>
-                        ${weapon.special ? `<br><em>Special: ${weapon.special.join(', ')}</em>` : ''}
-                    </button>
-                `).join('')}
+        <div class="modal-content level-up-modal-content" style="max-width: 800px;">
+            <div class="modal-header level-up-header">
+                <h3><i class="ra ra-book"></i> DCC Book Weapons</h3>
+                <button class="modal-close" onclick="closeDCCModal()" title="Close">
+                    <span class="material-icons">close</span>
+                </button>
             </div>
-            <div class="modal-actions">
-                <button onclick="closeDCCModal()">Close</button>
+            <div class="modal-body">
+                <p>Choose a weapon from the Dungeon Crawler Carl books to add to your inventory:</p>
+                <div class="weapon-template-grid">
+                    ${Object.entries(dccWeapons).map(([key, weapon]) => `
+                        <button class="weapon-template-btn" onclick="addDCCWeapon('${key}')">
+                            <strong>${weapon.name}</strong>
+                            <small>${weapon.damage} damage • ${weapon.description}</small>
+                            ${weapon.special ? `<em>Special: ${weapon.special.join(', ')}</em>` : ''}
+                        </button>
+                    `).join('')}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeDCCModal()">Cancel</button>
             </div>
         </div>
     `;
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeDCCModal();
+        }
+    });
     
     document.body.appendChild(modal);
 }
@@ -864,27 +885,40 @@ function showDCCWeaponTemplates() {
 // Show DCC spell templates modal
 function showDCCSpellTemplates() {
     const modal = document.createElement('div');
-    modal.className = 'modal';
+    modal.className = 'modal level-up-modal-overlay';
     modal.style.display = 'block';
     modal.innerHTML = `
-        <div class="modal-content" style="max-width: 800px;">
-            <h2>📚 DCC Book Spells</h2>
-            <p>Choose a spell from the Dungeon Crawler Carl books to add to your spellbook:</p>
-            <div class="spell-template-grid">
-                ${Object.entries(dccSpells).map(([key, spell]) => `
-                    <button class="spell-template-btn" onclick="addDCCSpell('${key}')">
-                        <strong>${spell.name}</strong> ${getElementEmoji(spell.element)}
-                        <br><small>Level ${spell.level} • Cost ${spell.cost} MP</small>
-                        <br><em>${spell.description}</em>
-                        ${spell.cooldown ? `<br><small>Cooldown: ${spell.cooldown}s</small>` : ''}
-                    </button>
-                `).join('')}
+        <div class="modal-content level-up-modal-content" style="max-width: 800px;">
+            <div class="modal-header level-up-header">
+                <h3><i class="ra ra-lightning"></i> DCC Book Spells</h3>
+                <button class="modal-close" onclick="closeDCCModal()" title="Close">
+                    <span class="material-icons">close</span>
+                </button>
             </div>
-            <div class="modal-actions">
-                <button onclick="closeDCCModal()">Close</button>
+            <div class="modal-body">
+                <p>Choose a spell from the Dungeon Crawler Carl books to add to your spellbook:</p>
+                <div class="spell-template-grid">
+                    ${Object.entries(dccSpells).map(([key, spell]) => `
+                        <button class="spell-template-btn" onclick="addDCCSpell('${key}')">
+                            <strong>${spell.name}</strong> ${getElementEmoji(spell.element)}
+                            <small>Level ${spell.level} • Cost ${spell.cost} MP • Cooldown: ${spell.cooldown || 0}s</small>
+                            <em>${spell.description}</em>
+                        </button>
+                    `).join('')}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeDCCModal()">Cancel</button>
             </div>
         </div>
     `;
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeDCCModal();
+        }
+    });
     
     document.body.appendChild(modal);
 }
@@ -957,10 +991,55 @@ function addDCCSpell(spellKey) {
 
 // Close DCC modal
 function closeDCCModal() {
-    const modal = document.querySelector('.modal');
-    if (modal) {
-        modal.remove();
-    }
+    const modals = document.querySelectorAll('.level-up-modal-overlay');
+    modals.forEach(modal => modal.remove());
+}
+
+// Enhanced universal modal handling
+function enhanceModalSystem() {
+    // Add escape key listener for all modals
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            // Close DCC modals
+            const dccModals = document.querySelectorAll('.level-up-modal-overlay');
+            dccModals.forEach(modal => modal.remove());
+            
+            // Close achievement modals
+            if (window.closeAchievementModal) {
+                window.closeAchievementModal();
+            }
+            
+            // Close character modals
+            const characterModals = document.querySelectorAll('.character-modal-overlay, .modal-overlay');
+            characterModals.forEach(modal => modal.remove());
+        }
+    });
+}
+
+// Helper function to get element emoji for spells
+function getElementEmoji(element) {
+    const emojis = {
+        fire: '🔥',
+        water: '💧',
+        earth: '🌍',
+        air: '💨',
+        ice: '❄️',
+        lightning: '⚡',
+        shadow: '🌑',
+        light: '☀️',
+        arcane: '✨',
+        dark: '💀',
+        force: '💥',
+        nature: '🌿',
+        psychic: '🧠',
+        divine: '✨'
+    };
+    return emojis[element] || '✨';
+}
+
+// Generate unique ID for items and spells
+function generateId() {
+    return 'dcc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 }
 
 // Add skill level display to character sheet
@@ -1099,10 +1178,12 @@ function addDCCStyles() {
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 0.5rem;
             margin: 0.5rem 0;
+            max-height: 400px;
+            overflow-y: auto;
         }
         
         .weapon-template-btn, .spell-template-btn {
-            padding: 0.5rem;
+            padding: 0.75rem;
             border: 1px solid #ff6b35;
             background: rgba(255, 107, 53, 0.1);
             color: inherit;
@@ -1110,11 +1191,163 @@ function addDCCStyles() {
             cursor: pointer;
             text-align: left;
             transition: all 0.2s;
+            min-height: 80px;
         }
         
         .weapon-template-btn:hover, .spell-template-btn:hover {
             background: rgba(255, 107, 53, 0.2);
             transform: translateY(-1px);
+            border-color: #ff6b35;
+            box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+        }
+        
+        .dcc-weapon-button, .dcc-spell-button {
+            margin: 15px 0;
+            width: 100%;
+        }
+        
+        .dcc-book-btn {
+            background: linear-gradient(135deg, #ff6b35, #ff8f66);
+            border: 2px solid #ff6b35;
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .dcc-book-btn:hover {
+            background: linear-gradient(135deg, #ff8f66, #ffab99);
+            border-color: #ff8f66;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+        }
+        
+        .dcc-book-btn:active {
+            transform: translateY(0);
+        }
+        
+        .dcc-book-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .dcc-book-btn:hover::before {
+            left: 100%;
+        }
+        
+        /* Skill selection modal styling */
+        .skill-selection-info {
+            background: rgba(255, 107, 53, 0.1);
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            border-left: 4px solid #ff6b35;
+        }
+        
+        .skill-selection-info ul {
+            margin: 0.5rem 0 0 1rem;
+            padding: 0;
+        }
+        
+        .selected-skills-display {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            background: var(--card-bg);
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .skill-categories {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .skill-category {
+            margin-bottom: 1.5rem;
+        }
+        
+        .category-header {
+            background: linear-gradient(135deg, #ff6b35, #ff8f66);
+            color: white;
+            padding: 0.5rem 1rem;
+            margin: 0 0 0.5rem 0;
+            border-radius: 6px;
+            font-size: 1em;
+        }
+        
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 0.5rem;
+        }
+        
+        .skill-selection-item {
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.75rem;
+            background: var(--card-bg);
+            transition: all 0.2s;
+        }
+        
+        .skill-selection-item:hover {
+            border-color: #ff6b35;
+            background: rgba(255, 107, 53, 0.05);
+        }
+        
+        .skill-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .skill-info {
+            margin: 0.5rem 0;
+            padding-left: 1.5rem;
+        }
+        
+        .skill-stat {
+            display: inline-block;
+            background: rgba(255, 107, 53, 0.2);
+            color: #ff6b35;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .skill-description {
+            display: block;
+            font-size: 0.85em;
+            opacity: 0.8;
+            line-height: 1.3;
+        }
+        
+        .proficiency-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            padding-left: 1.5rem;
+            cursor: pointer;
+            font-size: 0.9em;
+            color: #ff6b35;
+            font-weight: 600;
+        }
+        
+        .skill-selection-section {
+            margin: 1rem 0;
         }
         
         .skill-level {
@@ -1155,6 +1388,85 @@ function addDCCStyles() {
         .apocalypse-element {
             background: rgba(244, 67, 54, 0.2);
         }
+        
+        /* Achievement modal styling to match level-up modals */
+        .achievement-modal .modal-content {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+        }
+        
+        .achievement-selection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .achievement-option {
+            padding: 1rem;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--card-bg);
+        }
+        
+        .achievement-option:hover {
+            border-color: #ff6b35;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.2);
+        }
+        
+        .achievement-option.common {
+            border-left: 4px solid #9E9E9E;
+        }
+        
+        .achievement-option.uncommon {
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .achievement-option.rare {
+            border-left: 4px solid #2196F3;
+        }
+        
+        .achievement-option.epic {
+            border-left: 4px solid #9C27B0;
+        }
+        
+        .achievement-option.legendary {
+            border-left: 4px solid #FF9800;
+        }
+        
+        .achievement-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.5rem;
+        }
+        
+        .achievement-rarity {
+            font-size: 0.7em;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(255, 107, 53, 0.2);
+            color: #ff6b35;
+        }
+        
+        .achievement-effect {
+            background: rgba(255, 107, 53, 0.1);
+            padding: 0.5rem;
+            border-radius: 4px;
+            margin: 0.5rem 0;
+            font-size: 0.9em;
+        }
+        
+        .achievement-category {
+            text-align: right;
+            opacity: 0.7;
+        }
     `;
     
     document.head.appendChild(style);
@@ -1173,11 +1485,48 @@ function initializeDCCImprovements() {
     enhanceWeaponSystem();
     enhanceSpellSystem();
     enhanceSkillDisplay();
+    enhanceModalSystem();
     addDCCStyles();
     
     // Add level up skill selection
     if (character && character.level > 1) {
         addLevelUpSkillSelection();
+    }
+    
+    // Add DCC buttons when tabs are switched
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('tab-btn')) {
+            setTimeout(() => {
+                if (e.target.dataset.tab === 'inventory') {
+                    addDCCWeaponButton();
+                }
+                if (e.target.dataset.tab === 'magic') {
+                    addDCCSpellButton();
+                }
+            }, 100);
+        }
+    });
+    
+    // Try to add buttons immediately if tabs are already loaded
+    setTimeout(() => {
+        addDCCWeaponButton();
+        addDCCSpellButton();
+    }, 500);
+    
+    // Enhanced integration with existing systems
+    const originalSwitchTab = window.switchTab;
+    if (originalSwitchTab) {
+        window.switchTab = function(tabName) {
+            originalSwitchTab(tabName);
+            setTimeout(() => {
+                if (tabName === 'inventory') {
+                    addDCCWeaponButton();
+                }
+                if (tabName === 'magic') {
+                    addDCCSpellButton();
+                }
+            }, 50);
+        };
     }
     
     console.log('✅ DCC improvements loaded successfully!');
@@ -1186,6 +1535,7 @@ function initializeDCCImprovements() {
     console.log(`⚔️ Added ${Object.keys(dccClasses).length} new classes`);
     console.log(`🗡️ Added ${Object.keys(dccWeapons).length} weapon templates`);
     console.log(`✨ Added ${Object.keys(dccSpells).length} spell templates`);
+    console.log('🏆 Enhanced level up system with achievements integration');
 }
 
 // Auto-initialize when the script loads
@@ -1215,6 +1565,9 @@ window.showDCCSpellTemplates = showDCCSpellTemplates;
 window.addDCCWeapon = addDCCWeapon;
 window.addDCCSpell = addDCCSpell;
 window.closeDCCModal = closeDCCModal;
+window.getElementEmoji = getElementEmoji;
+window.generateId = generateId;
+window.enhanceModalSystem = enhanceModalSystem;
 window.updateSkillSelection = updateSkillSelection;
 window.confirmSkillSelection = confirmSkillSelection;
 window.closeModal = closeModal;
