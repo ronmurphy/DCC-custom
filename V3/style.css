@@ -104,10 +104,6 @@ body {
 /* ========================================
    THEME TOGGLE
    ======================================== */
-.theme-btn {
-    /* Inherits styles from .header-btn */
-}
-
 .theme-btn .material-icons {
     color: white;
     transition: transform var(--transition-base);
@@ -189,6 +185,22 @@ body {
 
 .header-btn.trophy-btn:hover .material-icons {
     color: #FFA500; /* Slightly darker gold on hover */
+}
+
+.header-btn.save-btn .material-icons {
+    color: #10b981; /* Green for save */
+}
+
+.header-btn.theme-btn .material-icons {
+    color: #f59e0b; /* Orange for theme toggle */
+}
+
+.header-btn.menu-btn .material-icons {
+    color: #6366f1; /* Purple for menu */
+}
+
+.header-btn.cache-btn .material-icons {
+    color: #3b82f6; /* Blue for refresh */
 }
 
 .app-title {
@@ -987,6 +999,38 @@ body.sidebar-open {
 
 .mp-stat i {
     color: var(--info);
+}
+
+/* Specific RPG Awesome icon colors */
+.ra-hearts {
+    color: var(--danger) !important;
+}
+
+.ra-crystal-wand {
+    color: var(--info) !important;
+}
+
+/* Fallback emoji colors when RPG Awesome fails to load */
+.ra.ra-hearts:after {
+    color: var(--danger);
+}
+
+.ra.ra-crystal-wand:after {
+    color: var(--info);
+}
+
+/* General RPG Awesome icon colors */
+.ra {
+    color: var(--text-primary);
+}
+
+/* Tab icons should have theme-appropriate colors */
+.tab-icon .ra {
+    color: var(--text-secondary);
+}
+
+.sidebar-tab.active .tab-icon .ra {
+    color: white;
 }
 
 .vital-info {
