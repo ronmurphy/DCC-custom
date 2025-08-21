@@ -27,9 +27,6 @@
     <!-- Add Montserrat font for modern look -->
     <link href="https://fonts.googleapis.com/css?family=Montserrat:400,500,700&display=swap" rel="stylesheet">
     
-    <!-- QR Code Libraries -->
-    <script src="qrcode.min.js"></script>
-    
     <style>
         /* Original working font setup */
         body {
@@ -680,13 +677,13 @@
                             <span class="material-icons">download</span>
                             Export
                         </button>
-                        <button class="action-btn qr-btn" onclick="shareCharacterAsQR()">
-                            <span class="material-icons">qr_code</span>
-                            Share QR
+                        <button class="action-btn qr-btn" onclick="shareCharacterAsCard()">
+                            <span class="material-icons">photo</span>
+                            Share Card
                         </button>
-                        <button class="action-btn scan-btn" onclick="scanQRForCharacter()">
-                            <span class="material-icons">qr_code_scanner</span>
-                            Scan QR
+                        <button class="action-btn scan-btn" onclick="loadCharacterFromCard()">
+                            <span class="material-icons">upload</span>
+                            Load Card
                         </button>
                     </div>
                 </div>
@@ -1277,29 +1274,29 @@
         </div>
     </div>
 
-    <!-- QR Code Modal -->
-    <div id="qr-modal" class="modal" style="display: none;">
-        <div class="modal-content qr-modal-content">
+    <!-- Character Card Modal -->
+    <div id="card-modal" class="modal" style="display: none;">
+        <div class="modal-content card-modal-content">
             <div class="modal-header">
-                <h3>Share Character</h3>
-                <button class="close-modal" onclick="closeQRModal()">
+                <h3>Character Card</h3>
+                <button class="close-modal" onclick="closeCardModal()">
                     <span class="material-icons">close</span>
                 </button>
             </div>
             <div class="modal-body">
-                <div class="qr-display">
-                    <canvas id="qr-canvas"></canvas>
+                <div class="card-display">
+                    <canvas id="card-canvas"></canvas>
                 </div>
-                <p class="qr-instructions">
+                <p class="card-instructions">
                     <i class="material-icons">info</i>
-                    Scan this QR code with another device to import this character.
+                    Beautiful character card with embedded data for easy sharing!
                 </p>
-                <div class="qr-actions">
-                    <button class="action-btn secondary-btn" onclick="downloadQR()">
+                <div class="card-actions">
+                    <button class="action-btn secondary-btn" onclick="downloadCharacterCard()">
                         <span class="material-icons">download</span>
-                        Save as PNG
+                        Save Card
                     </button>
-                    <button class="action-btn primary-btn" onclick="shareQR()">
+                    <button class="action-btn primary-btn" onclick="shareCharacterCard()">
                         <span class="material-icons">share</span>
                         Share
                     </button>
@@ -1308,45 +1305,27 @@
         </div>
     </div>
 
-    <!-- QR Scanner Modal -->
-    <div id="qr-scanner-modal" class="modal" style="display: none;">
-        <div class="modal-content qr-scanner-modal-content">
+    <!-- Character Card Load Modal -->
+    <div id="card-scanner-modal" class="modal" style="display: none;">
+        <div class="modal-content card-scanner-modal-content">
             <div class="modal-header">
-                <h3>Import Character QR Code</h3>
-                <button class="close-modal" onclick="closeQRScannerModal()">
+                <h3>Load Character Card</h3>
+                <button class="close-modal" onclick="closeCardScannerModal()">
                     <span class="material-icons">close</span>
                 </button>
             </div>
             <div class="modal-body">
-                <div class="scanner-container" style="display: none;">
-                    <video id="qr-video" autoplay playsinline></video>
-                    <div class="scanner-overlay">
-                        <div class="scanner-frame"></div>
+                <div class="card-upload-area">
+                    <div class="upload-instructions">
+                        <i class="material-icons">upload_file</i>
+                        <h4>Select Character Card</h4>
+                        <p>Choose a PNG character card file to load the embedded character data.</p>
                     </div>
-                    <p class="scanner-instructions">
-                        <i class="material-icons">camera_alt</i>
-                        Point your camera at a character QR code to import it.
-                    </p>
-                </div>
-                <div class="file-upload-area">
-                    <div class="upload-icon">
-                        <span class="material-icons" style="font-size: 48px;">qr_code_scanner</span>
-                    </div>
-                    <h4>Upload QR Code Image</h4>
-                    <p class="scanner-instructions">
-                        Select a QR code image from your device to import a character.
-                    </p>
-                </div>
-                <div class="scanner-actions">
-                    <button class="action-btn primary-btn" onclick="uploadQRImage()">
-                        <span class="material-icons">photo</span>
-                        Choose Image File
+                    <input type="file" id="card-upload" accept="image/*" onchange="handleCardUpload(event)" style="display: none;">
+                    <button class="upload-btn" onclick="document.getElementById('card-upload').click()">
+                        <span class="material-icons">folder_open</span>
+                        Choose File
                     </button>
-                    <button class="action-btn secondary-btn" onclick="startQRScanner()" id="camera-btn">
-                        <span class="material-icons">camera_alt</span>
-                        Use Camera
-                    </button>
-                    <input type="file" id="qr-file-input" accept="image/*" style="display: none;" onchange="processQRFromFile(event)">
                 </div>
             </div>
         </div>
