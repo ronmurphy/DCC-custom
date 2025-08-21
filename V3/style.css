@@ -5,36 +5,9 @@
    ======================================== */
 
 /* ========================================
-   CSS VARIABLES & THEMES
+   CSS VARIABLES - THEME-NEUTRAL
    ======================================== */
 :root {
-    /* Light Theme Colors */
-    --primary: #6366f1;
-    --primary-rgb: 99, 102, 241;
-    --primary-dark: #4f46e5;
-    --primary-light: #818cf8;
-    --secondary: #f59e0b;
-    --secondary-dark: #d97706;
-    --secondary-light: #fbbf24;
-    --accent: #10b981;
-    --accent-dark: #059669;
-    --accent-light: #34d399;
-    --danger: #ef4444;
-    --warning: #f59e0b;
-    --success: #10b981;
-    --info: #3b82f6;
-    
-    /* Base Colors */
-    --bg-primary: #ffffff;
-    --bg-secondary: #f3f4f6;
-    --bg-tertiary: #e5e7eb;
-    --bg-card: #ffffff;
-    --text-primary: #111827;
-    --text-secondary: #6b7280;
-    --text-tertiary: #9ca3af;
-    --border-color: #e5e7eb;
-    --shadow-color: rgba(0, 0, 0, 0.1);
-    
     /* Spacing */
     --spacing-xs: 0.25rem;
     --spacing-sm: 0.5rem;
@@ -55,8 +28,6 @@
     --transition-base: 300ms ease;
     --transition-slow: 500ms ease;
 }
-
-/* Light Theme CSS Variables */
 
 /* ========================================
    RESET & BASE STYLES
@@ -154,33 +125,7 @@ body {
 }
 
 .header-btn .material-icons {
-    color: white;
     font-size: 24px;
-}
-
-.header-btn.trophy-btn .material-icons {
-    color: #FFD700; /* Gold color for trophy */
-    font-size: 24px;
-}
-
-.header-btn.trophy-btn:hover .material-icons {
-    color: #FFA500; /* Slightly darker gold on hover */
-}
-
-.header-btn.save-btn .material-icons {
-    color: #10b981; /* Green for save */
-}
-
-.header-btn.theme-btn .material-icons {
-    color: #f59e0b; /* Orange for theme toggle */
-}
-
-.header-btn.menu-btn .material-icons {
-    color: #6366f1; /* Purple for menu */
-}
-
-.header-btn.cache-btn .material-icons {
-    color: #3b82f6; /* Blue for refresh */
 }
 
 .app-title {
@@ -698,18 +643,6 @@ body.sidebar-open {
     box-shadow: 0 4px 12px var(--shadow-color);
 }
 
-.race-card .card-header i {
-    color: var(--accent);
-}
-
-.background-card .card-header i {
-    color: var(--warning);
-}
-
-.class-card .card-header i {
-    color: var(--info);
-}
-
 /* ========================================
    FORM ELEMENTS
    ======================================== */
@@ -984,42 +917,6 @@ body.sidebar-open {
 .vital-stat i {
     font-size: 2rem;
     color: var(--danger);
-}
-
-.mp-stat i {
-    color: var(--info);
-}
-
-/* Specific RPG Awesome icon colors */
-.ra-hearts {
-    color: var(--danger) !important;
-}
-
-.ra-crystal-wand {
-    color: var(--info) !important;
-}
-
-/* Fallback emoji colors when RPG Awesome fails to load */
-.ra.ra-hearts:after {
-    color: var(--danger);
-}
-
-.ra.ra-crystal-wand:after {
-    color: var(--info);
-}
-
-/* General RPG Awesome icon colors */
-.ra {
-    color: var(--text-primary);
-}
-
-/* Tab icons should have theme-appropriate colors */
-.tab-icon .ra {
-    color: var(--text-secondary);
-}
-
-.sidebar-tab.active .tab-icon .ra {
-    color: white;
 }
 
 .vital-info {
