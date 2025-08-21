@@ -27,6 +27,9 @@
     <!-- Add Montserrat font for modern look -->
     <link href="https://fonts.googleapis.com/css?family=Montserrat:400,500,700&display=swap" rel="stylesheet">
     
+    <!-- QR Code Libraries -->
+    <script src="qrcode.min.js"></script>
+    
     <style>
         /* Original working font setup */
         body {
@@ -677,6 +680,14 @@
                             <span class="material-icons">download</span>
                             Export
                         </button>
+                        <button class="action-btn qr-btn" onclick="shareCharacterAsQR()">
+                            <span class="material-icons">qr_code</span>
+                            Share QR
+                        </button>
+                        <button class="action-btn scan-btn" onclick="scanQRForCharacter()">
+                            <span class="material-icons">qr_code_scanner</span>
+                            Scan QR
+                        </button>
                     </div>
                 </div>
             </section>
@@ -1266,10 +1277,87 @@
         </div>
     </div>
 
+    <!-- QR Code Modal -->
+    <div id="qr-modal" class="modal" style="display: none;">
+        <div class="modal-content qr-modal-content">
+            <div class="modal-header">
+                <h3>Share Character</h3>
+                <button class="close-modal" onclick="closeQRModal()">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="qr-display">
+                    <canvas id="qr-canvas"></canvas>
+                </div>
+                <p class="qr-instructions">
+                    <i class="material-icons">info</i>
+                    Scan this QR code with another device to import this character.
+                </p>
+                <div class="qr-actions">
+                    <button class="action-btn secondary-btn" onclick="downloadQR()">
+                        <span class="material-icons">download</span>
+                        Save as PNG
+                    </button>
+                    <button class="action-btn primary-btn" onclick="shareQR()">
+                        <span class="material-icons">share</span>
+                        Share
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Scanner Modal -->
+    <div id="qr-scanner-modal" class="modal" style="display: none;">
+        <div class="modal-content qr-scanner-modal-content">
+            <div class="modal-header">
+                <h3>Import Character QR Code</h3>
+                <button class="close-modal" onclick="closeQRScannerModal()">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="scanner-container" style="display: none;">
+                    <video id="qr-video" autoplay playsinline></video>
+                    <div class="scanner-overlay">
+                        <div class="scanner-frame"></div>
+                    </div>
+                    <p class="scanner-instructions">
+                        <i class="material-icons">camera_alt</i>
+                        Point your camera at a character QR code to import it.
+                    </p>
+                </div>
+                <div class="file-upload-area">
+                    <div class="upload-icon">
+                        <span class="material-icons" style="font-size: 48px;">qr_code_scanner</span>
+                    </div>
+                    <h4>Upload QR Code Image</h4>
+                    <p class="scanner-instructions">
+                        Select a QR code image from your device to import a character.
+                    </p>
+                </div>
+                <div class="scanner-actions">
+                    <button class="action-btn primary-btn" onclick="uploadQRImage()">
+                        <span class="material-icons">photo</span>
+                        Choose Image File
+                    </button>
+                    <button class="action-btn secondary-btn" onclick="startQRScanner()" id="camera-btn">
+                        <span class="material-icons">camera_alt</span>
+                        Use Camera
+                    </button>
+                    <input type="file" id="qr-file-input" accept="image/*" style="display: none;" onchange="processQRFromFile(event)">
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="main.js"></script>
     <script src="character-manager.js"></script>
     <script src="cache-manager.js"></script>
+    <script src="qr.js"></script>
+    
     <script>
         // Theme Toggle
         function toggleTheme() {
