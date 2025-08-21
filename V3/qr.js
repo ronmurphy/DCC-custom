@@ -670,51 +670,39 @@ function drawCombatCard(ctx, characterData, cardStyle, colors) {
     
     drawFF7Window(ctx, charWindowX, charWindowY, charWindowW, charWindowH);
     
-    // Character portrait
+    // Character portrait - copy from existing portrait-display element
     const avatarSize = 80;
     const avatarX = charWindowX + 20;
     const avatarY = charWindowY + 30;
     
-    // Try to get the actual portrait - check multiple sources
+    // Get the actual rendered image from the portrait display
     const portraitElement = document.getElementById('portrait-display');
-    let portraitSrc = null;
+    const existingImg = portraitElement ? portraitElement.querySelector('img') : null;
     
-    if (characterData.portrait && characterData.portrait !== '') {
-        portraitSrc = characterData.portrait;
-    } else if (portraitElement && portraitElement.src && portraitElement.src !== '') {
-        portraitSrc = portraitElement.src;
-    } else if (portraitElement && portraitElement.style.backgroundImage) {
-        // Extract URL from background-image
-        const bgImg = portraitElement.style.backgroundImage;
-        const match = bgImg.match(/url\(['"]?([^'"]+)['"]?\)/);
-        if (match) portraitSrc = match[1];
-    }
-    
-    if (portraitSrc && portraitSrc !== '' && !portraitSrc.includes('undefined')) {
-        try {
-            const img = new Image();
-            img.crossOrigin = 'anonymous'; // Handle CORS
-            img.onload = function() {
-                ctx.save();
-                // Draw portrait in FF7 style frame
-                drawFF7Border(ctx, avatarX - 2, avatarY - 2, avatarSize + 4, avatarSize + 4, '#4fc3f7', 1);
-                ctx.beginPath();
-                ctx.rect(avatarX, avatarY, avatarSize, avatarSize);
-                ctx.clip();
-                ctx.drawImage(img, avatarX, avatarY, avatarSize, avatarSize);
-                ctx.restore();
-            };
-            img.onerror = function() {
-                console.log('Failed to load portrait:', portraitSrc);
-                drawFF7AvatarPlaceholder();
-            };
-            img.src = portraitSrc;
-        } catch (e) {
-            console.log('Error loading portrait:', e);
-            drawFF7AvatarPlaceholder();
-        }
+    if (existingImg && existingImg.src && existingImg.complete) {
+        // Image is already loaded and ready - draw it directly
+        ctx.save();
+        drawFF7Border(ctx, avatarX - 2, avatarY - 2, avatarSize + 4, avatarSize + 4, '#4fc3f7', 1);
+        ctx.beginPath();
+        ctx.rect(avatarX, avatarY, avatarSize, avatarSize);
+        ctx.clip();
+        ctx.drawImage(existingImg, avatarX, avatarY, avatarSize, avatarSize);
+        ctx.restore();
+        console.log('Portrait copied from existing image element');
+    } else if (existingImg && existingImg.src) {
+        // Image exists but might still be loading
+        existingImg.onload = function() {
+            ctx.save();
+            drawFF7Border(ctx, avatarX - 2, avatarY - 2, avatarSize + 4, avatarSize + 4, '#4fc3f7', 1);
+            ctx.beginPath();
+            ctx.rect(avatarX, avatarY, avatarSize, avatarSize);
+            ctx.clip();
+            ctx.drawImage(existingImg, avatarX, avatarY, avatarSize, avatarSize);
+            ctx.restore();
+            console.log('Portrait copied after image loaded');
+        };
     } else {
-        console.log('No valid portrait source found');
+        console.log('No existing portrait image found, showing placeholder');
         drawFF7AvatarPlaceholder();
     }
     
@@ -744,14 +732,14 @@ function drawCombatCard(ctx, characterData, cardStyle, colors) {
     // Heritage, Background, Class
     ctx.fillStyle = '#ffffff';
     ctx.font = '12px monospace';
-    const heritage = characterData.heritage || 'Human';
-    const background = characterData.background || 'Folk Hero';
+    const heritage = characterData.heritage || characterData.race || 'Human';
+    const background = characterData.background || characterData.job || 'Folk Hero';
     const characterClass = characterData.class || 'Fighter';
     ctx.fillText(`${heritage} ${background}`, nameX, nameY + 45);
     ctx.fillText(`${characterClass}`, nameX, nameY + 60);
     
-    // HP/MP bars (FF7 style)
-    const barX = nameX + 150;
+    // HP/MP bars (FF7 style) - aligned with Equipment column
+    const barX = charWindowX + charWindowW/2 + 10 + 20; // Align with Equipment text
     const barY = nameY - 10;
     const barWidth = 180;
     const barHeight = 12;
@@ -790,16 +778,34 @@ function drawCombatCard(ctx, characterData, cardStyle, colors) {
     ctx.textAlign = 'right';
     ctx.fillText(`${currentMP}/${maxMP}`, barX + barWidth + 25, barY + 25);
     
-    // Stats window
-    const statsY = charWindowY + charWindowH + 15;
-    const statsH = 120;
-    drawFF7Window(ctx, charWindowX, statsY, charWindowW/2 - 10, statsH);
+    // AC/Defense under HP/MP bars
+    ctx.fillStyle = '#4fc3f7';
+    ctx.font = '12px monospace';
+    ctx.textAlign = 'left';
+    const ac = characterData.armorClass || calculateAC(characterData);
+    ctx.fillText(`AC: ${ac}`, barX, barY + 50);
+    
+    // Call extended method to fill in the rest
+    drawExtendedFF7Details(ctx, characterData, charWindowX, charWindowY + charWindowH, charWindowW, height, padding);
+    
+    console.log('FF7-style combat card completed');
+}
+
+function drawExtendedFF7Details(ctx, characterData, startX, startY, fullWidth, canvasHeight, padding) {
+    // Extended details for the bottom area
+    const availableHeight = canvasHeight - startY - padding;
+    
+    // Stats window (left)
+    const statsY = startY + 15;
+    const statsH = Math.floor(availableHeight / 2) - 10;
+    const statsW = fullWidth / 2 - 10;
+    drawFF7Window(ctx, startX, statsY, statsW, statsH);
     
     // Stats content
     ctx.fillStyle = '#4fc3f7';
     ctx.font = 'bold 14px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText('STATS', charWindowX + 20, statsY + 25);
+    ctx.fillText('STATS', startX + 20, statsY + 25);
     
     const stats = characterData.stats || {};
     const statNames = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
@@ -810,17 +816,17 @@ function drawCombatCard(ctx, characterData, cardStyle, colors) {
     for (let i = 0; i < statNames.length; i++) {
         const statValue = stats[statNames[i]] || 10;
         ctx.fillStyle = '#ffffff';
-        ctx.fillText(`${statLabels[i]}`, charWindowX + 25, statY);
+        ctx.fillText(`${statLabels[i]}`, startX + 25, statY);
         ctx.fillStyle = '#00ff41';
         ctx.textAlign = 'right';
-        ctx.fillText(String(statValue).padStart(3, ' '), charWindowX + charWindowW/2 - 30, statY);
+        ctx.fillText(String(statValue).padStart(3, ' '), startX + statsW - 30, statY);
         ctx.textAlign = 'left';
         statY += 15;
     }
     
-    // Equipment window
-    const equipX = charWindowX + charWindowW/2 + 10;
-    drawFF7Window(ctx, equipX, statsY, charWindowW/2 - 10, statsH);
+    // Equipment window (right)
+    const equipX = startX + statsW + 20;
+    drawFF7Window(ctx, equipX, statsY, statsW, statsH);
     
     ctx.fillStyle = '#4fc3f7';
     ctx.font = 'bold 14px monospace';
@@ -841,7 +847,9 @@ function drawCombatCard(ctx, characterData, cardStyle, colors) {
         ctx.fillText('Main:', equipX + 25, equipY);
         ctx.fillStyle = '#ffff00';
         ctx.fillText(mainWeapon.name, equipX + 25, equipY + 12);
-        equipY += 25;
+        ctx.fillStyle = '#00ff41';
+        ctx.fillText(`DMG: ${mainWeapon.damage || 'N/A'}`, equipX + 25, equipY + 24);
+        equipY += 35;
     }
     
     if (offWeapon) {
@@ -859,7 +867,72 @@ function drawCombatCard(ctx, characterData, cardStyle, colors) {
         ctx.fillText(armor.name, equipX + 25, equipY + 12);
     }
     
-    console.log('FF7-style combat card completed');
+    // Bottom row - Achievements and Magic
+    const bottomY = statsY + statsH + 15;
+    const bottomH = availableHeight - statsH - 30;
+    
+    // Achievements window (left)
+    drawFF7Window(ctx, startX, bottomY, statsW, bottomH);
+    
+    ctx.fillStyle = '#4fc3f7';
+    ctx.font = 'bold 14px monospace';
+    ctx.fillText('ACHIEVEMENTS', startX + 20, bottomY + 25);
+    
+    if (characterData.achievements && characterData.achievements.length > 0) {
+        ctx.font = '10px monospace';
+        ctx.fillStyle = '#ffd700';
+        let achY = bottomY + 45;
+        
+        characterData.achievements.slice(0, 4).forEach(achievement => {
+            ctx.fillText(`★ ${achievement.name}`, startX + 25, achY);
+            achY += 15;
+        });
+    } else {
+        ctx.fillStyle = '#888888';
+        ctx.font = '11px monospace';
+        ctx.fillText('No achievements yet', startX + 25, bottomY + 45);
+    }
+    
+    // Magic window (right)
+    drawFF7Window(ctx, equipX, bottomY, statsW, bottomH);
+    
+    ctx.fillStyle = '#4fc3f7';
+    ctx.font = 'bold 14px monospace';
+    ctx.fillText('MAGIC', equipX + 20, bottomY + 25);
+    
+    if (characterData.spells && characterData.spells.length > 0) {
+        ctx.font = '10px monospace';
+        ctx.fillStyle = '#9999ff';
+        let spellY = bottomY + 45;
+        
+        characterData.spells.slice(0, 4).forEach(spell => {
+            ctx.fillText(`${spell.name}`, equipX + 25, spellY);
+            ctx.fillStyle = '#00ff41';
+            ctx.textAlign = 'right';
+            ctx.fillText(`${spell.cost || 0}MP`, equipX + statsW - 30, spellY);
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#9999ff';
+            spellY += 15;
+        });
+    } else {
+        ctx.fillStyle = '#888888';
+        ctx.font = '11px monospace';
+        ctx.fillText('No spells learned', equipX + 25, bottomY + 45);
+    }
+}
+
+function calculateAC(characterData) {
+    // Basic AC calculation - 10 + DEX modifier + armor bonus
+    const dexMod = Math.floor((characterData.stats?.dexterity || 10) / 2) - 5;
+    const baseAC = 10 + dexMod;
+    
+    // Add armor bonus if equipped
+    const equipment = characterData.equipment || {};
+    const inventory = characterData.inventory || [];
+    const armor = inventory.find(item => item.id === equipment.armor);
+    const armorBonus = armor?.acBonus || 0;
+    
+    return baseAC + armorBonus;
 }
 
 function drawFF7Window(ctx, x, y, w, h) {
