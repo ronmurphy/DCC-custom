@@ -1,0 +1,56 @@
+/* Dark mode icon color overrides: preserve light mode colors for RPG Awesome and Material Icons */
+.ra,
+.material-icons {
+    color: inherit !important;
+    filter: none !important;
+}
+
+/* Specific icon color rules from light mode */
+.header-btn .material-icons {
+    color: white;
+}
+.header-btn.trophy-btn .material-icons {
+    color: #FFD700;
+}
+.header-btn.trophy-btn:hover .material-icons {
+    color: #FFA500;
+}
+.header-btn.save-btn .material-icons {
+    color: #10b981;
+}
+.header-btn.theme-btn .material-icons {
+    color: #f59e0b;
+}
+.header-btn.menu-btn .material-icons {
+    color: #6366f1;
+}
+.header-btn.cache-btn .material-icons {
+    color: #3b82f6;
+}
+.race-card .card-header i {
+    color: var(--accent);
+}
+.background-card .card-header i {
+    color: var(--warning);
+}
+.class-card .card-header i {
+    color: var(--info);
+}
+.ra-hearts {
+    color: var(--danger) !important;
+}
+.ra-crystal-wand {
+    color: var(--info) !important;
+}
+.ra.ra-hearts:after {
+    color: var(--danger);
+}
+.ra.ra-crystal-wand:after {
+    color: var(--info);
+}
+.tab-icon .ra {
+    color: var(--text-secondary);
+}
+.sidebar-tab.active .tab-icon .ra {
+    color: white;
+}

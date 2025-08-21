@@ -96,9 +96,11 @@
             color: #e0e0e0 !important;
         }
         
+        /* Preserve icon colors in dark mode, but use slightly darker shades for contrast */
         body.dark-theme .material-icons,
         body.dark-theme .ra {
-            color: #e0e0e0 !important;
+            color: inherit !important;
+            filter: brightness(0.85) contrast(1.1);
         }
         
         /* Ensure buttons have proper dark mode styling */
@@ -123,6 +125,7 @@
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="dark.css">
 </head>
 
 <body>
