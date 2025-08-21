@@ -1,120 +1,719 @@
 /* ========================================
-   QR CODE FUNCTIONALITY
-   Character sharing via QR codes
+   CHARACTER CARD STEGANOGRAPHY SYSTEM
+   Beautiful character cards with embedded data
    ======================================== */
 
-// QR Code Generation and Sharing
-function shareCharacterAsQR() {
+// Character Card Generation with Steganography
+function shareCharacterAsCard() {
     const currentCharacter = getCurrentCharacterData();
-    if (!currentCharacter || !currentCharacter.name) {
-        showNotification('Please create a character first!', 'warning');
+    
+    console.log('Character data for card:', currentCharacter); // Debug log
+    
+    if (!currentCharacter) {
+        showNotification('warning', 'No Character', 'No character data found!', 'Please create a character first.');
+        return;
+    }
+    
+    if (!currentCharacter.name || currentCharacter.name.trim() === '') {
+        showNotification('warning', 'Missing Name', 'Please enter a character name first!', 'Character name is required for sharing.');
         return;
     }
 
     try {
-        // Create a compact character data object
-        const qrData = {
-            type: 'dcc-character',
-            version: '1.0',
-            data: currentCharacter,
-            timestamp: new Date().toISOString()
-        };
-
-        const qrString = JSON.stringify(qrData);
-        
-        // Check if data is too large for QR code
-        if (qrString.length > 2000) {
-            showNotification('Character data too large for QR code. Try reducing backstory length.', 'warning');
-            return;
-        }
-
-        generateQRCode(qrString);
-        document.getElementById('qr-modal').style.display = 'flex';
+        generateCharacterCard(currentCharacter);
+        document.getElementById('card-modal').style.display = 'flex';
+        showNotification('save', 'Card Generated', 'Character card generated successfully!', 'Beautiful card with embedded character data.');
     } catch (error) {
-        console.error('Error generating QR code:', error);
-        showNotification('Failed to generate QR code', 'error');
+        console.error('Error generating character card:', error);
+        showNotification('warning', 'Generation Failed', 'Failed to generate character card', error.message);
     }
 }
 
-function generateQRCode(data) {
-    const canvas = document.getElementById('qr-canvas');
+function generateCharacterCard(characterData) {
+    const canvas = document.getElementById('card-canvas');
+    const ctx = canvas.getContext('2d');
     
-    // Get theme colors for QR code
+    // Set canvas size for a nice character card
+    canvas.width = 600;
+    canvas.height = 800;
+    
+    // Get current theme colors
     const computedStyle = getComputedStyle(document.body);
-    const darkColor = computedStyle.getPropertyValue('--text-primary').trim() || '#000000';
-    const lightColor = computedStyle.getPropertyValue('--bg-primary').trim() || '#ffffff';
+    const primaryColor = computedStyle.getPropertyValue('--accent-primary').trim() || '#6b46c1';
+    const bgColor = computedStyle.getPropertyValue('--bg-primary').trim() || '#ffffff';
+    const textColor = computedStyle.getPropertyValue('--text-primary').trim() || '#000000';
+    const cardBg = computedStyle.getPropertyValue('--bg-secondary').trim() || '#f8fafc';
+    
+    // Determine card style based on character data
+    const cardStyle = determineCardStyle(characterData);
+    
+    // Clear canvas and draw card based on style
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    switch (cardStyle.type) {
+        case 'magical':
+            drawMagicalCard(ctx, characterData, cardStyle, { primaryColor, bgColor, textColor, cardBg });
+            break;
+        case 'warrior':
+            drawWarriorCard(ctx, characterData, cardStyle, { primaryColor, bgColor, textColor, cardBg });
+            break;
+        case 'tech':
+            drawTechCard(ctx, characterData, cardStyle, { primaryColor, bgColor, textColor, cardBg });
+            break;
+        case 'nature':
+            drawNatureCard(ctx, characterData, cardStyle, { primaryColor, bgColor, textColor, cardBg });
+            break;
+        default:
+            drawClassicCard(ctx, characterData, cardStyle, { primaryColor, bgColor, textColor, cardBg });
+    }
+    
+    // Get and draw actual portrait if available
+    drawCharacterPortrait(ctx, characterData, cardStyle);
+    
+    // Embed the character data using steganography
+    embedDataInCanvas(canvas, characterData);
+}
 
-    QRCode.toCanvas(canvas, data, {
-        width: 300,
-        margin: 2,
-        color: {
-            dark: darkColor,
-            light: lightColor
+function determineCardStyle(characterData) {
+    const race = characterData.race || characterData.customRace || '';
+    const charClass = characterData.class || characterData.customClass || '';
+    const background = characterData.job || characterData.customJob || '';
+    
+    // Magical theme
+    if (charClass.includes('wizard') || charClass.includes('sorcerer') || charClass.includes('warlock') || 
+        charClass.includes('necrobard') || charClass.includes('glass_cannon') || race.includes('primal')) {
+        return { 
+            type: 'magical', 
+            colors: { primary: '#8b5cf6', secondary: '#a855f7', accent: '#c084fc' },
+            pattern: 'arcane'
+        };
+    }
+    
+    // Warrior theme
+    if (charClass.includes('fighter') || charClass.includes('barbarian') || charClass.includes('paladin') ||
+        charClass.includes('prizefighter') || race.includes('orc') || background.includes('soldier')) {
+        return { 
+            type: 'warrior', 
+            colors: { primary: '#dc2626', secondary: '#b91c1c', accent: '#f87171' },
+            pattern: 'battle'
+        };
+    }
+    
+    // Tech theme
+    if (charClass.includes('hacker') || charClass.includes('engineer') || charClass.includes('bomb_squad') ||
+        race.includes('cyborg') || race.includes('android') || background.includes('programmer')) {
+        return { 
+            type: 'tech', 
+            colors: { primary: '#06b6d4', secondary: '#0891b2', accent: '#67e8f9' },
+            pattern: 'circuit'
+        };
+    }
+    
+    // Nature theme
+    if (charClass.includes('druid') || charClass.includes('ranger') || race.includes('elf') ||
+        race.includes('were_creature') || background.includes('banana_farmer')) {
+        return { 
+            type: 'nature', 
+            colors: { primary: '#059669', secondary: '#047857', accent: '#6ee7b7' },
+            pattern: 'organic'
+        };
+    }
+    
+    // Default classic theme
+    return { 
+        type: 'classic', 
+        colors: { primary: '#6b46c1', secondary: '#553c9a', accent: '#a78bfa' },
+        pattern: 'classic'
+    };
+}
+
+function drawMagicalCard(ctx, characterData, style, colors) {
+    // Magical gradient background
+    const gradient = ctx.createRadialGradient(300, 400, 0, 300, 400, 400);
+    gradient.addColorStop(0, style.colors.primary + '20');
+    gradient.addColorStop(0.7, style.colors.secondary + '10');
+    gradient.addColorStop(1, colors.cardBg);
+    
+    ctx.fillStyle = gradient;
+    drawRoundedRect(ctx, 20, 20, 560, 760, 20, gradient);
+    
+    // Mystical border with arcane symbols
+    ctx.strokeStyle = style.colors.primary;
+    ctx.lineWidth = 3;
+    drawRoundedRect(ctx, 20, 20, 560, 760, 20, null, true);
+    
+    // Add floating magical particles
+    drawMagicalParticles(ctx, style.colors);
+    
+    // Character info with magical styling
+    drawCharacterInfo(ctx, characterData, style, colors, 'magical');
+}
+
+function drawWarriorCard(ctx, characterData, style, colors) {
+    // Battle-worn parchment background
+    ctx.fillStyle = colors.cardBg;
+    drawRoundedRect(ctx, 20, 20, 560, 760, 20, colors.cardBg);
+    
+    // Add weathered texture
+    addTextureOverlay(ctx, 'weathered');
+    
+    // Bold border with battle damage
+    ctx.strokeStyle = style.colors.primary;
+    ctx.lineWidth = 4;
+    drawRoundedRect(ctx, 20, 20, 560, 760, 20, null, true);
+    
+    // Add sword and shield decorations
+    drawWarriorDecorations(ctx, style.colors);
+    
+    drawCharacterInfo(ctx, characterData, style, colors, 'warrior');
+}
+
+function drawTechCard(ctx, characterData, style, colors) {
+    // Futuristic gradient
+    const gradient = ctx.createLinearGradient(0, 0, 600, 800);
+    gradient.addColorStop(0, colors.cardBg);
+    gradient.addColorStop(0.5, style.colors.primary + '15');
+    gradient.addColorStop(1, colors.cardBg);
+    
+    ctx.fillStyle = gradient;
+    drawRoundedRect(ctx, 20, 20, 560, 760, 20, gradient);
+    
+    // Circuit board pattern
+    drawCircuitPattern(ctx, style.colors);
+    
+    // Glowing tech border
+    ctx.shadowColor = style.colors.accent;
+    ctx.shadowBlur = 10;
+    ctx.strokeStyle = style.colors.primary;
+    ctx.lineWidth = 2;
+    drawRoundedRect(ctx, 20, 20, 560, 760, 20, null, true);
+    ctx.shadowBlur = 0;
+    
+    drawCharacterInfo(ctx, characterData, style, colors, 'tech');
+}
+
+function drawNatureCard(ctx, characterData, style, colors) {
+    // Natural gradient
+    const gradient = ctx.createLinearGradient(0, 0, 0, 800);
+    gradient.addColorStop(0, style.colors.accent + '30');
+    gradient.addColorStop(0.7, colors.cardBg);
+    gradient.addColorStop(1, style.colors.primary + '20');
+    
+    ctx.fillStyle = gradient;
+    drawRoundedRect(ctx, 20, 20, 560, 760, 20, gradient);
+    
+    // Organic border with leaf patterns
+    drawOrganicBorder(ctx, style.colors);
+    
+    drawCharacterInfo(ctx, characterData, style, colors, 'nature');
+}
+
+function drawClassicCard(ctx, characterData, style, colors) {
+    // Classic elegant background
+    ctx.fillStyle = colors.cardBg;
+    drawRoundedRect(ctx, 20, 20, 560, 760, 20, colors.cardBg);
+    
+    // Elegant border
+    ctx.strokeStyle = style.colors.primary;
+    ctx.lineWidth = 3;
+    drawRoundedRect(ctx, 20, 20, 560, 760, 20, null, true);
+    
+    // Add subtle corner decorations
+    drawClassicDecorations(ctx, style.colors);
+    
+    drawCharacterInfo(ctx, characterData, style, colors, 'classic');
+}
+
+function drawCharacterPortrait(ctx, characterData, style) {
+    const portraitSize = 180;
+    const portraitX = (600 - portraitSize) / 2;
+    const portraitY = 80;
+    
+    // Get actual portrait from DOM
+    const portraitElement = document.getElementById('portrait-display');
+    const portraitImg = portraitElement ? portraitElement.querySelector('img') : null;
+    
+    if (portraitImg && portraitImg.src && portraitImg.src.startsWith('data:image/')) {
+        // Draw actual portrait
+        const img = new Image();
+        img.onload = function() {
+            ctx.save();
+            
+            // Create circular clipping path
+            ctx.beginPath();
+            ctx.arc(portraitX + portraitSize/2, portraitY + portraitSize/2, portraitSize/2, 0, 2 * Math.PI);
+            ctx.clip();
+            
+            // Draw the portrait image
+            ctx.drawImage(img, portraitX, portraitY, portraitSize, portraitSize);
+            
+            ctx.restore();
+            
+            // Add portrait border
+            ctx.strokeStyle = style.colors.primary;
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(portraitX + portraitSize/2, portraitY + portraitSize/2, portraitSize/2, 0, 2 * Math.PI);
+            ctx.stroke();
+        };
+        img.src = portraitImg.src;
+    } else {
+        // Draw default portrait with style-appropriate icon
+        drawDefaultPortrait(ctx, portraitX, portraitY, portraitSize, style);
+    }
+}
+
+function drawDefaultPortrait(ctx, x, y, size, style) {
+    // Portrait background circle
+    ctx.fillStyle = style.colors.primary;
+    ctx.beginPath();
+    ctx.arc(x + size/2, y + size/2, size/2, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Style-appropriate icon
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 60px Arial';
+    ctx.textAlign = 'center';
+    
+    let icon = '👤';
+    switch (style.type) {
+        case 'magical': icon = '🧙‍♂️'; break;
+        case 'warrior': icon = '⚔️'; break;
+        case 'tech': icon = '🤖'; break;
+        case 'nature': icon = '🌿'; break;
+    }
+    
+    ctx.fillText(icon, x + size/2, y + size/2 + 20);
+    
+    // Portrait border
+    ctx.strokeStyle = style.colors.secondary;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(x + size/2, y + size/2, size/2, 0, 2 * Math.PI);
+    ctx.stroke();
+}
+
+function drawCharacterInfo(ctx, characterData, style, colors, theme) {
+    const portraitSize = 180;
+    const portraitY = 80;
+    const infoStartY = portraitY + portraitSize + 40;
+    
+    // Character name with theme styling
+    ctx.fillStyle = colors.textColor;
+    ctx.font = `bold ${theme === 'tech' ? '32px "Courier New"' : '36px Arial'}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(characterData.name, 300, infoStartY);
+    
+    // Level with styled background
+    const levelY = infoStartY + 50;
+    ctx.fillStyle = style.colors.primary;
+    ctx.fillRect(250, levelY - 25, 100, 35);
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 20px Arial';
+    ctx.fillText(`Level ${characterData.level || 1}`, 300, levelY);
+    
+    // Race, Class, Background
+    ctx.font = '18px Arial';
+    ctx.fillStyle = colors.textColor;
+    const race = characterData.race || characterData.customRace || 'Unknown';
+    const charClass = characterData.class || characterData.customClass || 'Unknown';
+    const background = characterData.job || characterData.customJob || 'Unknown';
+    
+    ctx.fillText(`${race} ${charClass}`, 300, levelY + 40);
+    ctx.fillText(`${background}`, 300, levelY + 65);
+    
+    // Stats section with theme styling
+    const statsY = levelY + 110;
+    drawThemedStatsSection(ctx, characterData, style, colors, statsY, theme);
+    
+    // HP/MP with styled bars
+    const vitalsY = statsY + 120;
+    drawVitalStats(ctx, characterData, style, colors, vitalsY);
+    
+    // Footer
+    ctx.font = '12px Arial';
+    ctx.fillStyle = colors.textColor;
+    ctx.globalAlpha = 0.6;
+    ctx.fillText('Dungeon Crawler World', 300, 740);
+    ctx.fillText('dcc-custom.vercel.app', 300, 760);
+    ctx.globalAlpha = 1.0;
+}
+
+function drawThemedStatsSection(ctx, characterData, style, colors, y, theme) {
+    ctx.font = 'bold 16px Arial';
+    ctx.fillStyle = style.colors.primary;
+    ctx.textAlign = 'center';
+    ctx.fillText('ATTRIBUTES', 300, y);
+    
+    const stats = characterData.stats || {};
+    const statNames = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
+    const statValues = [
+        stats.strength || 2, stats.dexterity || 2, stats.constitution || 2,
+        stats.intelligence || 2, stats.wisdom || 2, stats.charisma || 2
+    ];
+    
+    // Draw stats in a grid with theme styling
+    for (let i = 0; i < 6; i++) {
+        const col = i % 3;
+        const row = Math.floor(i / 3);
+        const x = 150 + (col * 100);
+        const statY = y + 30 + (row * 40);
+        
+        // Stat background
+        ctx.fillStyle = style.colors.primary + '20';
+        ctx.fillRect(x - 35, statY - 15, 70, 25);
+        
+        // Stat label
+        ctx.fillStyle = style.colors.primary;
+        ctx.font = 'bold 12px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(statNames[i], x, statY - 2);
+        
+        // Stat value
+        ctx.fillStyle = colors.textColor;
+        ctx.font = 'bold 16px Arial';
+        ctx.fillText(statValues[i].toString(), x, statY + 15);
+    }
+}
+
+function drawVitalStats(ctx, characterData, style, colors, y) {
+    const hp = characterData.healthPoints || characterData.currentHealthPoints || 3;
+    const mp = characterData.magicPoints || characterData.currentMagicPoints || 4;
+    
+    // HP Bar
+    ctx.fillStyle = style.colors.primary + '30';
+    ctx.fillRect(150, y, 120, 20);
+    ctx.fillStyle = '#dc2626';
+    ctx.fillRect(150, y, Math.min(120, (hp / 20) * 120), 20);
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 12px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(`HP: ${hp}`, 210, y + 14);
+    
+    // MP Bar
+    ctx.fillStyle = style.colors.primary + '30';
+    ctx.fillRect(330, y, 120, 20);
+    ctx.fillStyle = '#2563eb';
+    ctx.fillRect(330, y, Math.min(120, (mp / 20) * 120), 20);
+    ctx.fillStyle = 'white';
+    ctx.fillText(`MP: ${mp}`, 390, y + 14);
+}
+
+// Decoration functions
+function drawMagicalParticles(ctx, colors) {
+    ctx.fillStyle = colors.accent + '80';
+    for (let i = 0; i < 20; i++) {
+        const x = Math.random() * 560 + 20;
+        const y = Math.random() * 760 + 20;
+        const size = Math.random() * 3 + 1;
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, 2 * Math.PI);
+        ctx.fill();
+    }
+}
+
+function drawCircuitPattern(ctx, colors) {
+    ctx.strokeStyle = colors.primary + '30';
+    ctx.lineWidth = 1;
+    
+    // Draw circuit lines
+    for (let i = 0; i < 10; i++) {
+        ctx.beginPath();
+        ctx.moveTo(50 + i * 50, 50);
+        ctx.lineTo(50 + i * 50, 750);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(50, 80 + i * 70);
+        ctx.lineTo(550, 80 + i * 70);
+        ctx.stroke();
+    }
+}
+
+function drawOrganicBorder(ctx, colors) {
+    ctx.strokeStyle = colors.primary;
+    ctx.lineWidth = 3;
+    
+    // Draw leaf-like border decorations
+    for (let angle = 0; angle < 360; angle += 45) {
+        const rad = (angle * Math.PI) / 180;
+        const x = 300 + Math.cos(rad) * 280;
+        const y = 400 + Math.sin(rad) * 380;
+        
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(rad);
+        
+        // Simple leaf shape
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 8, 15, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+        
+        ctx.restore();
+    }
+}
+
+function drawWarriorDecorations(ctx, colors) {
+    // Corner sword decorations
+    ctx.strokeStyle = colors.primary;
+    ctx.lineWidth = 3;
+    
+    // Top corners
+    ctx.beginPath();
+    ctx.moveTo(50, 50);
+    ctx.lineTo(80, 50);
+    ctx.lineTo(65, 35);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(550, 50);
+    ctx.lineTo(520, 50);
+    ctx.lineTo(535, 35);
+    ctx.stroke();
+}
+
+function drawClassicDecorations(ctx, colors) {
+    // Elegant corner flourishes
+    ctx.strokeStyle = colors.primary;
+    ctx.lineWidth = 2;
+    
+    // Corner decorations
+    for (let corner of [[50, 50], [550, 50], [50, 750], [550, 750]]) {
+        const [x, y] = corner;
+        ctx.beginPath();
+        ctx.arc(x, y, 15, 0, Math.PI / 2);
+        ctx.stroke();
+    }
+}
+
+function addTextureOverlay(ctx, textureType) {
+    // Add subtle texture overlay
+    const imageData = ctx.getImageData(20, 20, 560, 760);
+    const data = imageData.data;
+    
+    for (let i = 0; i < data.length; i += 4) {
+        if (Math.random() < 0.1) {
+            const noise = (Math.random() - 0.5) * 20;
+            data[i] += noise;     // Red
+            data[i + 1] += noise; // Green
+            data[i + 2] += noise; // Blue
         }
-    }, function (error) {
-        if (error) {
-            console.error('QR Code generation failed:', error);
-            showNotification('Failed to generate QR code', 'error');
-        }
+    }
+    
+    ctx.putImageData(imageData, 20, 20);
+}
+
+function drawRoundedRect(ctx, x, y, width, height, radius, fillColor = null, strokeOnly = false) {
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.arcTo(x + width, y, x + width, y + height, radius);
+    ctx.arcTo(x + width, y + height, x, y + height, radius);
+    ctx.arcTo(x, y + height, x, y, radius);
+    ctx.arcTo(x, y, x + width, y, radius);
+    ctx.closePath();
+    
+    if (fillColor && !strokeOnly) {
+        ctx.fillStyle = fillColor;
+        ctx.fill();
+    }
+    
+    if (strokeOnly) {
+        ctx.stroke();
+    }
+}
+
+function embedDataInCanvas(canvas, characterData) {
+    const ctx = canvas.getContext('2d');
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    
+    // Prepare character data for embedding
+    const dataString = JSON.stringify({
+        type: 'dcc-character',
+        version: '1.0',
+        data: characterData,
+        timestamp: new Date().toISOString()
     });
+    
+    // Convert string to binary
+    const binaryData = stringToBinary(dataString);
+    
+    // Add length header (32 bits for data length)
+    const lengthBinary = (binaryData.length).toString(2).padStart(32, '0');
+    const fullBinary = lengthBinary + binaryData;
+    
+    console.log('Embedding', fullBinary.length, 'bits of data');
+    
+    // Embed in LSB of red channel
+    for (let i = 0; i < fullBinary.length && i * 4 < data.length; i++) {
+        const pixelIndex = i * 4; // Red channel of pixel i
+        const bit = parseInt(fullBinary[i]);
+        
+        // Clear LSB and set to our bit
+        data[pixelIndex] = (data[pixelIndex] & 0xFE) | bit;
+    }
+    
+    // Put modified image data back
+    ctx.putImageData(imageData, 0, 0);
 }
 
-function closeQRModal() {
-    document.getElementById('qr-modal').style.display = 'none';
+function stringToBinary(str) {
+    return str.split('').map(char => 
+        char.charCodeAt(0).toString(2).padStart(8, '0')
+    ).join('');
 }
 
-function downloadQR() {
-    const canvas = document.getElementById('qr-canvas');
+function binaryToString(binary) {
+    const chars = binary.match(/.{8}/g) || [];
+    return chars.map(byte => String.fromCharCode(parseInt(byte, 2))).join('');
+}
+
+function closeCardModal() {
+    document.getElementById('card-modal').style.display = 'none';
+}
+
+function downloadCharacterCard() {
+    const canvas = document.getElementById('card-canvas');
     const currentCharacter = getCurrentCharacterData();
     
     // Create filename: CharName-Class-Level.png
     const charName = (currentCharacter?.name || 'Character').replace(/[^a-zA-Z0-9]/g, '_');
     const charClass = (currentCharacter?.class || 'Unknown').replace(/[^a-zA-Z0-9]/g, '_');
     const charLevel = currentCharacter?.level || '1';
-    const filename = `${charName}-${charClass}-${charLevel}.png`;
+    const filename = `${charName}-${charClass}-L${charLevel}.png`;
     
     const link = document.createElement('a');
     link.download = filename;
     link.href = canvas.toDataURL('image/png');
     link.click();
     
-    showNotification(`QR code saved as ${filename}`, 'success');
+    showNotification('save', 'Card Downloaded', `Character card saved as ${filename}`, 'File contains embedded character data!');
 }
 
-function shareQR() {
-    const canvas = document.getElementById('qr-canvas');
+function shareCharacterCard() {
+    const canvas = document.getElementById('card-canvas');
     const currentCharacter = getCurrentCharacterData();
     
     canvas.toBlob(function(blob) {
         if (navigator.share && navigator.canShare) {
             const charName = currentCharacter?.name || 'Character';
-            const filename = `${charName.replace(/[^a-zA-Z0-9]/g, '_')}-QR.png`;
+            const filename = `${charName.replace(/[^a-zA-Z0-9]/g, '_')}-Card.png`;
             const file = new File([blob], filename, { type: 'image/png' });
             
             navigator.share({
-                title: 'DCC Character QR Code',
-                text: `Share ${charName} for Dungeon Crawler World`,
+                title: 'DCC Character Card',
+                text: `Check out my character ${charName} for Dungeon Crawler World!`,
                 files: [file]
             }).catch(error => {
                 console.error('Share failed:', error);
-                showNotification('Share failed. Use "Save Image" instead.', 'warning');
+                showNotification('warning', 'Share Failed', 'Share failed', 'Use "Save Card" instead.');
             });
         } else {
-            // Fallback: copy canvas data URL to clipboard if supported
-            if (navigator.clipboard && canvas.toDataURL) {
+            // Fallback: copy to clipboard if supported
+            if (navigator.clipboard) {
                 canvas.toBlob(blob => {
                     const item = new ClipboardItem({ "image/png": blob });
                     navigator.clipboard.write([item]).then(() => {
-                        showNotification('QR code copied to clipboard!', 'success');
+                        showNotification('save', 'Copied', 'Character card copied to clipboard!', 'Ready to paste elsewhere.');
                     }).catch(() => {
-                        showNotification('Use "Save Image" to download the QR code', 'info');
+                        showNotification('save', 'Use Download', 'Use "Save Card" to download the character card', 'Clipboard not supported.');
                     });
                 });
             } else {
-                showNotification('Use "Save Image" to download the QR code', 'info');
+                showNotification('save', 'Use Download', 'Use "Save Card" to download the character card', 'Sharing not supported on this device.');
             }
         }
     });
+}
+
+// Character Loading from Card
+function loadCharacterFromCard() {
+    showNotification('save', 'Load Character', 'Select a character card image to load', 'Choose a PNG file with embedded character data.');
+    document.getElementById('card-scanner-modal').style.display = 'flex';
+}
+
+function handleCardUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+        showNotification('warning', 'Invalid File', 'Please select an image file', 'Character cards must be PNG images.');
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            try {
+                const characterData = extractDataFromImage(img);
+                if (characterData) {
+                    importCharacterData(characterData);
+                    closeCardScannerModal();
+                } else {
+                    showNotification('warning', 'No Data Found', 'No character data found in this image', 'Make sure this is a valid character card.');
+                }
+            } catch (error) {
+                console.error('Error loading character from image:', error);
+                showNotification('warning', 'Load Failed', 'Failed to load character from image', error.message);
+            }
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function extractDataFromImage(img) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    canvas.width = img.width;
+    canvas.height = img.height;
+    ctx.drawImage(img, 0, 0);
+    
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    
+    // Extract length from first 32 pixels (red channel LSB)
+    let lengthBinary = '';
+    for (let i = 0; i < 32 && i * 4 < data.length; i++) {
+        lengthBinary += (data[i * 4] & 1).toString();
+    }
+    
+    const dataLength = parseInt(lengthBinary, 2);
+    console.log('Extracting', dataLength, 'bits of data');
+    
+    if (dataLength <= 0 || dataLength > (data.length / 4 - 32)) {
+        return null; // No valid data found
+    }
+    
+    // Extract data bits
+    let dataBinary = '';
+    for (let i = 32; i < 32 + dataLength && i * 4 < data.length; i++) {
+        dataBinary += (data[i * 4] & 1).toString();
+    }
+    
+    // Convert binary to string
+    const dataString = binaryToString(dataBinary);
+    
+    try {
+        const parsedData = JSON.parse(dataString);
+        if (parsedData.type === 'dcc-character' && parsedData.data) {
+            return parsedData.data;
+        }
+    } catch (e) {
+        console.error('Error parsing extracted data:', e);
+    }
+    
+    return null;
+}
+
+function closeCardScannerModal() {
+    document.getElementById('card-scanner-modal').style.display = 'none';
+    // Reset file input
+    const fileInput = document.getElementById('card-upload');
+    if (fileInput) fileInput.value = '';
 }
 
 // QR Code Scanning
@@ -236,6 +835,12 @@ function importCharacterFromQR(characterData) {
 
 function getCurrentCharacterData() {
     // Try different ways to get current character data
+    
+    // First check if the global character object exists (main.js)
+    if (typeof character !== 'undefined' && character) {
+        return character;
+    }
+    
     if (window.currentCharacter) {
         return window.currentCharacter;
     }
@@ -293,18 +898,92 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+function importCharacterData(characterData) {
+    try {
+        if (characterData && characterData.name) {
+            const characterName = characterData.name;
+            
+            // Validate that it's a valid character object
+            if (!characterData.stats) {
+                showNotification('warning', 'Invalid Data', 'Invalid character data', 'Character card does not contain valid character data.');
+                return;
+            }
+            
+            // Import the character data directly into the global character object
+            if (typeof character !== 'undefined') {
+                // Merge the imported data with current character structure
+                Object.assign(character, characterData);
+                
+                // Update the UI immediately
+                updateAllCharacterDisplays();
+                
+                showNotification('save', 'Import Success', `Character "${characterName}" loaded successfully!`, 'Character data loaded from card.');
+            } else {
+                // Fallback: store in localStorage and reload
+                localStorage.setItem('character', JSON.stringify(characterData));
+                showNotification('save', 'Import Success', `Character "${characterName}" imported successfully!`, 'The page will reload to show your imported character.');
+                
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+            }
+        } else {
+            showNotification('warning', 'Invalid Format', 'Invalid character data', 'Character card does not contain valid data.');
+        }
+    } catch (error) {
+        console.error('Import error:', error);
+        showNotification('warning', 'Import Failed', 'Failed to import character', error.message);
+    }
+}
+
+// Update character displays after import
+function updateAllCharacterDisplays() {
+    // Trigger updates for various character display functions if they exist
+    if (typeof updateStatsDisplay === 'function') updateStatsDisplay();
+    if (typeof updateCharacterOverview === 'function') updateCharacterOverview();
+    if (typeof renderStatsGrid === 'function') renderStatsGrid();
+    if (typeof updateVitals === 'function') updateVitals();
+    if (typeof updateCharacterInfo === 'function') updateCharacterInfo();
+    
+    // Update form fields
+    if (character.name) {
+        const nameField = document.getElementById('char-name');
+        if (nameField) nameField.value = character.name;
+    }
+    
+    if (character.level) {
+        const levelField = document.getElementById('char-level');
+        if (levelField) levelField.value = character.level;
+    }
+    
+    if (character.race) {
+        const raceField = document.getElementById('race-select');
+        if (raceField) raceField.value = character.race;
+    }
+    
+    if (character.class) {
+        const classField = document.getElementById('class-select');
+        if (classField) classField.value = character.class;
+    }
+    
+    if (character.job) {
+        const jobField = document.getElementById('job-select');
+        if (jobField) jobField.value = character.job;
+    }
+}
+
 // Close modals when clicking outside
 document.addEventListener('click', function(event) {
     if (event.target.classList.contains('modal')) {
-        if (event.target.id === 'qr-modal') closeQRModal();
-        if (event.target.id === 'qr-scanner-modal') closeQRScannerModal();
+        if (event.target.id === 'card-modal') closeCardModal();
+        if (event.target.id === 'card-scanner-modal') closeCardScannerModal();
     }
 });
 
 // Keyboard shortcuts
 document.addEventListener('keydown', function(event) {
     if (event.key === 'Escape') {
-        closeQRModal();
-        closeQRScannerModal();
+        closeCardModal();
+        closeCardScannerModal();
     }
 });
