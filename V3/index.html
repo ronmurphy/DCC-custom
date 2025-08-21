@@ -1274,6 +1274,85 @@
         </div>
     </div>
 
+    <!-- Layout Selection Modal -->
+    <div id="layout-selection-modal" class="modal" style="display: none;">
+        <div class="modal-content layout-modal-content">
+            <div class="modal-header">
+                <h3>Choose Card Layout</h3>
+                <button class="close-modal" onclick="closeLayoutSelectionModal()">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="layout-instructions">Select the type of character card you'd like to generate:</p>
+                
+                <div class="layout-grid">
+                    <div class="layout-option" onclick="generateSelectedLayout('portrait')">
+                        <div class="layout-preview portrait-preview">
+                            <div class="preview-avatar"></div>
+                            <div class="preview-name">Character Name</div>
+                            <div class="preview-stats">
+                                <div class="preview-stat-line"></div>
+                                <div class="preview-stat-line"></div>
+                                <div class="preview-stat-line"></div>
+                            </div>
+                            <div class="preview-decorative"></div>
+                        </div>
+                        <h4>Portrait Card</h4>
+                        <p>Character portrait with key stats. Perfect for sharing on social media.</p>
+                    </div>
+
+                    <div class="layout-option" onclick="generateSelectedLayout('stat-sheet')">
+                        <div class="layout-preview stat-sheet-preview">
+                            <div class="preview-mini-avatar"></div>
+                            <div class="preview-title">Character Sheet</div>
+                            <div class="preview-stats-grid">
+                                <div class="preview-stat-block"></div>
+                                <div class="preview-stat-block"></div>
+                                <div class="preview-stat-block"></div>
+                                <div class="preview-stat-block"></div>
+                            </div>
+                        </div>
+                        <h4>Stat Sheet</h4>
+                        <p>Compact format showing detailed character statistics and abilities.</p>
+                    </div>
+
+                    <div class="layout-option" onclick="generateSelectedLayout('full-sheet')">
+                        <div class="layout-preview full-sheet-preview">
+                            <div class="preview-graph-paper">
+                                <div class="preview-header-section"></div>
+                                <div class="preview-content-grid">
+                                    <div class="preview-section"></div>
+                                    <div class="preview-section"></div>
+                                    <div class="preview-section"></div>
+                                    <div class="preview-section"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <h4>Full Character Sheet</h4>
+                        <p>Complete character sheet with classic graphing paper background - nostalgic D&D style!</p>
+                    </div>
+
+                    <div class="layout-option" onclick="generateSelectedLayout('combat-card')">
+                        <div class="layout-preview combat-preview">
+                            <div class="preview-combat-header"></div>
+                            <div class="preview-hp-section">
+                                <div class="preview-hp-bar"></div>
+                                <div class="preview-mp-bar"></div>
+                            </div>
+                            <div class="preview-equipment">
+                                <div class="preview-weapon"></div>
+                                <div class="preview-armor"></div>
+                            </div>
+                        </div>
+                        <h4>Combat Card</h4>
+                        <p>Quick reference for combat - HP, weapons, spells, and key stats.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Character Card Modal -->
     <div id="card-modal" class="modal" style="display: none;">
         <div class="modal-content card-modal-content">
