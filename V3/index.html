@@ -96,7 +96,9 @@
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="light.css">
     <link rel="stylesheet" href="dark.css">
+    <link rel="stylesheet" href="themes.css">
 </head>
 
 <body>
@@ -164,6 +166,33 @@
                     <span class="tab-icon"><i class="material-icons">help_outline</i></span>
                     <span class="tab-label">How the Game Works</span>
                 </button>
+            </div>
+            
+            <!-- Theme Selector -->
+            <div class="theme-selector">
+                <h4>Accent Colors</h4>
+                <div class="theme-colors-grid">
+                    <button class="theme-color-btn theme-btn-default active" data-theme="default" title="Default (Purple)"></button>
+                    <button class="theme-color-btn theme-btn-red" data-theme="red" title="Red"></button>
+                    <button class="theme-color-btn theme-btn-orange" data-theme="orange" title="Orange"></button>
+                    <button class="theme-color-btn theme-btn-yellow" data-theme="yellow" title="Yellow"></button>
+                    <button class="theme-color-btn theme-btn-green" data-theme="green" title="Green"></button>
+                    <button class="theme-color-btn theme-btn-blue" data-theme="blue" title="Blue"></button>
+                    <button class="theme-color-btn theme-btn-indigo" data-theme="indigo" title="Indigo"></button>
+                    <button class="theme-color-btn theme-btn-violet" data-theme="violet" title="Violet"></button>
+                </div>
+                
+                <div class="holiday-themes">
+                    <h5>Special Themes</h5>
+                    <div class="theme-colors-grid">
+                        <button class="theme-color-btn theme-btn-christmas" data-theme="christmas" title="Christmas"></button>
+                        <button class="theme-color-btn theme-btn-halloween" data-theme="halloween" title="Halloween"></button>
+                        <button class="theme-color-btn theme-btn-valentine" data-theme="valentine" title="Valentine's Day"></button>
+                        <button class="theme-color-btn theme-btn-ocean" data-theme="ocean" title="Ocean"></button>
+                        <button class="theme-color-btn theme-btn-forest" data-theme="forest" title="Forest"></button>
+                        <button class="theme-color-btn theme-btn-sunset" data-theme="sunset" title="Sunset"></button>
+                    </div>
+                </div>
             </div>
         </nav>
 
@@ -1253,6 +1282,44 @@
             (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.body.classList.add('dark-theme');
         }
+
+        // Accent Theme System
+        function setAccentTheme(themeName) {
+            // Remove existing theme from both html and body
+            document.documentElement.removeAttribute('data-accent-theme');
+            document.body.removeAttribute('data-accent-theme');
+            document.querySelectorAll('.theme-color-btn').forEach(btn => btn.classList.remove('active'));
+            
+            // Set new theme on both html and body
+            if (themeName !== 'default') {
+                document.documentElement.setAttribute('data-accent-theme', themeName);
+                document.body.setAttribute('data-accent-theme', themeName);
+            }
+            
+            // Update active button
+            const activeBtn = document.querySelector(`[data-theme="${themeName}"]`);
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+            }
+            
+            // Save to localStorage
+            localStorage.setItem('accentTheme', themeName);
+        }
+
+        // Load saved accent theme
+        const savedAccentTheme = localStorage.getItem('accentTheme') || 'default';
+        setAccentTheme(savedAccentTheme);
+
+        // Initialize accent theme selectors
+        document.addEventListener('DOMContentLoaded', () => {
+            // Add click handlers to theme buttons
+            document.querySelectorAll('.theme-color-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const themeName = btn.dataset.theme;
+                    setAccentTheme(themeName);
+                });
+            });
+        });
 
         // Mobile optimizations
         document.addEventListener('DOMContentLoaded', () => {
