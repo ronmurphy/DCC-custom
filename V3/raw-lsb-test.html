@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Raw LSB Analysis</title>
+</head>
+<body>
+    <h1>Raw LSB Bit Analysis</h1>
+    <input type="file" id="fileInput" accept="image/png">
+    <br><br>
+    <canvas id="testCanvas" style="border: 1px solid black;"></canvas>
+    <br><br>
+    <div id="results"></div>
+
+    <script>
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.getElementById('testCanvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const data = imageData.data;
+                    
+                    let results = `<h3>Image Analysis:</h3>`;
+                    results += `<p>Dimensions: ${canvas.width} x ${canvas.height}</p>`;
+                    results += `<p>Total pixels: ${canvas.width * canvas.height}</p>`;
+                    results += `<p>Data array length: ${data.length}</p>`;
+                    
+                    // Check first 32 pixels for length header
+                    let lengthBinary = '';
+                    let firstRedValues = [];
+                    for (let i = 0; i < 32 && i * 4 < data.length; i++) {
+                        const redValue = data[i * 4];
+                        firstRedValues.push(redValue);
+                        lengthBinary += (redValue & 1).toString();
+                    }
+                    
+                    const dataLength = parseInt(lengthBinary, 2);
+                    
+                    results += `<h3>LSB Analysis:</h3>`;
+                    results += `<p>First 32 red values: ${firstRedValues.join(', ')}</p>`;
+                    results += `<p>Length binary: ${lengthBinary}</p>`;
+                    results += `<p>Decoded length: ${dataLength} bits</p>`;
+                    results += `<p>Max possible bits: ${canvas.width * canvas.height - 32}</p>`;
+                    
+                    // Show first 100 LSB bits from the data area
+                    let dataBits = '';
+                    for (let i = 32; i < 132 && i * 4 < data.length; i++) {
+                        dataBits += (data[i * 4] & 1).toString();
+                    }
+                    results += `<p>First 100 data bits: ${dataBits}</p>`;
+                    
+                    // Check if all LSBs are the same (indicating no embedded data)
+                    let uniqueLSBs = new Set();
+                    for (let i = 0; i < Math.min(1000, data.length/4); i++) {
+                        uniqueLSBs.add(data[i * 4] & 1);
+                    }
+                    results += `<p>Unique LSB values in first 1000 pixels: ${Array.from(uniqueLSBs).join(', ')}</p>`;
+                    
+                    document.getElementById('results').innerHTML = results;
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    </script>
+</body>
+</html>

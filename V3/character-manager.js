@@ -459,7 +459,7 @@ function exportCharacterFromManager(characterId) {
     delete exportData.id;
     delete exportData.lastModified;
     
-    downloadJSON(exportData, `${charData.name || 'character'}_wasteland.json`);
+    downloadJSON(exportData, `${charData.name || 'character'}_dcw_character.dcw`);
 }
 
 function exportAllCharacters() {
@@ -483,20 +483,26 @@ function exportAllCharacters() {
 }
 
 function downloadJSON(data, filename) {
+    // Convert .json extension to .dcw for better user experience
+    const dcwFilename = filename.replace('.json', '.dcw');
+    
     const dataStr = JSON.stringify(data, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = filename;
+    a.download = dcwFilename;
     a.click();
     URL.revokeObjectURL(url);
+    
+    // Show helpful notification about the DCW format
+    showNotification('save', 'Character Exported', `Character saved as ${dcwFilename}`, 'DCW files can be imported back into the app. Share this file with other players!');
 }
 
 function importCharacterToManager() {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.json';
+    input.accept = '.dcw,.json'; // Accept both new DCW format and legacy JSON
     input.onchange = function(event) {
         const file = event.target.files[0];
         if (file) {
@@ -766,7 +772,7 @@ function exportCharacterToJSON() {
         delete exportData.id;
         delete exportData.lastModified;
         
-        downloadJSON(exportData, `${character.name || 'character'}_wasteland.json`);
+        downloadJSON(exportData, `${character.name || 'character'}_dcw_character.dcw`);
     }
 }
 
