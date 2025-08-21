@@ -295,17 +295,26 @@ body {
     .status-header-timer {
         font-size: 0.65rem;
     }
+
+    /* Ensure sidebar tab text is visible and readable on mobile */
+    .sidebar-tab .tab-label {
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: var(--text-primary);
+        opacity: 1;
+        display: inline;
+    }
 }
 
 .character-info-display {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Montserrat', Arial, sans-serif;
     font-size: 1rem;
-    font-weight: 600;
-    opacity: 0.8;
+    font-weight: 400;
+    opacity: 1;
 }
 
 .character-name-display {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Montserrat', serif;
     font-size: 1.2rem;
     font-weight: 700;
 }
@@ -1146,7 +1155,7 @@ body.sidebar-open {
 }
 
 .overview-content h2 {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Montserrat', serif;
     font-size: 1.75rem;
     color: var(--primary);
     margin-bottom: var(--spacing-sm);
@@ -2395,7 +2404,7 @@ body.sidebar-open {
 }
 
 .landing-header h1 {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Montserrat', serif;
     font-size: clamp(2rem, 5vw, 3rem);
     color: var(--primary);
     margin-bottom: var(--spacing-sm);
