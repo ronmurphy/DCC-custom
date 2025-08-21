@@ -84,35 +84,6 @@
             }
         }
         
-        /* Dark mode improvements for icons and text */
-        body.dark-theme .rest-btn,
-        body.dark-theme .rest-btn span,
-        body.dark-theme .rest-btn small,
-        body.dark-theme .vital-item,
-        body.dark-theme .vital-label,
-        body.dark-theme .equipment-slot,
-        body.dark-theme .slot-label,
-        body.dark-theme .card-header h3 {
-            color: #e0e0e0 !important;
-        }
-        
-        /* Preserve icon colors in dark mode, but use slightly darker shades for contrast */
-        body.dark-theme .material-icons,
-        body.dark-theme .ra {
-            color: inherit !important;
-            filter: brightness(0.85) contrast(1.1);
-        }
-        
-        /* Ensure buttons have proper dark mode styling */
-        body.dark-theme .rest-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        body.dark-theme .rest-btn:hover {
-            background: rgba(255, 255, 255, 0.15);
-        }
-        
         /* Fix any remaining emoji fallback issues */
         .ra:empty:after {
             display: none !important;

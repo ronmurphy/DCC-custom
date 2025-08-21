@@ -1,24 +1,4 @@
-/* General dark mode style for all RPG Awesome and Material Icons */
-body.dark-theme .ra,
-body.dark-theme .material-icons {
-    color: inherit !important;
-    filter: brightness(0.92) contrast(1.1);
-}
-/* Preserve RPG Awesome and Material Icons color in dark mode, but slightly darken for contrast */
-body.dark-theme .material-icons,
-body.dark-theme .ra {
-    color: inherit !important;
-    filter: brightness(0.85) contrast(1.1);
-}
-body.dark-theme .ra-hearts,
-body.dark-theme .ra-crystal-wand,
-body.dark-theme .ra-backpack,
-body.dark-theme .ra-sword,
-body.dark-theme .ra-shield,
-body.dark-theme .ra-vest,
-body.dark-theme .ra-gem-pendant {
-    filter: brightness(0.85) contrast(1.1);
-}
+
 /* ========================================
    RPG CHARACTER STUDIO - MODERN CSS
    Mobile-first, Universal TTRPG Design
@@ -76,28 +56,7 @@ body.dark-theme .ra-gem-pendant {
     --transition-slow: 500ms ease;
 }
 
-/* Dark Theme */
-body.dark-theme {
-    --primary: #818cf8;
-    --primary-dark: #6366f1;
-    --primary-light: #a5b4fc;
-    --secondary: #fbbf24;
-    --secondary-dark: #f59e0b;
-    --secondary-light: #fcd34d;
-    --accent: #34d399;
-    --accent-dark: #10b981;
-    --accent-light: #6ee7b7;
-    
-    --bg-primary: #0f172a;
-    --bg-secondary: #1e293b;
-    --bg-tertiary: #334155;
-    --bg-card: #1e293b;
-    --text-primary: #f1f5f9;
-    --text-secondary: #cbd5e1;
-    --text-tertiary: #94a3b8;
-    --border-color: #334155;
-    --shadow-color: rgba(0, 0, 0, 0.3);
-}
+/* Light Theme CSS Variables */
 
 /* ========================================
    RESET & BASE STYLES
@@ -741,11 +700,6 @@ body.sidebar-open {
 
 .race-card .card-header i {
     color: var(--accent);
-}
-
-body.dark-theme .race-card .card-header i {
-    color: var(--accent-dark) !important;
-    filter: brightness(0.95) contrast(1.1);
 }
 
 .background-card .card-header i {
@@ -3220,13 +3174,6 @@ body.dark-theme .race-card .card-header i {
         --danger: #cc0000;
         --success: #008800;
         --border-color: #000000;
-    }
-    
-    body.dark-theme {
-        --primary: #66b3ff;
-        --danger: #ff6666;
-        --success: #66ff66;
-        --border-color: #ffffff;
     }
 }
 
