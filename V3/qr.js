@@ -33,13 +33,54 @@ function shareCharacterAsCard() {
 }
 
 function showLayoutSelectionModal(characterData) {
-    // TODO: Create layout selection modal
-    // For now, generate the default card
+    // Store character data for later use
+    window.pendingCharacterData = characterData;
+    
+    // Show the layout selection modal
+    document.getElementById('layout-selection-modal').style.display = 'flex';
+    showNotification('info', 'Choose Layout', 'Select your preferred card layout', 'Preview styles below and click to generate.');
+}
+
+function closeLayoutSelectionModal() {
+    document.getElementById('layout-selection-modal').style.display = 'none';
+    window.pendingCharacterData = null;
+}
+
+function generateSelectedLayout(layout) {
+    const characterData = window.pendingCharacterData;
+    
+    if (!characterData) {
+        showNotification('warning', 'No Character Data', 'Character data not found!', 'Please try generating the card again.');
+        return;
+    }
+    
     try {
-        console.log('Generating character card...');
-        generateCharacterCard(characterData, 'portrait'); // Default to portrait layout
+        console.log(`Generating ${layout} layout...`);
+        
+        // Close the layout selection modal
+        closeLayoutSelectionModal();
+        
+        // Generate the card with selected layout
+        generateCharacterCard(characterData, layout);
+        
+        // Show the card modal
         document.getElementById('card-modal').style.display = 'flex';
-        showNotification('save', 'Card Generated', 'Character card generated successfully!', 'Beautiful visual character card ready for sharing.');
+        
+        // Update the modal title based on layout
+        const layoutNames = {
+            'portrait': 'Portrait Card',
+            'stat-sheet': 'Stat Sheet Card', 
+            'full-sheet': 'Full Character Sheet',
+            'combat-card': 'Combat Reference Card'
+        };
+        
+        const modalTitle = document.querySelector('#card-modal .modal-header h3');
+        if (modalTitle) {
+            modalTitle.textContent = layoutNames[layout] || 'Character Card';
+        }
+        
+        showNotification('save', 'Card Generated', `${layoutNames[layout]} generated successfully!`, 'Your beautiful character card is ready.');
+        
     } catch (error) {
         console.error('Error generating character card:', error);
         showNotification('warning', 'Generation Failed', 'Failed to generate character card', error.message);
@@ -65,8 +106,8 @@ function generateCharacterCard(characterData, layout = 'portrait') {
             canvas.height = 1600; // Full character sheet
             break;
         case 'combat-card':
-            canvas.width = 500;
-            canvas.height = 700;
+            canvas.width = 700;  // Landscape orientation  
+            canvas.height = 500;
             break;
         default:
             canvas.width = 600;
@@ -601,10 +642,262 @@ function drawFullSheetCard(ctx, characterData, cardStyle, colors) {
 }
 
 function drawCombatCard(ctx, characterData, cardStyle, colors) {
-    // Combat card - HP, AC, weapons, spells for table reference
-    console.log('Drawing combat reference card');
-    // TODO: Implement combat reference layout
-    drawPortraitCard(ctx, characterData, cardStyle, colors); // Fallback for now
+    // Combat card - FF7 Main Menu style
+    console.log('Drawing FF7-style combat card');
+    
+    const canvas = ctx.canvas;
+    const width = canvas.width;  // 700px wide
+    const height = canvas.height; // 500px tall
+    
+    // FF7 Main menu background - dark blue gradient
+    const bgGradient = ctx.createLinearGradient(0, 0, 0, height);
+    bgGradient.addColorStop(0, '#1a1a2e');
+    bgGradient.addColorStop(0.5, '#16213e');
+    bgGradient.addColorStop(1, '#0f0f23');
+    ctx.fillStyle = bgGradient;
+    ctx.fillRect(0, 0, width, height);
+    
+    // FF7 style outer border
+    drawFF7Border(ctx, 5, 5, width - 10, height - 10, '#4fc3f7', 3);
+    
+    const padding = 25;
+    
+    // Main character window (like FF7 party member display)
+    const charWindowX = padding;
+    const charWindowY = padding;
+    const charWindowW = width - padding * 2;
+    const charWindowH = 140;
+    
+    drawFF7Window(ctx, charWindowX, charWindowY, charWindowW, charWindowH);
+    
+    // Character portrait
+    const avatarSize = 80;
+    const avatarX = charWindowX + 20;
+    const avatarY = charWindowY + 30;
+    
+    // Try to get the actual portrait - check multiple sources
+    const portraitElement = document.getElementById('portrait-display');
+    let portraitSrc = null;
+    
+    if (characterData.portrait && characterData.portrait !== '') {
+        portraitSrc = characterData.portrait;
+    } else if (portraitElement && portraitElement.src && portraitElement.src !== '') {
+        portraitSrc = portraitElement.src;
+    } else if (portraitElement && portraitElement.style.backgroundImage) {
+        // Extract URL from background-image
+        const bgImg = portraitElement.style.backgroundImage;
+        const match = bgImg.match(/url\(['"]?([^'"]+)['"]?\)/);
+        if (match) portraitSrc = match[1];
+    }
+    
+    if (portraitSrc && portraitSrc !== '' && !portraitSrc.includes('undefined')) {
+        try {
+            const img = new Image();
+            img.crossOrigin = 'anonymous'; // Handle CORS
+            img.onload = function() {
+                ctx.save();
+                // Draw portrait in FF7 style frame
+                drawFF7Border(ctx, avatarX - 2, avatarY - 2, avatarSize + 4, avatarSize + 4, '#4fc3f7', 1);
+                ctx.beginPath();
+                ctx.rect(avatarX, avatarY, avatarSize, avatarSize);
+                ctx.clip();
+                ctx.drawImage(img, avatarX, avatarY, avatarSize, avatarSize);
+                ctx.restore();
+            };
+            img.onerror = function() {
+                console.log('Failed to load portrait:', portraitSrc);
+                drawFF7AvatarPlaceholder();
+            };
+            img.src = portraitSrc;
+        } catch (e) {
+            console.log('Error loading portrait:', e);
+            drawFF7AvatarPlaceholder();
+        }
+    } else {
+        console.log('No valid portrait source found');
+        drawFF7AvatarPlaceholder();
+    }
+    
+    function drawFF7AvatarPlaceholder() {
+        drawFF7Border(ctx, avatarX - 2, avatarY - 2, avatarSize + 4, avatarSize + 4, '#4fc3f7', 1);
+        ctx.fillStyle = '#2a4858';
+        ctx.fillRect(avatarX, avatarY, avatarSize, avatarSize);
+        ctx.fillStyle = '#4fc3f7';
+        ctx.font = '12px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('NO IMAGE', avatarX + avatarSize/2, avatarY + avatarSize/2);
+    }
+    
+    // Character name and level (FF7 style text)
+    const nameX = avatarX + avatarSize + 25;
+    const nameY = charWindowY + 40;
+    
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 24px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(characterData.name || 'CLOUD', nameX, nameY);
+    
+    ctx.fillStyle = '#4fc3f7';
+    ctx.font = '16px monospace';
+    ctx.fillText(`LV ${String(characterData.level || 1).padStart(2, ' ')}`, nameX, nameY + 25);
+    
+    // Heritage, Background, Class
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '12px monospace';
+    const heritage = characterData.heritage || 'Human';
+    const background = characterData.background || 'Folk Hero';
+    const characterClass = characterData.class || 'Fighter';
+    ctx.fillText(`${heritage} ${background}`, nameX, nameY + 45);
+    ctx.fillText(`${characterClass}`, nameX, nameY + 60);
+    
+    // HP/MP bars (FF7 style)
+    const barX = nameX + 150;
+    const barY = nameY - 10;
+    const barWidth = 180;
+    const barHeight = 12;
+    
+    // HP
+    const currentHP = characterData.currentHealthPoints || 0;
+    const maxHP = characterData.healthPoints || 1;
+    const hpPercent = currentHP / maxHP;
+    
+    ctx.fillStyle = '#4fc3f7';
+    ctx.font = '12px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('HP', barX, barY);
+    
+    drawFF7Bar(ctx, barX + 25, barY - 8, barWidth, barHeight, hpPercent, '#00ff41', '#004d0f');
+    
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '12px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(`${currentHP}/${maxHP}`, barX + barWidth + 25, barY);
+    
+    // MP
+    const currentMP = characterData.currentMagicPoints || 0;
+    const maxMP = characterData.magicPoints || 1;
+    const mpPercent = currentMP / maxMP;
+    
+    ctx.fillStyle = '#4fc3f7';
+    ctx.font = '12px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('MP', barX, barY + 25);
+    
+    drawFF7Bar(ctx, barX + 25, barY + 17, barWidth, barHeight, mpPercent, '#4169ff', '#0f1f4d');
+    
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '12px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(`${currentMP}/${maxMP}`, barX + barWidth + 25, barY + 25);
+    
+    // Stats window
+    const statsY = charWindowY + charWindowH + 15;
+    const statsH = 120;
+    drawFF7Window(ctx, charWindowX, statsY, charWindowW/2 - 10, statsH);
+    
+    // Stats content
+    ctx.fillStyle = '#4fc3f7';
+    ctx.font = 'bold 14px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('STATS', charWindowX + 20, statsY + 25);
+    
+    const stats = characterData.stats || {};
+    const statNames = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
+    const statLabels = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
+    
+    ctx.font = '12px monospace';
+    let statY = statsY + 45;
+    for (let i = 0; i < statNames.length; i++) {
+        const statValue = stats[statNames[i]] || 10;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(`${statLabels[i]}`, charWindowX + 25, statY);
+        ctx.fillStyle = '#00ff41';
+        ctx.textAlign = 'right';
+        ctx.fillText(String(statValue).padStart(3, ' '), charWindowX + charWindowW/2 - 30, statY);
+        ctx.textAlign = 'left';
+        statY += 15;
+    }
+    
+    // Equipment window
+    const equipX = charWindowX + charWindowW/2 + 10;
+    drawFF7Window(ctx, equipX, statsY, charWindowW/2 - 10, statsH);
+    
+    ctx.fillStyle = '#4fc3f7';
+    ctx.font = 'bold 14px monospace';
+    ctx.fillText('EQUIPMENT', equipX + 20, statsY + 25);
+    
+    const equipment = characterData.equipment || {};
+    const inventory = characterData.inventory || [];
+    
+    const mainWeapon = inventory.find(item => item.id === equipment.mainHand);
+    const offWeapon = inventory.find(item => item.id === equipment.offHand);
+    const armor = inventory.find(item => item.id === equipment.armor);
+    
+    ctx.font = '11px monospace';
+    let equipY = statsY + 45;
+    
+    if (mainWeapon) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText('Main:', equipX + 25, equipY);
+        ctx.fillStyle = '#ffff00';
+        ctx.fillText(mainWeapon.name, equipX + 25, equipY + 12);
+        equipY += 25;
+    }
+    
+    if (offWeapon) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText('Off:', equipX + 25, equipY);
+        ctx.fillStyle = '#ffff00';
+        ctx.fillText(offWeapon.name, equipX + 25, equipY + 12);
+        equipY += 25;
+    }
+    
+    if (armor) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText('Armor:', equipX + 25, equipY);
+        ctx.fillStyle = '#ffff00';
+        ctx.fillText(armor.name, equipX + 25, equipY + 12);
+    }
+    
+    console.log('FF7-style combat card completed');
+}
+
+function drawFF7Window(ctx, x, y, w, h) {
+    // FF7 window background
+    const gradient = ctx.createLinearGradient(x, y, x, y + h);
+    gradient.addColorStop(0, 'rgba(26, 35, 62, 0.9)');
+    gradient.addColorStop(1, 'rgba(15, 15, 35, 0.9)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(x, y, w, h);
+    
+    // FF7 window border
+    drawFF7Border(ctx, x, y, w, h, '#4fc3f7', 2);
+}
+
+function drawFF7Border(ctx, x, y, w, h, color, thickness) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = thickness;
+    ctx.strokeRect(x, y, w, h);
+    
+    // Inner highlight
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
+}
+
+function drawFF7Bar(ctx, x, y, w, h, percent, fillColor, bgColor) {
+    // Background
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(x, y, w, h);
+    
+    // Border
+    ctx.strokeStyle = '#4fc3f7';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, y, w, h);
+    
+    // Fill
+    ctx.fillStyle = fillColor;
+    ctx.fillRect(x + 1, y + 1, (w - 2) * percent, h - 2);
 }
 
 function closeCardModal() {
