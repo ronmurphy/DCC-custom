@@ -3,39 +3,75 @@
    Beautiful character cards with embedded data
    ======================================== */
 
-// Character Card Generation with Steganography
+/* ========================================
+   CHARACTER CARD VISUAL EXPORT SYSTEM
+   Beautiful character cards for sharing and viewing
+   ======================================== */
+
+// Character Card Generation - Visual Only
 function shareCharacterAsCard() {
+    console.log('=== SHARE CHARACTER AS CARD CALLED ===');
+    
     const currentCharacter = getCurrentCharacterData();
     
-    console.log('Character data for card:', currentCharacter); // Debug log
+    console.log('Character data retrieved:', currentCharacter);
     
     if (!currentCharacter) {
+        console.log('No character data found');
         showNotification('warning', 'No Character', 'No character data found!', 'Please create a character first.');
         return;
     }
     
     if (!currentCharacter.name || currentCharacter.name.trim() === '') {
+        console.log('Character name missing');
         showNotification('warning', 'Missing Name', 'Please enter a character name first!', 'Character name is required for sharing.');
         return;
     }
 
+    // Show layout selection modal instead of generating immediately
+    showLayoutSelectionModal(currentCharacter);
+}
+
+function showLayoutSelectionModal(characterData) {
+    // TODO: Create layout selection modal
+    // For now, generate the default card
     try {
-        generateCharacterCard(currentCharacter);
+        console.log('Generating character card...');
+        generateCharacterCard(characterData, 'portrait'); // Default to portrait layout
         document.getElementById('card-modal').style.display = 'flex';
-        showNotification('save', 'Card Generated', 'Character card generated successfully!', 'Beautiful card with embedded character data.');
+        showNotification('save', 'Card Generated', 'Character card generated successfully!', 'Beautiful visual character card ready for sharing.');
     } catch (error) {
         console.error('Error generating character card:', error);
         showNotification('warning', 'Generation Failed', 'Failed to generate character card', error.message);
     }
 }
 
-function generateCharacterCard(characterData) {
+function generateCharacterCard(characterData, layout = 'portrait') {
     const canvas = document.getElementById('card-canvas');
     const ctx = canvas.getContext('2d');
     
-    // Set canvas size for a nice character card
-    canvas.width = 600;
-    canvas.height = 800;
+    // Set canvas size based on layout
+    switch(layout) {
+        case 'portrait':
+            canvas.width = 600;
+            canvas.height = 800;
+            break;
+        case 'stat-sheet':
+            canvas.width = 800;
+            canvas.height = 600;
+            break;
+        case 'full-sheet':
+            canvas.width = 1200;
+            canvas.height = 1600; // Full character sheet
+            break;
+        case 'combat-card':
+            canvas.width = 500;
+            canvas.height = 700;
+            break;
+        default:
+            canvas.width = 600;
+            canvas.height = 800;
+    }
     
     // Get current theme colors
     const computedStyle = getComputedStyle(document.body);
@@ -47,32 +83,29 @@ function generateCharacterCard(characterData) {
     // Determine card style based on character data
     const cardStyle = determineCardStyle(characterData);
     
-    // Clear canvas and draw card based on style
+    // Clear canvas
     ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    switch (cardStyle.type) {
-        case 'magical':
-            drawMagicalCard(ctx, characterData, cardStyle, { primaryColor, bgColor, textColor, cardBg });
+    // Draw card based on layout
+    switch(layout) {
+        case 'portrait':
+            drawPortraitCard(ctx, characterData, cardStyle, { primaryColor, bgColor, textColor, cardBg });
             break;
-        case 'warrior':
-            drawWarriorCard(ctx, characterData, cardStyle, { primaryColor, bgColor, textColor, cardBg });
+        case 'stat-sheet':
+            drawStatSheetCard(ctx, characterData, cardStyle, { primaryColor, bgColor, textColor, cardBg });
             break;
-        case 'tech':
-            drawTechCard(ctx, characterData, cardStyle, { primaryColor, bgColor, textColor, cardBg });
+        case 'full-sheet':
+            drawFullSheetCard(ctx, characterData, cardStyle, { primaryColor, bgColor, textColor, cardBg });
             break;
-        case 'nature':
-            drawNatureCard(ctx, characterData, cardStyle, { primaryColor, bgColor, textColor, cardBg });
+        case 'combat-card':
+            drawCombatCard(ctx, characterData, cardStyle, { primaryColor, bgColor, textColor, cardBg });
             break;
         default:
-            drawClassicCard(ctx, characterData, cardStyle, { primaryColor, bgColor, textColor, cardBg });
+            drawPortraitCard(ctx, characterData, cardStyle, { primaryColor, bgColor, textColor, cardBg });
     }
     
-    // Get and draw actual portrait if available
-    drawCharacterPortrait(ctx, characterData, cardStyle);
-    
-    // Embed the character data using steganography
-    embedDataInCanvas(canvas, characterData);
+    console.log('Character card generated successfully - visual only');
 }
 
 function determineCardStyle(characterData) {
@@ -523,50 +556,55 @@ function drawRoundedRect(ctx, x, y, width, height, radius, fillColor = null, str
     }
 }
 
-function embedDataInCanvas(canvas, characterData) {
-    const ctx = canvas.getContext('2d');
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imageData.data;
+// === REMOVED STEGANOGRAPHY FUNCTIONS ===
+// embedDataInCanvas, stringToBinary, binaryToString, extractDataFromImage
+// These were removed as we switched to DCW format for character sharing
+
+// === NEW LAYOUT DRAWING FUNCTIONS ===
+
+function drawPortraitCard(ctx, characterData, cardStyle, colors) {
+    // Portrait layout - character art + key stats (existing style, cleaned up)
+    // TODO: Implement portrait card layout
+    console.log('Drawing portrait card layout');
     
-    // Prepare character data for embedding
-    const dataString = JSON.stringify({
-        type: 'dcc-character',
-        version: '1.0',
-        data: characterData,
-        timestamp: new Date().toISOString()
-    });
-    
-    // Convert string to binary
-    const binaryData = stringToBinary(dataString);
-    
-    // Add length header (32 bits for data length)
-    const lengthBinary = (binaryData.length).toString(2).padStart(32, '0');
-    const fullBinary = lengthBinary + binaryData;
-    
-    console.log('Embedding', fullBinary.length, 'bits of data');
-    
-    // Embed in LSB of red channel
-    for (let i = 0; i < fullBinary.length && i * 4 < data.length; i++) {
-        const pixelIndex = i * 4; // Red channel of pixel i
-        const bit = parseInt(fullBinary[i]);
-        
-        // Clear LSB and set to our bit
-        data[pixelIndex] = (data[pixelIndex] & 0xFE) | bit;
+    // For now, call the existing drawing function
+    switch (cardStyle.type) {
+        case 'magical':
+            drawMagicalCard(ctx, characterData, cardStyle, colors);
+            break;
+        case 'warrior':
+            drawWarriorCard(ctx, characterData, cardStyle, colors);
+            break;
+        case 'tech':
+            drawTechCard(ctx, characterData, cardStyle, colors);
+            break;
+        case 'nature':
+            drawNatureCard(ctx, characterData, cardStyle, colors);
+            break;
+        default:
+            drawClassicCard(ctx, characterData, cardStyle, colors);
     }
-    
-    // Put modified image data back
-    ctx.putImageData(imageData, 0, 0);
 }
 
-function stringToBinary(str) {
-    return str.split('').map(char => 
-        char.charCodeAt(0).toString(2).padStart(8, '0')
-    ).join('');
+function drawStatSheetCard(ctx, characterData, cardStyle, colors) {
+    // Stat sheet layout - more detailed stats, compact format
+    console.log('Drawing stat sheet card layout');
+    // TODO: Implement compact stat sheet layout
+    drawPortraitCard(ctx, characterData, cardStyle, colors); // Fallback for now
 }
 
-function binaryToString(binary) {
-    const chars = binary.match(/.{8}/g) || [];
-    return chars.map(byte => String.fromCharCode(parseInt(byte, 2))).join('');
+function drawFullSheetCard(ctx, characterData, cardStyle, colors) {
+    // Full character sheet with graphing paper background!
+    console.log('Drawing full character sheet with graphing paper background');
+    // TODO: Implement full character sheet with graph paper background
+    drawPortraitCard(ctx, characterData, cardStyle, colors); // Fallback for now
+}
+
+function drawCombatCard(ctx, characterData, cardStyle, colors) {
+    // Combat card - HP, AC, weapons, spells for table reference
+    console.log('Drawing combat reference card');
+    // TODO: Implement combat reference layout
+    drawPortraitCard(ctx, characterData, cardStyle, colors); // Fallback for now
 }
 
 function closeCardModal() {
@@ -664,50 +702,8 @@ function handleCardUpload(event) {
     reader.readAsDataURL(file);
 }
 
-function extractDataFromImage(img) {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    
-    canvas.width = img.width;
-    canvas.height = img.height;
-    ctx.drawImage(img, 0, 0);
-    
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imageData.data;
-    
-    // Extract length from first 32 pixels (red channel LSB)
-    let lengthBinary = '';
-    for (let i = 0; i < 32 && i * 4 < data.length; i++) {
-        lengthBinary += (data[i * 4] & 1).toString();
-    }
-    
-    const dataLength = parseInt(lengthBinary, 2);
-    console.log('Extracting', dataLength, 'bits of data');
-    
-    if (dataLength <= 0 || dataLength > (data.length / 4 - 32)) {
-        return null; // No valid data found
-    }
-    
-    // Extract data bits
-    let dataBinary = '';
-    for (let i = 32; i < 32 + dataLength && i * 4 < data.length; i++) {
-        dataBinary += (data[i * 4] & 1).toString();
-    }
-    
-    // Convert binary to string
-    const dataString = binaryToString(dataBinary);
-    
-    try {
-        const parsedData = JSON.parse(dataString);
-        if (parsedData.type === 'dcc-character' && parsedData.data) {
-            return parsedData.data;
-        }
-    } catch (e) {
-        console.error('Error parsing extracted data:', e);
-    }
-    
-    return null;
-}
+// === REMOVED extractDataFromImage FUNCTION ===
+// Image data extraction was removed - we now use DCW files for character sharing
 
 function closeCardScannerModal() {
     document.getElementById('card-scanner-modal').style.display = 'none';
