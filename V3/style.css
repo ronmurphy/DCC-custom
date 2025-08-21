@@ -1,3 +1,24 @@
+/* General dark mode style for all RPG Awesome and Material Icons */
+body.dark-theme .ra,
+body.dark-theme .material-icons {
+    color: inherit !important;
+    filter: brightness(0.92) contrast(1.1);
+}
+/* Preserve RPG Awesome and Material Icons color in dark mode, but slightly darken for contrast */
+body.dark-theme .material-icons,
+body.dark-theme .ra {
+    color: inherit !important;
+    filter: brightness(0.85) contrast(1.1);
+}
+body.dark-theme .ra-hearts,
+body.dark-theme .ra-crystal-wand,
+body.dark-theme .ra-backpack,
+body.dark-theme .ra-sword,
+body.dark-theme .ra-shield,
+body.dark-theme .ra-vest,
+body.dark-theme .ra-gem-pendant {
+    filter: brightness(0.85) contrast(1.1);
+}
 /* ========================================
    RPG CHARACTER STUDIO - MODERN CSS
    Mobile-first, Universal TTRPG Design
@@ -720,6 +741,11 @@ body.sidebar-open {
 
 .race-card .card-header i {
     color: var(--accent);
+}
+
+body.dark-theme .race-card .card-header i {
+    color: var(--accent-dark) !important;
+    filter: brightness(0.95) contrast(1.1);
 }
 
 .background-card .card-header i {
