@@ -18,12 +18,108 @@
     <link rel="apple-touch-icon" href="icon-192.png">
     <title>Dungeon Crawler World</title>
 
-    <!-- Fonts -->
-    <link
-        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap"
-        rel="stylesheet">
+    <!-- Fonts - Smart loading for both web and mobile -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Uncial+Antiqua&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/rpg-awesome/0.2.0/css/rpg-awesome.min.css">
+    
+    <style>
+        /* Smart font fallback system - Adventure themed! */
+        body {
+            font-family: 'Cinzel', 'Times New Roman', 'Georgia', serif;
+        }
+        
+        /* Headers get the refined fantasy treatment */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Playfair Display', 'Merriweather', 'Cinzel', serif;
+        }
+        
+        /* Special elements for that ancient manuscript feel */
+        .app-title, .hero-name-input, .character-landing h1 {
+            font-family: 'Uncial Antiqua', 'Playfair Display', serif;
+        }
+        
+        /* Ensure Material Icons work properly */
+        .material-icons {
+            font-family: 'Material Icons', 'Material Icons Outlined', sans-serif;
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        /* RPG Awesome icons */
+        .ra {
+            font-family: 'rpgawesome', Arial, sans-serif;
+        }
+        
+
+        .ra:empty.ra-double-team:after { content: "�"; }
+        .ra:empty.ra-muscle-up:after { content: "�"; }
+        .ra:empty.ra-hearts:after { content: "❤️"; }
+        .ra:empty.ra-crystal-wand:after { content: "🔮"; }
+        .ra:empty.ra-sword:after { content: "⚔️"; }
+        .ra:empty.ra-shield:after { content: "🛡️"; }
+        .ra:empty.ra-vest:after { content: "👕"; }
+        .ra:empty.ra-gem-pendant:after { content: "💎"; }
+        .ra:empty.ra-backpack:after { content: "🎒"; }
+        
+        /* Enhanced font loading detection */
+        @media screen and (max-width: 768px) {
+            /* Mobile-specific font adjustments */
+            body {
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+            }
+        }
+        
+        /* Dark mode improvements for icons and text */
+        body.dark-theme .rest-btn,
+        body.dark-theme .rest-btn span,
+        body.dark-theme .rest-btn small,
+        body.dark-theme .vital-item,
+        body.dark-theme .vital-label,
+        body.dark-theme .equipment-slot,
+        body.dark-theme .slot-label,
+        body.dark-theme .card-header h3 {
+            color: #e0e0e0 !important;
+        }
+        
+        body.dark-theme .material-icons,
+        body.dark-theme .ra {
+            color: #e0e0e0 !important;
+        }
+        
+        /* Ensure buttons have proper dark mode styling */
+        body.dark-theme .rest-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        body.dark-theme .rest-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        /* Fix any remaining emoji fallback issues */
+        .ra:empty:after {
+            display: none !important;
+        }
+        
+        .material-icons:empty:after {
+            display: none !important;
+        }
+    </style>
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
