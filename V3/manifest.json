@@ -1,7 +1,7 @@
 {
-  "name": "DCC Character Sheet",
+  "name": "Dungeon Crawler Sheet Manager",
   "short_name": "DCC Sheet",
-  "description": "Dungeon Crawler Carl tabletop RPG character sheet with achievements and DCC book content",
+  "description": "Dungeon Crawler tabletop RPG character sheet with achievements and DCC book content",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#1a1a1a",
