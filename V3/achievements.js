@@ -119,37 +119,131 @@ function hasAchievement(character, achievementId) {
 function selectAchievementsForLevelUp(character) {
     if (!achievementsData) return [];
     
-    const relevant = getRelevantAchievements(character);
-    const general = achievementsData.general.filter(ach => !hasAchievement(character, ach.id));
-    const absurd = achievementsData.absurd.filter(ach => !hasAchievement(character, ach.id));
-    const legendary = achievementsData.legendary.filter(ach => !hasAchievement(character, ach.id));
+    const level = character.level + 1; // The level we're becoming
+    console.log(`🎯 Selecting achievements for level ${level}`);
+    
+    // Calculate rarity percentages based on game design mathematics
+    const rarityChances = calculateRarityChances(level);
+    console.log(`📊 Rarity chances for level ${level}:`, rarityChances);
+    
+    // Get all available achievements by rarity
+    const availableByRarity = {
+        common: getAllAchievementsByRarity('common').filter(ach => !hasAchievement(character, ach.id)),
+        uncommon: getAllAchievementsByRarity('uncommon').filter(ach => !hasAchievement(character, ach.id)),
+        rare: getAllAchievementsByRarity('rare').filter(ach => !hasAchievement(character, ach.id)),
+        epic: getAllAchievementsByRarity('epic').filter(ach => !hasAchievement(character, ach.id)),
+        legendary: getAllAchievementsByRarity('legendary').filter(ach => !hasAchievement(character, ach.id))
+    };
     
     const selected = [];
     
-    // Always try to include at least one relevant achievement
-    if (relevant.length > 0) {
-        const randomRelevant = relevant[Math.floor(Math.random() * relevant.length)];
-        selected.push(randomRelevant);
-    }
-    
-    // Fill remaining slots with random achievements from other categories
-    const remainingSlots = 3 - selected.length;
-    const otherAchievements = [...general, ...absurd];
-    
-    // Add legendary achievements with low probability (5% chance per slot)
-    if (Math.random() < 0.05 && legendary.length > 0) {
-        const randomLegendary = legendary[Math.floor(Math.random() * legendary.length)];
-        selected.push(randomLegendary);
-    }
-    
-    // Fill remaining slots
-    for (let i = selected.length; i < 3 && otherAchievements.length > 0; i++) {
-        const randomIndex = Math.floor(Math.random() * otherAchievements.length);
-        const randomAchievement = otherAchievements.splice(randomIndex, 1)[0];
-        selected.push(randomAchievement);
+    // Select 3 achievements based on rarity chances
+    for (let i = 0; i < 3; i++) {
+        const rarity = selectRarityByChance(rarityChances);
+        const availableInRarity = availableByRarity[rarity];
+        
+        if (availableInRarity.length > 0) {
+            // Try to get a relevant achievement first
+            const relevant = availableInRarity.filter(ach => isAchievementRelevant(character, ach));
+            const pool = relevant.length > 0 ? relevant : availableInRarity;
+            
+            const randomIndex = Math.floor(Math.random() * pool.length);
+            const selectedAchievement = pool[randomIndex];
+            selected.push(selectedAchievement);
+            
+            // Remove from all pools to avoid duplicates
+            Object.values(availableByRarity).forEach(pool => {
+                const index = pool.findIndex(ach => ach.id === selectedAchievement.id);
+                if (index !== -1) pool.splice(index, 1);
+            });
+            
+            console.log(`🏆 Selected ${rarity} achievement: ${selectedAchievement.name}`);
+        } else {
+            // Fallback to any available achievement if the rarity pool is empty
+            const allAvailable = Object.values(availableByRarity).flat();
+            if (allAvailable.length > 0) {
+                const randomIndex = Math.floor(Math.random() * allAvailable.length);
+                const selectedAchievement = allAvailable[randomIndex];
+                selected.push(selectedAchievement);
+                console.log(`🔄 Fallback selection: ${selectedAchievement.name} (${selectedAchievement.rarity})`);
+            }
+        }
     }
     
     return selected;
+}
+
+// Calculate rarity chances based on game design mathematics
+function calculateRarityChances(level) {
+    const chances = {};
+    
+    if (level <= 10) {
+        // Level 1-10: Learning Phase
+        chances.common = 50;
+        chances.uncommon = 20;
+        chances.rare = 5;
+        chances.epic = 0;
+        chances.legendary = 0;
+    } else if (level <= 30) {
+        // Level 11-30: Adventuring Phase
+        chances.common = 30;
+        chances.uncommon = 35;
+        chances.rare = 20;
+        chances.epic = 10;
+        chances.legendary = 0;
+    } else {
+        // Level 31-50: Heroic Phase
+        chances.common = 20;
+        chances.uncommon = 35;
+        chances.rare = 25;
+        chances.epic = 15;
+        chances.legendary = 5;
+    }
+    
+    // Normalize to ensure they add up to 100
+    const total = Object.values(chances).reduce((sum, val) => sum + val, 0);
+    if (total !== 100) {
+        const adjustment = 100 - total;
+        chances.uncommon += adjustment; // Adjust uncommon to make it exactly 100
+    }
+    
+    return chances;
+}
+
+// Select a rarity based on weighted chances
+function selectRarityByChance(chances) {
+    const random = Math.random() * 100;
+    let cumulative = 0;
+    
+    for (const [rarity, chance] of Object.entries(chances)) {
+        cumulative += chance;
+        if (random <= cumulative) {
+            return rarity;
+        }
+    }
+    
+    return 'common'; // Fallback
+}
+
+// Get all achievements of a specific rarity from all categories
+function getAllAchievementsByRarity(rarity) {
+    if (!achievementsData) return [];
+    
+    const allAchievements = [];
+    Object.values(achievementsData).forEach(category => {
+        if (Array.isArray(category)) {
+            allAchievements.push(...category.filter(ach => ach.rarity === rarity));
+        }
+    });
+    
+    return allAchievements;
+}
+
+// Check if an achievement is relevant to the character
+function isAchievementRelevant(character, achievement) {
+    // Use the existing getRelevantAchievements logic but for a single achievement
+    const relevant = getRelevantAchievements(character);
+    return relevant.some(rel => rel.id === achievement.id);
 }
 
 // ========================================
@@ -800,6 +894,7 @@ window.selectAchievement = selectAchievement;
 window.closeAchievementModal = closeAchievementModal;
 window.triggerAchievementSelection = triggerAchievementSelection;
 window.showAchievementsModal = showAchievementsModal;
+window.applyAchievementEffects = applyAchievementEffects;
 
 // Auto-initialize when the script loads
 if (document.readyState === 'loading') {

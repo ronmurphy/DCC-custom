@@ -4051,3 +4051,261 @@ body.sidebar-open {
     text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
     /* Slight glow effect for celestial */
 }
+
+/* ========================================
+   NEW LEVEL UP SYSTEM STYLES
+   ======================================== */
+
+/* Level Up Modal uses standard modal classes */
+
+/* Level Up Sections */
+.level-up-section {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    background: var(--bg-tertiary);
+    margin-bottom: var(--spacing-lg);
+}
+
+.level-up-section h4 {
+    margin: 0 0 var(--spacing-md) 0;
+    color: var(--accent-primary);
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+/* Attribute Section */
+.points-remaining {
+    text-align: center;
+    font-weight: 600;
+    font-size: 1.1em;
+    color: var(--accent-primary);
+    margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-sm);
+    background: rgba(255, 107, 53, 0.1);
+    border-radius: var(--radius-md);
+}
+
+.attribute-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.attribute-control {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+}
+
+.attribute-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+    text-transform: capitalize;
+}
+
+.attribute-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.btn-minus, .btn-plus {
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 1.2em;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-minus:hover:not(:disabled), .btn-plus:hover:not(:disabled) {
+    background: var(--accent-primary);
+    color: white;
+    border-color: var(--accent-primary);
+}
+
+.btn-minus:disabled, .btn-plus:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.attribute-display {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    font-weight: 600;
+}
+
+.original-value {
+    color: var(--text-secondary);
+}
+
+.arrow {
+    color: var(--accent-primary);
+}
+
+.current-value {
+    color: var(--accent-primary);
+    font-size: 1.1em;
+}
+
+/* Options Grid for Skills and Achievements */
+.options-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* Achievement and Skill Selection using interactive-item base */
+.achievement-option, .skill-option {
+    border-left: 4px solid var(--border-color);
+    transition: all var(--transition-base);
+}
+
+/* Achievement rarity colors */
+.achievement-option:has(.rarity-medal.common) {
+    border-left-color: #8B4513;
+}
+
+.achievement-option:has(.rarity-medal.uncommon) {
+    border-left-color: #228B22;
+}
+
+.achievement-option:has(.rarity-medal.rare) {
+    border-left-color: #1E90FF;
+}
+
+.achievement-option:has(.rarity-medal.epic) {
+    border-left-color: #8A2BE2;
+}
+
+.achievement-option:has(.rarity-medal.legendary) {
+    border-left-color: #FFD700;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
+}
+
+/* Skill options */
+.skill-option {
+    border-left-color: var(--success);
+}
+
+/* Selection states */
+.achievement-option.selected, .skill-option.selected {
+    background: rgba(255, 107, 53, 0.1);
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 20px rgba(255, 107, 53, 0.2);
+    transform: translateX(8px);
+}
+
+/* Achievement card selection */
+.achievement-card.selected {
+    background: rgba(255, 107, 53, 0.2) !important;
+    border-left-color: var(--accent-primary) !important;
+    box-shadow: 0 0 20px rgba(255, 107, 53, 0.3);
+    transform: translateX(8px);
+}
+
+/* Skill card selection */
+.skill-card.selected {
+    background: rgba(79, 195, 247, 0.2) !important;
+    border-left-color: #4fc3f7 !important;
+    box-shadow: 0 0 20px rgba(79, 195, 247, 0.3);
+    transform: translateX(8px);
+}
+
+/* Item tags (for rarity and stat indicators) */
+.item-tags {
+    font-size: 0.8em;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.1);
+    text-transform: capitalize;
+    margin-left: var(--spacing-sm);
+    opacity: 0.8;
+}
+
+.item-effect {
+    color: var(--accent-primary);
+    font-weight: 500;
+    background: rgba(255, 107, 53, 0.1);
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--accent-primary);
+    margin-top: var(--spacing-sm);
+    font-size: 0.9em;
+}
+
+/* Preview Section */
+.preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.preview-item {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    text-align: center;
+}
+
+.preview-label {
+    display: block;
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    margin-bottom: var(--spacing-xs);
+}
+
+.preview-value {
+    display: block;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 1.1em;
+}
+
+.preview-value.selected {
+    color: var(--accent-primary);
+}
+
+/* Loading and Error States */
+.loading-indicator, .error-message, .no-options {
+    text-align: center;
+    padding: var(--spacing-xl);
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.error-message {
+    color: #ff4444;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .attribute-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .options-grid {
+        max-height: 300px;
+    }
+    
+    .preview-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
