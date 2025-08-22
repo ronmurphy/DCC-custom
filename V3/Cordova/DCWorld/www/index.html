@@ -3,20 +3,30 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-    <!-- Add after existing meta tags -->
-    <meta name="format-detection" content="telephone=no">
-    <meta name="msapplication-tap-highlight" content="no">
+<!-- iOS specific -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DCC Sheet">
 
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#ff6b35">
-    <meta name="apple-mobile-web-app-title" content="DCC Sheet">
-    <link rel="apple-touch-icon" href="icon-192.png">
-    <title>Dungeon Crawler World</title>
+<!-- Disable unwanted auto-formatting -->
+<meta name="format-detection" content="telephone=no">
+<meta name="msapplication-tap-highlight" content="no">
+
+<!-- PWA Manifest -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff6b35">
+
+<!-- iOS icons (Apple doesn’t use manifest.json icons) -->
+<link rel="apple-touch-icon" sizes="180x180" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
+
+<!-- Optional splash screens for iOS (if you want fancy loading) -->
+<!-- Example -->
+<!-- <link rel="apple-touch-startup-image" href="splash-640x1136.png" media="(device-width: 320px)"> -->
+
+<title>Dungeon Crawler World</title>
 
     <!-- Fonts - Original Google Fonts setup that was working -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -698,22 +708,35 @@
             <!-- Character Stats Tab -->
             <section class="tab-content" id="character">
                 <div class="content-wrapper">
-                    <!-- Character Overview with Merged Vitals -->
+                    <!-- Character Overview with Optimized Layout -->
                     <div class="character-overview">
                         <div class="overview-combined">
-                            <div class="overview-portrait" id="overview-portrait">
-                                <div class="portrait-placeholder">
-                                    <i class="ra ra-hood"></i>
+                            <!-- Header Row: Name, Level, Level Up Button -->
+                            <div class="overview-header">
+                                <h2 id="char-display-name">Character Overview</h2>
+                                <div class="level-info">
+                                    <span id="char-level-display">Level 1</span>
+                                    <button id="level-up-btn" class="level-up-pill-btn" onclick="levelUp()" style="display: none;">
+                                        <i class="ra ra-star"></i>
+                                        Level Up!
+                                    </button>
                                 </div>
                             </div>
-                            <div class="overview-content">
-                                <h2 id="char-display-name">Character Overview</h2>
-                                <div id="char-summary" class="character-summary">
-                                    <!-- Summary will be rendered here -->
+                            
+                            <!-- Main Content: Two Columns -->
+                            <div class="overview-main">
+                                <!-- Column 1: Avatar -->
+                                <div class="overview-avatar">
+                                    <div class="overview-portrait" id="overview-portrait">
+                                        <div class="portrait-placeholder">
+                                            <i class="ra ra-hood"></i>
+                                        </div>
+                                    </div>
                                 </div>
-
-                                <!-- Vitals Display -->
-                                <div class="vitals-inline">
+                                
+                                <!-- Column 2: HP, MP, Damage System -->
+                                <div class="overview-vitals">
+                                    <!-- HP System -->
                                     <div class="vital-item">
                                         <i class="ra ra-hearts"></i>
                                         <span class="vital-label">HP</span>
@@ -721,6 +744,8 @@
                                             <span id="char-current-hp">3</span>/<span id="char-total-hp">3</span>
                                         </span>
                                     </div>
+                                    
+                                    <!-- MP System -->
                                     <div class="vital-item">
                                         <i class="ra ra-crystal-wand"></i>
                                         <span class="vital-label">MP</span>
@@ -728,14 +753,26 @@
                                             <span id="char-current-mp">4</span>/<span id="char-total-mp">4</span>
                                         </span>
                                     </div>
-                                    <div class="damage-tester-inline">
-                                        <input type="number" id="damage-input" class="damage-input" placeholder="DMG"
-                                            value="5" min="1">
-                                        <button class="damage-btn" onclick="testDamage()">
-                                            <i class="ra ra-sword"></i>
-                                            Take
-                                        </button>
+                                    
+                                    <!-- Damage System -->
+                                    <div class="vital-item damage-tester-inline">
+                                        <i class="ra ra-sword"></i>
+                                        <span class="vital-label">DMG</span>
+                                        <div class="damage-controls">
+                                            <input type="number" id="damage-input" class="damage-input" placeholder="5"
+                                                value="5" min="1">
+                                            <button class="damage-btn" onclick="testDamage()">
+                                                Take
+                                            </button>
+                                        </div>
                                     </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Bottom Row: Heritage/Background/Class Info -->
+                            <div class="overview-footer">
+                                <div id="char-summary" class="character-summary">
+                                    <!-- Summary will be rendered here -->
                                 </div>
                             </div>
                         </div>
@@ -746,22 +783,24 @@
                         <button class="rest-btn quick-rest" onclick="quickRest()">
                             <i class="ra ra-campfire"></i>
                             <span>Quick Rest</span>
-                            <small>+Half HP/MP</small>
+                            <small>4 hours • +Half HP/MP</small>
                         </button>
                         <button class="rest-btn long-rest" onclick="longRest()">
                             <i class="ra ra-moon-sun"></i>
                             <span>Long Rest</span>
-                            <small>Full Recovery</small>
+                            <small>8 hours • Full Recovery</small>
                         </button>
                     </div>
 
                     <!-- Attributes Display -->
                     <div class="card">
                         <div class="card-header">
-                            <i class="ra ra-muscle-up"></i>
-                            <h3>Attributes</h3>
+                            <div class="header-left">
+                                <i class="ra ra-muscle-up"></i>
+                                <h3>Attributes</h3>
+                            </div>
+                            <span class="header-hint">Tap any attribute to roll!</span>
                         </div>
-                        <p class="hint-text">Tap any attribute to roll!</p>
                         <div class="attributes-display" id="char-stats-display">
                             <!-- Stats will be rendered here -->
                         </div>
