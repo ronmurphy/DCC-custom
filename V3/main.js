@@ -1803,7 +1803,11 @@ function updateCharacterDisplay() {
     // Update level up button visibility
     const levelUpBtn = document.getElementById('level-up-btn');
     if (levelUpBtn) {
-        levelUpBtn.style.display = character.level < 20 ? 'flex' : 'none';
+        const shouldShow = character.level < 20;
+        levelUpBtn.style.display = shouldShow ? 'flex' : 'none';
+        console.log(`Level up button: level=${character.level}, shouldShow=${shouldShow}, display=${levelUpBtn.style.display}`);
+    } else {
+        console.log('Level up button element not found!');
     }
 
     // Add portrait to overview
@@ -5459,6 +5463,93 @@ function syncModalContent() {
             modalFormContent.innerHTML = originalForm.outerHTML;
         }
     }
+}
+
+// ========================================
+// ACHIEVEMENTS MODAL
+// ========================================
+
+function showAchievementsModal() {
+    // Prevent body scrolling when modal is open
+    document.body.style.overflow = 'hidden';
+    
+    // Create a simple achievements modal
+    const modal = document.createElement('div');
+    modal.className = 'modal achievement-modal level-up-modal-overlay';
+    modal.style.display = 'flex';
+    
+    const achievements = character.achievements || [];
+    let achievementsList = '';
+    
+    if (achievements.length === 0) {
+        achievementsList = `
+            <div style="text-align: center; color: #8a8a8a; padding: 40px;">
+                <i class="ra ra-trophy" style="font-size: 3em; margin-bottom: 15px; display: block;"></i>
+                No achievements yet! Level up and explore to unlock achievements.
+            </div>
+        `;
+    } else {
+        achievementsList = achievements.map(achievement => `
+            <div style="background: rgba(40, 40, 60, 0.8); border-radius: 8px; padding: 15px; margin-bottom: 10px; border-left: 3px solid #ffd700;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <h4 style="color: #ffd700; margin: 0; font-size: 14px;">
+                        <i class="ra ra-trophy"></i> ${achievement.name}
+                    </h4>
+                    <span style="color: #8a8a8a; font-size: 12px;">${achievement.rarity || 'Common'}</span>
+                </div>
+                <div style="font-size: 12px; color: #c0c0c0; margin-bottom: 5px;">
+                    ${achievement.description || 'Achievement unlocked!'}
+                </div>
+                ${achievement.effect ? `<div style="font-size: 11px; color: #4fc3f7;">Effect: ${achievement.effect}</div>` : ''}
+            </div>
+        `).join('');
+    }
+    
+    modal.innerHTML = `
+        <div class="modal-content level-up-modal-content">
+            <div class="modal-header">
+                <h3><i class="ra ra-trophy"></i> Achievements (${achievements.length})</h3>
+                <button class="close-modal" onclick="closeAchievementsModal()" style="background: transparent; border: none; color: white; font-size: 24px; cursor: pointer;">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div style="max-height: 400px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #ffd700 rgba(255,255,255,0.1);">
+                    ${achievementsList}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeAchievementsModal();
+        }
+    });
+    
+    // Close modal with Escape key
+    const escapeHandler = (e) => {
+        if (e.key === 'Escape') {
+            closeAchievementsModal();
+            document.removeEventListener('keydown', escapeHandler);
+        }
+    };
+    document.addEventListener('keydown', escapeHandler);
+    
+    document.body.appendChild(modal);
+    console.log('Achievements modal opened');
+}
+
+function closeAchievementsModal() {
+    // Restore body scrolling
+    document.body.style.overflow = '';
+    
+    const modal = document.querySelector('.achievement-modal');
+    if (modal) {
+        modal.remove();
+    }
+    console.log('Achievements modal closed');
 }
 
 // Initialize when page loads
