@@ -161,6 +161,9 @@ function showAchievementSelectionModal(character, achievements) {
         return;
     }
     
+    // Prevent body scrolling when modal is open
+    document.body.style.overflow = 'hidden';
+    
     const modal = document.createElement('div');
     modal.className = 'modal achievement-modal level-up-modal-overlay';
     modal.style.display = 'block';
@@ -172,22 +175,24 @@ function showAchievementSelectionModal(character, achievements) {
             </div>
             <div class="modal-body">
                 <p>As part of leveling up, choose one achievement to unlock. Each provides permanent benefits to your character:</p>
-                <div class="achievement-selection-grid">
-                    ${achievements.map((ach, index) => `
-                        <div class="achievement-option ${ach.rarity}" onclick="selectAchievement('${ach.id}', ${index})">
-                            <div class="achievement-header">
-                                <h3>${getRarityEmoji(ach.rarity)} ${ach.name}</h3>
-                                <span class="achievement-rarity">${ach.rarity.toUpperCase()}</span>
+                <div class="achievements-display">
+                    <div class="achievement-selection-grid">
+                        ${achievements.map((ach, index) => `
+                            <div class="achievement-option ${ach.rarity}" onclick="selectAchievement('${ach.id}', ${index})">
+                                <div class="achievement-header">
+                                    <h3>${getRarityEmoji(ach.rarity)} ${ach.name}</h3>
+                                    <span class="achievement-rarity">${ach.rarity.toUpperCase()}</span>
+                                </div>
+                                <p class="achievement-description">${ach.description}</p>
+                                <div class="achievement-effect">
+                                    <strong>Effect:</strong> ${ach.effect}
+                                </div>
+                                <div class="achievement-category">
+                                    <small>Category: ${ach.category}</small>
+                                </div>
                             </div>
-                            <p class="achievement-description">${ach.description}</p>
-                            <div class="achievement-effect">
-                                <strong>Effect:</strong> ${ach.effect}
-                            </div>
-                            <div class="achievement-category">
-                                <small>Category: ${ach.category}</small>
-                            </div>
-                        </div>
-                    `).join('')}
+                        `).join('')}
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -337,11 +342,16 @@ function closeAchievementModal() {
     if (modal) {
         modal.remove();
     }
+    // Restore body scrolling when modal is closed
+    document.body.style.overflow = '';
     window.currentAchievementOptions = null;
 }
 
 // Show all character achievements modal
 function showAchievementsModal() {
+    // Prevent body scrolling when modal is open
+    document.body.style.overflow = 'hidden';
+    
     if (!character || !character.achievements || character.achievements.length === 0) {
         // Show empty state
         const modal = document.createElement('div');
@@ -354,10 +364,12 @@ function showAchievementsModal() {
                     <div class="level-display">No achievements yet</div>
                 </div>
                 <div class="modal-body">
-                    <div style="text-align: center; padding: 2rem;">
-                        <div style="font-size: 4em; opacity: 0.3;">🏆</div>
-                        <h4>No Achievements Yet</h4>
-                        <p>Level up to unlock achievements based on your character's skills, race, class, and equipment!</p>
+                    <div class="achievements-display">
+                        <div style="text-align: center; padding: 2rem;">
+                            <div style="font-size: 4em; opacity: 0.3;">🏆</div>
+                            <h4 style="color: #ffffff;">No Achievements Yet</h4>
+                            <p style="color: #ffffff;">Level up to unlock achievements based on your character's skills, race, class, and equipment!</p>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -365,6 +377,14 @@ function showAchievementsModal() {
                 </div>
             </div>
         `;
+        
+        // Add click handler to close modal when clicking outside
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeAchievementModal();
+            }
+        });
+        
         document.body.appendChild(modal);
         return;
     }
@@ -426,6 +446,13 @@ function showAchievementsModal() {
     `;
     
     document.body.appendChild(modal);
+    
+    // Add click outside to close functionality
+    modal.addEventListener('click', function(event) {
+        if (event.target === modal) {
+            closeAchievementModal();
+        }
+    });
 }
 
 // ========================================
@@ -676,6 +703,22 @@ function addAchievementStyles() {
         .achievements-display {
             max-height: 500px;
             overflow-y: auto;
+        }
+        
+        .achievements-display {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 8px; /* Account for scrollbar */
+        }
+        
+        /* Prevent background scrolling when modal is open */
+        .achievement-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1000;
         }
         
         .achievement-rarity-section {

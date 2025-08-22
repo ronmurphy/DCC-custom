@@ -72,6 +72,34 @@ body.dark-theme {
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     }
     
+    /* Mobile achievement modal text fixes */
+    body.dark-theme .level-up-modal-content .modal-body {
+        color: #ffffff; /* Ensure white text in dark theme */
+    }
+    
+    body.dark-theme .level-up-modal-content .rarity-header {
+        color: #ffffff !important; /* Force white text for rarity headers */
+    }
+    
+    body.dark-theme .level-up-modal-content .achievement-header {
+        color: #ffffff !important; /* Force white text for achievement headers */
+    }
+    
+    body.dark-theme .level-up-modal-content .achievement-header h5 {
+        color: #ffffff !important; /* Force white text for achievement names */
+    }
+    
+    body.dark-theme .level-up-modal-content .achievement-header .achievement-date {
+        color: rgba(255, 255, 255, 0.8) !important; /* Slightly transparent white for dates */
+    }
+    
+    /* Mobile achievement display scrolling */
+    body.dark-theme .achievements-display {
+        max-height: 300px; /* Shorter on mobile */
+        overflow-y: auto;
+        padding-right: 8px;
+    }
+    
     /* Mobile character overview enhancements */
     body.dark-theme .overview-combined {
         background: var(--bg-secondary);
@@ -109,6 +137,33 @@ body.dark-theme {
     body.dark-theme .sidebar-tab .tab-icon {
         font-size: 1.1rem;
     }
+    
+    /* Tablet achievement modal fixes */
+    body.dark-theme .level-up-modal-content .modal-body {
+        color: #ffffff;
+    }
+    
+    body.dark-theme .level-up-modal-content .rarity-header {
+        color: #ffffff !important;
+    }
+    
+    body.dark-theme .level-up-modal-content .achievement-header {
+        color: #ffffff !important;
+    }
+    
+    body.dark-theme .level-up-modal-content .achievement-header h5 {
+        color: #ffffff !important;
+    }
+    
+    body.dark-theme .level-up-modal-content .achievement-header .achievement-date {
+        color: rgba(255, 255, 255, 0.8) !important;
+    }
+    
+    body.dark-theme .achievements-display {
+        max-height: 350px;
+        overflow-y: auto;
+        padding-right: 8px;
+    }
 }
 
 /* Desktop Dark Theme Enhancements */
@@ -135,6 +190,34 @@ body.dark-theme {
     body.dark-theme .character-modal-content,
     body.dark-theme .level-up-modal-content {
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+    }
+    
+    /* Achievement modal text fixes for dark theme */
+    body.dark-theme .level-up-modal-content .modal-body {
+        color: #ffffff; /* Ensure white text in dark theme */
+    }
+    
+    body.dark-theme .level-up-modal-content .rarity-header {
+        color: #ffffff !important; /* Force white text for rarity headers */
+    }
+    
+    body.dark-theme .level-up-modal-content .achievement-header {
+        color: #ffffff !important; /* Force white text for achievement headers */
+    }
+    
+    body.dark-theme .level-up-modal-content .achievement-header h5 {
+        color: #ffffff !important; /* Force white text for achievement names */
+    }
+    
+    body.dark-theme .level-up-modal-content .achievement-header .achievement-date {
+        color: rgba(255, 255, 255, 0.8) !important; /* Slightly transparent white for dates */
+    }
+    
+    /* Achievement display scrolling */
+    body.dark-theme .achievements-display {
+        max-height: 400px;
+        overflow-y: auto;
+        padding-right: 8px; /* Account for scrollbar */
     }
 }
 
