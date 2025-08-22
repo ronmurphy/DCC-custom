@@ -3827,7 +3827,11 @@ function updateLevelUpConfirmButton() {
 // ========================================
 // LEVEL UP SYSTEM
 // ========================================
-function levelUp() {
+async function handleLevelUp() {
+    await levelUp();
+}
+
+async function levelUp() {
     // Calculate points from race and class
     let pointsGained = 0;
     let levelUpBonuses = [];
@@ -3853,10 +3857,12 @@ function levelUp() {
     const newLevel = character.level + 1;
     const isSkillLevel = newLevel % 3 === 0;
 
-    showLevelUpModal(pointsGained, levelUpBonuses, isSkillLevel, newLevel);
+    // Use the new streamlined level up system
+    await showLevelUpModal(newLevel);
 }
 
-function showLevelUpModal(pointsGained, bonuses, isSkillLevel, newLevel) {
+// OLD LEVEL UP SYSTEM - REPLACED BY levelSystem.js
+function showLevelUpModal_OLD(pointsGained, bonuses, isSkillLevel, newLevel) {
     // Remove any existing modal
     const existingModal = document.querySelector('.level-up-modal-overlay');
     if (existingModal) existingModal.remove();
@@ -4204,11 +4210,11 @@ window.confirmLevelUp = function (newLevel, isSkillLevel) {
         }
     }
 
-    // Apply the level up
+    // Apply the level up - first copy the base stats
     character.level = newLevel;
     character.stats = { ...window.tempLevelUpStats };
 
-    // Add achievement (always)
+    // Add achievement (always) and apply its effects
     if (!character.achievements) {
         character.achievements = [];
     }
@@ -4218,8 +4224,10 @@ window.confirmLevelUp = function (newLevel, isSkillLevel) {
         earnedDate: new Date().toISOString()
     });
 
-    // Process achievement effects - grant any skills referenced in the achievement
-    const grantedSkills = processAchievementSkills(window.selectedLevelUpAchievement);
+    // Apply achievement effects using the proper achievement system
+    if (window.applyAchievementEffects && window.selectedLevelUpAchievement) {
+        applyAchievementEffects(character, window.selectedLevelUpAchievement);
+    }
     
     // Add skill if applicable and selected
     const skillSection = document.getElementById('skill-selection-section');
@@ -4248,11 +4256,11 @@ window.confirmLevelUp = function (newLevel, isSkillLevel) {
     // Show notification
     const skillMessage = (isSkillLevel && isOnSkillTab && window.selectedLevelUpSkill) ? ` | New skill: ${window.selectedLevelUpSkill.name}!` : '';
     const achievementMessage = window.selectedLevelUpAchievement ? ` | Achievement: ${window.selectedLevelUpAchievement.name}!` : '';
-    const grantedSkillsMessage = grantedSkills.length > 0 ? ` | Granted skills: ${grantedSkills.join(', ')}!` : '';
+    // const grantedSkillsMessage = grantedSkills.length > 0 ? ` | Granted skills: ${grantedSkills.join(', ')}!` : '';
     
     showNotification('level', 'Level Up Complete!',
         `You are now level ${newLevel}!`,
-        `HP: ${character.healthPoints} | MP: ${character.magicPoints}${skillMessage}${achievementMessage}${grantedSkillsMessage}`);
+        `HP: ${character.healthPoints} | MP: ${character.magicPoints}${skillMessage}${achievementMessage}`);
 
     // Close modal
     document.querySelector('.level-up-modal-overlay').remove();
