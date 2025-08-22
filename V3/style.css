@@ -1036,17 +1036,22 @@ body.sidebar-open {
     gap: var(--spacing-md);
 }
 
-/* Header Row: Name, Level, Level Up Button */
-.overview-header {
+/* Character Info Row: Full Width Header */
+.character-info-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: var(--spacing-sm);
+    padding: var(--spacing-md);
+    background: var(--bg-primary);
+    border-radius: var(--radius-md);
+    border: 2px solid var(--secondary);
+    box-shadow: 0 2px 8px var(--shadow-color);
 }
 
-.overview-header h2 {
+.character-info-row h2 {
     margin: 0;
     color: var(--text-primary);
+    font-size: 1.5rem;
 }
 
 .level-info {
@@ -1076,8 +1081,62 @@ body.sidebar-open {
     box-shadow: 0 4px 16px rgba(255, 215, 0, 0.4);
 }
 
-/* Main Content: Two Columns (Always) */
+/* Level up button in character summary */
+.level-up-summary-btn {
+    background: linear-gradient(135deg, var(--secondary), var(--secondary-dark));
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    white-space: nowrap;
+}
+
+.level-up-summary-btn:hover {
+    background: linear-gradient(135deg, var(--secondary-dark), var(--secondary));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.level-up-summary-btn i {
+    font-size: 1rem;
+    color: #ffd700;
+}
+
+/* Main Content: Character Info + Two Columns */
 .overview-main {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+/* Character Info Row: Full Width Header */
+.character-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md);
+    background: var(--bg-primary);
+    border-radius: var(--radius-md);
+    border: 2px solid var(--secondary);
+    box-shadow: 0 2px 8px var(--shadow-color);
+}
+
+.character-info-row h2 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 1.5rem;
+}
+
+/* Two Columns Below Character Info */
+.overview-columns {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--spacing-lg);
@@ -1311,14 +1370,20 @@ body.sidebar-open {
         padding: var(--spacing-md);
     }
     
-    .overview-header {
+    .character-info-row {
         flex-direction: column;
         text-align: center;
         gap: var(--spacing-sm);
+        padding: var(--spacing-md);
     }
     
-    .overview-info-item {
-        justify-content: center;
+    .character-info-row h2 {
+        font-size: 1.25rem;
+    }
+    
+    .overview-columns {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-md);
     }
     
     .damage-tester-inline {
@@ -1328,7 +1393,6 @@ body.sidebar-open {
 }
 
 /* Remove old styles */
-.overview-header,
 .overview-info,
 .vitals-combined,
 .vital-row,
@@ -3364,6 +3428,30 @@ body.sidebar-open {
     }
 }
 
+/* Responsive adjustments for attributes grid */
+@media (min-width: 481px) and (max-width: 768px) {
+    .attributes-grid {
+        grid-template-columns: 1fr 1fr;
+        /* Force 2-column layout in the problematic middle range */
+        /* This creates a nice 3×2 grid: STR DEX / CON INT / WIS CHA */
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .attributes-grid {
+        grid-template-columns: repeat(3, 1fr);
+        /* Force 3-column layout for tablets */
+        /* This creates a 2×3 grid: STR DEX CON / INT WIS CHA */
+    }
+}
+
+@media (min-width: 1025px) {
+    .attributes-grid {
+        grid-template-columns: repeat(6, 1fr);
+        /* Single row on desktop */
+    }
+}
+
 @media (max-width: 480px) {
     .tab-label {
         display: none;
@@ -3374,7 +3462,7 @@ body.sidebar-open {
     }
     
     .attributes-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
     }
     
     .hero-meta {

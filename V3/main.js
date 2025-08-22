@@ -1787,6 +1787,7 @@ function updateCharacterName() {
 // CHARACTER DISPLAY
 // ========================================
 function updateCharacterDisplay() {
+    // Update character display
     const nameDisplay = document.getElementById('char-display-name');
     if (character.name) {
         nameDisplay.textContent = character.name;
@@ -1794,7 +1795,7 @@ function updateCharacterDisplay() {
         nameDisplay.textContent = 'Character Overview';
     }
 
-    // Update level display in header
+    // Update level display
     const levelDisplay = document.getElementById('char-level-display');
     if (levelDisplay) {
         levelDisplay.textContent = `Level ${character.level}`;
