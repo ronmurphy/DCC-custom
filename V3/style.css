@@ -3176,9 +3176,6 @@ body.sidebar-open {
     
     .vital-stats,
     .vitals-display,
-    .rest-options {
-        grid-template-columns: 1fr;
-    }
     
     .ability-grid {
         grid-template-columns: 1fr;
@@ -3203,6 +3200,18 @@ body.sidebar-open {
     
     .notification {
         min-width: auto;
+    }
+    
+    .rest-btn {
+        padding: var(--spacing-sm);
+    }
+    
+    .rest-btn i {
+        font-size: 1.5rem;
+    }
+    
+    .rest-btn small {
+        font-size: 0.7rem;
     }
 }
 

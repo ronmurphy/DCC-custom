@@ -2584,6 +2584,7 @@ function castSpell(spellId) {
 
     updateMagicTabDisplay();
     updateCharacterDisplay();
+    updateRollHistoryDisplay();
     renderSpells();
     renderCharacterSpells();
 }
@@ -5359,14 +5360,26 @@ function showRollHistoryModal() {
     // Copy the current roll history content
     modalContent.innerHTML = originalContent.innerHTML;
     
+    // Prevent body scrolling when modal is open
+    document.body.style.overflow = 'hidden';
+    
     // Show the modal
     modal.style.display = 'flex';
+    
+    // Add click outside to close functionality
+    const clickOutsideHandler = (event) => {
+        if (event.target === modal) {
+            closeRollHistoryModal();
+        }
+    };
+    modal.addEventListener('click', clickOutsideHandler);
     
     // Add escape key listener
     const escapeHandler = (e) => {
         if (e.key === 'Escape') {
             closeRollHistoryModal();
             document.removeEventListener('keydown', escapeHandler);
+            modal.removeEventListener('click', clickOutsideHandler);
         }
     };
     document.addEventListener('keydown', escapeHandler);
@@ -5377,6 +5390,10 @@ function showRollHistoryModal() {
 function closeRollHistoryModal() {
     const modal = document.getElementById('roll-history-modal');
     modal.style.display = 'none';
+    
+    // Restore body scrolling when modal is closed
+    document.body.style.overflow = '';
+    
     console.log('Roll History modal closed');
 }
 
