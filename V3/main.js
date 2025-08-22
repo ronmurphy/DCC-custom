@@ -5419,14 +5419,26 @@ function showStatusEffectsModal() {
         modalFormContent.innerHTML = originalForm.outerHTML;
     }
     
+    // Prevent body scrolling when modal is open
+    document.body.style.overflow = 'hidden';
+    
     // Show the modal
     modal.style.display = 'flex';
+    
+    // Add click outside to close functionality
+    const clickOutsideHandler = (event) => {
+        if (event.target === modal) {
+            closeStatusEffectsModal();
+        }
+    };
+    modal.addEventListener('click', clickOutsideHandler);
     
     // Add escape key listener
     const escapeHandler = (e) => {
         if (e.key === 'Escape') {
             closeStatusEffectsModal();
             document.removeEventListener('keydown', escapeHandler);
+            modal.removeEventListener('click', clickOutsideHandler);
         }
     };
     document.addEventListener('keydown', escapeHandler);
@@ -5437,6 +5449,10 @@ function showStatusEffectsModal() {
 function closeStatusEffectsModal() {
     const modal = document.getElementById('status-effects-modal');
     modal.style.display = 'none';
+    
+    // Restore body scrolling when modal is closed
+    document.body.style.overflow = '';
+    
     console.log('Status Effects modal closed');
 }
 
@@ -5469,6 +5485,23 @@ function syncModalContent() {
 // ACHIEVEMENTS MODAL
 // ========================================
 
+function getRarityIcon(rarity) {
+    const rarityLower = (rarity || 'common').toLowerCase();
+    
+    const rarityMap = {
+        'common': { icon: 'military_tech', class: 'rarity-common' },
+        'uncommon': { icon: 'military_tech', class: 'rarity-uncommon' },
+        'rare': { icon: 'military_tech', class: 'rarity-rare' },
+        'epic': { icon: 'military_tech', class: 'rarity-epic' },
+        'legendary': { icon: 'military_tech', class: 'rarity-legendary' },
+        'ultra rare': { icon: 'military_tech', class: 'rarity-ultra-rare' },
+        'ultra-rare': { icon: 'military_tech', class: 'rarity-ultra-rare' },
+        'celestial': { icon: 'military_tech', class: 'rarity-celestial' }
+    };
+    
+    return rarityMap[rarityLower] || rarityMap['common'];
+}
+
 function showAchievementsModal() {
     // Prevent body scrolling when modal is open
     document.body.style.overflow = 'hidden';
@@ -5489,20 +5522,28 @@ function showAchievementsModal() {
             </div>
         `;
     } else {
-        achievementsList = achievements.map(achievement => `
+        achievementsList = achievements.map(achievement => {
+            const rarity = achievement.rarity || 'Common';
+            const rarityInfo = getRarityIcon(rarity);
+            
+            return `
             <div style="background: rgba(40, 40, 60, 0.8); border-radius: 8px; padding: 15px; margin-bottom: 10px; border-left: 3px solid #ffd700;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                     <h4 style="color: #ffd700; margin: 0; font-size: 14px;">
                         <i class="ra ra-trophy"></i> ${achievement.name}
                     </h4>
-                    <span style="color: #8a8a8a; font-size: 12px;">${achievement.rarity || 'Common'}</span>
+                    <div style="display: flex; align-items: center;">
+                        <span style="color: #8a8a8a; font-size: 12px;">${rarity}</span>
+                        <span class="material-icons rarity-icon ${rarityInfo.class}">${rarityInfo.icon}</span>
+                    </div>
                 </div>
                 <div style="font-size: 12px; color: #c0c0c0; margin-bottom: 5px;">
                     ${achievement.description || 'Achievement unlocked!'}
                 </div>
                 ${achievement.effect ? `<div style="font-size: 11px; color: #4fc3f7;">Effect: ${achievement.effect}</div>` : ''}
             </div>
-        `).join('');
+        `;
+        }).join('');
     }
     
     modal.innerHTML = `
