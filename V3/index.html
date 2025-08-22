@@ -124,6 +124,12 @@
             <button class="header-btn trophy-btn" onclick="showAchievementsModal()" title="View Achievements">
                 <span class="material-icons">emoji_events</span>
             </button>
+            <button class="header-btn roll-history-btn" onclick="showRollHistoryModal()" title="View Roll History">
+                <i class="ra ra-perspective-dice-six"></i>
+            </button>
+            <button class="header-btn status-effects-btn" onclick="showStatusEffectsModal()" title="View Status Effects">
+                <i class="ra ra-biohazard"></i>
+            </button>
             <button class="header-btn save-btn" onclick="saveCharacterToStorage()" title="Save Character">
                 <span class="material-icons">save</span>
             </button>
@@ -154,10 +160,10 @@
                     <span class="tab-icon"><i class="ra ra-fairy-wand"></i></span>
                     <span class="tab-label">Magic & Spells</span>
                 </button>
-                <button class="sidebar-tab" data-tab="combat">
+                <!-- <button class="sidebar-tab" data-tab="combat">
                     <span class="tab-icon"><i class="ra ra-crossed-swords"></i></span>
                     <span class="tab-label">Combat & Dice</span>
-                </button>
+                </button> -->
                 <button class="sidebar-tab" data-tab="notes">
                     <span class="tab-icon"><i class="ra ra-scroll-unfurled"></i></span>
                     <span class="tab-label">Notes & Backstory</span>
@@ -1405,6 +1411,92 @@
                         <span class="material-icons">folder_open</span>
                         Choose File
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Roll History Modal -->
+    <div id="roll-history-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Roll History</h3>
+                <button class="close-modal" onclick="closeRollHistoryModal()">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="card" style="margin: 0; box-shadow: none;">
+                    <div class="card-header">
+                        <i></i>
+                        <h3></h3>
+                        <button class="clear-btn" onclick="clearRollHistory()">
+                            <span class="material-icons">clear_all</span>
+                        </button>
+                    </div>
+                    <div id="roll-history-modal-content" class="roll-history" style="max-height: 400px; overflow-y: auto;">
+                        <div style="text-align: center; color: #8a8a8a; padding: 40px;">
+                            <i class="ra ra-perspective-dice-six" style="font-size: 3em; margin-bottom: 15px; display: block;"></i>
+                            No rolls yet! Click attributes, skills, weapons, or spells in the Character tab to start rolling.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Effects Modal -->
+    <div id="status-effects-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Status Effects</h3>
+                <button class="close-modal" onclick="closeStatusEffectsModal()">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="card" style="margin: 0; box-shadow: none;">
+                    <div id="status-effects-modal-content" style="max-height: 300px; overflow-y: auto;">
+                        <div style="grid-column: 1 / -1; text-align: center; color: #8a8a8a; padding: 40px;">
+                            <i class="ra ra-heart" style="font-size: 3em; margin-bottom: 15px; display: block;"></i>
+                            No active status effects. You're feeling healthy!
+                        </div>
+                    </div>
+                    <div id="status-effects-form-modal-content">
+                        <div class="add-status-section">
+                            <h4>Apply Status Effect</h4>
+                            <div class="status-form">
+                                <select id="status-effect-type" class="status-select">
+                                    <option value="bleeding">🩸 Bleeding</option>
+                                    <option value="poisoned">🤢 Poisoned</option>
+                                    <option value="radiation">☢️ Radiation</option>
+                                    <option value="exhausted">😴 Exhausted</option>
+                                    <option value="dehydrated">💧 Dehydrated</option>
+                                    <option value="hypothermia">🧊 Hypothermia</option>
+                                    <option value="heatstroke">🔥 Heat Exhaustion</option>
+                                    <option value="broken_bone">🦴 Broken Bone</option>
+                                    <option value="stunned">⚡ Stunned</option>
+                                    <option value="feared">😱 Feared</option>
+                                    <option value="inspired">✨ Inspired</option>
+                                    <option value="custom">⚙️ Custom</option>
+                                </select>
+
+                                <input type="text" id="custom-status-name" class="status-input" placeholder="Custom effect name" style="display: none;">
+
+                                <div class="status-options">
+                                    <input type="number" id="status-duration" class="duration-input" value="10" min="1" max="1440">
+                                    <span class="duration-label">minutes</span>
+                                </div>
+
+                                <input type="text" id="status-notes" class="status-notes" placeholder="Additional notes...">
+
+                                <button class="add-status-btn" onclick="addStatusEffect()">
+                                    <i class="ra ra-flask"></i>
+                                    Apply Effect
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
