@@ -3604,11 +3604,16 @@ function updateRollHistoryDisplay() {
             </div>
         `;
     }).join('');
+    
+    // Sync modal content if open
+    syncModalContent();
 }
 
 function clearRollHistory() {
     character.rollHistory = [];
     updateRollHistoryDisplay();
+    // Sync modal content if open
+    syncModalContent();
 }
 
 // ========================================
@@ -4516,6 +4521,9 @@ function renderStatusEffects() {
     
     // Update header display after rendering
     updateHeaderStatusDisplay();
+    
+    // Sync modal content if open
+    syncModalContent();
 }
 
 // ========================================
@@ -5337,6 +5345,99 @@ function initializeCharacterSheet() {
 
     // Initialize auto-save for notes
     autoSaveNotes();
+}
+
+// ========================================
+// FLOATING MODALS FOR ROLL HISTORY & STATUS EFFECTS
+// ========================================
+
+function showRollHistoryModal() {
+    const modal = document.getElementById('roll-history-modal');
+    const modalContent = document.getElementById('roll-history-modal-content');
+    const originalContent = document.getElementById('roll-history');
+    
+    // Copy the current roll history content
+    modalContent.innerHTML = originalContent.innerHTML;
+    
+    // Show the modal
+    modal.style.display = 'flex';
+    
+    // Add escape key listener
+    const escapeHandler = (e) => {
+        if (e.key === 'Escape') {
+            closeRollHistoryModal();
+            document.removeEventListener('keydown', escapeHandler);
+        }
+    };
+    document.addEventListener('keydown', escapeHandler);
+    
+    console.log('Roll History modal opened');
+}
+
+function closeRollHistoryModal() {
+    const modal = document.getElementById('roll-history-modal');
+    modal.style.display = 'none';
+    console.log('Roll History modal closed');
+}
+
+function showStatusEffectsModal() {
+    const modal = document.getElementById('status-effects-modal');
+    const modalContent = document.getElementById('status-effects-modal-content');
+    const modalFormContent = document.getElementById('status-effects-form-modal-content');
+    
+    const originalGrid = document.getElementById('status-effects-grid');
+    const originalForm = document.querySelector('.add-status-section');
+    
+    // Copy the current status effects content
+    modalContent.innerHTML = originalGrid.innerHTML;
+    if (originalForm) {
+        modalFormContent.innerHTML = originalForm.outerHTML;
+    }
+    
+    // Show the modal
+    modal.style.display = 'flex';
+    
+    // Add escape key listener
+    const escapeHandler = (e) => {
+        if (e.key === 'Escape') {
+            closeStatusEffectsModal();
+            document.removeEventListener('keydown', escapeHandler);
+        }
+    };
+    document.addEventListener('keydown', escapeHandler);
+    
+    console.log('Status Effects modal opened');
+}
+
+function closeStatusEffectsModal() {
+    const modal = document.getElementById('status-effects-modal');
+    modal.style.display = 'none';
+    console.log('Status Effects modal closed');
+}
+
+// Helper function to sync modal content when data updates
+function syncModalContent() {
+    // Sync roll history modal if open
+    const rollModal = document.getElementById('roll-history-modal');
+    if (rollModal && rollModal.style.display === 'flex') {
+        const modalContent = document.getElementById('roll-history-modal-content');
+        const originalContent = document.getElementById('roll-history');
+        modalContent.innerHTML = originalContent.innerHTML;
+    }
+    
+    // Sync status effects modal if open
+    const statusModal = document.getElementById('status-effects-modal');
+    if (statusModal && statusModal.style.display === 'flex') {
+        const modalContent = document.getElementById('status-effects-modal-content');
+        const modalFormContent = document.getElementById('status-effects-form-modal-content');
+        const originalGrid = document.getElementById('status-effects-grid');
+        const originalForm = document.querySelector('.add-status-section');
+        
+        modalContent.innerHTML = originalGrid.innerHTML;
+        if (originalForm) {
+            modalFormContent.innerHTML = originalForm.outerHTML;
+        }
+    }
 }
 
 // Initialize when page loads
