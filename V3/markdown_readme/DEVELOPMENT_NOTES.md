@@ -50,6 +50,50 @@ Dungeon Crawler World character sheet application with beautiful visual characte
   - Status Effects Modal for managing character conditions
 - **Mobile Accessibility:** Better navigation for mobile users
 
+### Layout & UX Optimization Session (August 22, 2025)
+
+#### 🚀 Modal System Enhancements
+- **Achievement Modal Improvements:**
+  - Fixed text readability issues in both light and dark themes
+  - Added proper modal content scrolling with max-height constraints
+  - Implemented body scroll prevention when modals are open
+  - Added click-outside-to-close functionality for better UX
+- **Roll History Modal Enhancements:**
+  - Added missing body scroll prevention
+  - Implemented click-outside-to-close functionality
+  - Fixed UI refresh issues for spell casting roll history
+- **Spell Roll History Bug Fix:**
+  - Fixed missing `updateRollHistoryDisplay()` call in spell casting
+  - Spells now properly appear in roll history immediately after casting
+
+#### 📐 Layout Optimizations
+- **Overview Section Redesign:**
+  - Restructured to efficient header/two-column/footer layout
+  - Header: Player name, level, and golden pill-style level-up button
+  - Two columns: Avatar (left) | HP/MP/Damage systems (right)
+  - Footer: Heritage/Background/Class information
+  - Always maintains two-column layout like rest buttons for consistency
+- **Rest Buttons Optimization:**
+  - Changed to always side-by-side layout on all screen sizes
+  - Added time information: "4 hours • +Half HP/MP" and "8 hours • Full Recovery"
+  - Removed mobile stacking to save vertical space
+- **Attribute Header Space Saving:**
+  - Moved "Tap any attribute to roll!" hint inline with "Attributes" header
+  - Right-aligned hint text to free up a full line of vertical space
+  - Hidden hint text on very small mobile screens to prevent crowding
+
+#### 🎨 Visual Polish
+- **Terminology Update:** Changed "Race" to "Heritage" throughout the application
+- **Level Up Button:** Beautiful golden pill design with gradient and hover effects
+- **Perfect Alignment:** Fixed HP/MP/Damage system alignment issues across all resolutions
+- **Consistent Layout:** All vital systems now use unified flex layout for perfect alignment
+
+#### 🔧 Technical Improvements
+- **Responsive Design:** Optimized breakpoints for better tablet/desktop/mobile experiences
+- **CSS Architecture:** Cleaner, more maintainable styling with consistent patterns
+- **Mobile Optimization:** Better space utilization without sacrificing functionality
+- **Cross-Resolution Support:** Perfect alignment and layout on high-DPI displays and large monitors
+
 #### 🔧 Technical Infrastructure
 - **QR Code Scanner:** New implementation with `qr-scanner.js` and fallback support
 - **Test System:** Test characters and backup files in `/test_chars/` folder
@@ -108,37 +152,41 @@ Dungeon Crawler World character sheet application with beautiful visual characte
 - Modal positioning fixes in CSS
 - URL updated to correct Vercel deployment
 - 5 complete visual themes implemented
-- **NEW:** Layout Selection System - 4 different card formats
-- **NEW:** Enhanced Header UI with quick-access buttons
-- **NEW:** Roll History Modal for easy dice roll viewing
-- **NEW:** Status Effects Modal for character condition management
-- **NEW:** Cordova Mobile App Integration (Android ready)
+- **Layout Selection System:** 4 different card formats with visual previews
+- **Enhanced Header UI:** Quick-access buttons for roll history and status effects
+- **Roll History Modal:** Easy dice roll viewing with proper scrolling
+- **Status Effects Modal:** Character condition management
+- **Cordova Mobile App:** Android-ready integration (HUGE SUCCESS with testers!)
 - ~~QR Code Scanner Implementation~~ *(Abandoned - files small enough for direct JSON)*
-- **NEW:** Test Character System with backup files
-- **NEW:** Enhanced PWA support for iOS devices
-- **NEW:** Simple JSON export/import with `.dcw` extension
+- **Test Character System:** Backup files and character management
+- **Enhanced PWA Support:** Better iOS device compatibility
+- **Simple JSON Export/Import:** `.dcw` extension for Dungeon Crawler World files
+- **🆕 MODAL SYSTEM OVERHAUL:** Text readability, scrolling, click-outside-to-close for all modals
+- **🆕 LAYOUT OPTIMIZATION:** Efficient overview design, rest button improvements, space-saving headers
+- **🆕 PERFECT ALIGNMENT:** HP/MP/Damage systems aligned across all screen resolutions
+- **🆕 GOLDEN LEVEL-UP BUTTON:** Beautiful pill-style design with hover effects
+- **🆕 HERITAGE TERMINOLOGY:** Updated from "Race" to "Heritage" throughout app
+- **🆕 SPELL ROLL HISTORY FIX:** Spells now properly appear in roll history immediately
 
 #### 🔄 In Progress
-- **CURRENT:** Android app testing (HUGE SUCCESS - testers loved it!)
-- **NEXT:** Minor UI tweaks based on user feedback
+- **CURRENT:** Final Android app build and testing with all optimizations
+- **READY FOR:** GitHub push and Vercel deployment of optimized version
 
-#### 📋 TODO
-1. **~~PNG Data Extraction~~** *(ABANDONED - August 22, 2025)*
-   - ~~Implement LSB extraction algorithm~~
-   - ~~Add file upload handling for character cards~~
-   - ~~Parse extracted JSON data back to character object~~
-   - **DECISION:** Save files are small enough that complex steganography isn't needed
-   - **REPLACEMENT:** Simple `.dcw` JSON export/import + beautiful visual cards as offline reference
+#### 📋 TODO (Simplified)
+1. **Mobile App Finalization:**
+   - Build optimized Android app with all layout improvements
+   - Test on physical devices to verify all enhancements work perfectly
+   - Address any final feedback from testers
 
-2. **Mobile App Enhancements:**
-   - Address any tester feedback
-   - App store preparation
-   - Performance optimizations
+2. **Deployment:**
+   - Push optimized code to GitHub repository
+   - Deploy to Vercel with all improvements
+   - Verify web version performance
 
-3. **Visual Card Improvements:**
-   - Additional layout options if requested
-   - Enhanced visual themes
-   - Print-friendly formats for physical gaming
+3. **Future Enhancements:**
+   - Additional card layout options if requested by users
+   - Enhanced visual themes based on user feedback
+   - Print-friendly formats for physical tabletop gaming
 
 ### Technical Implementation Notes
 
