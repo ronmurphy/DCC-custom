@@ -1789,9 +1789,21 @@ function updateCharacterName() {
 function updateCharacterDisplay() {
     const nameDisplay = document.getElementById('char-display-name');
     if (character.name) {
-        nameDisplay.textContent = `${character.name} - Level ${character.level}`;
+        nameDisplay.textContent = character.name;
     } else {
         nameDisplay.textContent = 'Character Overview';
+    }
+
+    // Update level display in header
+    const levelDisplay = document.getElementById('char-level-display');
+    if (levelDisplay) {
+        levelDisplay.textContent = `Level ${character.level}`;
+    }
+
+    // Update level up button visibility
+    const levelUpBtn = document.getElementById('level-up-btn');
+    if (levelUpBtn) {
+        levelUpBtn.style.display = character.level < 20 ? 'flex' : 'none';
     }
 
     // Add portrait to overview
@@ -1808,7 +1820,7 @@ function updateCharacterDisplay() {
         }
     }
 
-    // Update character summary display
+    // Update character summary display (Heritage/Background/Class in footer)
     const charSummary = document.getElementById('char-summary');
     const raceName = character.race ? races[character.race]?.name || character.race : character.customRace || 'Unknown';
     const jobName = character.job ? jobs[character.job]?.name || character.job : character.customJob || 'Unknown';
@@ -1816,18 +1828,10 @@ function updateCharacterDisplay() {
     const totalDefense = calculateTotalDefense();
 
     charSummary.innerHTML = `
-    <span><strong>Race:</strong> ${raceName}</span>
+    <span><strong>Heritage:</strong> ${raceName}</span>
     <span><strong>Background:</strong> ${jobName}</span>
     <span><strong>Class:</strong> ${className}</span>
-    <span><strong>Level:</strong> ${character.level}</span>
     <span class="armor-stat"><i class="ra ra-shield"></i> <strong>Armor:</strong> ${totalDefense}</span>
-    ${character.level < 20 ? `
-        <div style="flex-basis: 100%; margin-top: 10px;">
-            <button class="btn-secondary" onclick="levelUp()" style="background: #f4d03f; color: #2a2a4a; font-weight: bold;">
-                <i class="ra ra-trophy"></i> Level Up
-            </button>
-        </div>
-    ` : ''}
 `;
 
     document.getElementById('char-current-hp').textContent = character.currentHealthPoints;
@@ -2584,6 +2588,7 @@ function castSpell(spellId) {
 
     updateMagicTabDisplay();
     updateCharacterDisplay();
+    updateRollHistoryDisplay();
     renderSpells();
     renderCharacterSpells();
 }
@@ -5359,14 +5364,26 @@ function showRollHistoryModal() {
     // Copy the current roll history content
     modalContent.innerHTML = originalContent.innerHTML;
     
+    // Prevent body scrolling when modal is open
+    document.body.style.overflow = 'hidden';
+    
     // Show the modal
     modal.style.display = 'flex';
+    
+    // Add click outside to close functionality
+    const clickOutsideHandler = (event) => {
+        if (event.target === modal) {
+            closeRollHistoryModal();
+        }
+    };
+    modal.addEventListener('click', clickOutsideHandler);
     
     // Add escape key listener
     const escapeHandler = (e) => {
         if (e.key === 'Escape') {
             closeRollHistoryModal();
             document.removeEventListener('keydown', escapeHandler);
+            modal.removeEventListener('click', clickOutsideHandler);
         }
     };
     document.addEventListener('keydown', escapeHandler);
@@ -5377,6 +5394,10 @@ function showRollHistoryModal() {
 function closeRollHistoryModal() {
     const modal = document.getElementById('roll-history-modal');
     modal.style.display = 'none';
+    
+    // Restore body scrolling when modal is closed
+    document.body.style.overflow = '';
+    
     console.log('Roll History modal closed');
 }
 
