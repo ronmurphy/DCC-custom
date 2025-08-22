@@ -711,59 +711,62 @@
                     <!-- Character Overview with Optimized Layout -->
                     <div class="character-overview">
                         <div class="overview-combined">
-                            <!-- Header Row: Name, Level, Level Up Button -->
-                            <div class="overview-header">
-                                <h2 id="char-display-name">Character Overview</h2>
-                                <div class="level-info">
-                                    <span id="char-level-display">Level 1</span>
-                                    <button id="level-up-btn" class="level-up-pill-btn" onclick="levelUp()" style="display: none;">
-                                        <i class="ra ra-star"></i>
-                                        Level Up!
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <!-- Main Content: Two Columns -->
+                            <!-- Main Content with Character Info Header -->
                             <div class="overview-main">
-                                <!-- Column 1: Avatar -->
-                                <div class="overview-avatar">
-                                    <div class="overview-portrait" id="overview-portrait">
-                                        <div class="portrait-placeholder">
-                                            <i class="ra ra-hood"></i>
-                                        </div>
+                                <!-- Character Info Row: Full Width -->
+                                <div class="character-info-row">
+                                    <h2 id="char-display-name">Character Overview</h2>
+                                    <div class="level-info">
+                                        <span id="char-level-display">Level 1</span>
+                                        <button id="level-up-btn" class="level-up-pill-btn" onclick="levelUp()" style="display: none;">
+                                            <i class="ra ra-star"></i>
+                                            Level Up!
+                                        </button>
                                     </div>
                                 </div>
                                 
-                                <!-- Column 2: HP, MP, Damage System -->
-                                <div class="overview-vitals">
-                                    <!-- HP System -->
-                                    <div class="vital-item">
-                                        <i class="ra ra-hearts"></i>
-                                        <span class="vital-label">HP</span>
-                                        <span class="vital-value">
-                                            <span id="char-current-hp">3</span>/<span id="char-total-hp">3</span>
-                                        </span>
+                                <!-- Two Columns: Avatar & Vitals -->
+                                <div class="overview-columns">
+                                    <!-- Column 1: Avatar -->
+                                    <div class="overview-avatar">
+                                        <div class="overview-portrait" id="overview-portrait">
+                                            <div class="portrait-placeholder">
+                                                <i class="ra ra-hood"></i>
+                                            </div>
+                                        </div>
                                     </div>
                                     
-                                    <!-- MP System -->
-                                    <div class="vital-item">
-                                        <i class="ra ra-crystal-wand"></i>
-                                        <span class="vital-label">MP</span>
-                                        <span class="vital-value">
-                                            <span id="char-current-mp">4</span>/<span id="char-total-mp">4</span>
-                                        </span>
-                                    </div>
-                                    
-                                    <!-- Damage System -->
-                                    <div class="vital-item damage-tester-inline">
-                                        <i class="ra ra-sword"></i>
-                                        <span class="vital-label">DMG</span>
-                                        <div class="damage-controls">
-                                            <input type="number" id="damage-input" class="damage-input" placeholder="5"
-                                                value="5" min="1">
-                                            <button class="damage-btn" onclick="testDamage()">
-                                                Take
-                                            </button>
+                                    <!-- Column 2: HP, MP, Damage System -->
+                                    <div class="overview-vitals">
+                                        <!-- HP System -->
+                                        <div class="vital-item">
+                                            <i class="ra ra-hearts"></i>
+                                            <span class="vital-label">HP</span>
+                                            <span class="vital-value">
+                                                <span id="char-current-hp">3</span>/<span id="char-total-hp">3</span>
+                                            </span>
+                                        </div>
+                                        
+                                        <!-- MP System -->
+                                        <div class="vital-item">
+                                            <i class="ra ra-crystal-wand"></i>
+                                            <span class="vital-label">MP</span>
+                                            <span class="vital-value">
+                                                <span id="char-current-mp">4</span>/<span id="char-total-mp">4</span>
+                                            </span>
+                                        </div>
+                                        
+                                        <!-- Damage System -->
+                                        <div class="vital-item damage-tester-inline">
+                                            <i class="ra ra-sword"></i>
+                                            <span class="vital-label">DMG</span>
+                                            <div class="damage-controls">
+                                                <input type="number" id="damage-input" class="damage-input" placeholder="5"
+                                                    value="5" min="1">
+                                                <button class="damage-btn" onclick="testDamage()">
+                                                    Take
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
