@@ -266,19 +266,27 @@ function showAchievementSelectionModal(character, achievements) {
             </div>
             <div class="modal-body">
                 <p>As part of leveling up, choose one achievement to unlock. Each provides permanent benefits to your character:</p>
-                <div class="achievement-selection-grid">
+                <div class="achievement-selection-grid" style="max-height: 400px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #ffd700 rgba(255,255,255,0.1);">
                     ${achievements.map((ach, index) => `
-                        <div class="achievement-option ${ach.rarity}" onclick="selectAchievement('${ach.id}', ${index})">
-                            <div class="achievement-header">
-                                <h3>${getRarityEmoji(ach.rarity)} ${ach.name}</h3>
-                                <span class="achievement-rarity">${ach.rarity.toUpperCase()}</span>
+                        <div class="achievement-card" onclick="selectAchievement('${ach.id}', ${index})" data-index="${index}"
+                             style="background: rgba(40, 40, 60, 0.8); border-radius: 8px; padding: 15px; margin-bottom: 10px; border-left: 3px solid ${getRarityColor(ach.rarity)}; cursor: pointer; transition: all 0.3s ease;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <h4 style="color: #ffd700; margin: 0; font-size: 14px;">
+                                    <i class="ra ra-trophy"></i> ${ach.name}
+                                </h4>
+                                <div style="display: flex; align-items: center;">
+                                    <span style="color: #8a8a8a; font-size: 12px; margin-right: 5px;">${ach.rarity}</span>
+                                    <span class="material-icons rarity-icon rarity-${ach.rarity}" style="font-size: 16px; color: ${getRarityColor(ach.rarity)};">military_tech</span>
+                                </div>
                             </div>
-                            <p class="achievement-description">${ach.description}</p>
-                            <div class="achievement-effect">
+                            <div style="font-size: 12px; color: #c0c0c0; margin-bottom: 5px;">
+                                ${ach.description}
+                            </div>
+                            <div style="font-size: 11px; color: #4fc3f7; margin-bottom: 5px;">
                                 <strong>Effect:</strong> ${ach.effect}
                             </div>
-                            <div class="achievement-category">
-                                <small>Category: ${ach.category}</small>
+                            <div style="font-size: 10px; color: #8a8a8a;">
+                                <strong>Category:</strong> ${ach.category}
                             </div>
                         </div>
                     `).join('')}
@@ -306,6 +314,18 @@ function getRarityEmoji(rarity) {
         'legendary': '👑'
     };
     return emojis[rarity] || '🏆';
+}
+
+// Get color for rarity
+function getRarityColor(rarity) {
+    const colors = {
+        'common': '#8B4513',
+        'uncommon': '#228B22',
+        'rare': '#1E90FF',
+        'epic': '#8A2BE2',
+        'legendary': '#FFD700'
+    };
+    return colors[rarity] || '#ffd700';
 }
 
 // ========================================
@@ -496,14 +516,25 @@ function showAchievementsModal() {
                                 </h4>
                                 <div class="achievements-grid">
                                     ${achievements.map(achievement => `
-                                        <div class="achievement-display ${achievement.rarity}">
-                                            <div class="achievement-header">
-                                                <h5>${getRarityEmoji(achievement.rarity)} ${achievement.name}</h5>
-                                                <small class="achievement-date">${new Date(achievement.dateEarned).toLocaleDateString()}</small>
+                                        <div class="achievement-card" 
+                                             style="background: rgba(40, 40, 60, 0.8); border-radius: 8px; padding: 15px; margin-bottom: 10px; border-left: 3px solid ${getRarityColor(achievement.rarity)}; transition: all 0.3s ease;">
+                                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                                <h4 style="color: #ffd700; margin: 0; font-size: 14px;">
+                                                    <i class="ra ra-trophy"></i> ${achievement.name}
+                                                </h4>
+                                                <div style="display: flex; align-items: center;">
+                                                    <span style="color: #8a8a8a; font-size: 12px; margin-right: 5px;">${achievement.rarity}</span>
+                                                    <span class="material-icons rarity-icon rarity-${achievement.rarity}" style="font-size: 16px; color: ${getRarityColor(achievement.rarity)};">military_tech</span>
+                                                </div>
                                             </div>
-                                            <p class="achievement-description">${achievement.description}</p>
-                                            <div class="achievement-effect">
+                                            <div style="font-size: 12px; color: #c0c0c0; margin-bottom: 5px;">
+                                                ${achievement.description}
+                                            </div>
+                                            <div style="font-size: 11px; color: #4fc3f7; margin-bottom: 5px;">
                                                 <strong>Effect:</strong> ${achievement.effect}
+                                            </div>
+                                            <div style="font-size: 10px; color: #8a8a8a;">
+                                                <strong>Earned:</strong> ${achievement.dateEarned ? new Date(achievement.dateEarned).toLocaleDateString() : 'Unknown date'}
                                             </div>
                                         </div>
                                     `).join('')}
