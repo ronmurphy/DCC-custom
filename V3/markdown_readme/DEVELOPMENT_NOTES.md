@@ -12,6 +12,38 @@ Dungeon Crawler World character sheet application with steganography-based chara
 - **Solution:** Replaced QR system with steganography-based character cards
 - **Implementation Date:** August 21, 2025
 
+### Major Updates (August 21-22, 2025)
+
+#### 🎨 Layout Selection System
+- **4 Card Formats:** Users can now choose from multiple card layouts:
+  - **Portrait Card:** Social media friendly with character portrait and key stats
+  - **Stat Sheet:** Compact detailed statistics view
+  - **Full Character Sheet:** Complete sheet with classic D&D graphing paper background
+  - **Combat Card:** Quick combat reference with HP, weapons, and spells
+- **Preview System:** Beautiful modal with visual previews of each layout option
+- **Dynamic Generation:** Each layout has custom canvas sizing and themed styling
+
+#### 📱 Mobile App Integration
+- **Cordova Setup:** Complete mobile app structure in `/Cordova/DCWorld/` folder
+- **Android Ready:** Fully configured for Android app building and testing
+- **PWA Enhancements:** Better iOS support with proper meta tags and apple-touch-icons
+- **User Testing:** Android testers gave extremely positive feedback
+
+#### 🎮 Enhanced User Interface
+- **Header Button Additions:**
+  - Roll History Button: Quick access to dice roll history modal
+  - Status Effects Button: Quick access to status effects modal
+- **Modal System Improvements:**
+  - Layout Selection Modal with visual previews
+  - Roll History Modal for viewing dice rolls
+  - Status Effects Modal for managing character conditions
+- **Mobile Accessibility:** Better navigation for mobile users
+
+#### 🔧 Technical Infrastructure
+- **QR Code Scanner:** New implementation with `qr-scanner.js` and fallback support
+- **Test System:** Test characters and backup files in `/test_chars/` folder
+- **File Organization:** Better structure for cross-platform development
+
 ### Steganography Implementation Details
 
 #### Core Technology
@@ -50,29 +82,37 @@ Dungeon Crawler World character sheet application with steganography-based chara
 
 ### Current Status
 
-#### ✅ Completed
+#### ✅ Completed (Updated August 22, 2025)
 - Character card generation with themed designs
 - LSB steganography data embedding 
 - Portrait extraction and integration
 - Modal positioning fixes in CSS
 - URL updated to correct Vercel deployment
 - 5 complete visual themes implemented
+- **NEW:** Layout Selection System - 4 different card formats
+- **NEW:** Enhanced Header UI with quick-access buttons
+- **NEW:** Roll History Modal for easy dice roll viewing
+- **NEW:** Status Effects Modal for character condition management
+- **NEW:** Cordova Mobile App Integration (Android ready)
+- **NEW:** QR Code Scanner Implementation with fallback
+- **NEW:** Test Character System with backup files
+- **NEW:** Enhanced PWA support for iOS devices
 
 #### 🔄 In Progress
-- **NEXT TASK:** Implement `extractDataFromImage()` function for loading characters from PNG files
-- **NEXT SESSION:** Work on PNG file loading functionality
+- **CURRENT:** Android app testing (HUGE SUCCESS - testers loved it!)
+- **NEXT:** Minor UI tweaks based on user feedback
 
 #### 📋 TODO
-1. **PNG Data Extraction:**
+1. **PNG Data Extraction:** (Lower priority after mobile success)
    - Implement LSB extraction algorithm
    - Add file upload handling for character cards
    - Parse extracted JSON data back to character object
    - Error handling for invalid/corrupted images
 
-2. **UI Enhancements:**
-   - Loading states for card generation/loading
-   - Preview functionality
-   - Batch sharing options
+2. **Mobile App Enhancements:**
+   - Address any tester feedback
+   - App store preparation
+   - Performance optimizations
 
 ### Technical Implementation Notes
 
@@ -82,19 +122,31 @@ Dungeon Crawler World character sheet application with steganography-based chara
 - **Capacity:** Theoretical limit depends on image size (600x800 = 480,000 bits available)
 - **Invisibility:** Changes are imperceptible to human eye
 
-#### File Structure
+#### File Structure (Updated)
 ```
-/qr.js - Complete steganography system (replaces old QR code)
-/index.html - Modal structure for card sharing/loading  
-/style.css - Enhanced modal positioning
+/qr.js - Complete steganography + layout selection system
+/qr-scanner.js - QR code scanning implementation
+/jsqr-fallback.js - Fallback QR scanning support
+/index.html - Enhanced modal system with layout selection
+/style.css - Enhanced modal positioning and layout previews
 /character-manager.js - Character data management
 /main.js - Core application logic
+/Cordova/DCWorld/ - Complete mobile app structure
+/test_chars/ - Test characters and backups
+/markdown_readme/ - Development documentation
 ```
 
-#### Modal System
+#### Modal System (Expanded)
+- **Layout Selection Modal:** `#layout-selection-modal` - Choose card format with previews
 - **Card Generation Modal:** `#card-modal` - Shows generated character card
 - **Card Loading Modal:** `#card-scanner-modal` - File upload for loading cards
-- **Functions:** `shareCharacterAsCard()`, `loadCharacterFromCard()`
+- **Roll History Modal:** `#roll-history-modal` - View dice roll history
+- **Status Effects Modal:** `#status-effects-modal` - Manage character status effects
+- **Functions:** 
+  - `shareCharacterAsCard()` - Now opens layout selection
+  - `generateSelectedLayout(layout)` - Generates specific card format
+  - `showRollHistoryModal()` - Quick access to roll history
+  - `showStatusEffectsModal()` - Quick access to status effects
 
 ### Character Data Structure
 Character object includes:
@@ -111,17 +163,24 @@ Character object includes:
 - **IDE:** VS Code with AI Chat
 - **Git:** Repository synced across multiple machines
 - **Deployment:** Vercel automatic deployment
-- **Testing:** Browser-based testing with character creation
+- **Testing:** Browser-based testing + Android app testing
+- **Mobile:** Cordova framework for Android/iOS builds
+
+### Android App Success! 🎉
+- **Tester Feedback:** "LOVED the android app, far more than expected"
+- **Mobile-First Design:** Layout selection and quick-access buttons work perfectly on mobile
+- **Performance:** Smooth operation on Android devices
+- **User Experience:** Intuitive navigation and beautiful card generation
 
 ### Known Issues
-- None currently - system appears stable
+- None currently - system stable and well-received by testers
 
 ### Next Session Preparation
 When resuming development:
 1. Load this file for context
-2. Focus on `extractDataFromImage()` function in `/qr.js`
-3. Test with generated character cards
-4. Implement error handling for corrupted files
+2. Address any UI tweaks based on user feedback
+3. Consider app store preparation
+4. Focus on steganography extraction if needed (lower priority)
 
 ### Contact Context
 - **User:** Brad (uses multiple development machines)
@@ -130,5 +189,6 @@ When resuming development:
 
 ---
 
-*Last Updated: August 21, 2025*
-*Next Focus: PNG steganography extraction implementation*
+*Last Updated: August 22, 2025*
+*Current Focus: UI tweaks based on successful Android app testing*
+*Major Milestone: Android app testing exceeded expectations!*
