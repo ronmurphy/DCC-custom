@@ -14,10 +14,23 @@ let characterManager = {
 // ========================================
 function saveCharactersToStorage() {
     try {
-        localStorage.setItem('wasteland_characters', JSON.stringify(characterManager.characters));
+        console.log('Attempting to save characters to localStorage');
+        console.log('Characters array length:', characterManager.characters.length);
+        const dataToSave = JSON.stringify(characterManager.characters);
+        console.log('Data size to save:', dataToSave.length, 'characters');
+        
+        localStorage.setItem('wasteland_characters', dataToSave);
+        console.log('Successfully saved to localStorage');
         return true;
     } catch (error) {
         console.error('Failed to save characters:', error);
+        console.error('Error name:', error.name);
+        console.error('Error message:', error.message);
+        
+        // Check if it's a quota exceeded error
+        if (error.name === 'QuotaExceededError') {
+            alert('Storage quota exceeded! Please delete some old characters or clear browser data.');
+        }
         return false;
     }
 }
@@ -676,7 +689,12 @@ function saveNotesToCharacterSilent() {
 
 // Main save function - saves current character to browser storage
 function saveCharacterToStorage() {
+    console.log('saveCharacterToStorage called');
+    console.log('currentCharacterId:', characterManager.currentCharacterId);
+    console.log('character object exists:', typeof character !== 'undefined');
+    
     if (!characterManager.currentCharacterId) {
+        console.log('No current character ID, creating new one');
         // If no current character, create new one
         createNewCharacterInStorage();
         return;
@@ -687,10 +705,14 @@ function saveCharacterToStorage() {
     
     // Get current form data
     if (typeof character !== 'undefined') {
+        console.log('Updating character from form');
         updateCharacterFromForm();
         
         // Save to storage using the existing function
-        if (saveCurrentCharacterToStorage()) {
+        const saveResult = saveCurrentCharacterToStorage();
+        console.log('Save result:', saveResult);
+        
+        if (saveResult) {
             if (typeof showNotification === 'function') {
                 showNotification('save', 'Character Saved', 
                     'Character saved to browser storage!', 
@@ -699,8 +721,12 @@ function saveCharacterToStorage() {
                 alert('Character saved successfully!');
             }
         } else {
+            console.error('Failed to save character - saveCurrentCharacterToStorage returned false');
             alert('Failed to save character!');
         }
+    } else {
+        console.error('Character object is undefined');
+        alert('Failed to save character! Character data not found.');
     }
 }
 
