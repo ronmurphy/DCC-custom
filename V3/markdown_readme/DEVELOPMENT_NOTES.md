@@ -1,4 +1,4 @@
-# DCC Custom - Development Notes
+up# DCC Custom - Development Notes
 
 ## Project Overview
 Dungeon Crawler World character sheet application with steganography-based character sharing system.
