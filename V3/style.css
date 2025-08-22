@@ -522,16 +522,29 @@ body.sidebar-open {
 .card-header {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: var(--spacing-sm);
     margin-bottom: var(--spacing-md);
     padding-bottom: var(--spacing-sm);
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.header-hint {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-style: italic;
 }
 
 .card-header h3 {
     font-size: 1.1rem;
     font-weight: 600;
     color: var(--text-primary);
-    flex: 1;
+    margin: 0;
 }
 
 .card-header i {
@@ -1080,8 +1093,7 @@ body.sidebar-open {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-sm);
-    align-items: center; /* Center all items horizontally */
-    justify-content: center; /* Center vertically if needed */
+    align-items: flex-start; /* Left align for consistent layout */
 }
 
 .damage-controls {
@@ -1090,6 +1102,7 @@ body.sidebar-open {
     gap: var(--spacing-xs);
     font-size: 1.25rem;
     font-weight: 700;
+    flex: 1; /* Same flex behavior as vital-value for alignment */
 }
 
 .damage-controls .damage-input {
@@ -1222,11 +1235,13 @@ body.sidebar-open {
     display: flex;
     align-items: center;
     gap: var(--spacing-xs);
-    justify-content: center; /* Center the entire vital item */
+    width: 100%; /* Full width for consistent layout */
 }
 
 .vital-item i {
     font-size: 1.25rem;
+    min-width: 20px; /* Consistent icon width */
+    text-align: center;
 }
 
 .vital-item:first-child i {
@@ -1242,12 +1257,14 @@ body.sidebar-open {
     text-transform: uppercase;
     font-size: 0.75rem;
     color: var(--text-secondary);
+    min-width: 30px; /* Consistent label width */
 }
 
 .vital-value {
     font-size: 1.25rem;
     font-weight: 700;
     color: var(--text-primary);
+    flex: 1; /* Take remaining space for consistent alignment */
 }
 
 .damage-tester-inline {
@@ -3362,6 +3379,10 @@ body.sidebar-open {
     
     .hero-meta {
         flex-direction: column;
+    }
+    
+    .header-hint {
+        display: none;
     }
     
     .meta-item {
