@@ -1456,81 +1456,81 @@
     </div>
 
     <!-- Roll History Modal -->
-    <div id="roll-history-modal" class="modal" style="display: none;">
-        <div class="modal-content">
+    <div id="roll-history-modal" class="modal level-up-modal-overlay" style="display: none;">
+        <div class="modal-content level-up-modal-content">
             <div class="modal-header">
-                <h3>Roll History</h3>
-                <button class="close-modal" onclick="closeRollHistoryModal()">
+                <h3><i class="ra ra-perspective-dice-six"></i> Roll History</h3>
+                <button class="close-modal" onclick="closeRollHistoryModal()" style="background: transparent; border: none; color: white; font-size: 24px; cursor: pointer;">
                     <span class="material-icons">close</span>
                 </button>
             </div>
             <div class="modal-body">
-                <div class="card" style="margin: 0; box-shadow: none;">
-                    <div class="card-header">
-                        <i></i>
-                        <h3></h3>
-                        <button class="clear-btn" onclick="clearRollHistory()">
-                            <span class="material-icons">clear_all</span>
-                        </button>
-                    </div>
-                    <div id="roll-history-modal-content" class="roll-history" style="max-height: 400px; overflow-y: auto;">
+                <div style="max-height: 400px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #ffd700 rgba(255,255,255,0.1);">
+                    <div id="roll-history-modal-content" class="roll-history">
                         <div style="text-align: center; color: #8a8a8a; padding: 40px;">
                             <i class="ra ra-perspective-dice-six" style="font-size: 3em; margin-bottom: 15px; display: block;"></i>
                             No rolls yet! Click attributes, skills, weapons, or spells in the Character tab to start rolling.
                         </div>
                     </div>
                 </div>
+                <div style="margin-top: 15px; text-align: center;">
+                    <button class="action-btn" onclick="clearRollHistory()" style="background: rgba(139, 69, 19, 0.8); color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                        <span class="material-icons" style="vertical-align: middle; margin-right: 5px;">clear_all</span>
+                        Clear History
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Status Effects Modal -->
-    <div id="status-effects-modal" class="modal" style="display: none;">
-        <div class="modal-content">
+    <div id="status-effects-modal" class="modal level-up-modal-overlay" style="display: none;">
+        <div class="modal-content level-up-modal-content">
             <div class="modal-header">
-                <h3>Status Effects</h3>
-                <button class="close-modal" onclick="closeStatusEffectsModal()">
+                <h3><i class="ra ra-heart"></i> Status Effects</h3>
+                <button class="close-modal" onclick="closeStatusEffectsModal()" style="background: transparent; border: none; color: white; font-size: 24px; cursor: pointer;">
                     <span class="material-icons">close</span>
                 </button>
             </div>
             <div class="modal-body">
-                <div class="card" style="margin: 0; box-shadow: none;">
-                    <div id="status-effects-modal-content" style="max-height: 300px; overflow-y: auto;">
+                <div style="max-height: 300px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #ffd700 rgba(255,255,255,0.1); margin-bottom: 20px;">
+                    <div id="status-effects-modal-content">
                         <div style="grid-column: 1 / -1; text-align: center; color: #8a8a8a; padding: 40px;">
                             <i class="ra ra-heart" style="font-size: 3em; margin-bottom: 15px; display: block;"></i>
                             No active status effects. You're feeling healthy!
                         </div>
                     </div>
-                    <div id="status-effects-form-modal-content">
-                        <div class="add-status-section">
-                            <h4>Apply Status Effect</h4>
-                            <div class="status-form">
-                                <select id="status-effect-type" class="status-select">
-                                    <option value="bleeding">🩸 Bleeding</option>
-                                    <option value="poisoned">🤢 Poisoned</option>
-                                    <option value="radiation">☢️ Radiation</option>
-                                    <option value="exhausted">😴 Exhausted</option>
-                                    <option value="dehydrated">💧 Dehydrated</option>
-                                    <option value="hypothermia">🧊 Hypothermia</option>
-                                    <option value="heatstroke">🔥 Heat Exhaustion</option>
-                                    <option value="broken_bone">🦴 Broken Bone</option>
-                                    <option value="stunned">⚡ Stunned</option>
-                                    <option value="feared">😱 Feared</option>
-                                    <option value="inspired">✨ Inspired</option>
-                                    <option value="custom">⚙️ Custom</option>
+                </div>
+                <div id="status-effects-form-modal-content">
+                    <div class="add-status-section" style="background: rgba(40, 40, 60, 0.6); border-radius: 8px; padding: 15px; border: 1px solid rgba(255, 215, 0, 0.3);">
+                        <h4 style="color: #ffd700; margin: 0 0 15px 0;"><i class="ra ra-lightning-bolt"></i> Apply Status Effect</h4>
+                        <div class="status-form">
+                            <select id="status-effect-type" class="status-select" style="background: rgba(40, 40, 60, 0.8); color: white; border: 1px solid rgba(255, 215, 0, 0.5); border-radius: 4px; padding: 8px; width: 100%; margin-bottom: 10px;">
+                                <option value="bleeding">🩸 Bleeding</option>
+                                <option value="poisoned">🤢 Poisoned</option>
+                                <option value="radiation">☢️ Radiation</option>
+                                <option value="exhausted">😴 Exhausted</option>
+                                <option value="dehydrated">💧 Dehydrated</option>
+                                <option value="hypothermia">🧊 Hypothermia</option>
+                                <option value="heatstroke">🔥 Heat Exhaustion</option>
+                                <option value="broken_bone">🦴 Broken Bone</option>
+                                <option value="stunned">⚡ Stunned</option>
+                                <option value="feared">😱 Feared</option>
+                                <option value="inspired">✨ Inspired</option>
+                                <option value="custom">⚙️ Custom</option>
                                 </select>
 
-                                <input type="text" id="custom-status-name" class="status-input" placeholder="Custom effect name" style="display: none;">
+                                <input type="text" id="custom-status-name" class="status-input" placeholder="Custom effect name" style="display: none; background: rgba(40, 40, 60, 0.8); color: white; border: 1px solid rgba(255, 215, 0, 0.5); border-radius: 4px; padding: 8px; width: calc(100% - 18px); margin-bottom: 10px;">
 
-                                <div class="status-options">
-                                    <input type="number" id="status-duration" class="duration-input" value="10" min="1" max="1440">
-                                    <span class="duration-label">minutes</span>
+                                <div class="status-options" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                    <input type="number" id="status-duration" class="duration-input" value="10" min="1" max="1440" style="background: rgba(40, 40, 60, 0.8); color: white; border: 1px solid rgba(255, 215, 0, 0.5); border-radius: 4px; padding: 8px; width: 80px;">
+                                    <span class="duration-label" style="color: #c0c0c0; font-size: 14px;">minutes</span>
                                 </div>
 
-                                <input type="text" id="status-notes" class="status-notes" placeholder="Additional notes...">
+                                <input type="text" id="status-notes" class="status-notes" placeholder="Additional notes..." style="background: rgba(40, 40, 60, 0.8); color: white; border: 1px solid rgba(255, 215, 0, 0.5); border-radius: 4px; padding: 8px; width: calc(100% - 18px); margin-bottom: 15px;">
 
-                                <button class="add-status-btn" onclick="addStatusEffect()">
-                                    <i class="ra ra-flask"></i>
+                                <button class="add-status-btn" onclick="addStatusEffect()" style="background: linear-gradient(135deg, #ffd700, #ffed4a); color: #1a1a2e; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; transition: all 0.3s ease;">
+                                    <i class="ra ra-flask" style="margin-right: 8px;"></i>
                                     Apply Effect
                                 </button>
                             </div>
