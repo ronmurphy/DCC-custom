@@ -2850,6 +2850,7 @@ body.sidebar-open {
     padding: var(--spacing-lg);
     overflow-y: auto;
     flex: 1;
+    background: var(--bg-card);
 }
 
 .modal-footer {
