@@ -5,12 +5,16 @@
 
 class DCCChatIntegration {
     constructor() {
-        this.rollCalculator = new RollCalculator();
+        this.dccMechanics = new DCCMechanics();
+        this.rollCalculator = new RollCalculator(this.dccMechanics);
         this.characterData = new CharacterData();
         this.skillsManager = new SkillsManager();
-        this.dccMechanics = new DCCMechanics();
         this.equipmentBonusSystem = new EquipmentBonusSystem();
         this.utilities = new DCCUtilities();
+        this.commandParser = new ChatCommandParser();
+        
+        // Initialize command parser
+        this.initializeCommandParser();
         
         // Default player data (can be overridden)
         this.defaultPlayer = {
@@ -32,6 +36,16 @@ class DCCChatIntegration {
         // Event callbacks
         this.onRollComplete = null;
         this.onCombatAction = null;
+    }
+
+    /**
+     * Initialize command parser with DCC systems
+     */
+    async initializeCommandParser() {
+        // Wait a bit for other systems to initialize
+        setTimeout(() => {
+            this.commandParser.initialize(this, this.skillsManager, this.characterData);
+        }, 100);
     }
 
     /**
@@ -68,6 +82,9 @@ class DCCChatIntegration {
             skills: playerData.skills || [],
             equipment: playerData.equipment || {}
         });
+
+        // Also register with command parser
+        this.commandParser.registerPlayer(playerData.name, this.players.get(playerData.name));
 
         console.log(`✅ Registered player: ${playerData.name} (Level ${playerData.level || 1})`);
     }
@@ -147,12 +164,12 @@ class DCCChatIntegration {
         const diceType = parseInt(diceMatch[2]);
         const modifier = diceMatch[3] ? parseInt(diceMatch[3]) : 0;
 
-        const diceRolls = this.mechanics.rollDice(diceCount, diceType);
-        const diceTotal = this.mechanics.sumDiceRolls(diceRolls);
+        const diceRolls = this.dccMechanics.rollDice(diceCount, diceType);
+        const diceTotal = this.dccMechanics.sumDiceRolls(diceRolls);
         const finalTotal = diceTotal + modifier;
 
         const rollResult = {
-            id: this.mechanics.generateId(),
+            id: this.dccMechanics.generateId(),
             type: 'Custom Roll',
             name: purpose,
             diceRolls: diceRolls,
@@ -162,7 +179,7 @@ class DCCChatIntegration {
             diceString: diceString,
             playerName: playerName,
             playerLevel: player.level,
-            timestamp: this.mechanics.getTimestamp(),
+            timestamp: this.dccMechanics.getTimestamp(),
             description: `${purpose} - ${diceCount}d${diceType}${modifier !== 0 ? (modifier > 0 ? '+' + modifier : modifier) : ''} = ${finalTotal}`
         };
 
@@ -346,6 +363,73 @@ class DCCChatIntegration {
             size: size,
             ranged: ranged
         };
+    }
+
+    /**
+     * Process a chat message for hidden commands
+     * @param {string} message - Chat message text
+     * @param {string} senderName - Name of person sending message
+     * @returns {Object|null} Command result or null if no command
+     */
+    async processChatMessage(message, senderName = 'StoryTeller') {
+        // Check if message contains a hidden command
+        if (this.commandParser.isCommand(message)) {
+            try {
+                const result = await this.commandParser.processMessage(message, senderName);
+                
+                if (result && result.success) {
+                    // Broadcast command result to chat (but not the original command)
+                    if (result.message) {
+                        this.broadcastMessage(result.message, 'System');
+                    }
+                    
+                    // Log the successful command
+                    console.log(`🎯 Command executed: ${result.command} for ${result.targetPlayer}`);
+                }
+                
+                return result;
+            } catch (error) {
+                console.error('❌ Command processing failed:', error);
+                return {
+                    success: false,
+                    error: error.message,
+                    originalMessage: message
+                };
+            }
+        }
+
+        return null; // Not a command
+    }
+
+    /**
+     * Broadcast a message to the chat (placeholder for actual chat integration)
+     * @param {string} message - Message to broadcast
+     * @param {string} sender - Sender name
+     */
+    broadcastMessage(message, sender = 'System') {
+        // This would integrate with your actual chat system
+        console.log(`💬 [${sender}]: ${message}`);
+        
+        // If you have a chat display function, call it here
+        if (window.displayChatMessage) {
+            window.displayChatMessage(message, sender, 'system');
+        }
+    }
+
+    /**
+     * Get available command help
+     * @returns {Array} Array of command descriptions
+     */
+    getCommandHelp() {
+        return this.commandParser.getAvailableCommands();
+    }
+
+    /**
+     * Get available loot types
+     * @returns {Array} Array of loot type names
+     */
+    getAvailableLootTypes() {
+        return this.commandParser.getAvailableLootTypes();
     }
 }
 
