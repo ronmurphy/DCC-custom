@@ -1787,6 +1787,7 @@ function updateCharacterName() {
 // CHARACTER DISPLAY
 // ========================================
 function updateCharacterDisplay() {
+    // Update character display
     const nameDisplay = document.getElementById('char-display-name');
     if (character.name) {
         nameDisplay.textContent = character.name;
@@ -1794,7 +1795,7 @@ function updateCharacterDisplay() {
         nameDisplay.textContent = 'Character Overview';
     }
 
-    // Update level display in header
+    // Update level display
     const levelDisplay = document.getElementById('char-level-display');
     if (levelDisplay) {
         levelDisplay.textContent = `Level ${character.level}`;
@@ -1803,7 +1804,11 @@ function updateCharacterDisplay() {
     // Update level up button visibility
     const levelUpBtn = document.getElementById('level-up-btn');
     if (levelUpBtn) {
-        levelUpBtn.style.display = character.level < 20 ? 'flex' : 'none';
+        const shouldShow = character.level < 20;
+        levelUpBtn.style.display = shouldShow ? 'flex' : 'none';
+        console.log(`Level up button: level=${character.level}, shouldShow=${shouldShow}, display=${levelUpBtn.style.display}`);
+    } else {
+        console.log('Level up button element not found!');
     }
 
     // Add portrait to overview
@@ -3822,7 +3827,11 @@ function updateLevelUpConfirmButton() {
 // ========================================
 // LEVEL UP SYSTEM
 // ========================================
-function levelUp() {
+async function handleLevelUp() {
+    await levelUp();
+}
+
+async function levelUp() {
     // Calculate points from race and class
     let pointsGained = 0;
     let levelUpBonuses = [];
@@ -3848,10 +3857,12 @@ function levelUp() {
     const newLevel = character.level + 1;
     const isSkillLevel = newLevel % 3 === 0;
 
-    showLevelUpModal(pointsGained, levelUpBonuses, isSkillLevel, newLevel);
+    // Use the new streamlined level up system
+    await showLevelUpModal(newLevel);
 }
 
-function showLevelUpModal(pointsGained, bonuses, isSkillLevel, newLevel) {
+// OLD LEVEL UP SYSTEM - REPLACED BY levelSystem.js
+function showLevelUpModal_OLD(pointsGained, bonuses, isSkillLevel, newLevel) {
     // Remove any existing modal
     const existingModal = document.querySelector('.level-up-modal-overlay');
     if (existingModal) existingModal.remove();
@@ -4199,11 +4210,11 @@ window.confirmLevelUp = function (newLevel, isSkillLevel) {
         }
     }
 
-    // Apply the level up
+    // Apply the level up - first copy the base stats
     character.level = newLevel;
     character.stats = { ...window.tempLevelUpStats };
 
-    // Add achievement (always)
+    // Add achievement (always) and apply its effects
     if (!character.achievements) {
         character.achievements = [];
     }
@@ -4213,8 +4224,10 @@ window.confirmLevelUp = function (newLevel, isSkillLevel) {
         earnedDate: new Date().toISOString()
     });
 
-    // Process achievement effects - grant any skills referenced in the achievement
-    const grantedSkills = processAchievementSkills(window.selectedLevelUpAchievement);
+    // Apply achievement effects using the proper achievement system
+    if (window.applyAchievementEffects && window.selectedLevelUpAchievement) {
+        applyAchievementEffects(character, window.selectedLevelUpAchievement);
+    }
     
     // Add skill if applicable and selected
     const skillSection = document.getElementById('skill-selection-section');
@@ -4243,11 +4256,11 @@ window.confirmLevelUp = function (newLevel, isSkillLevel) {
     // Show notification
     const skillMessage = (isSkillLevel && isOnSkillTab && window.selectedLevelUpSkill) ? ` | New skill: ${window.selectedLevelUpSkill.name}!` : '';
     const achievementMessage = window.selectedLevelUpAchievement ? ` | Achievement: ${window.selectedLevelUpAchievement.name}!` : '';
-    const grantedSkillsMessage = grantedSkills.length > 0 ? ` | Granted skills: ${grantedSkills.join(', ')}!` : '';
+    // const grantedSkillsMessage = grantedSkills.length > 0 ? ` | Granted skills: ${grantedSkills.join(', ')}!` : '';
     
     showNotification('level', 'Level Up Complete!',
         `You are now level ${newLevel}!`,
-        `HP: ${character.healthPoints} | MP: ${character.magicPoints}${skillMessage}${achievementMessage}${grantedSkillsMessage}`);
+        `HP: ${character.healthPoints} | MP: ${character.magicPoints}${skillMessage}${achievementMessage}`);
 
     // Close modal
     document.querySelector('.level-up-modal-overlay').remove();
@@ -4384,6 +4397,9 @@ function determineSkillStat(skillName) {
 // ========================================
 // STATUS EFFECTS SYSTEM
 // ========================================
+
+// OLD DROPDOWN-BASED SYSTEM - COMMENTED OUT FOR NEW BUTTON SYSTEM
+/*
 function addStatusEffect() {
     const effectType = document.getElementById('status-effect-type').value;
     const duration = parseInt(document.getElementById('status-duration').value) || 10;
@@ -4396,8 +4412,15 @@ function addStatusEffect() {
     const selectElement = document.getElementById('status-effect-type');
     const selectedOption = selectElement.options[selectElement.selectedIndex];
     const optionText = selectedOption.textContent;
-    effectIcon = optionText.split(' ')[0];
-    effectName = optionText.substring(2);
+    
+    // Extract icon (first character) and name (everything after the first space)
+    if (optionText.includes(' ')) {
+        effectIcon = optionText.split(' ')[0];
+        effectName = optionText.substring(optionText.indexOf(' ') + 1);
+    } else {
+        effectIcon = '⚙️';
+        effectName = optionText;
+    }
 
     if (effectType === 'custom' && customName) {
         effectName = customName;
@@ -4427,6 +4450,162 @@ function addStatusEffect() {
 
     renderStatusEffects();
     startHeaderStatusTimer(); // Start the header timer when effects are added
+}
+*/
+
+// OLD Modal-specific status effect function (COMMENTED OUT - replaced with button system)
+/*
+function addModalStatusEffect() {
+    const effectType = document.getElementById('modal-status-effect-type').value;
+    const duration = parseInt(document.getElementById('modal-status-duration').value) || 10;
+    const notes = document.getElementById('modal-status-notes').value.trim();
+    const customName = document.getElementById('modal-custom-status-name').value.trim();
+
+    console.log('Modal Debug - effectType:', effectType);
+    console.log('Modal Debug - duration:', duration);
+    console.log('Modal Debug - notes:', notes);
+
+    let effectName = effectType;
+    let effectIcon = '';
+
+    const selectElement = document.getElementById('modal-status-effect-type');
+    const selectedOption = selectElement.options[selectElement.selectedIndex];
+    const optionText = selectedOption.textContent;
+    
+    console.log('Modal Debug - selectedOption:', selectedOption);
+    console.log('Modal Debug - optionText:', optionText);
+    
+    // Extract icon (first character) and name (everything after the first space)
+    if (optionText.includes(' ')) {
+        effectIcon = optionText.split(' ')[0];
+        effectName = optionText.substring(optionText.indexOf(' ') + 1);
+    } else {
+        effectIcon = '⚙️';
+        effectName = optionText;
+    }
+
+    console.log('Modal Debug - extracted effectIcon:', effectIcon);
+    console.log('Modal Debug - extracted effectName:', effectName);
+
+    if (effectType === 'custom' && customName) {
+        effectName = customName;
+        effectIcon = '⚙️';
+    } else if (effectType === 'custom' && !customName) {
+        alert('Please enter a name for the custom effect.');
+        return;
+    }
+
+    console.log('Modal Debug - final effectIcon:', effectIcon);
+    console.log('Modal Debug - final effectName:', effectName);
+
+    const statusEffect = {
+        id: generateId(),
+        type: effectType,
+        name: effectName,
+        icon: effectIcon,
+        duration: duration,
+        notes: notes,
+        startTime: Date.now()
+    };
+
+    character.statusEffects.push(statusEffect);
+
+    // Reset modal form
+    document.getElementById('modal-status-duration').value = '10';
+    document.getElementById('modal-status-notes').value = '';
+    document.getElementById('modal-custom-status-name').value = '';
+    document.getElementById('modal-custom-status-name').style.display = 'none';
+    document.getElementById('modal-status-effect-type').value = 'bleeding';
+
+    renderStatusEffects();
+    startHeaderStatusTimer(); // Start the header timer when effects are added
+}
+*/
+
+// NEW Button-based modal status effect system
+let selectedModalStatusEffect = null;
+
+function selectModalStatusEffect(effectType, effectName, effectIcon) {
+    // Remove previous selection
+    document.querySelectorAll('.modal-status-btn').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+    
+    // Select current button
+    const selectedBtn = document.querySelector(`[onclick*="${effectType}"]`);
+    if (selectedBtn) {
+        selectedBtn.classList.add('selected');
+    }
+    
+    // Store selection
+    selectedModalStatusEffect = {
+        type: effectType,
+        name: effectName,
+        icon: effectIcon
+    };
+    
+    // Show/hide custom name input
+    const customNameInput = document.getElementById('modal-custom-status-name');
+    if (effectType === 'custom') {
+        customNameInput.style.display = 'block';
+        customNameInput.focus();
+    } else {
+        customNameInput.style.display = 'none';
+        customNameInput.value = '';
+    }
+}
+
+function applyModalStatusEffect() {
+    if (!selectedModalStatusEffect) {
+        alert('Please select a status effect first.');
+        return;
+    }
+    
+    const duration = parseInt(document.getElementById('modal-status-duration').value) || 10;
+    const notes = document.getElementById('modal-status-notes').value.trim();
+    const customName = document.getElementById('modal-custom-status-name').value.trim();
+    
+    let effectName = selectedModalStatusEffect.name;
+    let effectIcon = selectedModalStatusEffect.icon;
+    
+    if (selectedModalStatusEffect.type === 'custom') {
+        if (!customName) {
+            alert('Please enter a name for the custom effect.');
+            return;
+        }
+        effectName = customName;
+        effectIcon = '⚙️';
+    }
+    
+    const statusEffect = {
+        id: generateId(),
+        type: selectedModalStatusEffect.type,
+        name: effectName,
+        icon: effectIcon,
+        duration: duration,
+        notes: notes,
+        startTime: Date.now()
+    };
+
+    character.statusEffects.push(statusEffect);
+
+    // Reset form
+    document.getElementById('modal-status-duration').value = '10';
+    document.getElementById('modal-status-notes').value = '';
+    document.getElementById('modal-custom-status-name').value = '';
+    document.getElementById('modal-custom-status-name').style.display = 'none';
+    
+    // Clear selection
+    document.querySelectorAll('.modal-status-btn').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+    selectedModalStatusEffect = null;
+
+    renderStatusEffects();
+    startHeaderStatusTimer();
+    
+    // Close the modal after successfully applying the effect
+    closeStatusEffectsModal();
 }
 
 function removeStatusEffect(effectId) {
@@ -5319,7 +5498,8 @@ function initializeCharacterSheet() {
         });
     });
 
-    // Status effects event listeners
+    // Status effects event listeners (COMMENTED OUT - old dropdown system)
+    /*
     const statusEffectType = document.getElementById('status-effect-type');
     if (statusEffectType) {
         statusEffectType.addEventListener('change', function () {
@@ -5332,6 +5512,23 @@ function initializeCharacterSheet() {
             }
         });
     }
+    */
+
+    // OLD Modal status effects event listeners (COMMENTED OUT - replaced with button system)
+    /*
+    const modalStatusEffectType = document.getElementById('modal-status-effect-type');
+    if (modalStatusEffectType) {
+        modalStatusEffectType.addEventListener('change', function () {
+            const customNameInput = document.getElementById('modal-custom-status-name');
+            if (this.value === 'custom') {
+                customNameInput.style.display = 'block';
+            } else {
+                customNameInput.style.display = 'none';
+                customNameInput.value = '';
+            }
+        });
+    }
+    */
 
     // Start the status effect timer - checks every minute
     setInterval(updateStatusTimers, 60000);
@@ -5404,25 +5601,34 @@ function closeRollHistoryModal() {
 function showStatusEffectsModal() {
     const modal = document.getElementById('status-effects-modal');
     const modalContent = document.getElementById('status-effects-modal-content');
-    const modalFormContent = document.getElementById('status-effects-form-modal-content');
     
     const originalGrid = document.getElementById('status-effects-grid');
-    const originalForm = document.querySelector('.add-status-section');
     
-    // Copy the current status effects content
+    // Copy only the current status effects display (not the form)
     modalContent.innerHTML = originalGrid.innerHTML;
-    if (originalForm) {
-        modalFormContent.innerHTML = originalForm.outerHTML;
-    }
+    
+    // DON'T copy the old form - keep the new button-based modal form that's already in the HTML
+    
+    // Prevent body scrolling when modal is open
+    document.body.style.overflow = 'hidden';
     
     // Show the modal
     modal.style.display = 'flex';
+    
+    // Add click outside to close functionality
+    const clickOutsideHandler = (event) => {
+        if (event.target === modal) {
+            closeStatusEffectsModal();
+        }
+    };
+    modal.addEventListener('click', clickOutsideHandler);
     
     // Add escape key listener
     const escapeHandler = (e) => {
         if (e.key === 'Escape') {
             closeStatusEffectsModal();
             document.removeEventListener('keydown', escapeHandler);
+            modal.removeEventListener('click', clickOutsideHandler);
         }
     };
     document.addEventListener('keydown', escapeHandler);
@@ -5433,6 +5639,10 @@ function showStatusEffectsModal() {
 function closeStatusEffectsModal() {
     const modal = document.getElementById('status-effects-modal');
     modal.style.display = 'none';
+    
+    // Restore body scrolling when modal is closed
+    document.body.style.overflow = '';
+    
     console.log('Status Effects modal closed');
 }
 
@@ -5459,6 +5669,118 @@ function syncModalContent() {
             modalFormContent.innerHTML = originalForm.outerHTML;
         }
     }
+}
+
+// ========================================
+// ACHIEVEMENTS MODAL
+// ========================================
+
+function getRarityIcon(rarity) {
+    const rarityLower = (rarity || 'common').toLowerCase();
+    
+    const rarityMap = {
+        'common': { icon: 'military_tech', class: 'rarity-common' },
+        'uncommon': { icon: 'military_tech', class: 'rarity-uncommon' },
+        'rare': { icon: 'military_tech', class: 'rarity-rare' },
+        'epic': { icon: 'military_tech', class: 'rarity-epic' },
+        'legendary': { icon: 'military_tech', class: 'rarity-legendary' },
+        'ultra rare': { icon: 'military_tech', class: 'rarity-ultra-rare' },
+        'ultra-rare': { icon: 'military_tech', class: 'rarity-ultra-rare' },
+        'celestial': { icon: 'military_tech', class: 'rarity-celestial' }
+    };
+    
+    return rarityMap[rarityLower] || rarityMap['common'];
+}
+
+function showAchievementsModal() {
+    // Prevent body scrolling when modal is open
+    document.body.style.overflow = 'hidden';
+    
+    // Create a simple achievements modal
+    const modal = document.createElement('div');
+    modal.className = 'modal achievement-modal level-up-modal-overlay';
+    modal.style.display = 'flex';
+    
+    const achievements = character.achievements || [];
+    let achievementsList = '';
+    
+    if (achievements.length === 0) {
+        achievementsList = `
+            <div style="text-align: center; color: #8a8a8a; padding: 40px;">
+                <i class="ra ra-trophy" style="font-size: 3em; margin-bottom: 15px; display: block;"></i>
+                No achievements yet! Level up and explore to unlock achievements.
+            </div>
+        `;
+    } else {
+        achievementsList = achievements.map(achievement => {
+            const rarity = achievement.rarity || 'Common';
+            const rarityInfo = getRarityIcon(rarity);
+            
+            return `
+            <div style="background: rgba(40, 40, 60, 0.8); border-radius: 8px; padding: 15px; margin-bottom: 10px; border-left: 3px solid #ffd700;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <h4 style="color: #ffd700; margin: 0; font-size: 14px;">
+                        <i class="ra ra-trophy"></i> ${achievement.name}
+                    </h4>
+                    <div style="display: flex; align-items: center;">
+                        <span style="color: #8a8a8a; font-size: 12px;">${rarity}</span>
+                        <span class="material-icons rarity-icon ${rarityInfo.class}">${rarityInfo.icon}</span>
+                    </div>
+                </div>
+                <div style="font-size: 12px; color: #c0c0c0; margin-bottom: 5px;">
+                    ${achievement.description || 'Achievement unlocked!'}
+                </div>
+                ${achievement.effect ? `<div style="font-size: 11px; color: #4fc3f7;">Effect: ${achievement.effect}</div>` : ''}
+            </div>
+        `;
+        }).join('');
+    }
+    
+    modal.innerHTML = `
+        <div class="modal-content level-up-modal-content">
+            <div class="modal-header">
+                <h3><i class="ra ra-trophy"></i> Achievements (${achievements.length})</h3>
+                <button class="close-modal" onclick="closeAchievementsModal()" style="background: transparent; border: none; color: white; font-size: 24px; cursor: pointer;">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div style="max-height: 400px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #ffd700 rgba(255,255,255,0.1);">
+                    ${achievementsList}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeAchievementsModal();
+        }
+    });
+    
+    // Close modal with Escape key
+    const escapeHandler = (e) => {
+        if (e.key === 'Escape') {
+            closeAchievementsModal();
+            document.removeEventListener('keydown', escapeHandler);
+        }
+    };
+    document.addEventListener('keydown', escapeHandler);
+    
+    document.body.appendChild(modal);
+    console.log('Achievements modal opened');
+}
+
+function closeAchievementsModal() {
+    // Restore body scrolling
+    document.body.style.overflow = '';
+    
+    const modal = document.querySelector('.achievement-modal');
+    if (modal) {
+        modal.remove();
+    }
+    console.log('Achievements modal closed');
 }
 
 // Initialize when page loads
