@@ -64,6 +64,10 @@
                 <span class="tab-icon"><i class="material-icons">chat</i></span>
                 <span class="tab-label">Game Chat</span>
             </button>
+            <button class="tab-btn" data-tab="dcc">
+                <span class="tab-icon"><i class="ra ra-perspective-dice-six"></i></span>
+                <span class="tab-label">DCC Test</span>
+            </button>
         </nav>
 
         <!-- Tab Contents -->
@@ -571,7 +575,28 @@
                                         <li><code>ATTACK:PlayerName:18:8:Steel Sword</code> - Process attack rolls</li>
                                         <li><code>MAP:share</code> - Share current map with players</li>
                                         <li><code>ROLL:3d6</code> - Roll dice publicly</li>
+                                        <li><code>SKILL:PlayerName:Stealth:15:2</code> - Roll skill checks</li>
+                                        <li><code>SAVE:PlayerName:Dex:12:3</code> - Roll saving throws</li>
                                     </ul>
+                                </div>
+                                
+                                <!-- DCC Mechanics Test Panel -->
+                                <div class="dcc-test-panel" style="background: rgba(40, 40, 60, 0.8); border: 1px solid #4a4a6a; border-radius: 8px; padding: 16px; margin: 16px 0;">
+                                    <h4 style="color: #f4d03f; margin: 0 0 12px 0; display: flex; align-items: center; gap: 8px;">
+                                        <i class="material-icons" style="font-size: 18px;">casino</i>
+                                        DCC Mechanics Test Panel
+                                    </h4>
+                                    <div class="test-controls" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-bottom: 12px;">
+                                        <button class="btn-small" onclick="rollDCCAttribute('TestPlayer', 'strength')" style="font-size: 11px; padding: 6px 8px;">STR Roll</button>
+                                        <button class="btn-small" onclick="rollDCCAttribute('TestPlayer', 'dexterity')" style="font-size: 11px; padding: 6px 8px;">DEX Roll</button>
+                                        <button class="btn-small" onclick="rollDCCSkill('TestPlayer', 'Athletics')" style="font-size: 11px; padding: 6px 8px;">Athletics</button>
+                                        <button class="btn-small" onclick="rollDCCSkill('TestPlayer', 'Stealth')" style="font-size: 11px; padding: 6px 8px;">Stealth</button>
+                                        <button class="btn-small" onclick="rollDCCCustom('TestPlayer', '3d6', 'Custom Roll')" style="font-size: 11px; padding: 6px 8px;">3d6 Roll</button>
+                                        <button class="btn-small" onclick="rollDCCSave('TestPlayer', 'dex')" style="font-size: 11px; padding: 6px 8px;">DEX Save</button>
+                                    </div>
+                                    <div style="font-size: 12px; color: #8a8a8a;">
+                                        <strong>Test Player:</strong> Level 5 | STR 14, DEX 12, CON 13, INT 10, WIS 11, CHA 15
+                                    </div>
                                 </div>
                             </div>
                             
@@ -581,6 +606,126 @@
                                     <button class="btn-primary send-btn" onclick="sendChatMessage()">
                                         <i class="material-icons">send</i>
                                     </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- DCC Test Tab -->
+            <section class="tab-content" id="dcc">
+                <div class="content-wrapper">
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="ra ra-perspective-dice-six"></i>
+                            <h3>DCC Mechanics Test Panel</h3>
+                        </div>
+                        <div class="card-body">
+                            <!-- Test Player Setup -->
+                            <div class="form-group">
+                                <label>Test Player Name</label>
+                                <input type="text" id="dcc-player-name" placeholder="Test Player" value="Testificate">
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Race</label>
+                                    <select id="dcc-race-select">
+                                        <option value="human">Human</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Class</label>
+                                    <select id="dcc-class-select">
+                                        <option value="warrior">Warrior</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Level</label>
+                                    <input type="number" id="dcc-level" min="0" max="10" value="1">
+                                </div>
+                            </div>
+
+                            <!-- Attributes -->
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>STR</label>
+                                    <input type="number" id="dcc-str" min="3" max="18" value="14">
+                                </div>
+                                <div class="form-group">
+                                    <label>DEX</label>
+                                    <input type="number" id="dcc-dex" min="3" max="18" value="12">
+                                </div>
+                                <div class="form-group">
+                                    <label>CON</label>
+                                    <input type="number" id="dcc-con" min="3" max="18" value="13">
+                                </div>
+                                <div class="form-group">
+                                    <label>INT</label>
+                                    <input type="number" id="dcc-int" min="3" max="18" value="10">
+                                </div>
+                                <div class="form-group">
+                                    <label>WIS</label>
+                                    <input type="number" id="dcc-wis" min="3" max="18" value="11">
+                                </div>
+                                <div class="form-group">
+                                    <label>CHA</label>
+                                    <input type="number" id="dcc-cha" min="3" max="18" value="9">
+                                </div>
+                            </div>
+
+                            <!-- Test Actions -->
+                            <div class="test-actions">
+                                <h4>Roll Tests</h4>
+                                <div class="button-grid">
+                                    <button onclick="testAttributeRoll()">Attribute Roll</button>
+                                    <button onclick="testSkillRoll()">Skill Roll</button>
+                                    <button onclick="testSavingThrow()">Saving Throw</button>
+                                    <button onclick="testWeaponAttack()">Weapon Attack</button>
+                                    <button onclick="testCustomRoll()">Custom Roll</button>
+                                    <button onclick="testSpellRoll()">Spell Roll</button>
+                                </div>
+                            </div>
+
+                            <!-- Test Results -->
+                            <div class="test-results">
+                                <h4>Test Results</h4>
+                                <div id="dcc-test-output" class="test-output"></div>
+                            </div>
+
+                            <!-- Equipment Bonus Test -->
+                            <div class="bonus-test">
+                                <h4>Equipment Bonus Test</h4>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Weapon Name</label>
+                                        <input type="text" id="test-weapon-name" placeholder="Rusty Sword" value="Rusty Sword">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Bonus Effect</label>
+                                        <input type="text" id="test-bonus-effect" placeholder="+2 damage with Rusty Sword" value="+2 damage with Rusty Sword">
+                                    </div>
+                                </div>
+                                <button onclick="testEquipmentBonus()">Test Equipment Bonus</button>
+                            </div>
+
+                            <!-- Character Data Display -->
+                            <div class="character-data">
+                                <h4>Available Character Data</h4>
+                                <div class="data-lists">
+                                    <div class="data-column">
+                                        <h5>Races (<span id="race-count">0</span>)</h5>
+                                        <div id="race-list" class="data-list"></div>
+                                    </div>
+                                    <div class="data-column">
+                                        <h5>Classes (<span id="class-count">0</span>)</h5>
+                                        <div id="class-list" class="data-list"></div>
+                                    </div>
+                                    <div class="data-column">
+                                        <h5>Jobs (<span id="job-count">0</span>)</h5>
+                                        <div id="job-list" class="data-list"></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -629,6 +774,16 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <!-- External Libraries -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
+    <!-- DCC Game Mechanics Modules (extracted from V4) -->
+    <script src="js/modules/dccMechanics.js"></script>
+    <script src="js/modules/rollCalculator.js"></script>
+    <script src="js/modules/jsonDataLoader.js"></script>
+    <script src="js/modules/characterData.js"></script>
+    <script src="js/modules/skillsManager.js"></script>
+    <script src="js/modules/equipmentBonusSystem.js"></script>
+    <script src="js/modules/dccUtilities.js"></script>
+    <script src="js/modules/dccChatIntegration.js"></script>
     
     <!-- Portable Chat Modules (for V4 integration) -->
     <script src="js/modules/supabaseClient.js"></script>

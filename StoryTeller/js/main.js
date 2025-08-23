@@ -36,6 +36,13 @@ function initializeApp() {
     // Initialize file input for import
     initializeImportHandler();
     
+    // Initialize DCC Game Mechanics (if modules are loaded)
+    setTimeout(() => {
+        if (typeof DCCChatIntegration !== 'undefined') {
+            initializeDCCSystem();
+        }
+    }, 500);
+    
     // Initialize Supabase for real-time chat (if configured and not already initialized)
     setTimeout(() => {
         if (typeof initializeSupabase === 'function' && !window.supabaseInitialized) {
@@ -544,6 +551,115 @@ function copyToClipboard(text) {
 }
 
 // ========================================
+// DCC GAME MECHANICS INTEGRATION
+// ========================================
+let dccSystem = null;
+
+function initializeDCCSystem() {
+    try {
+        dccSystem = new DCCChatIntegration();
+        
+        // Set up event handlers
+        dccSystem.setEventHandlers(
+            handleRollComplete,
+            handleCombatAction
+        );
+        
+        // Register a default player for testing
+        dccSystem.registerPlayer({
+            name: 'TestPlayer',
+            level: 5,
+            attributes: {
+                strength: 14,
+                dexterity: 12,
+                constitution: 13,
+                intelligence: 10,
+                wisdom: 11,
+                charisma: 15
+            }
+        });
+        
+        console.log('✅ DCC Game Mechanics initialized');
+        
+        // Make DCC functions globally available
+        window.dccSystem = dccSystem;
+        window.rollDCCAttribute = rollDCCAttribute;
+        window.rollDCCSkill = rollDCCSkill;
+        window.rollDCCCustom = rollDCCCustom;
+        window.rollDCCSave = rollDCCSave;
+        
+        return true;
+    } catch (error) {
+        console.error('❌ Failed to initialize DCC system:', error);
+        return false;
+    }
+}
+
+function handleRollComplete(rollData) {
+    console.log('🎲 Roll completed:', rollData);
+    
+    // Create a notification for the roll
+    const rollTitle = `${rollData.type}: ${rollData.name}`;
+    const rollResult = `Result: ${rollData.finalTotal}`;
+    let rollDetails = rollData.description || '';
+    
+    // Add dice breakdown for dice rolls
+    if (rollData.diceRolls && rollData.diceRolls.length > 0) {
+        const diceDisplay = rollData.diceRolls.map(roll => `<span style="color: #f4d03f;">${roll}</span>`).join(' + ');
+        rollDetails = `Dice: [${diceDisplay}] = ${rollData.diceTotal}<br>${rollDetails}`;
+    }
+    
+    showNotification('success', rollTitle, rollResult, rollDetails);
+}
+
+function handleCombatAction(combatData) {
+    console.log('⚔️ Combat action:', combatData);
+    
+    const title = `${combatData.playerName} attacks with ${combatData.weaponName}`;
+    const result = combatData.toHit.isCrit ? '💥 CRITICAL HIT!' : `Hit: ${combatData.toHit.total}`;
+    let details = combatData.toHit.description;
+    
+    if (combatData.damage) {
+        details += `<br>Damage: ${combatData.damage.totalDamage}`;
+    }
+    
+    showNotification('info', title, result, details);
+}
+
+// Helper functions for easy DCC rolling
+function rollDCCAttribute(playerName, attribute) {
+    if (!dccSystem) {
+        console.error('DCC system not initialized');
+        return null;
+    }
+    return dccSystem.processRoll(playerName, attribute);
+}
+
+function rollDCCSkill(playerName, skillName) {
+    if (!dccSystem) {
+        console.error('DCC system not initialized');
+        return null;
+    }
+    return dccSystem.processRoll(playerName, skillName);
+}
+
+function rollDCCCustom(playerName, diceString, purpose = 'Custom Roll') {
+    if (!dccSystem) {
+        console.error('DCC system not initialized');
+        return null;
+    }
+    return dccSystem.processRoll(playerName, purpose, diceString);
+}
+
+function rollDCCSave(playerName, saveType) {
+    if (!dccSystem) {
+        console.error('DCC system not initialized');
+        return null;
+    }
+    return dccSystem.processSavingThrow(playerName, saveType);
+}
+
+// ========================================
 // GLOBAL EXPORTS
 // ========================================
 // Make functions globally available
@@ -571,3 +687,252 @@ setInterval(() => {
         saveSessionSilent();
     }
 }, 30000);
+
+// ========================================
+// DCC MECHANICS INTEGRATION
+// ========================================
+
+// Global DCC integration instance
+let dccIntegration = null;
+
+function initializeDCCSystem() {
+    if (typeof DCCChatIntegration !== 'undefined') {
+        dccIntegration = new DCCChatIntegration();
+        console.log('DCC Mechanics System initialized');
+        
+        // Set up event handlers
+        dccIntegration.setEventHandlers(
+            (rollResult) => {
+                console.log('Roll completed:', rollResult);
+            },
+            (combatResult) => {
+                console.log('Combat action:', combatResult);
+            }
+        );
+
+        // Initialize test panel data
+        setTimeout(() => {
+            if (document.getElementById('dcc-race-select')) {
+                populateDCCTestData();
+            }
+        }, 100);
+    } else {
+        console.warn('DCC Integration modules not loaded');
+    }
+}
+
+async function populateDCCTestData() {
+    if (!dccIntegration) return;
+
+    try {
+        // Populate race dropdown
+        const raceSelect = document.getElementById('dcc-race-select');
+        const races = await dccIntegration.characterData.getRaces();
+        if (raceSelect && races) {
+            raceSelect.innerHTML = '';
+            races.forEach(race => {
+                const option = document.createElement('option');
+                option.value = race.id || race.name.toLowerCase().replace(' ', '_');
+                option.textContent = race.name;
+                raceSelect.appendChild(option);
+            });
+        }
+
+        // Populate class dropdown
+        const classSelect = document.getElementById('dcc-class-select');
+        const classes = await dccIntegration.characterData.getClasses();
+        if (classSelect && classes) {
+            classSelect.innerHTML = '';
+            classes.forEach(cls => {
+                const option = document.createElement('option');
+                option.value = cls.id || cls.name.toLowerCase().replace(' ', '_');
+                option.textContent = cls.name;
+                classSelect.appendChild(option);
+            });
+        }
+
+        // Populate data lists
+        await populateDataDisplay();
+    } catch (error) {
+        console.error('Error populating DCC test data:', error);
+    }
+}
+
+async function populateDataDisplay() {
+    if (!dccIntegration) return;
+
+    try {
+        // Races
+        const races = await dccIntegration.characterData.getRaces();
+        const raceList = document.getElementById('race-list');
+        const raceCount = document.getElementById('race-count');
+        if (raceList && races) {
+            raceCount.textContent = races.length;
+            raceList.innerHTML = races.map(race => 
+                `<div class="data-item" title="${race.description || ''}">${race.name}</div>`
+            ).join('');
+        }
+
+        // Classes
+        const classes = await dccIntegration.characterData.getClasses();
+        const classList = document.getElementById('class-list');
+        const classCount = document.getElementById('class-count');
+        if (classList && classes) {
+            classCount.textContent = classes.length;
+            classList.innerHTML = classes.map(cls => 
+                `<div class="data-item" title="${cls.description || ''}">${cls.name}</div>`
+            ).join('');
+        }
+
+        // Jobs
+        const jobs = await dccIntegration.characterData.getJobs();
+        const jobList = document.getElementById('job-list');
+        const jobCount = document.getElementById('job-count');
+        if (jobList && jobs) {
+            jobCount.textContent = jobs.length;
+            jobList.innerHTML = jobs.map(job => 
+                `<div class="data-item" title="${job.description || ''}">${job.name}</div>`
+            ).join('');
+        }
+    } catch (error) {
+        console.error('Error populating data display:', error);
+    }
+}
+
+function getTestPlayer() {
+    const name = document.getElementById('dcc-player-name').value || 'Testificate';
+    const level = parseInt(document.getElementById('dcc-level').value) || 1;
+    
+    return {
+        name: name,
+        level: level,
+        attributes: {
+            strength: parseInt(document.getElementById('dcc-str').value) || 10,
+            dexterity: parseInt(document.getElementById('dcc-dex').value) || 10,
+            constitution: parseInt(document.getElementById('dcc-con').value) || 10,
+            intelligence: parseInt(document.getElementById('dcc-int').value) || 10,
+            wisdom: parseInt(document.getElementById('dcc-wis').value) || 10,
+            charisma: parseInt(document.getElementById('dcc-cha').value) || 10
+        },
+        achievements: [
+            {
+                name: 'Test Achievement',
+                effect: document.getElementById('test-bonus-effect').value || '+1 to hit with all weapons'
+            }
+        ]
+    };
+}
+
+function outputTestResult(title, result) {
+    const output = document.getElementById('dcc-test-output');
+    if (!output) return;
+
+    const timestamp = new Date().toLocaleTimeString();
+    const resultText = `[${timestamp}] ${title}\n${JSON.stringify(result, null, 2)}\n\n`;
+    
+    output.textContent += resultText;
+    output.scrollTop = output.scrollHeight;
+}
+
+// ========================================
+// DCC TEST FUNCTIONS
+// ========================================
+
+function testAttributeRoll() {
+    if (!dccIntegration) return;
+    
+    const player = getTestPlayer();
+    dccIntegration.registerPlayer(player);
+    
+    const result = dccIntegration.processRoll(player.name, 'strength');
+    outputTestResult('Attribute Roll (Strength)', result);
+}
+
+function testSkillRoll() {
+    if (!dccIntegration) return;
+    
+    const player = getTestPlayer();
+    dccIntegration.registerPlayer(player);
+    
+    const result = dccIntegration.processRoll(player.name, 'climb');
+    outputTestResult('Skill Roll (Climb)', result);
+}
+
+function testSavingThrow() {
+    if (!dccIntegration) return;
+    
+    const player = getTestPlayer();
+    dccIntegration.registerPlayer(player);
+    
+    const result = dccIntegration.processSavingThrow(player.name, 'reflex');
+    outputTestResult('Saving Throw (Reflex)', result);
+}
+
+function testWeaponAttack() {
+    if (!dccIntegration) return;
+    
+    const player = getTestPlayer();
+    dccIntegration.registerPlayer(player);
+    
+    const weapon = dccIntegration.createWeapon(
+        document.getElementById('test-weapon-name').value || 'Rusty Sword',
+        'medium',
+        false
+    );
+    
+    const result = dccIntegration.processAttack(player.name, weapon);
+    outputTestResult('Weapon Attack', result);
+}
+
+function testCustomRoll() {
+    if (!dccIntegration) return;
+    
+    const player = getTestPlayer();
+    dccIntegration.registerPlayer(player);
+    
+    const result = dccIntegration.processCustomRoll(player.name, '3d6+2', 'Custom Test Roll');
+    outputTestResult('Custom Roll (3d6+2)', result);
+}
+
+function testSpellRoll() {
+    if (!dccIntegration) return;
+    
+    const player = getTestPlayer();
+    dccIntegration.registerPlayer(player);
+    
+    const result = dccIntegration.processRoll(player.name, 'spell', 'd20+2');
+    outputTestResult('Spell Roll', result);
+}
+
+function testEquipmentBonus() {
+    if (!dccIntegration) return;
+    
+    const weaponName = document.getElementById('test-weapon-name').value || 'Rusty Sword';
+    const bonusEffect = document.getElementById('test-bonus-effect').value || '+2 damage with Rusty Sword';
+    
+    const player = getTestPlayer();
+    player.achievements[0].effect = bonusEffect;
+    
+    const bonuses = dccIntegration.equipmentBonusSystem.getEquipmentBonuses(
+        weaponName,
+        'melee weapon',
+        player
+    );
+    
+    outputTestResult('Equipment Bonus Test', {
+        weapon: weaponName,
+        effect: bonusEffect,
+        bonuses: bonuses,
+        summary: dccIntegration.equipmentBonusSystem.formatBonusSummary(bonuses)
+    });
+}
+
+// Export DCC test functions to global scope
+window.testAttributeRoll = testAttributeRoll;
+window.testSkillRoll = testSkillRoll;
+window.testSavingThrow = testSavingThrow;
+window.testWeaponAttack = testWeaponAttack;
+window.testCustomRoll = testCustomRoll;
+window.testSpellRoll = testSpellRoll;
+window.testEquipmentBonus = testEquipmentBonus;
+window.populateDCCTestData = populateDCCTestData;
