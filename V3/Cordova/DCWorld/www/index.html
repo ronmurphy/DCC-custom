@@ -711,59 +711,62 @@
                     <!-- Character Overview with Optimized Layout -->
                     <div class="character-overview">
                         <div class="overview-combined">
-                            <!-- Header Row: Name, Level, Level Up Button -->
-                            <div class="overview-header">
-                                <h2 id="char-display-name">Character Overview</h2>
-                                <div class="level-info">
-                                    <span id="char-level-display">Level 1</span>
-                                    <button id="level-up-btn" class="level-up-pill-btn" onclick="levelUp()" style="display: none;">
-                                        <i class="ra ra-star"></i>
-                                        Level Up!
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <!-- Main Content: Two Columns -->
+                            <!-- Main Content with Character Info Header -->
                             <div class="overview-main">
-                                <!-- Column 1: Avatar -->
-                                <div class="overview-avatar">
-                                    <div class="overview-portrait" id="overview-portrait">
-                                        <div class="portrait-placeholder">
-                                            <i class="ra ra-hood"></i>
-                                        </div>
+                                <!-- Character Info Row: Full Width -->
+                                <div class="character-info-row">
+                                    <h2 id="char-display-name">Character Overview</h2>
+                                    <div class="level-info">
+                                        <span id="char-level-display">Level 1</span>
+                                        <button id="level-up-btn" class="level-up-pill-btn" onclick="handleLevelUp()" style="display: none;">
+                                            <i class="ra ra-star"></i>
+                                            Level Up!
+                                        </button>
                                     </div>
                                 </div>
                                 
-                                <!-- Column 2: HP, MP, Damage System -->
-                                <div class="overview-vitals">
-                                    <!-- HP System -->
-                                    <div class="vital-item">
-                                        <i class="ra ra-hearts"></i>
-                                        <span class="vital-label">HP</span>
-                                        <span class="vital-value">
-                                            <span id="char-current-hp">3</span>/<span id="char-total-hp">3</span>
-                                        </span>
+                                <!-- Two Columns: Avatar & Vitals -->
+                                <div class="overview-columns">
+                                    <!-- Column 1: Avatar -->
+                                    <div class="overview-avatar">
+                                        <div class="overview-portrait" id="overview-portrait">
+                                            <div class="portrait-placeholder">
+                                                <i class="ra ra-hood"></i>
+                                            </div>
+                                        </div>
                                     </div>
                                     
-                                    <!-- MP System -->
-                                    <div class="vital-item">
-                                        <i class="ra ra-crystal-wand"></i>
-                                        <span class="vital-label">MP</span>
-                                        <span class="vital-value">
-                                            <span id="char-current-mp">4</span>/<span id="char-total-mp">4</span>
-                                        </span>
-                                    </div>
-                                    
-                                    <!-- Damage System -->
-                                    <div class="vital-item damage-tester-inline">
-                                        <i class="ra ra-sword"></i>
-                                        <span class="vital-label">DMG</span>
-                                        <div class="damage-controls">
-                                            <input type="number" id="damage-input" class="damage-input" placeholder="5"
-                                                value="5" min="1">
-                                            <button class="damage-btn" onclick="testDamage()">
-                                                Take
-                                            </button>
+                                    <!-- Column 2: HP, MP, Damage System -->
+                                    <div class="overview-vitals">
+                                        <!-- HP System -->
+                                        <div class="vital-item">
+                                            <i class="ra ra-hearts"></i>
+                                            <span class="vital-label">HP</span>
+                                            <span class="vital-value">
+                                                <span id="char-current-hp">3</span>/<span id="char-total-hp">3</span>
+                                            </span>
+                                        </div>
+                                        
+                                        <!-- MP System -->
+                                        <div class="vital-item">
+                                            <i class="ra ra-crystal-wand"></i>
+                                            <span class="vital-label">MP</span>
+                                            <span class="vital-value">
+                                                <span id="char-current-mp">4</span>/<span id="char-total-mp">4</span>
+                                            </span>
+                                        </div>
+                                        
+                                        <!-- Damage System -->
+                                        <div class="vital-item damage-tester-inline">
+                                            <i class="ra ra-sword"></i>
+                                            <span class="vital-label">DMG</span>
+                                            <div class="damage-controls">
+                                                <input type="number" id="damage-input" class="damage-input" placeholder="5"
+                                                    value="5" min="1">
+                                                <button class="damage-btn" onclick="testDamage()">
+                                                    Take
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1155,6 +1158,7 @@
                         </div>
 
                         <!-- Add Status Effect -->
+                        <!-- OLD DROPDOWN SYSTEM - COMMENTED OUT FOR NEW BUTTON SYSTEM IN MODAL
                         <div class="add-status-section">
                             <h4>Apply Status Effect</h4>
                             <div class="status-form">
@@ -1191,6 +1195,7 @@
                                 </button>
                             </div>
                         </div>
+                        -->
                     </div>
                 </div>
             </section>
@@ -1456,85 +1461,122 @@
     </div>
 
     <!-- Roll History Modal -->
-    <div id="roll-history-modal" class="modal" style="display: none;">
-        <div class="modal-content">
+    <div id="roll-history-modal" class="modal level-up-modal-overlay" style="display: none;">
+        <div class="modal-content level-up-modal-content">
             <div class="modal-header">
-                <h3>Roll History</h3>
-                <button class="close-modal" onclick="closeRollHistoryModal()">
+                <h3><i class="ra ra-perspective-dice-six"></i> Roll History</h3>
+                <button class="close-modal" onclick="closeRollHistoryModal()" style="background: transparent; border: none; color: white; font-size: 24px; cursor: pointer;">
                     <span class="material-icons">close</span>
                 </button>
             </div>
             <div class="modal-body">
-                <div class="card" style="margin: 0; box-shadow: none;">
-                    <div class="card-header">
-                        <i></i>
-                        <h3></h3>
-                        <button class="clear-btn" onclick="clearRollHistory()">
-                            <span class="material-icons">clear_all</span>
-                        </button>
-                    </div>
-                    <div id="roll-history-modal-content" class="roll-history" style="max-height: 400px; overflow-y: auto;">
+                <div style="max-height: 400px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #ffd700 rgba(255,255,255,0.1);">
+                    <div id="roll-history-modal-content" class="roll-history">
                         <div style="text-align: center; color: #8a8a8a; padding: 40px;">
                             <i class="ra ra-perspective-dice-six" style="font-size: 3em; margin-bottom: 15px; display: block;"></i>
                             No rolls yet! Click attributes, skills, weapons, or spells in the Character tab to start rolling.
                         </div>
                     </div>
                 </div>
+                <div style="margin-top: 15px; text-align: center;">
+                    <button class="action-btn" onclick="clearRollHistory()" style="background: rgba(139, 69, 19, 0.8); color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                        <span class="material-icons" style="vertical-align: middle; margin-right: 5px;">clear_all</span>
+                        Clear History
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Status Effects Modal -->
-    <div id="status-effects-modal" class="modal" style="display: none;">
-        <div class="modal-content">
+    <div id="status-effects-modal" class="modal level-up-modal-overlay" style="display: none;">
+        <div class="modal-content level-up-modal-content">
             <div class="modal-header">
-                <h3>Status Effects</h3>
-                <button class="close-modal" onclick="closeStatusEffectsModal()">
+                <h3><i class="ra ra-heart"></i> Status Effects</h3>
+                <button class="close-modal" onclick="closeStatusEffectsModal()" style="background: transparent; border: none; color: white; font-size: 24px; cursor: pointer;">
                     <span class="material-icons">close</span>
                 </button>
             </div>
             <div class="modal-body">
-                <div class="card" style="margin: 0; box-shadow: none;">
-                    <div id="status-effects-modal-content" style="max-height: 300px; overflow-y: auto;">
+                <div style="max-height: 300px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #ffd700 rgba(255,255,255,0.1); margin-bottom: 20px;">
+                    <div id="status-effects-modal-content">
                         <div style="grid-column: 1 / -1; text-align: center; color: #8a8a8a; padding: 40px;">
                             <i class="ra ra-heart" style="font-size: 3em; margin-bottom: 15px; display: block;"></i>
                             No active status effects. You're feeling healthy!
                         </div>
                     </div>
-                    <div id="status-effects-form-modal-content">
-                        <div class="add-status-section">
-                            <h4>Apply Status Effect</h4>
-                            <div class="status-form">
-                                <select id="status-effect-type" class="status-select">
-                                    <option value="bleeding">🩸 Bleeding</option>
-                                    <option value="poisoned">🤢 Poisoned</option>
-                                    <option value="radiation">☢️ Radiation</option>
-                                    <option value="exhausted">😴 Exhausted</option>
-                                    <option value="dehydrated">💧 Dehydrated</option>
-                                    <option value="hypothermia">🧊 Hypothermia</option>
-                                    <option value="heatstroke">🔥 Heat Exhaustion</option>
-                                    <option value="broken_bone">🦴 Broken Bone</option>
-                                    <option value="stunned">⚡ Stunned</option>
-                                    <option value="feared">😱 Feared</option>
-                                    <option value="inspired">✨ Inspired</option>
-                                    <option value="custom">⚙️ Custom</option>
-                                </select>
-
-                                <input type="text" id="custom-status-name" class="status-input" placeholder="Custom effect name" style="display: none;">
-
-                                <div class="status-options">
-                                    <input type="number" id="status-duration" class="duration-input" value="10" min="1" max="1440">
-                                    <span class="duration-label">minutes</span>
-                                </div>
-
-                                <input type="text" id="status-notes" class="status-notes" placeholder="Additional notes...">
-
-                                <button class="add-status-btn" onclick="addStatusEffect()">
-                                    <i class="ra ra-flask"></i>
-                                    Apply Effect
-                                </button>
-                            </div>
+                </div>
+                <div id="status-effects-form-modal-content">
+                    <div class="modal-status-form-controls">
+                        <h4><i class="ra ra-lightning-bolt"></i> Apply Status Effect</h4>
+                        
+                        <!-- Status Effect Button Grid -->
+                        <div class="modal-status-effects-grid">
+                            <button type="button" class="modal-status-btn" onclick="selectModalStatusEffect('bleeding', 'Bleeding', '🩸')">
+                                <div class="icon">🩸</div>
+                                <div class="name">Bleeding</div>
+                            </button>
+                            <button type="button" class="modal-status-btn" onclick="selectModalStatusEffect('poisoned', 'Poisoned', '🤢')">
+                                <div class="icon">🤢</div>
+                                <div class="name">Poisoned</div>
+                            </button>
+                            <button type="button" class="modal-status-btn" onclick="selectModalStatusEffect('radiation', 'Radiation', '☢️')">
+                                <div class="icon">☢️</div>
+                                <div class="name">Radiation</div>
+                            </button>
+                            <button type="button" class="modal-status-btn" onclick="selectModalStatusEffect('exhausted', 'Exhausted', '😴')">
+                                <div class="icon">😴</div>
+                                <div class="name">Exhausted</div>
+                            </button>
+                            <button type="button" class="modal-status-btn" onclick="selectModalStatusEffect('dehydrated', 'Dehydrated', '💧')">
+                                <div class="icon">💧</div>
+                                <div class="name">Dehydrated</div>
+                            </button>
+                            <button type="button" class="modal-status-btn" onclick="selectModalStatusEffect('hypothermia', 'Hypothermia', '🧊')">
+                                <div class="icon">🧊</div>
+                                <div class="name">Hypothermia</div>
+                            </button>
+                            <button type="button" class="modal-status-btn" onclick="selectModalStatusEffect('heatstroke', 'Heat Exhaustion', '🔥')">
+                                <div class="icon">🔥</div>
+                                <div class="name">Heat Exhaustion</div>
+                            </button>
+                            <button type="button" class="modal-status-btn" onclick="selectModalStatusEffect('broken_bone', 'Broken Bone', '🦴')">
+                                <div class="icon">🦴</div>
+                                <div class="name">Broken Bone</div>
+                            </button>
+                            <button type="button" class="modal-status-btn" onclick="selectModalStatusEffect('stunned', 'Stunned', '⚡')">
+                                <div class="icon">⚡</div>
+                                <div class="name">Stunned</div>
+                            </button>
+                            <button type="button" class="modal-status-btn" onclick="selectModalStatusEffect('feared', 'Feared', '😱')">
+                                <div class="icon">😱</div>
+                                <div class="name">Feared</div>
+                            </button>
+                            <button type="button" class="modal-status-btn" onclick="selectModalStatusEffect('inspired', 'Inspired', '✨')">
+                                <div class="icon">✨</div>
+                                <div class="name">Inspired</div>
+                            </button>
+                            <button type="button" class="modal-status-btn" onclick="selectModalStatusEffect('custom', 'Custom', '⚙️')">
+                                <div class="icon">⚙️</div>
+                                <div class="name">Custom</div>
+                            </button>
                         </div>
+
+                        <!-- Custom Name Input (hidden by default) -->
+                        <input type="text" id="modal-custom-status-name" class="status-input" placeholder="Custom effect name" style="display: none; background: rgba(40, 40, 60, 0.8); color: white; border: 1px solid rgba(255, 215, 0, 0.5); border-radius: 4px; padding: 8px; width: calc(100% - 18px); margin-bottom: 10px;">
+
+                        <!-- Duration and Notes -->
+                        <div class="status-options" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                            <input type="number" id="modal-status-duration" class="duration-input" value="10" min="1" max="1440" style="background: rgba(40, 40, 60, 0.8); color: white; border: 1px solid rgba(255, 215, 0, 0.5); border-radius: 4px; padding: 8px; width: 80px;">
+                            <span class="duration-label" style="color: #c0c0c0; font-size: 14px;">minutes</span>
+                        </div>
+
+                        <input type="text" id="modal-status-notes" class="status-notes" placeholder="Additional notes..." style="background: rgba(40, 40, 60, 0.8); color: white; border: 1px solid rgba(255, 215, 0, 0.5); border-radius: 4px; padding: 8px; width: calc(100% - 18px); margin-bottom: 15px;">
+
+                        <button class="add-status-btn" onclick="applyModalStatusEffect()" style="background: linear-gradient(135deg, #ffd700, #ffed4a); color: #1a1a2e; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; transition: all 0.3s ease;">
+                            <i class="ra ra-flask" style="margin-right: 8px;"></i>
+                            Apply Effect
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1649,6 +1691,7 @@
     <script src="skills.js"></script>
     <script src="improvements.js"></script>
     <script src="achievements.js"></script>
+    <script src="levelSystem.js"></script>
     <!-- <script src="debug-dcc.js"></script> -->
     <script>
         // PWA Service Worker Registration - DISABLED TO PREVENT CACHING ISSUES

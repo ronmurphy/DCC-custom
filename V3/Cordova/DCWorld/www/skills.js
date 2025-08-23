@@ -387,6 +387,7 @@ window.skillSystem = {
     confirmSkillSelection,
     closeSkillModal,
     allSkills,
+    loadSkills,
     initializeSkillSystem
 };
 
@@ -396,6 +397,7 @@ window.updateSkillSelection = updateSkillSelection;
 window.updateProficiencySelection = updateProficiencySelection;
 window.confirmSkillSelection = confirmSkillSelection;
 window.closeSkillModal = closeSkillModal;
+window.loadSkills = loadSkills;
 
 // Auto-initialize when the script loads
 if (document.readyState === 'loading') {
