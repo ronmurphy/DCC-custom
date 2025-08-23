@@ -4397,6 +4397,9 @@ function determineSkillStat(skillName) {
 // ========================================
 // STATUS EFFECTS SYSTEM
 // ========================================
+
+// OLD DROPDOWN-BASED SYSTEM - COMMENTED OUT FOR NEW BUTTON SYSTEM
+/*
 function addStatusEffect() {
     const effectType = document.getElementById('status-effect-type').value;
     const duration = parseInt(document.getElementById('status-duration').value) || 10;
@@ -4409,8 +4412,15 @@ function addStatusEffect() {
     const selectElement = document.getElementById('status-effect-type');
     const selectedOption = selectElement.options[selectElement.selectedIndex];
     const optionText = selectedOption.textContent;
-    effectIcon = optionText.split(' ')[0];
-    effectName = optionText.substring(2);
+    
+    // Extract icon (first character) and name (everything after the first space)
+    if (optionText.includes(' ')) {
+        effectIcon = optionText.split(' ')[0];
+        effectName = optionText.substring(optionText.indexOf(' ') + 1);
+    } else {
+        effectIcon = '⚙️';
+        effectName = optionText;
+    }
 
     if (effectType === 'custom' && customName) {
         effectName = customName;
@@ -4440,6 +4450,162 @@ function addStatusEffect() {
 
     renderStatusEffects();
     startHeaderStatusTimer(); // Start the header timer when effects are added
+}
+*/
+
+// OLD Modal-specific status effect function (COMMENTED OUT - replaced with button system)
+/*
+function addModalStatusEffect() {
+    const effectType = document.getElementById('modal-status-effect-type').value;
+    const duration = parseInt(document.getElementById('modal-status-duration').value) || 10;
+    const notes = document.getElementById('modal-status-notes').value.trim();
+    const customName = document.getElementById('modal-custom-status-name').value.trim();
+
+    console.log('Modal Debug - effectType:', effectType);
+    console.log('Modal Debug - duration:', duration);
+    console.log('Modal Debug - notes:', notes);
+
+    let effectName = effectType;
+    let effectIcon = '';
+
+    const selectElement = document.getElementById('modal-status-effect-type');
+    const selectedOption = selectElement.options[selectElement.selectedIndex];
+    const optionText = selectedOption.textContent;
+    
+    console.log('Modal Debug - selectedOption:', selectedOption);
+    console.log('Modal Debug - optionText:', optionText);
+    
+    // Extract icon (first character) and name (everything after the first space)
+    if (optionText.includes(' ')) {
+        effectIcon = optionText.split(' ')[0];
+        effectName = optionText.substring(optionText.indexOf(' ') + 1);
+    } else {
+        effectIcon = '⚙️';
+        effectName = optionText;
+    }
+
+    console.log('Modal Debug - extracted effectIcon:', effectIcon);
+    console.log('Modal Debug - extracted effectName:', effectName);
+
+    if (effectType === 'custom' && customName) {
+        effectName = customName;
+        effectIcon = '⚙️';
+    } else if (effectType === 'custom' && !customName) {
+        alert('Please enter a name for the custom effect.');
+        return;
+    }
+
+    console.log('Modal Debug - final effectIcon:', effectIcon);
+    console.log('Modal Debug - final effectName:', effectName);
+
+    const statusEffect = {
+        id: generateId(),
+        type: effectType,
+        name: effectName,
+        icon: effectIcon,
+        duration: duration,
+        notes: notes,
+        startTime: Date.now()
+    };
+
+    character.statusEffects.push(statusEffect);
+
+    // Reset modal form
+    document.getElementById('modal-status-duration').value = '10';
+    document.getElementById('modal-status-notes').value = '';
+    document.getElementById('modal-custom-status-name').value = '';
+    document.getElementById('modal-custom-status-name').style.display = 'none';
+    document.getElementById('modal-status-effect-type').value = 'bleeding';
+
+    renderStatusEffects();
+    startHeaderStatusTimer(); // Start the header timer when effects are added
+}
+*/
+
+// NEW Button-based modal status effect system
+let selectedModalStatusEffect = null;
+
+function selectModalStatusEffect(effectType, effectName, effectIcon) {
+    // Remove previous selection
+    document.querySelectorAll('.modal-status-btn').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+    
+    // Select current button
+    const selectedBtn = document.querySelector(`[onclick*="${effectType}"]`);
+    if (selectedBtn) {
+        selectedBtn.classList.add('selected');
+    }
+    
+    // Store selection
+    selectedModalStatusEffect = {
+        type: effectType,
+        name: effectName,
+        icon: effectIcon
+    };
+    
+    // Show/hide custom name input
+    const customNameInput = document.getElementById('modal-custom-status-name');
+    if (effectType === 'custom') {
+        customNameInput.style.display = 'block';
+        customNameInput.focus();
+    } else {
+        customNameInput.style.display = 'none';
+        customNameInput.value = '';
+    }
+}
+
+function applyModalStatusEffect() {
+    if (!selectedModalStatusEffect) {
+        alert('Please select a status effect first.');
+        return;
+    }
+    
+    const duration = parseInt(document.getElementById('modal-status-duration').value) || 10;
+    const notes = document.getElementById('modal-status-notes').value.trim();
+    const customName = document.getElementById('modal-custom-status-name').value.trim();
+    
+    let effectName = selectedModalStatusEffect.name;
+    let effectIcon = selectedModalStatusEffect.icon;
+    
+    if (selectedModalStatusEffect.type === 'custom') {
+        if (!customName) {
+            alert('Please enter a name for the custom effect.');
+            return;
+        }
+        effectName = customName;
+        effectIcon = '⚙️';
+    }
+    
+    const statusEffect = {
+        id: generateId(),
+        type: selectedModalStatusEffect.type,
+        name: effectName,
+        icon: effectIcon,
+        duration: duration,
+        notes: notes,
+        startTime: Date.now()
+    };
+
+    character.statusEffects.push(statusEffect);
+
+    // Reset form
+    document.getElementById('modal-status-duration').value = '10';
+    document.getElementById('modal-status-notes').value = '';
+    document.getElementById('modal-custom-status-name').value = '';
+    document.getElementById('modal-custom-status-name').style.display = 'none';
+    
+    // Clear selection
+    document.querySelectorAll('.modal-status-btn').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+    selectedModalStatusEffect = null;
+
+    renderStatusEffects();
+    startHeaderStatusTimer();
+    
+    // Close the modal after successfully applying the effect
+    closeStatusEffectsModal();
 }
 
 function removeStatusEffect(effectId) {
@@ -5332,7 +5498,8 @@ function initializeCharacterSheet() {
         });
     });
 
-    // Status effects event listeners
+    // Status effects event listeners (COMMENTED OUT - old dropdown system)
+    /*
     const statusEffectType = document.getElementById('status-effect-type');
     if (statusEffectType) {
         statusEffectType.addEventListener('change', function () {
@@ -5345,6 +5512,23 @@ function initializeCharacterSheet() {
             }
         });
     }
+    */
+
+    // OLD Modal status effects event listeners (COMMENTED OUT - replaced with button system)
+    /*
+    const modalStatusEffectType = document.getElementById('modal-status-effect-type');
+    if (modalStatusEffectType) {
+        modalStatusEffectType.addEventListener('change', function () {
+            const customNameInput = document.getElementById('modal-custom-status-name');
+            if (this.value === 'custom') {
+                customNameInput.style.display = 'block';
+            } else {
+                customNameInput.style.display = 'none';
+                customNameInput.value = '';
+            }
+        });
+    }
+    */
 
     // Start the status effect timer - checks every minute
     setInterval(updateStatusTimers, 60000);
@@ -5417,16 +5601,13 @@ function closeRollHistoryModal() {
 function showStatusEffectsModal() {
     const modal = document.getElementById('status-effects-modal');
     const modalContent = document.getElementById('status-effects-modal-content');
-    const modalFormContent = document.getElementById('status-effects-form-modal-content');
     
     const originalGrid = document.getElementById('status-effects-grid');
-    const originalForm = document.querySelector('.add-status-section');
     
-    // Copy the current status effects content
+    // Copy only the current status effects display (not the form)
     modalContent.innerHTML = originalGrid.innerHTML;
-    if (originalForm) {
-        modalFormContent.innerHTML = originalForm.outerHTML;
-    }
+    
+    // DON'T copy the old form - keep the new button-based modal form that's already in the HTML
     
     // Prevent body scrolling when modal is open
     document.body.style.overflow = 'hidden';

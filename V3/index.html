@@ -1158,6 +1158,7 @@
                         </div>
 
                         <!-- Add Status Effect -->
+                        <!-- OLD DROPDOWN SYSTEM - COMMENTED OUT FOR NEW BUTTON SYSTEM IN MODAL
                         <div class="add-status-section">
                             <h4>Apply Status Effect</h4>
                             <div class="status-form">
@@ -1194,6 +1195,7 @@
                                 </button>
                             </div>
                         </div>
+                        -->
                     </div>
                 </div>
             </section>
@@ -1505,39 +1507,76 @@
                     </div>
                 </div>
                 <div id="status-effects-form-modal-content">
-                    <div class="add-status-section" style="background: rgba(40, 40, 60, 0.6); border-radius: 8px; padding: 15px; border: 1px solid rgba(255, 215, 0, 0.3);">
-                        <h4 style="color: #ffd700; margin: 0 0 15px 0;"><i class="ra ra-lightning-bolt"></i> Apply Status Effect</h4>
-                        <div class="status-form">
-                            <select id="status-effect-type" class="status-select" style="background: rgba(40, 40, 60, 0.8); color: white; border: 1px solid rgba(255, 215, 0, 0.5); border-radius: 4px; padding: 8px; width: 100%; margin-bottom: 10px;">
-                                <option value="bleeding">🩸 Bleeding</option>
-                                <option value="poisoned">🤢 Poisoned</option>
-                                <option value="radiation">☢️ Radiation</option>
-                                <option value="exhausted">😴 Exhausted</option>
-                                <option value="dehydrated">💧 Dehydrated</option>
-                                <option value="hypothermia">🧊 Hypothermia</option>
-                                <option value="heatstroke">🔥 Heat Exhaustion</option>
-                                <option value="broken_bone">🦴 Broken Bone</option>
-                                <option value="stunned">⚡ Stunned</option>
-                                <option value="feared">😱 Feared</option>
-                                <option value="inspired">✨ Inspired</option>
-                                <option value="custom">⚙️ Custom</option>
-                                </select>
-
-                                <input type="text" id="custom-status-name" class="status-input" placeholder="Custom effect name" style="display: none; background: rgba(40, 40, 60, 0.8); color: white; border: 1px solid rgba(255, 215, 0, 0.5); border-radius: 4px; padding: 8px; width: calc(100% - 18px); margin-bottom: 10px;">
-
-                                <div class="status-options" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                                    <input type="number" id="status-duration" class="duration-input" value="10" min="1" max="1440" style="background: rgba(40, 40, 60, 0.8); color: white; border: 1px solid rgba(255, 215, 0, 0.5); border-radius: 4px; padding: 8px; width: 80px;">
-                                    <span class="duration-label" style="color: #c0c0c0; font-size: 14px;">minutes</span>
-                                </div>
-
-                                <input type="text" id="status-notes" class="status-notes" placeholder="Additional notes..." style="background: rgba(40, 40, 60, 0.8); color: white; border: 1px solid rgba(255, 215, 0, 0.5); border-radius: 4px; padding: 8px; width: calc(100% - 18px); margin-bottom: 15px;">
-
-                                <button class="add-status-btn" onclick="addStatusEffect()" style="background: linear-gradient(135deg, #ffd700, #ffed4a); color: #1a1a2e; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; transition: all 0.3s ease;">
-                                    <i class="ra ra-flask" style="margin-right: 8px;"></i>
-                                    Apply Effect
-                                </button>
-                            </div>
+                    <div class="modal-status-form-controls">
+                        <h4><i class="ra ra-lightning-bolt"></i> Apply Status Effect</h4>
+                        
+                        <!-- Status Effect Button Grid -->
+                        <div class="modal-status-effects-grid">
+                            <button type="button" class="modal-status-btn" onclick="selectModalStatusEffect('bleeding', 'Bleeding', '🩸')">
+                                <div class="icon">🩸</div>
+                                <div class="name">Bleeding</div>
+                            </button>
+                            <button type="button" class="modal-status-btn" onclick="selectModalStatusEffect('poisoned', 'Poisoned', '🤢')">
+                                <div class="icon">🤢</div>
+                                <div class="name">Poisoned</div>
+                            </button>
+                            <button type="button" class="modal-status-btn" onclick="selectModalStatusEffect('radiation', 'Radiation', '☢️')">
+                                <div class="icon">☢️</div>
+                                <div class="name">Radiation</div>
+                            </button>
+                            <button type="button" class="modal-status-btn" onclick="selectModalStatusEffect('exhausted', 'Exhausted', '😴')">
+                                <div class="icon">😴</div>
+                                <div class="name">Exhausted</div>
+                            </button>
+                            <button type="button" class="modal-status-btn" onclick="selectModalStatusEffect('dehydrated', 'Dehydrated', '💧')">
+                                <div class="icon">💧</div>
+                                <div class="name">Dehydrated</div>
+                            </button>
+                            <button type="button" class="modal-status-btn" onclick="selectModalStatusEffect('hypothermia', 'Hypothermia', '🧊')">
+                                <div class="icon">🧊</div>
+                                <div class="name">Hypothermia</div>
+                            </button>
+                            <button type="button" class="modal-status-btn" onclick="selectModalStatusEffect('heatstroke', 'Heat Exhaustion', '🔥')">
+                                <div class="icon">🔥</div>
+                                <div class="name">Heat Exhaustion</div>
+                            </button>
+                            <button type="button" class="modal-status-btn" onclick="selectModalStatusEffect('broken_bone', 'Broken Bone', '🦴')">
+                                <div class="icon">🦴</div>
+                                <div class="name">Broken Bone</div>
+                            </button>
+                            <button type="button" class="modal-status-btn" onclick="selectModalStatusEffect('stunned', 'Stunned', '⚡')">
+                                <div class="icon">⚡</div>
+                                <div class="name">Stunned</div>
+                            </button>
+                            <button type="button" class="modal-status-btn" onclick="selectModalStatusEffect('feared', 'Feared', '😱')">
+                                <div class="icon">😱</div>
+                                <div class="name">Feared</div>
+                            </button>
+                            <button type="button" class="modal-status-btn" onclick="selectModalStatusEffect('inspired', 'Inspired', '✨')">
+                                <div class="icon">✨</div>
+                                <div class="name">Inspired</div>
+                            </button>
+                            <button type="button" class="modal-status-btn" onclick="selectModalStatusEffect('custom', 'Custom', '⚙️')">
+                                <div class="icon">⚙️</div>
+                                <div class="name">Custom</div>
+                            </button>
                         </div>
+
+                        <!-- Custom Name Input (hidden by default) -->
+                        <input type="text" id="modal-custom-status-name" class="status-input" placeholder="Custom effect name" style="display: none; background: rgba(40, 40, 60, 0.8); color: white; border: 1px solid rgba(255, 215, 0, 0.5); border-radius: 4px; padding: 8px; width: calc(100% - 18px); margin-bottom: 10px;">
+
+                        <!-- Duration and Notes -->
+                        <div class="status-options" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                            <input type="number" id="modal-status-duration" class="duration-input" value="10" min="1" max="1440" style="background: rgba(40, 40, 60, 0.8); color: white; border: 1px solid rgba(255, 215, 0, 0.5); border-radius: 4px; padding: 8px; width: 80px;">
+                            <span class="duration-label" style="color: #c0c0c0; font-size: 14px;">minutes</span>
+                        </div>
+
+                        <input type="text" id="modal-status-notes" class="status-notes" placeholder="Additional notes..." style="background: rgba(40, 40, 60, 0.8); color: white; border: 1px solid rgba(255, 215, 0, 0.5); border-radius: 4px; padding: 8px; width: calc(100% - 18px); margin-bottom: 15px;">
+
+                        <button class="add-status-btn" onclick="applyModalStatusEffect()" style="background: linear-gradient(135deg, #ffd700, #ffed4a); color: #1a1a2e; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; transition: all 0.3s ease;">
+                            <i class="ra ra-flask" style="margin-right: 8px;"></i>
+                            Apply Effect
+                        </button>
                     </div>
                 </div>
             </div>
