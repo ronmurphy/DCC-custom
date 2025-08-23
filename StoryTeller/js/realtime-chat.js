@@ -1,15 +1,29 @@
 // ========================================
+// ⚠️  ARCHIVE NOTICE - DO NOT USE THIS FILE ⚠️
+// 
+// This file is NOT in use and is here for archive purposes only!
+// 
+// Current active chat system: supabase-chat.js
+// This file was replaced due to PubNub cost limitations
+// (200 messages/month vs Supabase free tier)
+// 
+// DO NOT LOAD THIS FILE IN HTML OR REFERENCE IN CODE
+// 
+// VARIABLES COMMENTED OUT TO PREVENT CONFLICTS
+// ========================================
+
+// ========================================
 // REAL-TIME CHAT & GAME DATA SYSTEM
 // Using PubNub for instant messaging and game data
 // ========================================
 
 // ========================================
-// PUBNUB CONFIGURATION
+// PUBNUB CONFIGURATION - ARCHIVED
 // ========================================
-let pubnub = null;
-let currentChannel = null;
-let isStoryTeller = false;
-let playerName = '';
+// let pubnub = null;
+// let currentChannel = null;
+// let isStoryTeller = false;
+// let playerName = '';
 
 // Initialize PubNub (you'll need to get free API keys from pubnub.com)
 function initializePubNub() {
