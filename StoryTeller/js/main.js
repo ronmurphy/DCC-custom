@@ -36,6 +36,16 @@ function initializeApp() {
     // Initialize file input for import
     initializeImportHandler();
     
+    // Initialize Supabase for real-time chat (if configured and not already initialized)
+    setTimeout(() => {
+        if (typeof initializeSupabase === 'function' && !window.supabaseInitialized) {
+            const result = initializeSupabase();
+            if (result) {
+                window.supabaseInitialized = true;
+            }
+        }
+    }, 1000); // Delay to ensure all modules are loaded
+    
     console.log('Story Teller Tool initialized');
 }
 
@@ -94,16 +104,21 @@ function switchTab(tabName) {
 // THEME MANAGEMENT
 // ========================================
 function toggleTheme() {
-    document.body.classList.toggle('light-theme');
-    localStorage.setItem('st-theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
+    document.body.classList.toggle('dark-theme');
+    localStorage.setItem('st-theme', document.body.classList.contains('dark-theme') ? 'dark' : 'light');
 }
 
 function loadTheme() {
     const savedTheme = localStorage.getItem('st-theme');
-    if (savedTheme === 'light') {
-        document.body.classList.add('light-theme');
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-theme');
+    } else if (savedTheme === 'light') {
+        document.body.classList.remove('dark-theme');
+    } else {
+        // Default is dark theme
+        document.body.classList.add('dark-theme');
+        localStorage.setItem('st-theme', 'dark');
     }
-    // Default is dark theme
 }
 
 // ========================================
