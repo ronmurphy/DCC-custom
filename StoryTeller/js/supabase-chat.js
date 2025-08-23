@@ -1,6 +1,11 @@
 // ========================================
-// SUPABASE REAL-TIME CHAT SYSTEM
-// Budget-friendly alternative to PubNub
+// ✅ ACTIVE CHAT SYSTEM - SUPABASE REAL-TIME
+// 
+// This is the CURRENT chat system in use!
+// Budget-friendly alternative to PubNub (Free vs $98/month)
+// Handles real-time messaging, combat integration, and session management
+// 
+// Previous system: realtime-chat.js (PubNub) - archived due to cost
 // ========================================
 
 // ========================================
@@ -164,6 +169,11 @@ async function joinGameSession() {
         return;
     }
     
+    if (sessionCode.length > 10) {
+        alert('Session code must be 10 characters or less');
+        return;
+    }
+    
     try {
         // Set the global player name
         window.playerName = playerName;
@@ -268,6 +278,11 @@ async function joinGameSession() {
         return;
     }
     
+    if (sessionCode.length > 10) {
+        showNotification('Session code must be 10 characters or less', 'error');
+        return;
+    }
+    
     try {
         // Check if session exists
         const { data: session, error: sessionError } = await supabase
@@ -312,21 +327,43 @@ async function joinGameSession() {
 }
 
 async function leaveGameSession() {
-    if (currentGameSession) {
-        await sendSystemMessage(`${playerName} left the session`);
+    if (currentGameSession && currentGameSession.code && currentGameSession.code.length <= 10) {
+        // Add a fun snarky disconnect message
+        const snarkMessages = [
+            "🏨 You rest for the night in a safe room...",
+            "🚪 Have fun with real life! (Warning: No respawns available)",
+            "💤 Logging out... Dream of electric sheep and loot drops",
+            "🎭 The Storyteller grants you temporary immunity from plot hooks",
+            "🏃‍♂️ Disconnecting... May your real-world stats be ever in your favor!"
+        ];
+        const randomMessage = snarkMessages[Math.floor(Math.random() * snarkMessages.length)];
+        
+        try {
+            await sendSystemMessage(randomMessage);
+        } catch (error) {
+            console.log('Could not send disconnect message:', error);
+        }
         
         if (messagesSubscription) {
+            console.log('🔌 Unsubscribing from real-time messages...');
             messagesSubscription.unsubscribe();
             messagesSubscription = null;
         }
     }
     
+    const playerDisplayName = window.playerName || 'Player';
+    const sessionCode = currentGameSession ? currentGameSession.code : 'Unknown';
+    
+    console.log(`🚪 ${playerDisplayName} has left the chat session: ${sessionCode}`);
+    
     currentGameSession = null;
     updateConnectionStatus('offline');
+    clearChatMessages(); // Clear messages on disconnect
     hideChatInterface();
     hideGameDataCard();
     
-    showNotification('Disconnected from session', 'info');
+    showNotification(`${playerDisplayName} has left the chat`, 'success');
+    console.log('✅ Session disconnect complete - UI reset to connection setup');
 }
 
 // ========================================
@@ -773,8 +810,54 @@ document.addEventListener('DOMContentLoaded', () => {
 // ========================================
 // UTILITY FUNCTIONS
 // ========================================
+// UTILITY FUNCTIONS
+// ========================================
 function generateSessionCode() {
-    return Math.random().toString(36).substring(2, 8).toUpperCase();
+    // Generate a 6-character code (well within 10 char limit)
+    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    return code.length > 10 ? code.substring(0, 10) : code;
+}
+
+function updateConnectionStatus(status) {
+    const statusElement = document.getElementById('connection-status');
+    if (statusElement) {
+        const dot = statusElement.querySelector('.status-dot');
+        const text = statusElement.querySelector('.status-text');
+        
+        if (dot) dot.className = `status-dot ${status}`;
+        if (text) text.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+    }
+}
+
+function clearChatMessages() {
+    const chatMessages = document.getElementById('chat-messages');
+    if (chatMessages) {
+        chatMessages.innerHTML = '';
+    }
+}
+
+function showChatInterface() {
+    const connectionSetup = document.getElementById('connection-setup');
+    const chatInterface = document.getElementById('chat-interface');
+    if (connectionSetup) connectionSetup.style.display = 'none';
+    if (chatInterface) chatInterface.style.display = 'block';
+}
+
+function hideChatInterface() {
+    const connectionSetup = document.getElementById('connection-setup');
+    const chatInterface = document.getElementById('chat-interface');
+    if (connectionSetup) connectionSetup.style.display = 'block';
+    if (chatInterface) chatInterface.style.display = 'none';
+}
+
+function showGameDataCard() {
+    const gameDataCard = document.getElementById('game-data-card');
+    if (gameDataCard) gameDataCard.style.display = 'block';
+}
+
+function hideGameDataCard() {
+    const gameDataCard = document.getElementById('game-data-card');
+    if (gameDataCard) gameDataCard.style.display = 'none';
 }
 
 // Export functions for use by other modules
