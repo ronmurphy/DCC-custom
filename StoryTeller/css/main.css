@@ -54,23 +54,6 @@
     --transition-slow: 500ms ease;
 }
 
-/* Light Theme (for those who prefer it) */
-body.light-theme {
-    --primary: #6366f1;
-    --primary-dark: #4f46e5;
-    --primary-light: #818cf8;
-    
-    --bg-primary: #ffffff;
-    --bg-secondary: #f3f4f6;
-    --bg-tertiary: #e5e7eb;
-    --bg-card: #ffffff;
-    --text-primary: #111827;
-    --text-secondary: #6b7280;
-    --text-tertiary: #9ca3af;
-    --border-color: #e5e7eb;
-    --shadow-color: rgba(0, 0, 0, 0.1);
-}
-
 /* ========================================
    RESET & BASE STYLES
    ======================================== */

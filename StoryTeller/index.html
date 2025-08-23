@@ -18,6 +18,9 @@
     <link rel="stylesheet" href="css/quest.css">
     <link rel="stylesheet" href="css/items.css">
     <link rel="stylesheet" href="css/map.css">
+    <link rel="stylesheet" href="css/combat.css">
+    <link rel="stylesheet" href="css/chat.css">
+    <link rel="stylesheet" href="css/config.css">
 </head>
 <body>
     <div class="app-container">
@@ -56,6 +59,10 @@
             <button class="tab-btn" data-tab="map">
                 <span class="tab-icon"><i class="ra ra-compass"></i></span>
                 <span class="tab-label">Map</span>
+            </button>
+            <button class="tab-btn" data-tab="chat">
+                <span class="tab-icon"><i class="material-icons">chat</i></span>
+                <span class="tab-label">Game Chat</span>
             </button>
         </nav>
 
@@ -499,6 +506,87 @@
                     </div>
                 </div>
             </section>
+
+            <!-- Game Chat Tab -->
+            <section class="tab-content" id="chat">
+                <div class="content-wrapper">
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="material-icons">chat</i>
+                            <h3>Game Chat</h3>
+                            <div class="storyteller-toggle">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="is-storyteller-checkbox">
+                                    <span class="checkbox-custom"></span>
+                                    I am the Storyteller/DM
+                                </label>
+                            </div>
+                            <div class="chat-status" id="chat-status">
+                                <span class="status-dot offline"></span>
+                                <span class="status-text">Disconnected</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Session Management -->
+                        <div class="chat-session-controls" id="chat-session-controls">
+                            <div class="session-form">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="dm-name-input">Your Name (DM/Player):</label>
+                                        <input type="text" id="dm-name-input" placeholder="Enter your name" class="form-input">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="session-code-input">Session Code:</label>
+                                        <input type="text" id="session-code-input" placeholder="Enter session code" class="form-input">
+                                    </div>
+                                </div>
+                                <div class="form-actions">
+                                    <button class="btn-primary" onclick="startGameSession()">
+                                        <i class="material-icons">play_arrow</i>
+                                        Start New Session
+                                    </button>
+                                    <button class="btn-secondary" onclick="joinGameSession()">
+                                        <i class="material-icons">group_add</i>
+                                        Join Session
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Chat Messages Area -->
+                        <div class="chat-messages-container" id="chat-messages-container" style="display: none;">
+                            <div class="chat-session-info">
+                                <div class="session-details">
+                                    <span class="session-item"><strong>Session:</strong> <span id="current-session-code">-</span></span>
+                                    <span class="session-item"><strong>Players:</strong> <span id="active-players-count">0</span></span>
+                                </div>
+                                <button class="btn-small btn-danger" onclick="leaveGameSession()">Leave Session</button>
+                            </div>
+                            
+                            <div class="chat-messages" id="chat-messages">
+                                <div class="welcome-message">
+                                    <i class="material-icons">waving_hand</i>
+                                    <p>Welcome to the game session! Send messages or use commands like:</p>
+                                    <ul>
+                                        <li><code>ATTACK:PlayerName:18:8:Steel Sword</code> - Process attack rolls</li>
+                                        <li><code>MAP:share</code> - Share current map with players</li>
+                                        <li><code>ROLL:3d6</code> - Roll dice publicly</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div class="chat-input-area">
+                                <div class="input-group">
+                                    <input type="text" id="chat-message-input" placeholder="Type a message or command..." class="form-input chat-input">
+                                    <button class="btn-primary send-btn" onclick="sendChatMessage()">
+                                        <i class="material-icons">send</i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </main>
     </div>
 
@@ -537,6 +625,9 @@
     <!-- File input for import -->
     <input type="file" id="import-file" accept=".json" style="display: none;">
 
+    <!-- Supabase SDK for real-time messaging (FREE alternative to PubNub) -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
     <!-- Modular JavaScript -->
     <script src="js/main.js"></script>
     <script src="js/storage-manager.js"></script>
@@ -544,5 +635,10 @@
     <script src="js/quest-generator.js"></script>
     <script src="js/item-generator.js"></script>
     <script src="js/map-editor.js"></script>
+    <script src="js/combat-manager.js"></script>
+    <script src="js/player-data-parser.js"></script>
+    <script src="js/map-sharing.js"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/supabase-chat.js"></script>
 </body>
 </html>
