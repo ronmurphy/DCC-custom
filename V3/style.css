@@ -4310,3 +4310,79 @@ body.sidebar-open {
         grid-template-columns: 1fr 1fr;
     }
 }
+
+/* Status Effect Modal Button Grid */
+.modal-status-effects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.modal-status-btn {
+    background: var(--bg-card);
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    border-radius: 8px;
+    padding: 12px 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 500;
+    min-height: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.modal-status-btn:hover {
+    border-color: rgba(255, 215, 0, 0.6);
+    background: var(--hover-bg);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.2);
+}
+
+.modal-status-btn.selected {
+    border-color: var(--accent-gold);
+    background: var(--selected-bg);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+}
+
+.modal-status-btn .icon {
+    font-size: 20px;
+    margin-bottom: 2px;
+}
+
+.modal-status-btn .name {
+    font-size: 12px;
+    line-height: 1.2;
+}
+
+/* Theme-aware variables for status buttons */
+:root {
+    --selected-bg: rgba(255, 215, 0, 0.15);
+    --hover-bg: rgba(255, 255, 255, 0.05);
+}
+
+.dark-theme {
+    --selected-bg: rgba(255, 215, 0, 0.2);
+    --hover-bg: rgba(255, 255, 255, 0.08);
+}
+
+.modal-status-form-controls {
+    background: rgba(40, 40, 60, 0.6);
+    border-radius: 8px;
+    padding: 15px;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.modal-status-form-controls h4 {
+    color: #ffd700;
+    margin: 0 0 15px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
