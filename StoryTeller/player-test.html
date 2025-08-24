@@ -283,13 +283,9 @@
             </div>
             
             <div class="form-group">
-                <label for="session-code">Session Code</label>
-                <input type="text" id="session-code" placeholder="Enter session code from DM">
-            </div>
-            
-            <div class="form-group">
-                <label for="server-url">Server URL (Optional)</label>
-                <input type="url" id="server-url" placeholder="ws://localhost:3000 or leave blank for default">
+                <label for="supabase-url">Supabase Session URL</label>
+                <input type="url" id="supabase-url" placeholder="Paste the URL from storyteller (e.g., https://xxx.supabase.co?session=1234)">
+                <small style="color: #666; font-size: 0.9em;">Get this URL from the storyteller's Settings > Player Interface URL</small>
             </div>
             
             <button class="btn" onclick="joinSession()">Join Session</button>
@@ -336,13 +332,14 @@
     </div>
 
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
     <script src="js/supabase-chat.js"></script>
     <script>
         let isConnected = false;
-        let playerName = '';
+        // playerName is declared in supabase-chat.js - don't redeclare
         let sessionCode = '';
-        let serverUrl = '';
-        let supabase = null;
+        let supabaseUrl = '';
+        // supabase is declared in supabase-chat.js - don't redeclare
         let subscription = null;
         
         // Player stats
@@ -384,61 +381,64 @@
         }
 
         async function joinSession() {
-            playerName = document.getElementById('player-name').value.trim();
-            sessionCode = document.getElementById('session-code').value.trim();
-            serverUrl = document.getElementById('server-url').value.trim();
+            window.playerName = document.getElementById('player-name').value.trim();
+            const fullSupabaseUrl = document.getElementById('supabase-url').value.trim();
             
-            if (!playerName) {
+            if (!window.playerName) {
                 showMessage('Please enter your player name');
                 return;
             }
             
-            if (!sessionCode) {
-                showMessage('Please enter a session code');
+            if (!fullSupabaseUrl) {
+                showMessage('Please paste the Supabase session URL from the storyteller');
                 return;
             }
             
             try {
-                // Parse Supabase URL if provided (format: https://xxx.supabase.co?session=123)
-                let supabaseUrl = '';
-                let extractedSession = '';
+                // Parse the Supabase URL: https://xxx.supabase.co?session=1234
+                const urlParts = fullSupabaseUrl.split('?');
+                supabaseUrl = urlParts[0];
                 
-                if (serverUrl) {
-                    const urlParts = serverUrl.split('?');
-                    supabaseUrl = urlParts[0];
-                    
-                    // Extract session from URL if present
-                    if (urlParts[1]) {
-                        const params = new URLSearchParams(urlParts[1]);
-                        extractedSession = params.get('session');
-                        if (extractedSession && !sessionCode) {
-                            sessionCode = extractedSession;
-                            document.getElementById('session-code').value = sessionCode;
-                        }
-                    }
-                    
-                    // Initialize Supabase with the provided URL
-                    // Note: Player will need to have the same API key as storyteller
-                    const defaultApiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrZGR2Ym14emVwcnZ4ZnNsaGxrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU5NTMxMjEsImV4cCI6MjA3MTUyOTEyMX0.b3mv50bCw5Yq5SrY8-Sagdl4WoC592nQNdfTQciuf0M';
-                    
-                    if (typeof window.initializeSupabase === 'function') {
-                        window.initializeSupabase(supabaseUrl, defaultApiKey);
-                    }
+                if (urlParts.length < 2) {
+                    throw new Error('Invalid URL format. Expected: https://xxx.supabase.co?session=1234');
                 }
                 
-                // Use real Supabase connection via supabase-chat.js
+                // Extract session code from URL parameters
+                const params = new URLSearchParams(urlParts[1]);
+                sessionCode = params.get('session');
+                
+                if (!sessionCode) {
+                    throw new Error('No session code found in URL. Make sure the URL includes ?session=YOUR_SESSION_CODE');
+                }
+                
+                console.log(`🔗 Extracted: Supabase URL=${supabaseUrl}, Session=${sessionCode}`);
+                
+                // Initialize Supabase with extracted URL and default API key
+                const defaultApiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrZGR2Ym14emVwcnZ4ZnNsaGxrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU5NTMxMjEsImV4cCI6MjA3MTUyOTEyMX0.b3mv50bCw5Yq5SrY8-Sagdl4WoC592nQNdfTQciuf0M';
+                
                 updateConnectionStatus(false);
+                showMessage('Connecting to Supabase...', 'success');
+                
+                // Initialize Supabase connection
+                if (typeof window.initializeSupabase === 'function') {
+                    const initResult = window.initializeSupabase(supabaseUrl, defaultApiKey);
+                    if (!initResult) {
+                        throw new Error('Failed to initialize Supabase connection');
+                    }
+                } else {
+                    throw new Error('Supabase initialization function not available');
+                }
                 
                 // Join the session using the real Supabase system
                 if (typeof window.fullSupabaseConnect === 'function') {
-                    const result = await window.fullSupabaseConnect(playerName, sessionCode, false, 'join');
+                    const result = await window.fullSupabaseConnect(window.playerName, sessionCode, false, 'join');
                     
                     if (result.success) {
                         updateConnectionStatus(true);
                         document.getElementById('login-section').classList.add('hidden');
                         document.getElementById('chat-section').classList.add('active');
                         
-                        addChatMessage(`${playerName} joined the session!`, 'system');
+                        addChatMessage(`${window.playerName} joined the session!`, 'system');
                         showMessage('Successfully connected to session!', 'success');
                     } else {
                         throw new Error(result.error || 'Failed to join session');
@@ -446,8 +446,6 @@
                 } else {
                     throw new Error('Supabase chat system not loaded');
                 }
-                
-                showMessage('Connecting to session...', 'success');
                 
             } catch (error) {
                 console.error('Connection error:', error);
@@ -467,7 +465,7 @@
             } else if (type === 'storyteller') {
                 prefix = '<strong>Storyteller:</strong> ';
             } else if (type === 'player') {
-                prefix = `<strong>${sender || playerName}:</strong> `;
+                prefix = `<strong>${sender || window.playerName}:</strong> `;
             }
             
             messageEl.innerHTML = prefix + message;
@@ -511,23 +509,25 @@
         function initializePlayer() {
             // Check URL parameters for session information
             const urlParams = new URLSearchParams(window.location.search);
-            const sessionCode = urlParams.get('session');
-            const mode = urlParams.get('mode');
+            const sessionParam = urlParams.get('session');
+            const supabaseParam = urlParams.get('supabase') || urlParams.get('url');
             
-            if (sessionCode) {
-                // Auto-fill session information
-                document.getElementById('session-input').value = sessionCode;
-                addChatMessage(`🔗 Session code pre-filled: ${sessionCode}`, 'system');
-                
-                if (mode === 'player') {
-                    addChatMessage('🎮 Player mode - ready to join game session', 'system');
-                } else if (mode === 'local') {
-                    addChatMessage('🏠 Local test mode - simulated connection', 'system');
-                }
-                
-                addChatMessage('👆 Click "Join Session" to connect', 'system');
-            } else {
-                addChatMessage('✨ Welcome! Enter a session code to join a game', 'system');
+            // If we have both parameters, reconstruct the full Supabase URL
+            if (supabaseParam && sessionParam) {
+                const fullUrl = `${supabaseParam}?session=${sessionParam}`;
+                document.getElementById('supabase-url').value = fullUrl;
+                addChatMessage(`🔗 Supabase URL pre-filled from link`, 'system');
+                addChatMessage('👆 Enter your name and click "Join Session" to connect', 'system');
+            } 
+            // If only session parameter, show instructions
+            else if (sessionParam) {
+                addChatMessage(`🔗 Session ${sessionParam} detected`, 'system');
+                addChatMessage('⚠️ Please paste the full Supabase URL from the storyteller', 'system');
+            } 
+            // No parameters
+            else {
+                addChatMessage('✨ Welcome! Paste the Supabase session URL from your storyteller to join', 'system');
+                addChatMessage('💡 The URL should look like: https://xxx.supabase.co?session=1234', 'system');
             }
         }
         
