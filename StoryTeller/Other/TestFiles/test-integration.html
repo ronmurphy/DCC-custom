@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Integration Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .test-section {
+            background: white;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>StoryTeller Supabase Integration Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Supabase Configuration Test</h2>
+        <div>
+            <label>Supabase URL:</label>
+            <input type="text" id="test-url" placeholder="https://xxxxx.supabase.co">
+        </div>
+        <div>
+            <label>API Key:</label>
+            <input type="password" id="test-key" placeholder="eyJhbGciOiJIUzI1NiIs...">
+        </div>
+        <button onclick="testConfig()">Test Configuration</button>
+        <div id="config-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Connection Test</h2>
+        <button onclick="testConnection()">Test Supabase Connection</button>
+        <div id="connection-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Session Creation Test</h2>
+        <div>
+            <label>Session Code:</label>
+            <input type="text" id="test-session" value="TEST01" maxlength="10">
+        </div>
+        <div>
+            <label>DM Name:</label>
+            <input type="text" id="test-dm" value="TestDM">
+        </div>
+        <button onclick="testSession()">Create Test Session</button>
+        <div id="session-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. Message Test</h2>
+        <div>
+            <label>Test Message:</label>
+            <input type="text" id="test-message" value="Hello from integration test!">
+        </div>
+        <button onclick="testMessage()">Send Test Message</button>
+        <div id="message-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>5. Integration Status</h2>
+        <div id="integration-status">Click the tests above to check integration status.</div>
+    </div>
+
+    <!-- Load required scripts -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/supabase-chat.js"></script>
+
+    <script>
+        function showResult(elementId, message, type = 'success') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="test-result ${type}">${message}</div>`;
+        }
+        
+        function testConfig() {
+            const url = document.getElementById('test-url').value.trim();
+            const key = document.getElementById('test-key').value.trim();
+            
+            if (!url || !key) {
+                showResult('config-result', '❌ Please enter both URL and API key', 'error');
+                return;
+            }
+            
+            try {
+                if (typeof supabaseConfig !== 'undefined') {
+                    const validation = supabaseConfig.validateConfig(url, key);
+                    if (validation.valid) {
+                        const result = supabaseConfig.saveConfig(url, key);
+                        if (result.success) {
+                            showResult('config-result', '✅ Configuration saved successfully!', 'success');
+                        } else {
+                            showResult('config-result', '❌ Failed to save configuration', 'error');
+                        }
+                    } else {
+                        showResult('config-result', '❌ Invalid configuration: ' + validation.errors.join(', '), 'error');
+                    }
+                } else {
+                    showResult('config-result', '❌ supabaseConfig not loaded', 'error');
+                }
+            } catch (error) {
+                showResult('config-result', '❌ Error: ' + error.message, 'error');
+            }
+        }
+        
+        function testConnection() {
+            try {
+                if (typeof initializeSupabase === 'function') {
+                    window.supabaseInitialized = false; // Reset
+                    const result = initializeSupabase();
+                    if (result) {
+                        showResult('connection-result', '✅ Supabase connection successful!', 'success');
+                    } else {
+                        showResult('connection-result', '❌ Supabase connection failed', 'error');
+                    }
+                } else {
+                    showResult('connection-result', '❌ initializeSupabase function not found', 'error');
+                }
+            } catch (error) {
+                showResult('connection-result', '❌ Connection error: ' + error.message, 'error');
+            }
+        }
+        
+        function testSession() {
+            const sessionCode = document.getElementById('test-session').value.trim();
+            const dmName = document.getElementById('test-dm').value.trim();
+            
+            if (!sessionCode || !dmName) {
+                showResult('session-result', '❌ Please enter session code and DM name', 'error');
+                return;
+            }
+            
+            try {
+                if (typeof createNewGameSession === 'function') {
+                    // Set up the DOM elements that the function expects
+                    let dmInput = document.getElementById('dm-name-input');
+                    let codeInput = document.getElementById('session-code-input');
+                    
+                    if (!dmInput) {
+                        dmInput = document.createElement('input');
+                        dmInput.id = 'dm-name-input';
+                        dmInput.style.display = 'none';
+                        document.body.appendChild(dmInput);
+                    }
+                    
+                    if (!codeInput) {
+                        codeInput = document.createElement('input');
+                        codeInput.id = 'session-code-input';
+                        codeInput.style.display = 'none';
+                        document.body.appendChild(codeInput);
+                    }
+                    
+                    dmInput.value = dmName;
+                    codeInput.value = sessionCode;
+                    
+                    createNewGameSession();
+                    showResult('session-result', '✅ Session creation attempted - check console for details', 'success');
+                } else {
+                    showResult('session-result', '❌ createNewGameSession function not found', 'error');
+                }
+            } catch (error) {
+                showResult('session-result', '❌ Session error: ' + error.message, 'error');
+            }
+        }
+        
+        function testMessage() {
+            const message = document.getElementById('test-message').value.trim();
+            
+            if (!message) {
+                showResult('message-result', '❌ Please enter a test message', 'error');
+                return;
+            }
+            
+            try {
+                if (typeof sendChatMessage === 'function') {
+                    // Set up message input element
+                    let msgInput = document.getElementById('chat-message-input');
+                    if (!msgInput) {
+                        msgInput = document.createElement('input');
+                        msgInput.id = 'chat-message-input';
+                        msgInput.style.display = 'none';
+                        document.body.appendChild(msgInput);
+                    }
+                    msgInput.value = message;
+                    
+                    sendChatMessage();
+                    showResult('message-result', '✅ Message sending attempted - check console for details', 'success');
+                } else {
+                    showResult('message-result', '❌ sendChatMessage function not found', 'error');
+                }
+            } catch (error) {
+                showResult('message-result', '❌ Message error: ' + error.message, 'error');
+            }
+        }
+        
+        // Check integration status on load
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                let status = '<h3>Integration Status Check:</h3>';
+                
+                // Check if Supabase is loaded
+                if (typeof window.supabase !== 'undefined') {
+                    status += '<div class="test-result success">✅ Supabase client library loaded</div>';
+                } else {
+                    status += '<div class="test-result error">❌ Supabase client library not loaded</div>';
+                }
+                
+                // Check if supabaseConfig is loaded
+                if (typeof supabaseConfig !== 'undefined') {
+                    status += '<div class="test-result success">✅ supabaseConfig loaded</div>';
+                    
+                    if (supabaseConfig.hasConfig()) {
+                        status += '<div class="test-result success">✅ Saved configuration found</div>';
+                        const config = supabaseConfig.loadConfig();
+                        if (config.success) {
+                            document.getElementById('test-url').value = config.data.supabaseUrl;
+                            document.getElementById('test-key').value = config.data.supabaseKey;
+                        }
+                    } else {
+                        status += '<div class="test-result warning">⚠️ No saved configuration found</div>';
+                    }
+                } else {
+                    status += '<div class="test-result error">❌ supabaseConfig not loaded</div>';
+                }
+                
+                // Check if chat functions are loaded
+                if (typeof initializeSupabase === 'function') {
+                    status += '<div class="test-result success">✅ Chat functions loaded</div>';
+                } else {
+                    status += '<div class="test-result error">❌ Chat functions not loaded</div>';
+                }
+                
+                document.getElementById('integration-status').innerHTML = status;
+            }, 500);
+        });
+    </script>
+</body>
+</html>
