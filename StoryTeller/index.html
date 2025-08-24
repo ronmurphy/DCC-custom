@@ -1330,20 +1330,16 @@
 
                         <!-- Player Selector -->
                         <div class="player-selector">
-                            <h4>Select Target Player</h4>
+                            <h4>Connected Players</h4>
                             <div class="player-list" id="player-list">
-                                <div class="player-item selected" onclick="selectPlayer('Betty')">
-                                    <div class="player-name">Betty</div>
-                                    <div class="player-stats">Level 2 • 45 HP • 125 Gold</div>
+                                <div class="player-item" id="dm-player">
+                                    <div class="player-name">Storyteller (You)</div>
+                                    <div class="player-stats">Session Master</div>
                                 </div>
-                                <div class="player-item" onclick="selectPlayer('John')">
-                                    <div class="player-name">John</div>
-                                    <div class="player-stats">Level 3 • 62 HP • 200 Gold</div>
-                                </div>
-                                <div class="player-item" onclick="selectPlayer('Sarah')">
-                                    <div class="player-name">Sarah</div>
-                                    <div class="player-stats">Level 1 • 28 HP • 75 Gold</div>
-                                </div>
+                                <!-- Connected players will be populated here dynamically -->
+                            </div>
+                            <div class="no-players" id="no-players" style="display: none; padding: 15px; text-align: center; color: #666;">
+                                No players connected yet. Share the player URL to invite players!
                             </div>
                         </div>
                     </div>
@@ -1374,22 +1370,7 @@
                         
                         <div class="chat-messages" id="chat-messages">
                             <div class="chat-message system">
-                                <strong>System:</strong> Session started. Welcome to Epic Adventure!
-                            </div>
-                            <div class="chat-message storyteller">
-                                <strong>DM Brad:</strong> Welcome heroes! You find yourselves at the entrance to the ancient dungeon...
-                            </div>
-                            <div class="chat-message player">
-                                <strong>Betty:</strong> I want to check for traps at the entrance.
-                            </div>
-                            <div class="chat-message system">
-                                <strong>System:</strong> 🎲 Betty rolled Perception: 17 (Success!)
-                            </div>
-                            <div class="chat-message system">
-                                <strong>System:</strong> 💰 Betty found 25 gold! (Total: 125)
-                            </div>
-                            <div class="chat-message system">
-                                <strong>System:</strong> 🏆 John unlocked achievement: Creative Killer!
+                                <strong>System:</strong> Chat system ready. Start a session to begin messaging.
                             </div>
                         </div>
                         
@@ -1441,7 +1422,7 @@
     <script src="js/supabase-config.js"></script>
 
     <script>
-        let selectedPlayer = 'Betty';
+        let selectedPlayer = 'Storyteller'; // Default to storyteller
         let leftPanelContent = 'commands';
         let rightPanelContent = 'chat';
         let currentMode = 'tablet';
@@ -1920,15 +1901,17 @@
             }
         }
 
-        function addChatMessage(message, type = 'storyteller') {
+        function addChatMessage(message, type = 'storyteller', playerName = 'Storyteller') {
             const chatMessages = document.getElementById('chat-messages');
             const messageEl = document.createElement('div');
             messageEl.className = `chat-message ${type}`;
             
             if (type === 'system') {
                 messageEl.innerHTML = `<strong>System:</strong> ${message}`;
+            } else if (type === 'player') {
+                messageEl.innerHTML = `<strong>${playerName}:</strong> ${message}`;
             } else {
-                messageEl.innerHTML = `<strong>DM Brad:</strong> ${message}`;
+                messageEl.innerHTML = `<strong>${playerName}:</strong> ${message}`;
             }
             
             chatMessages.appendChild(messageEl);
@@ -1949,37 +1932,65 @@
             }
             
             try {
-                // Sync with hidden compatibility field for Supabase
-                document.getElementById('chat-message-input').value = message;
-                
-                // Send via Supabase real-time system
+                // Send via Supabase real-time system ONLY - don't add locally
                 if (window.sendChatMessageAsync && typeof window.sendChatMessageAsync === 'function') {
                     await window.sendChatMessageAsync(message);
-                    console.log('✅ Message sent via Supabase real-time');
+                    console.log('✅ Message sent via Supabase real-time - waiting for echo');
                     
                     // Clear input only after successful send
                     input.value = '';
                     
                 } else if (window.sendChatMessage && typeof window.sendChatMessage === 'function') {
                     // Fallback to sync method
-                    window.sendChatMessage();
+                    window.sendChatMessage(message);
                     input.value = '';
-                    console.log('✅ Message sent via Supabase sync');
+                    console.log('✅ Message sent via Supabase sync - waiting for echo');
                     
                 } else {
-                    // Local-only mode fallback
-                    const playerName = window.playerName || window.currentGameSession?.dm_name || 'Storyteller';
-                    addChatMessage(message, 'storyteller', playerName);
-                    input.value = '';
-                    console.log('📝 Message added locally (no Supabase)');
+                    // No Supabase connection available
+                    addChatMessage('❌ Real-time chat not available. Please check Supabase connection.', 'system');
                 }
                 
             } catch (error) {
                 console.error('❌ Message send error:', error);
                 addChatMessage(`❌ Failed to send message: ${error.message}`, 'system');
-                
-                // Still clear the input to avoid confusion
-                input.value = '';
+            }
+        }
+        
+        // Function to update connected players list
+        function updateConnectedPlayers(players = []) {
+            const playerList = document.getElementById('player-list');
+            const noPlayersDiv = document.getElementById('no-players');
+            
+            if (!playerList) return;
+            
+            // Clear existing players (except DM)
+            const dmPlayer = document.getElementById('dm-player');
+            playerList.innerHTML = '';
+            if (dmPlayer) {
+                playerList.appendChild(dmPlayer);
+            }
+            
+            // Add connected players
+            players.forEach(player => {
+                if (player.name && player.name !== 'System' && !player.is_storyteller) {
+                    const playerDiv = document.createElement('div');
+                    playerDiv.className = 'player-item';
+                    playerDiv.onclick = () => selectPlayer(player.name);
+                    
+                    playerDiv.innerHTML = `
+                        <div class="player-name">${player.name}</div>
+                        <div class="player-stats">Connected Player</div>
+                    `;
+                    
+                    playerList.appendChild(playerDiv);
+                }
+            });
+            
+            // Show/hide no players message
+            const hasPlayers = players.length > 0;
+            if (noPlayersDiv) {
+                noPlayersDiv.style.display = hasPlayers ? 'none' : 'block';
             }
         }
 
@@ -2015,12 +2026,16 @@
             
             // Check if we have an active game session
             if (window.currentGameSession && window.currentGameSession.session_code) {
-                const baseURL = window.location.origin + window.location.pathname.replace('index.html', '');
-                playerURL = `${baseURL}player-test.html?session=${window.currentGameSession.session_code}&mode=player`;
+                // Generate Supabase URL + session for players to copy/paste
+                const config = loadSupabaseConfig();
+                if (config && config.url) {
+                    playerURL = `${config.url}?session=${window.currentGameSession.session_code}`;
+                } else {
+                    playerURL = 'Supabase not configured - please set up Supabase settings first';
+                }
             } else if (window.currentSession && window.currentSession.name !== 'New Session') {
                 // Fallback to local session for testing
-                const baseURL = window.location.origin + window.location.pathname.replace('index.html', '');
-                playerURL = `${baseURL}player-test.html?session=${encodeURIComponent(window.currentSession.name)}&mode=local`;
+                playerURL = 'Local session - no Supabase URL available';
             }
             
             document.getElementById('player-url').value = playerURL;
@@ -2375,9 +2390,12 @@
                         ...result.sessionInfo  // Include any additional info from Supabase
                     };
                     
-                    // Update player URL immediately
-                    const baseURL = window.location.origin + window.location.pathname.replace('index.html', '');
-                    const playerURL = `${baseURL}player-test.html?session=${sessionCode}&mode=player`;
+                    // Update player URL immediately with Supabase URL + session
+                    const savedConfig = loadSupabaseConfig();
+                    let playerURL = 'Supabase not configured';
+                    if (savedConfig && savedConfig.url) {
+                        playerURL = `${savedConfig.url}?session=${sessionCode}`;
+                    }
                     const playerUrlInput = document.getElementById('player-url');
                     if (playerUrlInput) {
                         playerUrlInput.value = playerURL;

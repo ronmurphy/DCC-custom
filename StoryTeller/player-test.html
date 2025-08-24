@@ -336,6 +336,7 @@
     </div>
 
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-chat.js"></script>
     <script>
         let isConnected = false;
         let playerName = '';
@@ -398,31 +399,33 @@
             }
             
             try {
-                // Initialize Supabase connection
-                const supabaseUrl = serverUrl || 'https://skddvbmxzeprvxfslhlk.supabase.co';
-                const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrZGR2Ym14emVwcnZ4ZnNsaGxrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU5NTMxMjEsImV4cCI6MjA3MTUyOTEyMX0.b3mv50bCw5Yq5SrY8-Sagdl4WoC592nQNdfTQciuf0M';
+                // Use real Supabase connection via supabase-chat.js
+                updateConnectionStatus(false);
                 
-                // For demo purposes, we'll simulate connection
-                setTimeout(() => {
-                    updateConnectionStatus(true);
-                    document.getElementById('login-section').classList.add('hidden');
-                    document.getElementById('chat-section').classList.add('active');
+                // Join the session using the real Supabase system
+                if (typeof window.fullSupabaseConnect === 'function') {
+                    const result = await window.fullSupabaseConnect(playerName, sessionCode, false, 'join');
                     
-                    addChatMessage(`${playerName} joined the session!`, 'system');
-                    showMessage('Successfully connected to session!', 'success');
-                    
-                    // Simulate receiving some initial data
-                    setTimeout(() => {
-                        addChatMessage('Welcome to the Epic Adventure! You find yourself at the entrance to an ancient dungeon...', 'storyteller');
-                    }, 1000);
-                    
-                }, 1500);
+                    if (result.success) {
+                        updateConnectionStatus(true);
+                        document.getElementById('login-section').classList.add('hidden');
+                        document.getElementById('chat-section').classList.add('active');
+                        
+                        addChatMessage(`${playerName} joined the session!`, 'system');
+                        showMessage('Successfully connected to session!', 'success');
+                    } else {
+                        throw new Error(result.error || 'Failed to join session');
+                    }
+                } else {
+                    throw new Error('Supabase chat system not loaded');
+                }
                 
                 showMessage('Connecting to session...', 'success');
                 
             } catch (error) {
                 console.error('Connection error:', error);
-                showMessage('Failed to connect to session. Please check your details and try again.');
+                updateConnectionStatus(false);
+                showMessage(`Failed to connect: ${error.message}`);
             }
         }
 
@@ -445,29 +448,28 @@
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
-        function sendMessage() {
+        async function sendMessage() {
             const input = document.getElementById('chat-input');
             const message = input.value.trim();
             
             if (message && isConnected) {
-                addChatMessage(message, 'player');
-                input.value = '';
-                
-                // Simulate responses to certain messages
-                setTimeout(() => {
-                    if (message.toLowerCase().includes('roll')) {
-                        const roll = Math.floor(Math.random() * 20) + 1;
-                        addChatMessage(`🎲 ${playerName} rolled a d20: ${roll}`, 'system');
-                    } else if (message.toLowerCase().includes('heal')) {
-                        playerStats.hp = Math.min(playerStats.hp + 5, playerStats.maxHp);
-                        updatePlayerStats();
-                        addChatMessage(`🩹 ${playerName} restored 5 HP!`, 'system');
-                    } else if (message.toLowerCase().includes('gold')) {
-                        playerStats.gold += 10;
-                        updatePlayerStats();
-                        addChatMessage(`💰 ${playerName} found 10 gold!`, 'system');
+                try {
+                    // Send via Supabase real-time system - don't add locally
+                    if (typeof window.sendChatMessageAsync === 'function') {
+                        await window.sendChatMessageAsync(message);
+                        console.log('✅ Message sent via Supabase - waiting for echo');
+                        input.value = '';
+                    } else if (typeof window.sendChatMessage === 'function') {
+                        await window.sendChatMessage(message);
+                        console.log('✅ Message sent via Supabase sync - waiting for echo');
+                        input.value = '';
+                    } else {
+                        throw new Error('Supabase chat functions not available');
                     }
-                }, 500);
+                } catch (error) {
+                    console.error('❌ Failed to send message:', error);
+                    addChatMessage(`❌ Failed to send: ${error.message}`, 'system');
+                }
             }
         }
 
