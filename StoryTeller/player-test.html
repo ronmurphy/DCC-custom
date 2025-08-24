@@ -478,6 +478,33 @@
             messageEl.innerHTML = prefix + (typeof message === 'object' ? message.message_text : message);
             chatMessages.appendChild(messageEl);
             chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Debounced reset for rapid message additions
+            clearTimeout(window.chatResetTimeout);
+            window.chatResetTimeout = setTimeout(() => {
+                resetChatContainer();
+            }, 500); // Reset after 500ms of no new messages
+        }
+
+        // Reset chat container dimensions after dynamic content changes
+        function resetChatContainer() {
+            const chatMessages = document.getElementById('chat-messages');
+            if (chatMessages) {
+                // Force recalculation of container dimensions
+                chatMessages.style.height = '';
+                chatMessages.style.minHeight = '';
+                
+                // Use requestAnimationFrame to ensure DOM updates are complete
+                requestAnimationFrame(() => {
+                    chatMessages.style.height = '100%';
+                    chatMessages.style.minHeight = '0';
+                    
+                    // Scroll to bottom after reset
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                    
+                    console.log('💬 Player chat container dimensions reset');
+                });
+            }
         }
 
         async function sendMessage() {
