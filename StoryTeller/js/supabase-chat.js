@@ -465,12 +465,17 @@ function updateUIAfterConnect(playerName, sessionCode, isStoryteller, mode) {
         // Update player URL
         const playerUrlInput = document.getElementById('player-url');
         if (playerUrlInput) {
-            const baseUrl = window.location.origin + window.location.pathname;
-            let playerUrl;
-            if (window.supabaseConfigManager && window.supabaseConfigManager.generateSessionUrl) {
-                playerUrl = window.supabaseConfigManager.generateSessionUrl(sessionCode);
+            // Generate Supabase URL + session for players to copy/paste
+            let playerUrl = 'No Supabase URL configured';
+            if (supabase && supabase.supabaseUrl) {
+                playerUrl = `${supabase.supabaseUrl}?session=${sessionCode}`;
             } else {
-                playerUrl = `${baseUrl}?session=${sessionCode}&mode=player`;
+                // Fallback - try to get from config
+                const config = localStorage.getItem('storyteller-supabase-config');
+                if (config) {
+                    const parsed = JSON.parse(config);
+                    playerUrl = `${parsed.url}?session=${sessionCode}`;
+                }
             }
             playerUrlInput.value = playerUrl;
             console.log('🔗 Generated player URL:', playerUrl);
@@ -1610,6 +1615,17 @@ function processPlayerSpell(data, playerName) {
 // UI HELPERS (reuse from original chat system)
 // ========================================
 function displayChatMessage(message) {
+    // Use the main page's addChatMessage function for consistency
+    if (window.addChatMessage) {
+        let messageType = 'player';
+        if (message.message_type === 'system') messageType = 'system';
+        if (message.is_storyteller) messageType = 'storyteller';
+        
+        window.addChatMessage(message.message_text, messageType, message.player_name);
+        return;
+    }
+    
+    // Fallback if addChatMessage doesn't exist
     const chatMessages = document.getElementById('chat-messages');
     if (!chatMessages) return;
     
