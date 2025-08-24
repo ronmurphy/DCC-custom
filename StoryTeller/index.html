@@ -668,6 +668,42 @@
             font-size: calc(var(--base-font-size) * 1);
         }
 
+        /* Connection Status */
+        .connection-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: calc(var(--border-radius) * 0.7);
+            font-size: calc(var(--base-font-size) * 0.85);
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .connection-status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .connection-status.warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .connection-status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .connection-status.offline {
+            background: #e2e3e5;
+            color: #6c757d;
+        }
+
+        .connection-status i {
+            font-size: calc(var(--base-font-size) * 1);
+        }
+
         /* Responsive Design */
         @media screen and (max-width: 1024px) {
             .content-area {
@@ -944,6 +980,13 @@
                         <span class="status-dot offline"></span>
                         <span class="status-text">Not Configured</span>
                     </div>
+                    
+                    <!-- Connection Test Status -->
+                    <div id="settings-connection-status" class="connection-status offline" style="margin: 10px 0;">
+                        <i class="material-icons">wifi_off</i>
+                        Connection Status: Not Tested
+                    </div>
+                    
                     <div class="form-group">
                         <label for="supabase-url">Supabase Project URL:</label>
                         <input type="text" id="supabase-url" placeholder="https://xxxxx.supabase.co" class="form-input">
@@ -1045,16 +1088,16 @@
             <div class="app-title">
                 <i class="ra ra-crystal-ball"></i>
                 <span>Story Teller Tool</span>
-                <span class="status-indicator online">
-                    <i class="material-icons">wifi</i>
-                    Online
-                </span>
             </div>
             
             <div class="session-info">
                 <span>Session: <strong id="session-name-display">New Session</strong></span>
                 <span>Players: <strong id="player-count">0</strong></span>
                 <span>Storyteller: <strong>DM Brad</strong></span>
+                <span id="connection-status" class="connection-status offline">
+                    <i class="material-icons">wifi_off</i>
+                    Offline
+                </span>
             </div>
             
             <div class="header-controls">
@@ -1494,6 +1537,36 @@
             // Detect device on load
             detectDevice();
             
+            // Initialize connection status
+            updateConnectionStatus('Offline', 'offline');
+            updateSettingsConnectionStatus('Not tested', 'offline');
+            
+            // Load Supabase configuration from browser storage
+            const supabaseConfig = loadSupabaseConfig();
+            
+            if (supabaseConfig) {
+                // Configuration found - attempt auto-connection
+                addChatMessage('🔧 Supabase configuration found, testing connection...', 'system');
+                
+                // Wait a moment for modules to load, then test connection
+                setTimeout(async () => {
+                    try {
+                        await testSupabaseConnection();
+                    } catch (error) {
+                        console.error('Auto-connection test failed:', error);
+                        updateConnectionStatus('Auto-connect failed', 'error');
+                    }
+                }, 1000);
+                
+            } else {
+                // No configuration found - open settings modal
+                addChatMessage('⚙️ No Supabase configuration found. Opening settings...', 'system');
+                setTimeout(() => {
+                    showSettings();
+                    addChatMessage('📝 Please configure Supabase settings to enable real-time chat', 'system');
+                }, 1500);
+            }
+            
             // Setup mode selector
             document.querySelectorAll('.mode-option').forEach(option => {
                 option.addEventListener('click', () => {
@@ -1863,47 +1936,51 @@
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
-        function sendMessage() {
+        // Enhanced sendMessage function using real-time chat
+        async function sendMessage() {
             const input = document.getElementById('chat-input');
             const message = input.value.trim();
             
-            if (message) {
+            if (!message) return;
+            
+            // Check if we have an active session
+            if (!window.currentGameSession) {
+                addChatMessage('❌ No active session. Please start a session first.', 'system');
+                return;
+            }
+            
+            try {
                 // Sync with hidden compatibility field for Supabase
                 document.getElementById('chat-message-input').value = message;
                 
-                // Try to send via Supabase first
-                if (window.sendChatMessage && typeof window.sendChatMessage === 'function') {
-                    try {
-                        window.sendChatMessage();
-                        // Don't add local message if Supabase handles it
-                    } catch (error) {
-                        console.error('Supabase send error:', error);
-                        // Fallback to local display
-                        addChatMessage(message, 'storyteller');
-                    }
+                // Send via Supabase real-time system
+                if (window.sendChatMessageAsync && typeof window.sendChatMessageAsync === 'function') {
+                    await window.sendChatMessageAsync(message);
+                    console.log('✅ Message sent via Supabase real-time');
+                    
+                    // Clear input only after successful send
+                    input.value = '';
+                    
+                } else if (window.sendChatMessage && typeof window.sendChatMessage === 'function') {
+                    // Fallback to sync method
+                    window.sendChatMessage();
+                    input.value = '';
+                    console.log('✅ Message sent via Supabase sync');
+                    
                 } else {
-                    // Local-only mode
-                    addChatMessage(message, 'storyteller');
+                    // Local-only mode fallback
+                    const playerName = window.playerName || window.currentGameSession?.dm_name || 'Storyteller';
+                    addChatMessage(message, 'storyteller', playerName);
+                    input.value = '';
+                    console.log('📝 Message added locally (no Supabase)');
                 }
                 
+            } catch (error) {
+                console.error('❌ Message send error:', error);
+                addChatMessage(`❌ Failed to send message: ${error.message}`, 'system');
+                
+                // Still clear the input to avoid confusion
                 input.value = '';
-                
-                // Check if it's a command and process it
-                if (message.includes(':') && message.match(/^[A-Z]+:/)) {
-                    try {
-                        if (window.dccChatIntegration) {
-                            window.dccChatIntegration.processChatMessage(message);
-                        } else {
-                            // Simulate command processing
-                            setTimeout(() => {
-                                addChatMessage('Command processed (simulation mode)!', 'system');
-                            }, 300);
-                        }
-                    } catch (error) {
-                        console.error('Command processing error:', error);
-                        addChatMessage(`❌ Command error: ${error.message}`, 'system');
-                    }
-                }
             }
         }
 
@@ -1955,6 +2032,172 @@
 
         function hideSettings() {
             document.getElementById('settings-modal').style.display = 'none';
+        }
+
+        // Supabase Configuration Functions
+        function loadSupabaseConfig() {
+            try {
+                const config = localStorage.getItem('storyteller-supabase-config');
+                if (config) {
+                    const parsedConfig = JSON.parse(config);
+                    document.getElementById('supabase-url').value = parsedConfig.url || '';
+                    document.getElementById('supabase-key').value = parsedConfig.key || '';
+                    
+                    // Update status display
+                    const statusDisplay = document.getElementById('config-status-display');
+                    if (statusDisplay) {
+                        statusDisplay.innerHTML = `
+                            <span class="status-dot connected"></span>
+                            <span class="status-text">Configuration Loaded</span>
+                        `;
+                    }
+                    
+                    console.log('✅ Supabase configuration loaded from browser storage');
+                    return parsedConfig;
+                }
+            } catch (error) {
+                console.error('Error loading Supabase config:', error);
+            }
+            return null;
+        }
+
+        function saveSupabaseConfig() {
+            const url = document.getElementById('supabase-url').value.trim();
+            const key = document.getElementById('supabase-key').value.trim();
+            
+            if (!url || !key) {
+                updateSettingsConnectionStatus('Please fill in both URL and API key', 'error');
+                return false;
+            }
+            
+            try {
+                const config = { url, key, savedAt: new Date().toISOString() };
+                localStorage.setItem('storyteller-supabase-config', JSON.stringify(config));
+                
+                // Update status display
+                const statusDisplay = document.getElementById('config-status-display');
+                if (statusDisplay) {
+                    statusDisplay.innerHTML = `
+                        <span class="status-dot connected"></span>
+                        <span class="status-text">Configuration Saved</span>
+                    `;
+                }
+                
+                updateSettingsConnectionStatus('Configuration saved successfully', 'success');
+                addChatMessage('✅ Supabase configuration saved!', 'system');
+                console.log('✅ Supabase configuration saved to browser storage');
+                return true;
+            } catch (error) {
+                console.error('Error saving Supabase config:', error);
+                updateSettingsConnectionStatus('Failed to save configuration', 'error');
+                return false;
+            }
+        }
+
+        function clearSupabaseConfig() {
+            try {
+                localStorage.removeItem('storyteller-supabase-config');
+                document.getElementById('supabase-url').value = '';
+                document.getElementById('supabase-key').value = '';
+                
+                // Update status displays
+                const statusDisplay = document.getElementById('config-status-display');
+                if (statusDisplay) {
+                    statusDisplay.innerHTML = `
+                        <span class="status-dot offline"></span>
+                        <span class="status-text">Not Configured</span>
+                    `;
+                }
+                
+                updateSettingsConnectionStatus('Configuration cleared', 'warning');
+                updateConnectionStatus('Offline', 'offline');
+                addChatMessage('🧹 Supabase configuration cleared', 'system');
+                console.log('🧹 Supabase configuration cleared');
+            } catch (error) {
+                console.error('Error clearing Supabase config:', error);
+            }
+        }
+
+        async function testSupabaseConnection() {
+            const url = document.getElementById('supabase-url').value.trim();
+            const key = document.getElementById('supabase-key').value.trim();
+            
+            if (!url || !key) {
+                updateSettingsConnectionStatus('Please fill in both URL and API key', 'error');
+                return;
+            }
+            
+            updateSettingsConnectionStatus('Testing connection...', 'warning');
+            
+            try {
+                // Test the connection using the same method as fullSupabaseConnect
+                if (typeof window.testSupabaseCredentials === 'function') {
+                    const result = await window.testSupabaseCredentials(url, key);
+                    
+                    if (result.success) {
+                        updateSettingsConnectionStatus('Connection successful!', 'success');
+                        updateConnectionStatus('Connection Test Passed', 'success');
+                        addChatMessage('✅ Supabase connection test successful!', 'system');
+                    } else {
+                        updateSettingsConnectionStatus(`Connection failed: ${result.error}`, 'error');
+                        updateConnectionStatus('Connection Test Failed', 'error');
+                        addChatMessage(`❌ Supabase connection test failed: ${result.error}`, 'system');
+                    }
+                } else {
+                    // Fallback: basic URL validation and attempt to load Supabase
+                    if (!url.includes('supabase.co') && !url.includes('localhost')) {
+                        throw new Error('Invalid Supabase URL format');
+                    }
+                    
+                    // Basic test: try to create a Supabase client
+                    const testClient = window.supabase.createClient(url, key);
+                    
+                    // Test a simple auth operation
+                    const { data, error } = await testClient.auth.getSession();
+                    
+                    if (error && error.message.includes('API key')) {
+                        throw new Error('Invalid API key');
+                    }
+                    
+                    updateSettingsConnectionStatus('Basic connection test passed', 'success');
+                    updateConnectionStatus('Connection Test Passed', 'success');
+                    addChatMessage('✅ Basic Supabase connection test passed!', 'system');
+                }
+                
+            } catch (error) {
+                console.error('Connection test error:', error);
+                updateSettingsConnectionStatus(`Test failed: ${error.message}`, 'error');
+                updateConnectionStatus('Connection Test Failed', 'error');
+                addChatMessage(`❌ Connection test failed: ${error.message}`, 'system');
+            }
+        }
+
+        function updateSettingsConnectionStatus(message, type = 'info') {
+            const settingsStatus = document.getElementById('settings-connection-status');
+            if (settingsStatus) {
+                settingsStatus.className = `connection-status ${type}`;
+                
+                let icon = 'wifi_off';
+                switch (type) {
+                    case 'success':
+                        icon = 'wifi';
+                        break;
+                    case 'warning':
+                        icon = 'sync';
+                        break;
+                    case 'error':
+                        icon = 'wifi_off';
+                        break;
+                    default:
+                        icon = 'help_outline';
+                        break;
+                }
+                
+                settingsStatus.innerHTML = `
+                    <i class="material-icons">${icon}</i>
+                    ${message}
+                `;
+            }
         }
 
         function copyPlayerURL() {
@@ -2071,8 +2314,8 @@
             }
         }
 
-        // Game Session Functions
-        function startNewGameSession() {
+        // Game Session Functions - Enhanced with fullSupabaseConnect
+        async function startNewGameSession() {
             const storytellerName = document.getElementById('storyteller-name').value.trim();
             const sessionCode = document.getElementById('new-session-code').value.trim();
             
@@ -2086,27 +2329,89 @@
                 return;
             }
             
-            // Sync with hidden compatibility fields for Supabase
-            document.getElementById('dm-name-input').value = storytellerName;
-            document.getElementById('session-code-input').value = sessionCode;
-            
-            // Store session information
-            window.currentGameSession = {
-                session_code: sessionCode,
-                dm_name: storytellerName,
-                is_active: true
-            };
-            
-            // Update UI
-            const statusElement = document.getElementById('session-status');
-            if (statusElement) {
-                statusElement.innerHTML = `
-                    <span class="status-dot connected"></span>
-                    <span class="status-text">Session: ${sessionCode}</span>
-                `;
+            // Load saved Supabase config if available
+            const savedConfig = loadSupabaseConfig();
+            if (!savedConfig) {
+                addChatMessage('❌ No Supabase configuration found. Please configure in Settings first.', 'system');
+                showSettings();
+                return;
             }
             
-            // Hide form, show session controls
+            // Show connecting status
+            updateConnectionStatus('Connecting to Supabase...', 'warning');
+            addChatMessage('🔌 Connecting to real-time chat system...', 'system');
+            
+            try {
+                // Use the new fullSupabaseConnect method with saved configuration
+                if (typeof window.fullSupabaseConnect === 'function') {
+                    const result = await window.fullSupabaseConnect(storytellerName, sessionCode, true, 'create');
+                    
+                    if (result.success) {
+                        // Success! Update UI
+                        updateConnectionStatus('Connected & Ready', 'success');
+                        addChatMessage(`✅ Session "${sessionCode}" created successfully!`, 'system');
+                        addChatMessage(`🎯 You are the Storyteller for this session`, 'system');
+                        addChatMessage(`📡 Real-time chat active - players can now join`, 'system');
+                        
+                        // Sync with hidden compatibility fields
+                        document.getElementById('dm-name-input').value = storytellerName;
+                        document.getElementById('session-code-input').value = sessionCode;
+                        
+                        // Store session information globally
+                        window.currentGameSession = result.sessionInfo;
+                        
+                        // Update session status
+                        const statusElement = document.getElementById('session-status');
+                        if (statusElement) {
+                            statusElement.innerHTML = `
+                                <span class="status-dot connected"></span>
+                                <span class="status-text">Session: ${sessionCode} (Connected)</span>
+                            `;
+                        }
+                        
+                        // Hide form, show session controls
+                        const sessionForm = document.getElementById('session-form');
+                        if (sessionForm) {
+                            sessionForm.style.display = 'none';
+                        }
+                        
+                        // Enable chat input
+                        const chatInput = document.getElementById('chat-input');
+                        if (chatInput) {
+                            chatInput.disabled = false;
+                            chatInput.placeholder = 'Type your message...';
+                        }
+                        
+                    } else {
+                        throw new Error(result.error || 'Connection failed');
+                    }
+                } else {
+                    throw new Error('fullSupabaseConnect function not available');
+                }
+                
+            } catch (error) {
+                console.error('Session creation error:', error);
+                
+                // Check if it's a schema-related error and provide helpful message
+                if (error.message.includes('is_active') || error.message.includes('schema cache')) {
+                    updateConnectionStatus('Database Schema Error', 'error');
+                    addChatMessage(`❌ Database schema issue: ${error.message}`, 'system');
+                    addChatMessage(`💡 Please check your Supabase database setup - 'is_active' column may be missing`, 'system');
+                } else {
+                    updateConnectionStatus('Connection Error', 'error');
+                    addChatMessage(`❌ Connection error: ${error.message}`, 'system');
+                }
+                
+                addChatMessage(`🎮 Starting in local mode...`, 'system');
+                
+                // Start local session as fallback
+                startLocalSession(storytellerName, sessionCode);
+            }
+        }
+
+        // Helper function for local session start
+        function startLocalSession(storytellerName, sessionCode) {
+            // Hide session form
             const sessionForm = document.getElementById('session-form');
             if (sessionForm) {
                 sessionForm.style.display = 'none';
@@ -2116,19 +2421,9 @@
             window.playerName = storytellerName;
             window.isStoryteller = true;
             
-            // Try to initialize real Supabase connection if available
-            if (window.startGameSession && typeof window.startGameSession === 'function') {
-                // Call the real supabase function
-                try {
-                    window.startGameSession();
-                    addChatMessage(`🎮 Real-time session "${sessionCode}" started! Players can now join.`, 'system');
-                } catch (error) {
-                    console.error('Supabase session start error:', error);
-                    addChatMessage(`⚠️ Session "${sessionCode}" started in local mode. Real-time chat may not work.`, 'system');
-                }
-            } else {
-                addChatMessage(`🎮 Session "${sessionCode}" started in local mode.`, 'system');
-            }
+            // Set connection status to offline
+            updateConnectionStatus('Offline', 'offline');
+            addChatMessage(`🎮 Session "${sessionCode}" started in local mode.`, 'system');
             addChatMessage(`👑 ${storytellerName} is the Storyteller`, 'system');
             addChatMessage('🔗 Player URL updated - check Settings to share', 'system');
             
@@ -2137,6 +2432,47 @@
             if (playerCount) {
                 playerCount.textContent = '1'; // Storyteller counts as 1
             }
+            
+            // Update session name display
+            const sessionDisplay = document.getElementById('session-name-display');
+            if (sessionDisplay) {
+                sessionDisplay.textContent = sessionCode;
+            }
+        }
+
+        // Helper function to update connection status UI
+        function updateConnectionStatus(message, type = 'info') {
+            const connectionStatus = document.getElementById('connection-status');
+            if (connectionStatus) {
+                // Update the class to use connection-status with proper type
+                connectionStatus.className = `connection-status ${type}`;
+                
+                // Update the icon based on status
+                let icon = 'wifi_off';
+                switch (type) {
+                    case 'success':
+                        icon = 'wifi';
+                        break;
+                    case 'warning':
+                        icon = 'sync';
+                        break;
+                    case 'error':
+                        icon = 'wifi_off';
+                        break;
+                    case 'offline':
+                    default:
+                        icon = 'wifi_off';
+                        break;
+                }
+                
+                // Update content with icon and message
+                connectionStatus.innerHTML = `
+                    <i class="material-icons">${icon}</i>
+                    ${message}
+                `;
+            }
+            
+            console.log(`🔄 Connection Status: ${message}`);
         }
 
         function toggleTheme() {

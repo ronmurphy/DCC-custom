@@ -5,7 +5,30 @@ This document provides **complete instructions** for implementing the DCC StoryT
 
 ---
 
-## 📚 Prerequisites
+## � QUICK START: Use `fullSupabaseConnect()`
+
+### The Easy Way - One Line Setup
+```javascript
+// DM creates session and starts chatting immediately:
+const result = await fullSupabaseConnect('Alice', 'DCC01', true, 'create');
+
+// Player joins and can chat immediately:
+const result = await fullSupabaseConnect('Bob', 'DCC01', false, 'join');
+
+// Send message (after successful connect):
+await sendChatMessageAsync('Hello everyone!');
+```
+
+### What You Get Automatically
+- ✅ **Supabase connection** established
+- ✅ **Session created/joined** 
+- ✅ **Real-time messaging** active
+- ✅ **UI elements updated** (if they exist)
+- ✅ **Ready to chat** immediately
+
+---
+
+## �📚 Prerequisites
 
 ### Required Reading
 1. **Read SupabaseConnect.md FIRST** - this document assumes Supabase is working
@@ -14,9 +37,13 @@ This document provides **complete instructions** for implementing the DCC StoryT
 ### Dependencies Verification
 Verify these are working before starting:
 ```javascript
-// These should work without errors:
+// OLD WAY (still works):
 await initializeSupabase(url, key);
 await testSupabaseConnection();
+
+// NEW WAY (recommended):
+const result = await fullSupabaseConnect('TestUser', 'TEST01', false, 'create');
+console.log('Ready to chat:', result.success);
 ```
 
 ---

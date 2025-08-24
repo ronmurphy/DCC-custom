@@ -5,7 +5,53 @@ This document provides **step-by-step instructions** for integrating Supabase re
 
 ---
 
-## 📋 Prerequisites
+## � NEW: One-Method Full Connect
+
+### Quick Start - Use `fullSupabaseConnect()`
+```javascript
+// For DM creating a new session
+const result = await fullSupabaseConnect('Alice', 'DCC01', true, 'create');
+
+// For Player joining existing session  
+const result = await fullSupabaseConnect('Bob', 'DCC01', false, 'join');
+
+// Check result
+if (result.success) {
+    console.log('Connected! Session info:', result.sessionInfo);
+    // Ready to send/receive messages!
+} else {
+    console.error('Connection failed:', result.error);
+}
+```
+
+### What `fullSupabaseConnect()` Does
+1. ✅ **Validates inputs** (name, session code)
+2. ✅ **Initializes Supabase** (if not already done)
+3. ✅ **Creates or joins session** (based on mode)
+4. ✅ **Sets up real-time messaging** (automatic subscription)
+5. ✅ **Starts connection monitoring** (auto-reconnect system)
+6. ✅ **Updates UI elements** (if they exist)
+7. ✅ **Sends announcement** (join/create message)
+8. ✅ **Returns detailed result** (success/error info)
+
+### 🔄 **AUTO-RECONNECTION FEATURES**
+- **Mobile-Friendly**: Detects when app goes to background/foreground
+- **Network Monitoring**: Handles network connectivity changes
+- **Heartbeat System**: Sends invisible keepalive messages every 15 seconds
+- **Auto-Retry**: Exponential backoff reconnection (up to 10 attempts)
+- **Smart Recovery**: Reconnects when returning to foreground
+- **Connection Status**: Visual indicators for connection health
+
+**Parameters:**
+- `playerName` (string): Name of the player/DM
+- `sessionCode` (string): Session code to create or join (max 10 chars)
+- `isStoryteller` (boolean): true for DM, false for player
+- `mode` (string): 'create' for new session, 'join' for existing
+- `options` (object): Optional configuration (future use)
+
+---
+
+## �📋 Prerequisites
 
 ### What You Need
 1. **Supabase account** (free tier is sufficient)

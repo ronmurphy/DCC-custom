@@ -18,6 +18,21 @@ let messagesSubscription = null;
 let isStoryTeller = false;
 let playerName = '';
 
+// ========================================
+// AUTO-RECONNECTION SYSTEM
+// ========================================
+let connectionMonitor = null;
+let lastHeartbeat = Date.now();
+let reconnectAttempts = 0;
+let maxReconnectAttempts = 40; // Increased for long RPG sessions (15+ min turns)
+let reconnectDelay = 3000; // Start with 3 seconds
+let isReconnecting = false;
+let visibilityChangeHandler = null;
+
+// Platform detection for enhanced mobile features
+let isCordova = typeof window.cordova !== 'undefined';
+let isBrowser = !isCordova;
+
 // Initialize Supabase (free tier: 500MB database, 2GB bandwidth)
 function initializeSupabase() {
     // Prevent double initialization
@@ -240,6 +255,593 @@ function sendChatMessage() {
 // ========================================
 // GAME SESSION MANAGEMENT
 // ========================================
+
+// ========================================
+// FULL CONNECT METHOD - ONE-STEP SETUP
+// ========================================
+
+/**
+ * Complete Supabase connection and session setup in one method
+ * @param {string} playerName - Name of the player/DM
+ * @param {string} sessionCode - Session code to create or join
+ * @param {boolean} isStoryteller - True if this is the DM/Storyteller
+ * @param {string} mode - 'create' to create new session, 'join' to join existing
+ * @param {Object} options - Optional configuration
+ * @returns {Promise<Object>} - Success/failure result with details
+ */
+async function fullSupabaseConnect(playerName, sessionCode, isStoryteller = false, mode = 'join', options = {}) {
+    const result = {
+        success: false,
+        error: null,
+        sessionInfo: null,
+        connectionStatus: 'disconnected'
+    };
+    
+    try {
+        // Step 1: Validate inputs
+        if (!playerName || !sessionCode) {
+            throw new Error('Player name and session code are required');
+        }
+        
+        if (sessionCode.length > 10) {
+            throw new Error('Session code must be 10 characters or less');
+        }
+        
+        console.log(`🔌 Starting full Supabase connect: ${playerName} ${mode === 'create' ? 'creating' : 'joining'} session ${sessionCode}`);
+        
+        // Step 2: Initialize Supabase if not already done
+        if (!supabase) {
+            const initResult = initializeSupabase();
+            if (!initResult) {
+                throw new Error('Failed to initialize Supabase. Check configuration.');
+            }
+        }
+        
+        // Step 3: Set global variables
+        window.playerName = playerName;
+        window.isStoryteller = isStoryteller;
+        
+        // Step 4: Create or join session
+        let sessionResult;
+        if (mode === 'create') {
+            // Create new session
+            sessionResult = await createGameSessionDirect(sessionCode, playerName);
+            console.log(`✅ Session ${sessionCode} created successfully`);
+        } else {
+            // Join existing session
+            sessionResult = await joinExistingSession(sessionCode);
+            console.log(`✅ Joined session ${sessionCode} successfully`);
+        }
+        
+        if (!sessionResult.success) {
+            throw new Error(sessionResult.error || 'Failed to setup session');
+        }
+        
+        // Step 5: Subscribe to real-time messages
+        await subscribeToGameMessages(sessionCode);
+        console.log(`🔔 Real-time subscription active for session ${sessionCode}`);
+        
+        // Step 6: Start connection monitoring
+        startConnectionMonitor();
+        console.log(`👁️ Connection monitor started for ${sessionCode}`);
+        
+        // Step 7: Update UI elements if they exist (optional, no error if missing)
+        updateUIAfterConnect(playerName, sessionCode, isStoryteller, mode);
+        
+        // Step 8: Send join/create announcement
+        if (mode === 'create') {
+            await sendSystemMessage(`${playerName} started the session as Storyteller`);
+        } else {
+            await sendSystemMessage(`${playerName} joined the session`);
+        }
+        
+        // Success!
+        result.success = true;
+        result.sessionInfo = {
+            sessionCode: sessionCode,
+            playerName: playerName,
+            isStoryteller: isStoryteller,
+            mode: mode
+        };
+        result.connectionStatus = 'connected';
+        
+        console.log(`🎉 Full Supabase connect complete! Ready for real-time gaming.`);
+        
+        return result;
+        
+    } catch (error) {
+        console.error('❌ Full Supabase connect failed:', error);
+        result.error = error.message;
+        result.connectionStatus = 'failed';
+        
+        // Clear any partial state
+        if (messagesSubscription) {
+            messagesSubscription.unsubscribe();
+            messagesSubscription = null;
+        }
+        
+        return result;
+    }
+}
+
+/**
+ * Helper function to create session directly (without UI dependency)
+ */
+async function createGameSessionDirect(sessionCode, dmName) {
+    try {
+        const { data, error } = await supabase
+            .from('game_sessions')
+            .insert([{
+                session_code: sessionCode,
+                dm_name: dmName,
+                is_active: true
+            }])
+            .select();
+
+        if (error) {
+            if (error.code === '23505') { // Unique constraint violation
+                return { success: false, error: `Session ${sessionCode} already exists` };
+            }
+            throw error;
+        }
+
+        currentGameSession = {
+            id: data[0].id,
+            session_code: sessionCode,
+            dm_name: dmName
+        };
+
+        return { success: true, session: currentGameSession };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Helper function to update UI elements after successful connection
+ */
+function updateUIAfterConnect(playerName, sessionCode, isStoryteller, mode) {
+    try {
+        // Update storyteller toggle if it exists
+        const storytellerToggle = document.getElementById('storyteller-toggle');
+        if (storytellerToggle) {
+            storytellerToggle.checked = isStoryteller;
+        }
+        
+        // Update player name field if it exists  
+        const playerNameInput = document.getElementById('storyteller-name') || document.getElementById('dm-name-input');
+        if (playerNameInput) {
+            playerNameInput.value = playerName;
+        }
+        
+        // Update session code field if it exists
+        const sessionCodeInput = document.getElementById('new-session-code') || document.getElementById('session-code-input');
+        if (sessionCodeInput) {
+            sessionCodeInput.value = sessionCode;
+        }
+        
+        // Show success message if chat area exists
+        const chatArea = document.getElementById('chat');
+        if (chatArea && window.addMessage) {
+            const actionText = mode === 'create' ? 'created' : 'joined';
+            const roleText = isStoryteller ? 'Storyteller' : 'Player';
+            window.addMessage('System', `${playerName} ${actionText} session ${sessionCode} as ${roleText}`, 'system');
+        }
+        
+        console.log(`🎨 UI updated for ${playerName} (${isStoryteller ? 'Storyteller' : 'Player'})`);
+    } catch (error) {
+        console.warn('⚠️ UI update failed (non-critical):', error.message);
+    }
+}
+
+/**
+ * Send a system message (helper for announcements)
+ */
+async function sendSystemMessage(messageText) {
+    try {
+        if (!currentGameSession || !supabase) return;
+        
+        await supabase
+            .from('game_messages')
+            .insert([{
+                session_code: currentGameSession.session_code,
+                player_name: 'System',
+                message_type: 'system',
+                message_text: messageText,
+                is_storyteller: false
+            }]);
+    } catch (error) {
+        console.warn('⚠️ System message failed (non-critical):', error.message);
+    }
+}
+
+// ========================================
+// AUTO-RECONNECTION SYSTEM
+// ========================================
+
+/**
+ * Start monitoring connection health and auto-reconnect if needed
+ * Enhanced for Cordova, PWA, and browser compatibility
+ */
+function startConnectionMonitor() {
+    if (connectionMonitor) {
+        clearInterval(connectionMonitor);
+    }
+    
+    console.log(`🔍 Starting connection health monitor for ${isCordova ? 'Cordova app' : 'browser'}...`);
+    
+    // Platform-specific monitoring intervals
+    let monitorInterval;
+    if (isCordova) {
+        // Cordova can handle more frequent checks and background activity
+        monitorInterval = 10000; // 10 seconds for native app
+        console.log('📱 Using enhanced Cordova monitoring (10s intervals)');
+    } else {
+        // Regular browser - more conservative to avoid performance issues
+        monitorInterval = 20000; // 20 seconds for browser
+        console.log('🌐 Using browser monitoring (20s intervals)');
+    }
+    
+    // Start monitoring
+    connectionMonitor = setInterval(async () => {
+        await checkConnectionHealth();
+    }, monitorInterval);
+    
+    // Setup platform-specific visibility monitoring
+    setupVisibilityMonitoring();
+    
+    // Setup network monitoring
+    setupNetworkMonitoring();
+    
+    console.log(`✅ Connection monitor active (${monitorInterval/1000}s intervals)`);
+}
+
+/**
+ * Check if the real-time connection is still healthy
+ */
+async function checkConnectionHealth() {
+    if (!currentGameSession || !supabase || isReconnecting) {
+        return;
+    }
+    
+    const now = Date.now();
+    const timeSinceLastHeartbeat = now - lastHeartbeat;
+    
+    // If no heartbeat for 60 seconds, consider connection dead
+    if (timeSinceLastHeartbeat > 60000) {
+        console.warn('⚠️ Real-time connection appears dead (no heartbeat for 60s)');
+        await attemptReconnection('heartbeat_timeout');
+        return;
+    }
+    
+    // Test if subscription is still active
+    if (!messagesSubscription || messagesSubscription.state === 'CLOSED') {
+        console.warn('⚠️ Real-time subscription is closed');
+        await attemptReconnection('subscription_closed');
+        return;
+    }
+    
+    // Send a test heartbeat message
+    try {
+        await sendHeartbeat();
+    } catch (error) {
+        console.warn('⚠️ Heartbeat failed:', error.message);
+        await attemptReconnection('heartbeat_failed');
+    }
+}
+
+/**
+ * Send a heartbeat message to test connection
+ */
+async function sendHeartbeat() {
+    if (!currentGameSession || !supabase) return;
+    
+    try {
+        await supabase
+            .from('game_messages')
+            .insert([{
+                session_code: currentGameSession.session_code,
+                player_name: 'Heartbeat',
+                message_type: 'heartbeat',
+                message_text: `ping_${Date.now()}`,
+                is_storyteller: false
+            }]);
+        
+        lastHeartbeat = Date.now();
+    } catch (error) {
+        throw new Error(`Heartbeat failed: ${error.message}`);
+    }
+}
+
+/**
+ * Attempt to reconnect the real-time subscription
+ */
+async function attemptReconnection(reason) {
+    if (isReconnecting || reconnectAttempts >= maxReconnectAttempts) {
+        if (reconnectAttempts >= maxReconnectAttempts) {
+            console.error('❌ Max reconnection attempts reached. Manual intervention required.');
+            showConnectionStatus('Connection lost - please refresh page', 'error');
+        }
+        return;
+    }
+    
+    isReconnecting = true;
+    reconnectAttempts++;
+    
+    console.log(`🔄 Attempting reconnection #${reconnectAttempts} (reason: ${reason})...`);
+    showConnectionStatus(`Reconnecting... (${reconnectAttempts}/${maxReconnectAttempts})`, 'warning');
+    
+    try {
+        // Unsubscribe from old subscription
+        if (messagesSubscription) {
+            messagesSubscription.unsubscribe();
+            messagesSubscription = null;
+        }
+        
+        // Wait before reconnecting (exponential backoff)
+        const delay = Math.min(reconnectDelay * Math.pow(2, reconnectAttempts - 1), 30000);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        
+        // Attempt to resubscribe
+        await subscribeToGameMessages(currentGameSession.session_code);
+        
+        // Success!
+        reconnectAttempts = 0;
+        isReconnecting = false;
+        lastHeartbeat = Date.now();
+        
+        console.log('✅ Reconnection successful!');
+        showConnectionStatus('Connected', 'success');
+        
+        // Send reconnection notification
+        await sendSystemMessage(`${window.playerName} reconnected to the session`);
+        
+    } catch (error) {
+        console.error(`❌ Reconnection attempt #${reconnectAttempts} failed:`, error);
+        isReconnecting = false;
+        
+        if (reconnectAttempts < maxReconnectAttempts) {
+            showConnectionStatus(`Reconnection failed, retrying...`, 'warning');
+        } else {
+            showConnectionStatus('Connection failed - please refresh page', 'error');
+        }
+    }
+}
+
+/**
+ * Monitor page visibility changes (mobile app backgrounding)
+ * Enhanced for Cordova, PWA, and browser compatibility
+ */
+function setupVisibilityMonitoring() {
+    if (visibilityChangeHandler) {
+        document.removeEventListener('visibilitychange', visibilityChangeHandler);
+    }
+    
+    console.log(`📱 Setting up visibility monitoring for ${isCordova ? 'Cordova' : 'Browser'}`);
+    
+    // Standard web visibility API (works in all platforms)
+    visibilityChangeHandler = async () => {
+        if (document.hidden) {
+            console.log('📱 App went to background (web API)');
+            onAppBackgrounded();
+        } else {
+            console.log('📱 App returned to foreground (web API)');
+            onAppForegrounded();
+        }
+    };
+    document.addEventListener('visibilitychange', visibilityChangeHandler);
+    
+    // Enhanced Cordova events for better native app detection
+    if (isCordova) {
+        document.addEventListener('deviceready', () => {
+            console.log('📱 Cordova device ready - setting up native app events');
+            
+            // Cordova pause/resume events (more reliable than web API)
+            document.addEventListener('pause', () => {
+                console.log('📱 App paused (Cordova native)');
+                onAppBackgrounded();
+            }, false);
+            
+            document.addEventListener('resume', () => {
+                console.log('📱 App resumed (Cordova native)');
+                onAppForegrounded();
+            }, false);
+            
+            // Handle back button (Android)
+            document.addEventListener('backbutton', (e) => {
+                console.log('📱 Back button pressed');
+                // Don't exit app, just minimize
+                if (typeof navigator.app !== 'undefined') {
+                    navigator.app.exitApp();
+                }
+            }, false);
+            
+        }, false);
+    }
+}
+
+/**
+ * Handle app going to background
+ */
+function onAppBackgrounded() {
+    console.log('� App backgrounded - adjusting connection monitoring');
+    
+    if (isCordova) {
+        // Cordova apps can maintain connections better in background
+        console.log('📱 Cordova detected - using enhanced background mode');
+        // Reduce heartbeat frequency to save battery
+        if (connectionMonitor) {
+            clearInterval(connectionMonitor);
+            // Check every 60 seconds instead of 15 when backgrounded
+            connectionMonitor = setInterval(async () => {
+                await checkConnectionHealth();
+            }, 60000);
+        }
+    } else {
+        // Web browsers will likely pause execution
+        console.log('🌐 Browser detected - preparing for potential connection pause');
+    }
+}
+
+/**
+ * Handle app returning to foreground  
+ */
+function onAppForegrounded() {
+    console.log('🔄 App foregrounded - restoring full connection monitoring');
+    
+    // Always restart normal monitoring frequency when returning
+    if (connectionMonitor) {
+        clearInterval(connectionMonitor);
+        connectionMonitor = setInterval(async () => {
+            await checkConnectionHealth();
+        }, 15000);
+    }
+    
+    // Check connection health immediately when returning to foreground
+    setTimeout(async () => {
+        if (currentGameSession) {
+            console.log('🔍 Checking connection after returning to foreground...');
+            await checkConnectionHealth();
+        }
+    }, 2000);
+}
+
+/**
+ * Monitor network status changes
+ * Enhanced for Cordova network detection
+ */
+function setupNetworkMonitoring() {
+    console.log(`🌐 Setting up network monitoring for ${isCordova ? 'Cordova' : 'browser'}`);
+    
+    // Standard browser network monitoring
+    if ('navigator' in window && 'onLine' in navigator) {
+        const handleOnline = async () => {
+            console.log('🌐 Network connection restored (browser API)');
+            if (currentGameSession) {
+                setTimeout(async () => {
+                    await checkConnectionHealth();
+                }, 3000);
+            }
+        };
+        
+        const handleOffline = () => {
+            console.log('📵 Network connection lost (browser API)');
+            showConnectionStatus('Network offline', 'warning');
+        };
+        
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+    }
+    
+    // Enhanced Cordova network monitoring
+    if (isCordova) {
+        document.addEventListener('deviceready', () => {
+            // Cordova Network Information plugin
+            if (typeof navigator.connection !== 'undefined') {
+                console.log('📱 Cordova network plugin detected');
+                
+                const checkNetworkState = () => {
+                    const networkState = navigator.connection.type;
+                    console.log(`📡 Network state: ${networkState}`);
+                    
+                    if (networkState === 'none') {
+                        showConnectionStatus('No network connection', 'error');
+                    } else if (networkState === 'wifi' || networkState === 'cellular') {
+                        showConnectionStatus('Network connected', 'success');
+                        // Check connection health when network comes back
+                        setTimeout(async () => {
+                            if (currentGameSession) {
+                                await checkConnectionHealth();
+                            }
+                        }, 2000);
+                    }
+                };
+                
+                // Monitor network changes
+                document.addEventListener('online', checkNetworkState, false);
+                document.addEventListener('offline', checkNetworkState, false);
+                
+                // Initial network state check
+                checkNetworkState();
+            }
+        }, false);
+    }
+}
+
+/**
+ * Stop the connection monitor
+ */
+function stopConnectionMonitor() {
+    if (connectionMonitor) {
+        clearInterval(connectionMonitor);
+        connectionMonitor = null;
+    }
+    
+    if (visibilityChangeHandler) {
+        document.removeEventListener('visibilitychange', visibilityChangeHandler);
+        visibilityChangeHandler = null;
+    }
+    
+    console.log('🛑 Connection monitor stopped');
+}
+
+/**
+ * Show connection status to user (if UI elements exist)
+ */
+function showConnectionStatus(message, type = 'info') {
+    // Try multiple possible status element IDs
+    const statusElements = [
+        'connection-status',
+        'realtime-status', 
+        'chat-status',
+        'online-status'
+    ];
+    
+    for (const elementId of statusElements) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.className = `status ${type}`;
+            element.textContent = message;
+            break;
+        }
+    }
+    
+    // Also log to console
+    const emoji = type === 'success' ? '✅' : type === 'warning' ? '⚠️' : type === 'error' ? '❌' : 'ℹ️';
+    console.log(`${emoji} Connection Status: ${message}`);
+}
+
+/**
+ * Disconnect from current session and clean up
+ */
+function disconnectFromSession() {
+    console.log('🔌 Disconnecting from session...');
+    
+    // Stop connection monitoring
+    stopConnectionMonitor();
+    
+    // Unsubscribe from real-time messages
+    if (messagesSubscription) {
+        messagesSubscription.unsubscribe();
+        messagesSubscription = null;
+    }
+    
+    // Clear session data
+    currentGameSession = null;
+    window.playerName = '';
+    window.isStoryteller = false;
+    
+    // Reset reconnection state
+    reconnectAttempts = 0;
+    isReconnecting = false;
+    lastHeartbeat = 0;
+    
+    // Update UI
+    showConnectionStatus('Disconnected', 'info');
+    
+    console.log('✅ Disconnected and cleaned up');
+}
+
 async function createNewGameSession(customSessionCode = null) {
     if (!supabase) {
         showNotification('Supabase not initialized', 'error');
@@ -561,16 +1163,33 @@ function subscribeToSession(sessionCode) {
             }, 
             (payload) => {
                 console.log('Real-time message received:', payload);
+                
+                // Update heartbeat timestamp on any message received
+                lastHeartbeat = Date.now();
+                
+                // Handle the message
                 handleIncomingMessage(payload.new);
             }
         )
         .subscribe((status) => {
             console.log('Subscription status:', status);
+            
+            if (status === 'SUBSCRIBED') {
+                lastHeartbeat = Date.now();
+                showConnectionStatus('Connected', 'success');
+            } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                showConnectionStatus('Connection issues detected', 'warning');
+                // The connection monitor will handle reconnection
+            }
         });
         
     // Load recent messages
     loadRecentMessages(sessionCode);
-    loadRecentMessages(sessionCode);
+}
+
+// Alias for backward compatibility and fullSupabaseConnect
+async function subscribeToGameMessages(sessionCode) {
+    return subscribeToSession(sessionCode);
 }
 
 async function loadRecentMessages(sessionCode) {
@@ -723,6 +1342,12 @@ async function sendGameResponse(responseText) {
 // ========================================
 function handleIncomingMessage(message) {
     console.log('Handling incoming message:', message);
+    
+    // Filter out heartbeat messages (don't display them)
+    if (message.message_type === 'heartbeat' || message.player_name === 'Heartbeat') {
+        console.log('📡 Heartbeat received, connection healthy');
+        return;
+    }
     
     // Check if this is a command disguised as a chat message
     if (message.message_type === 'chat' && message.message_text.startsWith('ATTACK:')) {
