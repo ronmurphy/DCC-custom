@@ -530,11 +530,13 @@
         .chat-messages {
             background: #f8f9fa;
             border-radius: var(--border-radius);
-            margin-bottom: var(--grid-gap);
+            margin-bottom: 0; /* Removed margin to prevent overflow */
             padding: var(--padding-base);
             overflow-y: auto;
             border: 1px solid #e9ecef;
             font-size: calc(var(--base-font-size) * 0.95);
+            height: 100%;
+            min-height: 0; /* Important for grid flex behavior */
         }
 
         .chat-message {
@@ -1572,8 +1574,11 @@
             }
             
             // Initialize panels with default content
-            loadPanel('left', leftPanelContent);
+            // Only initialize right panel - left panel has rich static content
             loadPanel('right', rightPanelContent);
+            
+            // Update left panel title to match the content
+            document.getElementById('left-panel-title').textContent = getPanelTitle(leftPanelContent);
         });
 
         // Toggle mode panel
@@ -1618,6 +1623,9 @@
                 setTimeout(() => {
                     if (window.loadRecentChatHistory) {
                         window.loadRecentChatHistory();
+                    } else {
+                        // If no chat history function, just reset the container
+                        resetChatContainer();
                     }
                 }, 100); // Small delay to ensure DOM is ready
             }
@@ -1645,21 +1653,119 @@
             switch (content) {
                 case 'commands':
                     return `
-                        <div class="command-section">
-                            <h4>Quick Commands</h4>
-                            <div class="command-grid">
-                                <button class="action-btn success" onclick="executeCommand('LOOT', 'treasure')">
-                                    <i class="ra ra-gem"></i>Generate Loot
-                                </button>
-                                <button class="action-btn warning" onclick="executeCommand('LEVELUP')">
-                                    <i class="ra ra-star"></i>Level Up
-                                </button>
-                                <button class="action-btn info" onclick="executeCommand('ACHIEVEMENT', 'hero')">
-                                    <i class="ra ra-trophy"></i>Achievement
-                                </button>
-                                <button class="action-btn danger" onclick="executeCommand('HEALTH', '-10')">
-                                    <i class="ra ra-heart"></i>Damage
-                                </button>
+                        <!-- Commands Interface -->
+                        <div class="command-interface">
+                            <div class="command-categories">
+                                <!-- Loot Commands -->
+                                <div class="command-category">
+                                    <div class="category-header">
+                                        <i class="ra ra-gem"></i>
+                                        Loot & Rewards
+                                    </div>
+                                    <div class="category-content">
+                                        <div class="command-grid">
+                                            <button class="command-btn success" onclick="executeCommand('loot', 'handful_gold')">
+                                                💰 Gold
+                                            </button>
+                                            <button class="command-btn success" onclick="executeCommand('loot', 'treasure_chest')">
+                                                📦 Treasure
+                                            </button>
+                                            <button class="command-btn success" onclick="executeCommand('loot', 'magic_item')">
+                                                ✨ Magic Item
+                                            </button>
+                                            <button class="command-btn success" onclick="executeCommand('loot', 'weapon')">
+                                                ⚔️ Weapon
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Character Commands -->
+                                <div class="command-category">
+                                    <div class="category-header">
+                                        <i class="ra ra-player-lift"></i>
+                                        Character Growth
+                                    </div>
+                                    <div class="category-content">
+                                        <div class="command-grid">
+                                            <button class="command-btn" onclick="executeCommand('levelup')">
+                                                ⬆️ Level Up
+                                            </button>
+                                            <button class="command-btn" onclick="executeCommand('achievement')">
+                                                🏆 Achievement
+                                            </button>
+                                            <button class="command-btn" onclick="executeCommand('skill_train')">
+                                                📚 Train Skill
+                                            </button>
+                                            <button class="command-btn" onclick="executeCommand('experience')">
+                                                ⭐ Experience
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Health & Status -->
+                                <div class="command-category">
+                                    <div class="category-header">
+                                        <i class="ra ra-health"></i>
+                                        Health & Status
+                                    </div>
+                                    <div class="category-content">
+                                        <div class="command-grid">
+                                            <button class="command-btn success" onclick="executeCommand('heal')">
+                                                🩹 Heal
+                                            </button>
+                                            <button class="command-btn danger" onclick="executeCommand('damage')">
+                                                💥 Damage
+                                            </button>
+                                            <button class="command-btn warning" onclick="executeCommand('stat_boost')">
+                                                📊 Stat Boost
+                                            </button>
+                                            <button class="command-btn warning" onclick="executeCommand('condition')">
+                                                🔮 Condition
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Quick Actions -->
+                                <div class="command-category">
+                                    <div class="category-header">
+                                        <i class="ra ra-lightning-bolt"></i>
+                                        Quick Actions
+                                    </div>
+                                    <div class="category-content">
+                                        <div class="command-grid">
+                                            <button class="command-btn" onclick="executeCommand('rest')">
+                                                😴 Rest
+                                            </button>
+                                            <button class="command-btn danger" onclick="executeCommand('murder_hobo')">
+                                                💀 Murder Hobo
+                                            </button>
+                                            <button class="command-btn success" onclick="executeCommand('heroic_deed')">
+                                                🦸 Heroic Deed
+                                            </button>
+                                            <button class="command-btn warning" onclick="executeCommand('catastrophe')">
+                                                🌪️ Catastrophe
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Player Selector -->
+                            <div class="player-selector">
+                                <h4>Connected Players</h4>
+                                <div class="player-list" id="player-list">
+                                    <div class="player-item" id="dm-player">
+                                        <div class="player-name">Storyteller (You)</div>
+                                        <div class="player-stats">Session Master</div>
+                                    </div>
+                                    <!-- Connected players will be populated here dynamically -->
+                                </div>
+                                <div class="no-players" id="no-players" style="display: none; padding: 15px; text-align: center; color: #666;">
+                                    No players connected yet. Share the player URL to invite players!
+                                </div>
                             </div>
                         </div>
                     `;
@@ -1939,6 +2045,33 @@
             
             chatMessages.appendChild(messageEl);
             chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Debounced reset for rapid message additions
+            clearTimeout(window.chatResetTimeout);
+            window.chatResetTimeout = setTimeout(() => {
+                resetChatContainer();
+            }, 500); // Reset after 500ms of no new messages
+        }
+
+        // Reset chat container dimensions after dynamic content changes
+        function resetChatContainer() {
+            const chatMessages = document.getElementById('chat-messages');
+            if (chatMessages) {
+                // Force recalculation of container dimensions
+                chatMessages.style.height = '';
+                chatMessages.style.minHeight = '';
+                
+                // Use requestAnimationFrame to ensure DOM updates are complete
+                requestAnimationFrame(() => {
+                    chatMessages.style.height = '100%';
+                    chatMessages.style.minHeight = '0';
+                    
+                    // Scroll to bottom after reset
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                    
+                    console.log('💬 Chat container dimensions reset');
+                });
+            }
         }
 
         // Enhanced sendMessage function using real-time chat
@@ -2615,6 +2748,11 @@
                         }
                     });
                     console.log(`💬 Loaded ${messages.length} recent messages`);
+                    
+                    // Reset chat container after loading messages
+                    setTimeout(() => {
+                        resetChatContainer();
+                    }, 100);
                 }
                 
             } catch (error) {
