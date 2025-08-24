@@ -34,32 +34,44 @@ let isCordova = typeof window.cordova !== 'undefined';
 let isBrowser = !isCordova;
 
 // Initialize Supabase (free tier: 500MB database, 2GB bandwidth)
-function initializeSupabase() {
+function initializeSupabase(customUrl = null, customKey = null) {
     // Prevent double initialization
     if (window.supabaseInitialized) {
         console.log('Supabase already initialized');
         return true;
     }
     
-    // Load configuration from storage
-    if (typeof supabaseConfig !== 'undefined') {
-        const configResult = supabaseConfig.loadConfig();
-        
-        if (!configResult.success) {
-            console.warn('Supabase not configured. Please set up your API keys in the Configure tab.');
-            showChatError('Chat not configured. Please visit the Configure tab to set up Supabase.');
+    let supabaseUrl = customUrl;
+    let supabaseKey = customKey;
+    
+    // If custom parameters not provided, load from configuration
+    if (!supabaseUrl || !supabaseKey) {
+        if (typeof supabaseConfig !== 'undefined') {
+            const configResult = supabaseConfig.loadConfig();
+            
+            if (!configResult.success) {
+                console.warn('Supabase not configured. Please set up your API keys in the Configure tab.');
+                showChatError('Chat not configured. Please visit the Configure tab to set up Supabase.');
+                return false;
+            }
+            
+            currentConfig = configResult.data;
+            supabaseUrl = supabaseUrl || currentConfig.supabaseUrl;
+            supabaseKey = supabaseKey || currentConfig.supabaseKey;
+        } else {
+            console.error('Supabase configuration manager not loaded');
+            showChatError('Configuration manager not loaded. Please refresh the page.');
             return false;
         }
-        
-        currentConfig = configResult.data;
-    } else {
-        console.error('Supabase configuration manager not loaded');
-        showChatError('Configuration manager not loaded. Please refresh the page.');
-        return false;
     }
     
     try {
-        supabase = window.supabase.createClient(currentConfig.supabaseUrl, currentConfig.supabaseKey);
+        supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        // Store configuration for later use
+        if (!currentConfig) {
+            currentConfig = { supabaseUrl, supabaseKey };
+        }
         
         // Clear any previous error messages
         const errorDiv = document.getElementById('chat-error-message');
