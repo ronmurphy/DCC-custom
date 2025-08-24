@@ -399,6 +399,33 @@
             }
             
             try {
+                // Parse Supabase URL if provided (format: https://xxx.supabase.co?session=123)
+                let supabaseUrl = '';
+                let extractedSession = '';
+                
+                if (serverUrl) {
+                    const urlParts = serverUrl.split('?');
+                    supabaseUrl = urlParts[0];
+                    
+                    // Extract session from URL if present
+                    if (urlParts[1]) {
+                        const params = new URLSearchParams(urlParts[1]);
+                        extractedSession = params.get('session');
+                        if (extractedSession && !sessionCode) {
+                            sessionCode = extractedSession;
+                            document.getElementById('session-code').value = sessionCode;
+                        }
+                    }
+                    
+                    // Initialize Supabase with the provided URL
+                    // Note: Player will need to have the same API key as storyteller
+                    const defaultApiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrZGR2Ym14emVwcnZ4ZnNsaGxrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU5NTMxMjEsImV4cCI6MjA3MTUyOTEyMX0.b3mv50bCw5Yq5SrY8-Sagdl4WoC592nQNdfTQciuf0M';
+                    
+                    if (typeof window.initializeSupabase === 'function') {
+                        window.initializeSupabase(supabaseUrl, defaultApiKey);
+                    }
+                }
+                
                 // Use real Supabase connection via supabase-chat.js
                 updateConnectionStatus(false);
                 
