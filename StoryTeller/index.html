@@ -563,6 +563,10 @@
         .chat-input-area {
             display: flex;
             gap: var(--grid-gap);
+            padding: var(--padding-base);
+            background: var(--primary-color);
+            border-top: 1px solid #e9ecef;
+            min-height: calc(var(--input-height) + var(--padding-base) * 2);
         }
 
         .chat-input {
@@ -1566,6 +1570,10 @@
             } else {
                 addChatMessage('DCC modules not loaded - using simulation mode', 'system');
             }
+            
+            // Initialize panels with default content
+            loadPanel('left', leftPanelContent);
+            loadPanel('right', rightPanelContent);
         });
 
         // Toggle mode panel
@@ -1604,6 +1612,15 @@
             document.querySelectorAll('.dropdown-content').forEach(el => {
                 el.classList.remove('show');
             });
+            
+            // Load chat history if chat panel is loaded
+            if (content === 'chat') {
+                setTimeout(() => {
+                    if (window.loadRecentChatHistory) {
+                        window.loadRecentChatHistory();
+                    }
+                }, 100); // Small delay to ensure DOM is ready
+            }
             
             addChatMessage(`${getPanelTitle(content)} loaded in ${panel} panel`, 'system');
         }
@@ -1732,15 +1749,21 @@
                 
                 case 'chat':
                     return `
-                        <div class="chat-panel">
-                            <div id="chat-messages" class="chat-messages">
-                                <!-- Chat messages will appear here -->
+                        <div class="chat-interface">
+                            <!-- Error message container for Supabase -->
+                            <div id="chat-error-message" class="chat-error" style="display: none;"></div>
+                            
+                            <div class="chat-messages" id="chat-messages">
+                                <div class="chat-message system">
+                                    <strong>System:</strong> Chat system ready. Start a session to begin messaging.
+                                </div>
                             </div>
-                            <div class="chat-input-container">
-                                <input type="text" id="chat-input" class="chat-input" placeholder="Type a message...">
-                                <button class="send-btn" onclick="sendChatMessage()">
-                                    <i class="material-icons">send</i>
-                                </button>
+                            
+                            <div class="chat-input-area">
+                                <input type="text" class="chat-input" placeholder="Type your message or command..." id="chat-input">
+                                <!-- Hidden input for supabase compatibility -->
+                                <input type="hidden" id="chat-message-input">
+                                <button class="send-btn" onclick="sendMessage()">Send</button>
                             </div>
                         </div>
                     `;
@@ -2386,6 +2409,7 @@
                         dm_name: storytellerName,
                         playerName: storytellerName,
                         isStoryteller: true,
+                        isStoryTeller: true, // Fix naming inconsistency
                         mode: 'create',
                         ...result.sessionInfo  // Include any additional info from Supabase
                     };
@@ -2468,6 +2492,7 @@
             // Set global variables for compatibility
             window.playerName = storytellerName;
             window.isStoryteller = true;
+            window.isStoryTeller = true; // Fix naming inconsistency
             
             // Set connection status to offline
             updateConnectionStatus('Offline', 'offline');
@@ -2547,6 +2572,58 @@
         window.addEventListener('resize', function() {
             detectDevice();
         });
+
+        // Chat functionality: Enter key support
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatInput = document.getElementById('chat-input');
+            if (chatInput) {
+                chatInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                    }
+                });
+            }
+        });
+
+        // Load recent chat messages (last minute) when panel loads
+        async function loadRecentChatHistory() {
+            if (!window.supabase || !window.currentGameSession) {
+                console.log('Chat history: Not connected to session');
+                return;
+            }
+
+            try {
+                const oneMinuteAgo = new Date(Date.now() - 60000).toISOString();
+                
+                const { data: messages, error } = await window.supabase
+                    .from('game_messages')
+                    .select('*')
+                    .eq('session_code', window.currentGameSession.session_code)
+                    .gte('created_at', oneMinuteAgo)
+                    .order('created_at', { ascending: true });
+                    
+                if (error) throw error;
+                
+                // Clear existing messages and display recent ones
+                const chatMessages = document.getElementById('chat-messages');
+                if (chatMessages && messages.length > 0) {
+                    chatMessages.innerHTML = '';
+                    messages.forEach(message => {
+                        if (window.displayChatMessage) {
+                            window.displayChatMessage(message);
+                        }
+                    });
+                    console.log(`💬 Loaded ${messages.length} recent messages`);
+                }
+                
+            } catch (error) {
+                console.warn('⚠️ Failed to load chat history:', error.message);
+            }
+        }
+
+        // Make function globally available
+        window.loadRecentChatHistory = loadRecentChatHistory;
     </script>
 
     <!-- Hidden compatibility elements for legacy modules -->

@@ -312,6 +312,8 @@ async function fullSupabaseConnect(playerName, sessionCode, isStoryteller = fals
         // Step 3: Set global variables
         window.playerName = playerName;
         window.isStoryteller = isStoryteller;
+        window.isStoryTeller = isStoryteller; // Fix naming inconsistency
+        isStoryTeller = isStoryteller; // Set local variable too
         
         // Step 4: Create or join session with smart fallback
         let sessionResult;
@@ -1156,7 +1158,9 @@ async function joinGameSession() {
         }
         
         playerName = name;
+        window.playerName = name; // Sync with global
         isStoryTeller = (role === 'storyteller');
+        window.isStoryTeller = (role === 'storyteller'); // Sync with global
         currentGameSession = sessionCode;
         
         // Send join message
@@ -1228,9 +1232,12 @@ async function leaveGameSession() {
 // REAL-TIME MESSAGING
 // ========================================
 function subscribeToSession(sessionCode) {
-    console.log('Setting up real-time subscription for session:', sessionCode);
+    console.log('🔍 DEBUG - Setting up real-time subscription for session:', sessionCode);
+    console.log('🔍 DEBUG - Current player name:', window.playerName);
+    console.log('🔍 DEBUG - Is storyteller:', window.isStoryTeller);
     
     if (messagesSubscription) {
+        console.log('🔍 DEBUG - Unsubscribing from previous subscription');
         messagesSubscription.unsubscribe();
     }
     
@@ -1244,7 +1251,9 @@ function subscribeToSession(sessionCode) {
                 filter: `session_code=eq.${sessionCode}`
             }, 
             (payload) => {
-                console.log('Real-time message received:', payload);
+                console.log('🔍 DEBUG - Real-time message received:', payload);
+                console.log('🔍 DEBUG - Message session_code:', payload.new.session_code);
+                console.log('🔍 DEBUG - Expected session_code:', sessionCode);
                 
                 // Update heartbeat timestamp on any message received
                 lastHeartbeat = Date.now();
@@ -1254,13 +1263,15 @@ function subscribeToSession(sessionCode) {
             }
         )
         .subscribe((status) => {
-            console.log('Subscription status:', status);
+            console.log('🔍 DEBUG - Subscription status:', status);
             
             if (status === 'SUBSCRIBED') {
                 lastHeartbeat = Date.now();
                 showConnectionStatus('Connected', 'success');
+                console.log('🔍 DEBUG - Successfully subscribed to session:', sessionCode);
             } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
                 showConnectionStatus('Connection issues detected', 'warning');
+                console.log('🔍 DEBUG - Subscription error for session:', sessionCode);
                 // The connection monitor will handle reconnection
             }
         });
@@ -1302,11 +1313,13 @@ async function loadRecentMessages(sessionCode) {
 }
 
 async function sendChatMessageAsync(messageText = null) {
-    console.log('Sending message:', messageText);
-    console.log('Supabase available:', !!supabase);
-    console.log('Current session:', currentGameSession);
-    console.log('Player name:', playerName);
-    console.log('Is storyteller:', isStoryTeller);
+    console.log('🔍 DEBUG - Sending message:', messageText);
+    console.log('🔍 DEBUG - Supabase available:', !!supabase);
+    console.log('🔍 DEBUG - Current session:', currentGameSession);
+    console.log('🔍 DEBUG - window.playerName:', window.playerName);
+    console.log('🔍 DEBUG - local playerName:', playerName);
+    console.log('🔍 DEBUG - window.isStoryTeller:', window.isStoryTeller);
+    console.log('🔍 DEBUG - local isStoryTeller:', isStoryTeller);
     
     if (!supabase) {
         console.error('Supabase not initialized');
@@ -1326,13 +1339,13 @@ async function sendChatMessageAsync(messageText = null) {
     try {
         const messageData = {
             session_code: currentGameSession.session_code,
-            player_name: playerName || 'Unknown Player',
+            player_name: window.playerName || playerName || 'Unknown Player',
             message_type: 'chat',
             message_text: messageText,
-            is_storyteller: isStoryTeller || false
+            is_storyteller: window.isStoryTeller || isStoryTeller || false
         };
         
-        console.log('Inserting message:', messageData);
+        console.log('🔍 DEBUG - Inserting message:', messageData);
         
         const { data, error } = await supabase
             .from('game_messages')
@@ -1402,7 +1415,10 @@ async function sendGameResponse(responseText) {
 // MESSAGE PROCESSING
 // ========================================
 function handleIncomingMessage(message) {
-    console.log('Handling incoming message:', message);
+    console.log('🔍 DEBUG - Handling incoming message:', message);
+    console.log('🔍 DEBUG - Message is_storyteller:', message.is_storyteller);
+    console.log('🔍 DEBUG - Message player_name:', message.player_name);
+    console.log('🔍 DEBUG - Current window.playerName:', window.playerName);
     
     // Filter out heartbeat messages (don't display them)
     if (message.message_type === 'heartbeat' || message.player_name === 'Heartbeat') {
@@ -1427,7 +1443,8 @@ function handleIncomingMessage(message) {
     displayChatMessage(message);
     
     // Don't process our own messages for game commands
-    if (message.player_name === playerName) {
+    const currentPlayerName = window.playerName || playerName;
+    if (message.player_name === currentPlayerName) {
         console.log('This is our own message, skipping command processing');
         return;
     }
@@ -1627,12 +1644,15 @@ function processPlayerSpell(data, playerName) {
 // UI HELPERS (reuse from original chat system)
 // ========================================
 function displayChatMessage(message) {
+    console.log('🔍 DEBUG - displayChatMessage called with:', message);
+    
     // Use the main page's addChatMessage function for consistency
     if (window.addChatMessage) {
         let messageType = 'player';
         if (message.message_type === 'system') messageType = 'system';
         if (message.is_storyteller) messageType = 'storyteller';
         
+        console.log('🔍 DEBUG - Calling window.addChatMessage with type:', messageType);
         window.addChatMessage(message.message_text, messageType, message.player_name);
         return;
     }
