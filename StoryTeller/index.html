@@ -1436,7 +1436,6 @@
     <script src="js/map-editor.js"></script>
     <script src="js/combat-manager.js"></script>
     <script src="js/supabase-chat.js"></script>
-    <script src="js/realtime-chat.js"></script>
     <script src="js/map-sharing.js"></script>
     <script src="js/player-data-parser.js"></script>
     <script src="js/supabase-config.js"></script>
@@ -2346,21 +2345,46 @@
                 if (typeof window.fullSupabaseConnect === 'function') {
                     const result = await window.fullSupabaseConnect(storytellerName, sessionCode, true, 'create');
                     
-                    if (result.success) {
-                        // Success! Update UI
-                        updateConnectionStatus('Connected & Ready', 'success');
+                if (result.success) {
+                    // Success! Update UI
+                    updateConnectionStatus('Connected & Ready', 'success');
+                    
+                    // Check if we created or joined the session
+                    if (result.sessionInfo && result.sessionInfo.mode === 'create') {
                         addChatMessage(`✅ Session "${sessionCode}" created successfully!`, 'system');
-                        addChatMessage(`🎯 You are the Storyteller for this session`, 'system');
-                        addChatMessage(`📡 Real-time chat active - players can now join`, 'system');
-                        
-                        // Sync with hidden compatibility fields
-                        document.getElementById('dm-name-input').value = storytellerName;
-                        document.getElementById('session-code-input').value = sessionCode;
-                        
-                        // Store session information globally
-                        window.currentGameSession = result.sessionInfo;
-                        
-                        // Update session status
+                    } else {
+                        addChatMessage(`✅ Joined existing session "${sessionCode}" successfully!`, 'system');
+                        addChatMessage(`ℹ️ This session already existed, so you joined it instead`, 'system');
+                    }
+                    
+                    addChatMessage(`🎯 You are the Storyteller for this session`, 'system');
+                    addChatMessage(`📡 Real-time chat active - players can now join`, 'system');
+                    
+                    // Sync with hidden compatibility fields
+                    document.getElementById('dm-name-input').value = storytellerName;
+                    document.getElementById('session-code-input').value = sessionCode;
+                    
+                    // Store session information globally with proper structure
+                    window.currentGameSession = {
+                        session_code: sessionCode,  // Use snake_case for compatibility
+                        sessionCode: sessionCode,   // Also keep camelCase from result
+                        dm_name: storytellerName,
+                        playerName: storytellerName,
+                        isStoryteller: true,
+                        mode: 'create',
+                        ...result.sessionInfo  // Include any additional info from Supabase
+                    };
+                    
+                    // Update player URL immediately
+                    const baseURL = window.location.origin + window.location.pathname.replace('index.html', '');
+                    const playerURL = `${baseURL}player-test.html?session=${sessionCode}&mode=player`;
+                    const playerUrlInput = document.getElementById('player-url');
+                    if (playerUrlInput) {
+                        playerUrlInput.value = playerURL;
+                    }
+                    addChatMessage(`🔗 Player URL ready - check Settings to share with players`, 'system');
+                    
+                    // Update session status
                         const statusElement = document.getElementById('session-status');
                         if (statusElement) {
                             statusElement.innerHTML = `
@@ -2380,6 +2404,12 @@
                         if (chatInput) {
                             chatInput.disabled = false;
                             chatInput.placeholder = 'Type your message...';
+                        }
+                        
+                        // Update session name in header
+                        const sessionNameDisplay = document.getElementById('session-name-display');
+                        if (sessionNameDisplay) {
+                            sessionNameDisplay.textContent = sessionCode;
                         }
                         
                     } else {

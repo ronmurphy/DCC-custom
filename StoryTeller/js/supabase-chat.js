@@ -301,12 +301,22 @@ async function fullSupabaseConnect(playerName, sessionCode, isStoryteller = fals
         window.playerName = playerName;
         window.isStoryteller = isStoryteller;
         
-        // Step 4: Create or join session
+        // Step 4: Create or join session with smart fallback
         let sessionResult;
         if (mode === 'create') {
-            // Create new session
+            // Try to create new session
             sessionResult = await createGameSessionDirect(sessionCode, playerName);
-            console.log(`✅ Session ${sessionCode} created successfully`);
+            
+            if (!sessionResult.success && sessionResult.error && sessionResult.error.includes('already exists')) {
+                // Session already exists - automatically switch to join mode
+                console.log(`⚠️ Session ${sessionCode} already exists, switching to join mode...`);
+                sessionResult = await joinExistingSession(sessionCode);
+                if (sessionResult.success) {
+                    console.log(`✅ Automatically joined existing session ${sessionCode}`);
+                }
+            } else if (sessionResult.success) {
+                console.log(`✅ Session ${sessionCode} created successfully`);
+            }
         } else {
             // Join existing session
             sessionResult = await joinExistingSession(sessionCode);
@@ -373,8 +383,7 @@ async function createGameSessionDirect(sessionCode, dmName) {
             .from('game_sessions')
             .insert([{
                 session_code: sessionCode,
-                dm_name: dmName,
-                is_active: true
+                dm_name: dmName
             }])
             .select();
 
@@ -389,6 +398,39 @@ async function createGameSessionDirect(sessionCode, dmName) {
             id: data[0].id,
             session_code: sessionCode,
             dm_name: dmName
+        };
+
+        return { success: true, session: currentGameSession };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Join an existing game session
+ * @param {string} sessionCode - Session code to join (max 10 chars)
+ * @returns {Object} - Result object with success/error
+ */
+async function joinExistingSession(sessionCode) {
+    try {
+        const { data, error } = await supabase
+            .from('game_sessions')
+            .select('*')
+            .eq('session_code', sessionCode.toUpperCase())
+            .single();
+
+        if (error) {
+            if (error.code === 'PGRST116') {
+                return { success: false, error: 'Session not found' };
+            }
+            return { success: false, error: error.message };
+        }
+
+        // Store session info globally
+        currentGameSession = {
+            id: data.id,
+            session_code: data.session_code,
+            dm_name: data.dm_name
         };
 
         return { success: true, session: currentGameSession };
@@ -418,6 +460,29 @@ function updateUIAfterConnect(playerName, sessionCode, isStoryteller, mode) {
         const sessionCodeInput = document.getElementById('new-session-code') || document.getElementById('session-code-input');
         if (sessionCodeInput) {
             sessionCodeInput.value = sessionCode;
+        }
+        
+        // Update player URL
+        const playerUrlInput = document.getElementById('player-url');
+        if (playerUrlInput) {
+            const baseUrl = window.location.origin + window.location.pathname;
+            let playerUrl;
+            if (window.supabaseConfigManager && window.supabaseConfigManager.generateSessionUrl) {
+                playerUrl = window.supabaseConfigManager.generateSessionUrl(sessionCode);
+            } else {
+                playerUrl = `${baseUrl}?session=${sessionCode}&mode=player`;
+            }
+            playerUrlInput.value = playerUrl;
+            console.log('🔗 Generated player URL:', playerUrl);
+        }
+        
+        // Update session status display
+        const sessionStatus = document.getElementById('session-status');
+        if (sessionStatus) {
+            sessionStatus.innerHTML = `
+                <span class="status-dot connected"></span>
+                <span class="status-text">Session: ${sessionCode} (Active)</span>
+            `;
         }
         
         // Show success message if chat area exists
@@ -1292,27 +1357,6 @@ async function sendGameCommand(command, data) {
     } catch (error) {
         console.error('Error sending game command:', error);
         showNotification('Failed to send game command', 'error');
-    }
-}
-
-async function sendSystemMessage(text) {
-    if (!supabase || !currentGameSession) return;
-    
-    try {
-        const { error } = await supabase
-            .from('game_messages')
-            .insert([{
-                session_code: currentGameSession,
-                player_name: 'System',
-                message_type: 'system',
-                message_text: text,
-                is_storyteller: false
-            }]);
-            
-        if (error) throw error;
-        
-    } catch (error) {
-        console.error('Error sending system message:', error);
     }
 }
 
