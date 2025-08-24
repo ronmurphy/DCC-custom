@@ -82,8 +82,8 @@ async function interceptChatMessage(message) {
  * Check if a message contains a command pattern
  */
 function isCommandMessage(messageText) {
-    // Look for patterns like: COMMAND:PlayerName:parameters
-    const commandPattern = /^(LOOT|ACHIEVEMENT|LEVELUP):[^:]+:.+/;
+    // Look for patterns like: COMMAND:PlayerName or COMMAND:PlayerName:parameters
+    const commandPattern = /^(LOOT|ACHIEVEMENT|LEVELUP|ITEM|SKILL|EXP|GOLD|HEALTH|STAT):[^:]+/;
     return commandPattern.test(messageText);
 }
 
@@ -98,14 +98,14 @@ async function processCommandMessage(message) {
     
     // Parse the command
     const commandParts = messageText.split(':');
-    if (commandParts.length < 3) {
+    if (commandParts.length < 2) {
         // Malformed command - display as-is
         return message;
     }
     
     const command = commandParts[0];
     const targetPlayer = commandParts[1];
-    const parameters = commandParts.slice(2).join(':');
+    const parameters = commandParts.length > 2 ? commandParts.slice(2).join(':') : null;
     
     // Determine what version to show based on user role
     let displayText;
@@ -139,7 +139,7 @@ async function processCommandMessage(message) {
  */
 async function generatePersonalResult(command, parameters) {
     if (!commandParser) {
-        return `You received a ${command} command: ${parameters}`;
+        return `You received a ${command} command${parameters ? ': ' + parameters : ''}`;
     }
     
     switch (command) {
@@ -148,9 +148,9 @@ async function generatePersonalResult(command, parameters) {
         case 'ACHIEVEMENT':
             return `🏆 Achievement Unlocked: ${parameters}!`;
         case 'LEVELUP':
-            return `🎉 Congratulations! You've reached level ${parameters}!`;
+            return `🎉 Congratulations! You've leveled up!`;
         default:
-            return `You received: ${command} - ${parameters}`;
+            return `You received: ${command}${parameters ? ' - ' + parameters : ''}`;
     }
 }
 
