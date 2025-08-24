@@ -939,3 +939,137 @@ window.testCustomRoll = testCustomRoll;
 window.testSpellRoll = testSpellRoll;
 window.testEquipmentBonus = testEquipmentBonus;
 window.populateDCCTestData = populateDCCTestData;
+
+// ========================================
+// SUPABASE CONFIGURATION UI FUNCTIONS
+// ========================================
+function saveSupabaseConfig() {
+    const urlInput = document.getElementById('supabase-url');
+    const keyInput = document.getElementById('supabase-key');
+    
+    if (!urlInput || !keyInput) {
+        showNotification('Configuration form not found', 'error');
+        return;
+    }
+    
+    const url = urlInput.value.trim();
+    const key = keyInput.value.trim();
+    
+    if (!url || !key) {
+        showNotification('Please enter both URL and API key', 'error');
+        return;
+    }
+    
+    if (typeof supabaseConfig !== 'undefined') {
+        const validation = supabaseConfig.validateConfig(url, key);
+        if (!validation.valid) {
+            showNotification('Invalid configuration: ' + validation.errors.join(', '), 'error');
+            return;
+        }
+        
+        const result = supabaseConfig.saveConfig(url, key);
+        if (result.success) {
+            showNotification('Configuration saved successfully!', 'success');
+            updateConfigDisplay();
+            
+            // Try to initialize Supabase
+            if (typeof initializeSupabase === 'function') {
+                window.supabaseInitialized = false; // Reset flag
+                const initResult = initializeSupabase();
+                if (initResult) {
+                    showNotification('Connected to Supabase successfully!', 'success');
+                } else {
+                    showNotification('Configuration saved but connection failed', 'warning');
+                }
+            }
+        } else {
+            showNotification('Failed to save configuration', 'error');
+        }
+    } else {
+        showNotification('Configuration manager not loaded', 'error');
+    }
+}
+
+function testSupabaseConnection() {
+    if (typeof supabaseConfig !== 'undefined' && supabaseConfig.hasConfig()) {
+        showNotification('Testing connection...', 'info');
+        
+        if (typeof initializeSupabase === 'function') {
+            window.supabaseInitialized = false; // Reset flag
+            const result = initializeSupabase();
+            if (result) {
+                showNotification('✅ Connection test successful!', 'success');
+                updateConfigDisplay();
+            } else {
+                showNotification('❌ Connection test failed', 'error');
+            }
+        } else {
+            showNotification('Supabase chat system not loaded', 'error');
+        }
+    } else {
+        showNotification('Please save configuration first', 'warning');
+    }
+}
+
+function clearSupabaseConfig() {
+    if (confirm('Are you sure you want to clear the Supabase configuration?')) {
+        if (typeof supabaseConfig !== 'undefined') {
+            const result = supabaseConfig.clearConfig();
+            if (result.success) {
+                document.getElementById('supabase-url').value = '';
+                document.getElementById('supabase-key').value = '';
+                showNotification('Configuration cleared', 'success');
+                updateConfigDisplay();
+                
+                // Reset Supabase initialization
+                window.supabaseInitialized = false;
+            } else {
+                showNotification('Failed to clear configuration', 'error');
+            }
+        }
+    }
+}
+
+function updateConfigDisplay() {
+    const statusDisplay = document.getElementById('config-status-display');
+    if (!statusDisplay) return;
+    
+    if (typeof supabaseConfig !== 'undefined' && supabaseConfig.hasConfig()) {
+        statusDisplay.innerHTML = `
+            <span class="status-dot connected"></span>
+            <span class="status-text">Configured</span>
+        `;
+        
+        // Load saved values into form
+        const config = supabaseConfig.loadConfig();
+        if (config.success) {
+            const urlInput = document.getElementById('supabase-url');
+            const keyInput = document.getElementById('supabase-key');
+            if (urlInput) urlInput.value = config.data.supabaseUrl;
+            if (keyInput) keyInput.value = config.data.supabaseKey;
+        }
+    } else {
+        statusDisplay.innerHTML = `
+            <span class="status-dot offline"></span>
+            <span class="status-text">Not Configured</span>
+        `;
+    }
+}
+
+// ========================================
+// SETTINGS MODAL FUNCTIONS
+// ========================================
+function showSettings() {
+    const modal = document.getElementById('settings-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        updateConfigDisplay(); // Refresh config display when opening settings
+    }
+}
+
+function hideSettings() {
+    const modal = document.getElementById('settings-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
