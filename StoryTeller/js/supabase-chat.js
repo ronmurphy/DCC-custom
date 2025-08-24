@@ -371,6 +371,11 @@ async function fullSupabaseConnect(playerName, sessionCode, isStoryteller = fals
         
         console.log(`🎉 Full Supabase connect complete! Ready for real-time gaming.`);
         
+        // Update connected players list after connection
+        setTimeout(() => {
+            updateConnectedPlayersList();
+        }, 2000); // Give time for system messages to be sent
+        
         return result;
         
     } catch (error) {
@@ -1312,6 +1317,52 @@ async function loadRecentMessages(sessionCode) {
     }
 }
 
+// Get connected players from recent activity and update the UI
+async function updateConnectedPlayersList() {
+    if (!supabase || !currentGameSession) return;
+    
+    try {
+        // Get unique players from recent messages (last 5 minutes)
+        const fiveMinutesAgo = new Date(Date.now() - 300000).toISOString();
+        
+        const { data: messages, error } = await supabase
+            .from('game_messages')
+            .select('player_name, is_storyteller, created_at')
+            .eq('session_code', currentGameSession.session_code)
+            .gte('created_at', fiveMinutesAgo)
+            .neq('player_name', 'System')
+            .neq('player_name', 'Heartbeat')
+            .order('created_at', { ascending: false });
+            
+        if (error) throw error;
+        
+        // Get unique players
+        const uniquePlayers = [];
+        const seenPlayers = new Set();
+        
+        messages.forEach(message => {
+            if (message.player_name && !seenPlayers.has(message.player_name)) {
+                uniquePlayers.push({
+                    name: message.player_name,
+                    is_storyteller: message.is_storyteller,
+                    last_seen: message.created_at
+                });
+                seenPlayers.add(message.player_name);
+            }
+        });
+        
+        console.log('🔍 DEBUG - Connected players found:', uniquePlayers);
+        
+        // Update the UI if the function exists
+        if (typeof window.updateConnectedPlayers === 'function') {
+            window.updateConnectedPlayers(uniquePlayers);
+        }
+        
+    } catch (error) {
+        console.warn('⚠️ Failed to update connected players:', error.message);
+    }
+}
+
 async function sendChatMessageAsync(messageText = null) {
     console.log('🔍 DEBUG - Sending message:', messageText);
     console.log('🔍 DEBUG - Supabase available:', !!supabase);
@@ -1461,6 +1512,12 @@ function handleIncomingMessage(message) {
     if (chatTab && !chatTab.classList.contains('active')) {
         showChatNotification();
     }
+    
+    // Update connected players list (debounced)
+    clearTimeout(window.playerUpdateTimeout);
+    window.playerUpdateTimeout = setTimeout(() => {
+        updateConnectedPlayersList();
+    }, 1000); // Update after 1 second of no new messages
 }
 
 // ========================================
@@ -1785,4 +1842,5 @@ if (typeof window !== 'undefined') {
     window.joinGameSession = joinGameSession;
     window.leaveGameSession = leaveGameSession;
     window.sendChatMessage = sendChatMessage;
+    window.updateConnectedPlayersList = updateConnectedPlayersList;
 }
