@@ -455,6 +455,13 @@
         }
 
         function addChatMessage(message, type = 'player', sender = '') {
+            // Filter out heartbeat messages
+            if (type === 'heartbeat' || sender === 'Heartbeat' || 
+                (typeof message === 'object' && (message.message_type === 'heartbeat' || message.player_name === 'Heartbeat'))) {
+                console.log('📡 Heartbeat filtered from display');
+                return;
+            }
+            
             const chatMessages = document.getElementById('chat-messages');
             const messageEl = document.createElement('div');
             messageEl.className = `chat-message ${type}`;
@@ -468,7 +475,7 @@
                 prefix = `<strong>${sender || window.playerName}:</strong> `;
             }
             
-            messageEl.innerHTML = prefix + message;
+            messageEl.innerHTML = prefix + (typeof message === 'object' ? message.message_text : message);
             chatMessages.appendChild(messageEl);
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
@@ -497,13 +504,6 @@
                 }
             }
         }
-
-        // Enter key to send message
-        document.getElementById('chat-input').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
 
         // Initialize
         function initializePlayer() {
@@ -534,6 +534,21 @@
         updatePlayerStats();
         updateConnectionStatus(false);
         initializePlayer();
+
+        // Add Enter key support for chat input
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatInput = document.getElementById('chat-input');
+            if (chatInput) {
+                chatInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        if (window.sendMessage) {
+                            window.sendMessage();
+                        }
+                    }
+                });
+            }
+        });
     </script>
 </body>
 </html>
