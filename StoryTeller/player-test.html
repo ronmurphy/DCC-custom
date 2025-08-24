@@ -333,7 +333,16 @@
 
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="js/supabase-config.js"></script>
+    
+    <!-- Essential modules for ChatCommandParser -->
+    <script src="js/modules/dccMechanics.js"></script>
+    <script src="js/modules/rollCalculator.js"></script>
+    <script src="js/modules/jsonDataLoader.js"></script>
+    <script src="js/modules/dccUtilities.js"></script>
+    <script src="js/modules/chatCommandParser.js"></script>
+    
     <script src="js/supabase-chat.js"></script>
+    <script src="js/command-interceptor.js"></script>
     <script>
         let isConnected = false;
         // playerName is declared in supabase-chat.js - don't redeclare
