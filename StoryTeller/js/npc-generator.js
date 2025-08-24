@@ -439,7 +439,10 @@ Equipment:
 // ========================================
 function refreshSavedNPCs() {
     const grid = document.getElementById('saved-npcs-grid');
-    const filter = document.getElementById('npc-filter').value;
+    if (!grid) return;
+    
+    const filterElement = document.getElementById('npc-filter');
+    const filter = filterElement ? filterElement.value : 'all';
     
     // Filter NPCs based on selected filter
     let npcsToShow = currentSession.npcs;
@@ -545,7 +548,10 @@ function clearAllNPCs() {
 // ========================================
 function initializeNPCGenerator() {
     // Filter change listener
-    document.getElementById('npc-filter').addEventListener('change', refreshSavedNPCs);
+    const npcFilter = document.getElementById('npc-filter');
+    if (npcFilter) {
+        npcFilter.addEventListener('change', refreshSavedNPCs);
+    }
     
     // Initialize display
     refreshSavedNPCs();

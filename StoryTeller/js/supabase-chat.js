@@ -132,8 +132,17 @@ function showChatError(message) {
 // UI INTERFACE FUNCTIONS
 // ========================================
 async function startGameSession() {
-    const dmName = document.getElementById('dm-name-input').value.trim();
-    const sessionCode = document.getElementById('session-code-input').value.trim();
+    const dmNameInput = document.getElementById('storyteller-name');
+    const sessionCodeInput = document.getElementById('new-session-code');
+    
+    if (!dmNameInput || !sessionCodeInput) {
+        console.error('Required input elements not found');
+        alert('Error: Unable to find input fields');
+        return;
+    }
+    
+    const dmName = dmNameInput.value.trim();
+    const sessionCode = sessionCodeInput.value.trim();
     
     if (!dmName) {
         alert('Please enter your name');
@@ -145,10 +154,32 @@ async function startGameSession() {
         return;
     }
     
+    // Check if Supabase is configured
+    if (!supabase) {
+        alert('Supabase not configured. Please configure your database settings first.');
+        return;
+    }
+
     try {
         // Set the global variables first
         window.playerName = dmName;
+        
+        // Automatically set as storyteller when starting new session
+        window.isStoryteller = true;
+        
+        // Update UI to reflect storyteller status
+        const storytellerToggle = document.getElementById('storyteller-toggle');
+        if (storytellerToggle) {
+            storytellerToggle.checked = true;
+        }
+        
         await createNewGameSession();
+        
+        // Add system message about storyteller status
+        if (window.addMessage) {
+            window.addMessage('System', `${dmName} is now the Storyteller for this session.`, 'system');
+        }
+        
     } catch (error) {
         console.error('Failed to start game session:', error);
         alert('Failed to start session: ' + error.message);
@@ -156,8 +187,17 @@ async function startGameSession() {
 }
 
 async function joinGameSession() {
-    const playerName = document.getElementById('dm-name-input').value.trim();
-    const sessionCode = document.getElementById('session-code-input').value.trim();
+    const playerNameInput = document.getElementById('storyteller-name');
+    const sessionCodeInput = document.getElementById('new-session-code');
+    
+    if (!playerNameInput || !sessionCodeInput) {
+        console.error('Required input elements not found');
+        alert('Error: Unable to find input fields');
+        return;
+    }
+    
+    const playerName = playerNameInput.value.trim();
+    const sessionCode = sessionCodeInput.value.trim();
     
     if (!playerName) {
         alert('Please enter your name');
@@ -200,14 +240,24 @@ function sendChatMessage() {
 // ========================================
 // GAME SESSION MANAGEMENT
 // ========================================
-async function createNewGameSession() {
+async function createNewGameSession(customSessionCode = null) {
     if (!supabase) {
         showNotification('Supabase not initialized', 'error');
         return;
     }
     
-    const sessionCode = generateSessionCode();
-    const dmName = document.getElementById('dm-name-input').value.trim();
+    const dmNameInput = document.getElementById('storyteller-name');
+    const sessionCodeInput = document.getElementById('new-session-code');
+    
+    if (!dmNameInput) {
+        console.error('Storyteller name input not found');
+        showNotification('Error: Unable to find name input field', 'error');
+        return;
+    }
+    
+    const sessionCode = customSessionCode || (sessionCodeInput ? sessionCodeInput.value.trim().toUpperCase() : null) || generateSessionCode();
+    
+    const dmName = dmNameInput.value.trim();
     
     if (!dmName) {
         showNotification('Please enter your name first', 'error');
@@ -229,36 +279,152 @@ async function createNewGameSession() {
         playerName = dmName;
         isStoryTeller = true;
         
-        // Update UI to show we're connected
-        document.getElementById('current-session-code').textContent = data[0].session_code;
-        document.getElementById('chat-session-controls').style.display = 'none';
-        document.getElementById('chat-messages-container').style.display = 'block';
+        // Update UI elements that exist in the unified interface
+        const currentSessionCode = document.getElementById('current-session-code');
+        if (currentSessionCode) {
+            currentSessionCode.textContent = data[0].session_code;
+        }
         
-        // Update chat status
+        const chatSessionControls = document.getElementById('chat-session-controls');
+        if (chatSessionControls) {
+            chatSessionControls.style.display = 'none';
+        }
+        
+        const chatMessagesContainer = document.getElementById('chat-messages-container');
+        if (chatMessagesContainer) {
+            chatMessagesContainer.style.display = 'block';
+        }
+        
+        // Update player URL display
+        const playerUrlInput = document.getElementById('player-url');
+        if (playerUrlInput) {
+            // Use the utility function from config manager for consistent URL generation
+            let playerUrl;
+            if (window.supabaseConfigManager && window.supabaseConfigManager.generateSessionUrl) {
+                playerUrl = window.supabaseConfigManager.generateSessionUrl(data[0].session_code);
+            } else {
+                // Fallback to direct generation if config manager not available
+                const baseUrl = `${window.location.origin}${window.location.pathname}`;
+                playerUrl = `${baseUrl}?session=${data[0].session_code}`;
+            }
+            
+            playerUrlInput.value = playerUrl;
+            console.log('Generated player URL:', playerUrl);
+        }
+        
+        // Update chat status if element exists
         const statusElement = document.getElementById('chat-status');
-        statusElement.innerHTML = `
-            <span class="status-dot connected"></span>
-            <span class="status-text">Connected</span>
-        `;
+        if (statusElement) {
+            statusElement.innerHTML = `
+                <span class="status-dot connected"></span>
+                <span class="status-text">Connected</span>
+            `;
+        }
         
         // Subscribe to real-time messages for this session
         subscribeToSession(data[0].session_code);
         
-        const successMessage = `Session "${data[0].session_code}" created successfully!`;
+        const successMessage = `Session "${data[0].session_code}" created successfully! Player URL generated.`;
         if (typeof showNotification === 'function') {
             showNotification(successMessage, 'success');
         } else {
-            console.log(successMessage);
+            alert(successMessage);
         }
         console.log('Game session created:', data[0].session_code);
         
     } catch (error) {
         console.error('Error creating session:', error);
-        const errorMessage = 'Failed to create session: ' + (error.message || 'Unknown error');
-        if (typeof showNotification === 'function') {
-            showNotification(errorMessage, 'error');
+        console.log('Error code:', error.code);
+        console.log('Error message:', error.message);
+        console.log('Session code being used:', sessionCode);
+        
+        // Check if this is a duplicate session code error
+        if (error.code === '23505' && error.message.includes('session_code')) {
+            console.log('Session code already exists, joining existing session instead...');
+            
+            try {
+                // Join the existing session instead - use the same sessionCode variable
+                const { data: existingSession, error: joinError } = await supabase
+                    .from('game_sessions')
+                    .select('*')
+                    .eq('session_code', sessionCode)
+                    .single();
+                
+                if (joinError) throw joinError;
+                
+                // Set up as if we joined the session
+                currentGameSession = existingSession;
+                playerName = dmName;
+                isStoryTeller = true;
+                
+                // Update UI elements
+                const currentSessionCodeElement = document.getElementById('current-session-code');
+                if (currentSessionCodeElement) {
+                    currentSessionCodeElement.textContent = existingSession.session_code;
+                }
+                
+                const chatSessionControls = document.getElementById('chat-session-controls');
+                if (chatSessionControls) {
+                    chatSessionControls.style.display = 'none';
+                }
+                
+                const chatMessagesContainer = document.getElementById('chat-messages-container');
+                if (chatMessagesContainer) {
+                    chatMessagesContainer.style.display = 'block';
+                }
+                
+                // Update player URL display
+                const playerUrlInput = document.getElementById('player-url');
+                if (playerUrlInput) {
+                    let playerUrl;
+                    if (window.supabaseConfigManager && window.supabaseConfigManager.generateSessionUrl) {
+                        playerUrl = window.supabaseConfigManager.generateSessionUrl(existingSession.session_code);
+                    } else {
+                        const baseUrl = `${window.location.origin}${window.location.pathname}`;
+                        playerUrl = `${baseUrl}?session=${existingSession.session_code}`;
+                    }
+                    
+                    playerUrlInput.value = playerUrl;
+                    console.log('Generated player URL:', playerUrl);
+                }
+                
+                // Update chat status
+                const statusElement = document.getElementById('chat-status');
+                if (statusElement) {
+                    statusElement.innerHTML = `
+                        <span class="status-dot connected"></span>
+                        <span class="status-text">Connected</span>
+                    `;
+                }
+                
+                // Subscribe to real-time messages for this session
+                subscribeToSession(existingSession.session_code);
+                
+                const successMessage = `Joined existing session "${existingSession.session_code}"! Player URL generated.`;
+                if (typeof showNotification === 'function') {
+                    showNotification(successMessage, 'success');
+                } else {
+                    alert(successMessage);
+                }
+                console.log('Joined existing session:', existingSession.session_code);
+                
+            } catch (joinError) {
+                console.error('Error joining existing session:', joinError);
+                const errorMessage = 'Failed to join existing session: ' + (joinError.message || 'Unknown error');
+                if (typeof showNotification === 'function') {
+                    showNotification(errorMessage, 'error');
+                } else {
+                    alert(errorMessage);
+                }
+            }
         } else {
-            alert(errorMessage);
+            // Handle other types of errors
+            const errorMessage = 'Failed to create session: ' + (error.message || 'Unknown error');
+            if (typeof showNotification === 'function') {
+                showNotification(errorMessage, 'error');
+            } else {
+                alert(errorMessage);
+            }
         }
     }
 }
@@ -269,9 +435,17 @@ async function joinGameSession() {
         return;
     }
     
-    const name = document.getElementById('player-name-input').value.trim();
-    const role = document.getElementById('role-select').value;
-    const sessionCode = document.getElementById('session-code-input').value.trim().toUpperCase();
+    const nameInput = document.getElementById('storyteller-name');
+    const sessionCodeInput = document.getElementById('new-session-code');
+    
+    if (!nameInput || !sessionCodeInput) {
+        console.error('Required input elements not found');
+        showNotification('Error: Unable to find input fields', 'error');
+        return;
+    }
+    
+    const name = nameInput.value.trim();
+    const sessionCode = sessionCodeInput.value.trim().toUpperCase();
     
     if (!name || !sessionCode) {
         showNotification('Please enter your name and session code', 'error');
@@ -411,7 +585,10 @@ async function loadRecentMessages(sessionCode) {
         if (error) throw error;
         
         // Clear existing messages
-        document.getElementById('chat-messages').innerHTML = '';
+        const chatMessages = document.getElementById('chat-messages');
+        if (chatMessages) {
+            chatMessages.innerHTML = '';
+        }
         
         // Display each message
         messages.forEach(message => {
@@ -577,7 +754,8 @@ function handleIncomingMessage(message) {
     }
     
     // Show notification if not on chat tab
-    if (!document.getElementById('chat').classList.contains('active')) {
+    const chatTab = document.getElementById('chat');
+    if (chatTab && !chatTab.classList.contains('active')) {
         showChatNotification();
     }
 }
@@ -792,6 +970,20 @@ function displayChatMessage(message) {
 // INITIALIZATION
 // ========================================
 document.addEventListener('DOMContentLoaded', () => {
+    // Check for session parameter in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionCode = urlParams.get('session');
+    
+    if (sessionCode) {
+        // Auto-populate session code field
+        setTimeout(() => {
+            const sessionCodeInput = document.getElementById('new-session-code');
+            if (sessionCodeInput) {
+                sessionCodeInput.value = sessionCode.toUpperCase();
+            }
+        }, 500);
+    }
+    
     // Wait for main app to initialize
     setTimeout(() => {
         if (typeof createChatSystem === 'function') {

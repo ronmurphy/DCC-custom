@@ -65,8 +65,8 @@
             --grid-gap: 15px;
         }
 
-        /* Ultra Mode (Premium) */
-        .mode-ultra {
+        /* OnePlus Pad Mode (Premium) */
+        .mode-oneplus {
             --base-font-size: 20px;
             --touch-target-min: 60px;
             --panel-gap: 4px;
@@ -98,46 +98,9 @@
             background: rgba(0, 0, 0, 0.8);
             backdrop-filter: blur(10px);
             border-radius: var(--border-radius);
+            padding: 10px 15px;
             color: white;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            transition: all 0.3s ease;
-            overflow: hidden;
-        }
-
-        .mode-toggle.collapsed {
-            width: 50px;
-            height: 50px;
-        }
-
-        .mode-toggle.collapsed .mode-toggle-content {
-            display: none;
-        }
-
-        .mode-toggle-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 15px;
-            cursor: pointer;
-            min-height: 50px;
-        }
-
-        .mode-toggle.collapsed .mode-toggle-header {
-            justify-content: center;
-            padding: 15px;
-        }
-
-        .mode-toggle-content {
-            padding: 0 15px 15px 15px;
-        }
-
-        .toggle-icon {
-            font-size: 1.2rem;
-            transition: transform 0.3s ease;
-        }
-
-        .mode-toggle.collapsed .toggle-icon {
-            transform: rotate(180deg);
         }
 
         .mode-toggle label {
@@ -149,20 +112,20 @@
 
         .mode-selector {
             display: flex;
-            gap: 3px;
+            gap: 5px;
             background: rgba(255, 255, 255, 0.1);
             border-radius: 20px;
             padding: 3px;
         }
 
         .mode-option {
-            padding: 6px 10px;
+            padding: 6px 12px;
             border-radius: 18px;
             cursor: pointer;
             transition: all 0.2s;
             font-size: 0.8rem;
             text-align: center;
-            min-width: 55px;
+            min-width: 60px;
         }
 
         .mode-option.active {
@@ -670,12 +633,12 @@
         }
 
         /* Device-specific enhancements */
-        .mode-ultra .mode-toggle {
+        .mode-oneplus .mode-toggle {
             transform: scale(1.1);
         }
 
         .mode-highres .command-btn:hover,
-        .mode-ultra .command-btn:hover {
+        .mode-oneplus .command-btn:hover {
             transform: translateY(-3px);
             box-shadow: 0 6px 16px rgba(116, 185, 255, 0.5);
         }
@@ -699,209 +662,6 @@
             background: #a8a8a8;
         }
 
-        /* Settings Modal */
-        .settings-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(5px);
-            z-index: 10000;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .settings-modal-content {
-            background: black;
-            color: white;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 600px;
-            max-height: 80vh;
-            overflow-y: auto;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        }
-
-        .settings-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px;
-            border-bottom: 1px solid var(--border-color);
-            background: var(--primary-gradient);
-            border-radius: 12px 12px 0 0;
-        }
-
-        .settings-header h3 {
-            color: white;
-            margin: 0;
-            font-size: 1.5rem;
-        }
-
-        .close-btn {
-            background: rgba(255, 255, 255, 0.2);
-            border: none;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .close-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: scale(1.1);
-        }
-
-        .settings-body {
-            padding: 20px;
-            background: black;
-            color: white;
-        }
-
-        .settings-section {
-            margin-bottom: 30px;
-        }
-
-        .settings-section h4 {
-            color: white;
-            margin-bottom: 15px;
-            font-size: 1.2rem;
-            display: flex;
-            align-items: center;
-        }
-
-        .url-section label {
-            display: block;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
-            font-weight: 500;
-        }
-
-        .url-display {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 8px;
-        }
-
-        .url-input {
-            flex: 1;
-            padding: 12px;
-            border: 1px solid #555;
-            border-radius: var(--border-radius);
-            background: #333;
-            color: white;
-            font-family: monospace;
-            font-size: 0.9rem;
-        }
-
-        .copy-btn {
-            background: #667eea;
-            border: none;
-            border-radius: var(--border-radius);
-            color: white;
-            padding: 12px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .copy-btn:hover {
-            background: #5a6fd8;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-        }
-
-        .url-help {
-            color: var(--text-tertiary);
-            font-size: 0.875rem;
-            margin: 0;
-        }
-
-        .session-controls {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .session-status {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px;
-            background: #333;
-            border-radius: var(--border-radius);
-            border: 1px solid #555;
-        }
-
-        .status-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #ef4444;
-        }
-
-        .status-dot.connected {
-            background: #10b981;
-        }
-
-        .status-dot.offline {
-            background: #6b7280;
-        }
-
-        .session-form {
-            padding: 15px;
-            border: 1px solid #555;
-            border-radius: var(--border-radius);
-            background: #222;
-        }
-
-        .form-row {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 15px;
-        }
-
-        .form-group {
-            flex: 1;
-        }
-
-        .form-group label {
-            display: block;
-            color: #ccc;
-            margin-bottom: 5px;
-            font-weight: 500;
-            font-size: 0.875rem;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #555;
-            border-radius: var(--border-radius);
-            background: #333;
-            color: white;
-            font-size: 0.9rem;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
-        }
-
-        .local-session-controls {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
         /* Smooth transitions for mode changes */
         * {
             transition: font-size 0.3s ease, padding 0.3s ease, margin 0.3s ease, 
@@ -910,79 +670,16 @@
     </style>
 </head>
 <body class="mode-tablet">
-    <!-- Settings Modal -->
-    <div class="settings-modal" id="settings-modal" style="display: none;">
-        <div class="settings-modal-content">
-            <div class="settings-header">
-                <h3>Settings</h3>
-                <button class="close-btn" onclick="hideSettings()">
-                    <i class="material-icons">close</i>
-                </button>
-            </div>
-            
-            <div class="settings-body">
-                <!-- Display Mode Section -->
-                <div class="settings-section">
-                    <h4>Display Mode</h4>
-                    <div class="mode-selector">
-                        <div class="mode-option active" data-mode="tablet">Tablet</div>
-                        <div class="mode-option" data-mode="highres">High Res</div>
-                        <div class="mode-option" data-mode="ultra">Ultra</div>
-                    </div>
-                    <div class="device-info" id="device-info">
-                        Standard Tablet Mode
-                    </div>
-                </div>
-                
-                <!-- Player URL Section -->
-                <div class="settings-section">
-                    <h4>Player Connection</h4>
-                    <div class="url-section">
-                        <label>Player Interface URL:</label>
-                        <div class="url-display">
-                            <input type="text" id="player-url" readonly class="url-input">
-                            <button class="copy-btn" onclick="copyPlayerURL()">
-                                <i class="material-icons">content_copy</i>
-                            </button>
-                        </div>
-                        <p class="url-help">Share this URL with your players to let them join the session</p>
-                    </div>
-                </div>
-                
-                <!-- Session Settings -->
-                <div class="settings-section">
-                    <h4>Game Session</h4>
-                    <div class="session-controls">
-                        <div class="session-status" id="session-status">
-                            <span class="status-dot offline"></span>
-                            <span class="status-text">No active session</span>
-                        </div>
-                        <div class="session-form" id="session-form">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="storyteller-name">Your Name (Storyteller):</label>
-                                    <input type="text" id="storyteller-name" placeholder="Enter your name" class="form-input">
-                                </div>
-                                <div class="form-group">
-                                    <label for="new-session-code">Session Code:</label>
-                                    <input type="text" id="new-session-code" placeholder="Enter session code" class="form-input">
-                                </div>
-                            </div>
-                            <button class="action-btn success" onclick="startNewGameSession()">
-                                <i class="material-icons">play_arrow</i>Start Game Session
-                            </button>
-                        </div>
-                        <div class="local-session-controls">
-                            <button class="action-btn primary" onclick="showSessionManager()">
-                                <i class="material-icons">folder</i>Local Sessions
-                            </button>
-                            <button class="action-btn warning" onclick="exportSession()">
-                                <i class="material-icons">download</i>Export Data
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <!-- Mode Toggle Control -->
+    <div class="mode-toggle">
+        <label>Display Mode</label>
+        <div class="mode-selector">
+            <div class="mode-option active" data-mode="tablet">Tablet</div>
+            <div class="mode-option" data-mode="highres">High Res</div>
+            <div class="mode-option" data-mode="oneplus">OnePlus</div>
+        </div>
+        <div class="device-info" id="device-info">
+            Standard Tablet Mode
         </div>
     </div>
 
@@ -999,8 +696,8 @@
             </div>
             
             <div class="session-info">
-                <span>Session: <strong id="session-name-display">New Session</strong></span>
-                <span>Players: <strong id="player-count">0</strong></span>
+                <span>Session: <strong>Epic Adventure</strong></span>
+                <span>Players: <strong>3</strong></span>
                 <span>Storyteller: <strong>DM Brad</strong></span>
             </div>
             
@@ -1044,21 +741,6 @@
                     <a class="dropdown-item" onclick="loadPanel('left', 'map')">
                         <i class="ra ra-treasure-map"></i>Map
                     </a>
-                    <a class="dropdown-item" onclick="loadPanel('left', 'chat')">
-                        <i class="material-icons">chat</i>Chat
-                    </a>
-                    <a class="dropdown-item" onclick="loadPanel('left', 'players')">
-                        <i class="ra ra-player"></i>Players
-                    </a>
-                    <a class="dropdown-item" onclick="loadPanel('left', 'quests')">
-                        <i class="ra ra-scroll-unfurled"></i>Quests
-                    </a>
-                    <a class="dropdown-item" onclick="loadPanel('left', 'notes')">
-                        <i class="material-icons">note</i>Notes
-                    </a>
-                    <a class="dropdown-item" onclick="loadPanel('left', 'dice')">
-                        <i class="ra ra-dice-six"></i>Dice
-                    </a>
                 </div>
             </div>
 
@@ -1069,21 +751,6 @@
                     <i class="material-icons">expand_more</i>
                 </button>
                 <div id="right-dropdown" class="dropdown-content">
-                    <a class="dropdown-item" onclick="loadPanel('right', 'commands')">
-                        <i class="ra ra-lightning-bolt"></i>Commands
-                    </a>
-                    <a class="dropdown-item" onclick="loadPanel('right', 'npcs')">
-                        <i class="ra ra-player"></i>NPCs
-                    </a>
-                    <a class="dropdown-item" onclick="loadPanel('right', 'combat')">
-                        <i class="ra ra-sword"></i>Combat
-                    </a>
-                    <a class="dropdown-item" onclick="loadPanel('right', 'items')">
-                        <i class="ra ra-gem"></i>Items
-                    </a>
-                    <a class="dropdown-item" onclick="loadPanel('right', 'map')">
-                        <i class="ra ra-treasure-map"></i>Map
-                    </a>
                     <a class="dropdown-item" onclick="loadPanel('right', 'chat')">
                         <i class="material-icons">chat</i>Chat
                     </a>
@@ -1305,41 +972,6 @@
     </div>
 
     <!-- Scripts -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    
-    <!-- DCC Module System -->
-    <script src="js/modules/dccMechanics.js"></script>
-    <script src="js/modules/rollCalculator.js"></script>
-    <script src="js/modules/jsonDataLoader.js"></script>
-    <script src="js/modules/characterData.js"></script>
-    <script src="js/modules/skillsManager.js"></script>
-    <script src="js/modules/equipmentBonusSystem.js"></script>
-    <script src="js/modules/chatCommandParser.js"></script>
-    <script src="js/modules/dccUtilities.js"></script>
-    <script src="js/modules/dccChatIntegration.js"></script>
-    
-    <!-- Chat System Modules -->
-    <script src="js/modules/supabaseClient.js"></script>
-    <script src="js/modules/chatParser.js"></script>
-    <script src="js/modules/combatHandler.js"></script>
-    <script src="js/modules/messageFormatter.js"></script>
-    <script src="js/modules/chatManager.js"></script>
-    <script src="js/modules/chatAdapter.js"></script>
-    
-    <!-- Core Application -->
-    <script src="js/main.js"></script>
-    <script src="js/storage-manager.js"></script>
-    <script src="js/npc-generator.js"></script>
-    <script src="js/quest-generator.js"></script>
-    <script src="js/item-generator.js"></script>
-    <script src="js/map-editor.js"></script>
-    <script src="js/combat-manager.js"></script>
-    <script src="js/supabase-chat.js"></script>
-    <script src="js/realtime-chat.js"></script>
-    <script src="js/map-sharing.js"></script>
-    <script src="js/player-data-parser.js"></script>
-    <script src="js/supabase-config.js"></script>
-
     <script>
         let selectedPlayer = 'Betty';
         let leftPanelContent = 'commands';
@@ -1368,7 +1000,7 @@
             // Auto-select best mode
             let recommendedMode = 'tablet';
             if (deviceInfo.isOnePlusPad) {
-                recommendedMode = 'ultra';
+                recommendedMode = 'oneplus';
             } else if (deviceInfo.isHighRes) {
                 recommendedMode = 'highres';
             }
@@ -1406,7 +1038,7 @@
             currentMode = mode;
             
             // Remove all mode classes
-            document.body.classList.remove('mode-tablet', 'mode-highres', 'mode-ultra');
+            document.body.classList.remove('mode-tablet', 'mode-highres', 'mode-oneplus');
             
             // Add new mode class
             document.body.classList.add(`mode-${mode}`);
@@ -1423,7 +1055,7 @@
             const modeNames = {
                 'tablet': 'Standard Tablet Mode',
                 'highres': 'High Resolution Mode',
-                'ultra': 'Ultra Premium Mode'
+                'oneplus': 'OnePlus Pad Premium Mode'
             };
             
             addChatMessage(`Switched to ${modeNames[mode]}`, 'system');
@@ -1431,7 +1063,7 @@
             console.log(`Switched to mode: ${mode}`);
         }
 
-        // Initialize mode selector and DCC systems
+        // Initialize mode selector
         document.addEventListener('DOMContentLoaded', function() {
             // Detect device on load
             detectDevice();
@@ -1442,26 +1074,7 @@
                     switchMode(option.dataset.mode);
                 });
             });
-            
-            // Initialize DCC Chat Integration if modules are loaded
-            if (typeof DCCChatIntegration !== 'undefined') {
-                try {
-                    window.dccChatIntegration = new DCCChatIntegration();
-                    addChatMessage('DCC systems initialized successfully!', 'system');
-                } catch (error) {
-                    console.error('DCC initialization error:', error);
-                    addChatMessage('DCC systems initialization failed - using fallback mode', 'system');
-                }
-            } else {
-                addChatMessage('DCC modules not loaded - using simulation mode', 'system');
-            }
         });
-
-        // Toggle mode panel
-        function toggleModePanel() {
-            const toggle = document.getElementById('mode-toggle');
-            toggle.classList.toggle('collapsed');
-        }
 
         // Panel and UI Functions
         function toggleDropdown(dropdownId) {
@@ -1482,11 +1095,9 @@
             if (panel === 'left') {
                 leftPanelContent = content;
                 document.getElementById('left-panel-title').textContent = getPanelTitle(content);
-                document.getElementById('left-panel-content').innerHTML = getPanelContent(content);
             } else {
                 rightPanelContent = content;
                 document.getElementById('right-panel-title').textContent = getPanelTitle(content);
-                document.getElementById('right-panel-content').innerHTML = getPanelContent(content);
             }
             
             // Close dropdowns
@@ -1494,7 +1105,7 @@
                 el.classList.remove('show');
             });
             
-            addChatMessage(`${getPanelTitle(content)} loaded in ${panel} panel`, 'system');
+            addChatMessage(`Panel ${panel} loaded with ${content}`, 'system');
         }
 
         function getPanelTitle(content) {
@@ -1511,199 +1122,6 @@
                 'dice': 'Dice Roller'
             };
             return titles[content] || content;
-        }
-
-        function getPanelContent(content) {
-            switch (content) {
-                case 'commands':
-                    return `
-                        <div class="command-section">
-                            <h4>Quick Commands</h4>
-                            <div class="command-grid">
-                                <button class="action-btn success" onclick="executeCommand('LOOT', 'treasure')">
-                                    <i class="ra ra-gem"></i>Generate Loot
-                                </button>
-                                <button class="action-btn warning" onclick="executeCommand('LEVELUP')">
-                                    <i class="ra ra-star"></i>Level Up
-                                </button>
-                                <button class="action-btn info" onclick="executeCommand('ACHIEVEMENT', 'hero')">
-                                    <i class="ra ra-trophy"></i>Achievement
-                                </button>
-                                <button class="action-btn danger" onclick="executeCommand('HEALTH', '-10')">
-                                    <i class="ra ra-heart"></i>Damage
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                
-                case 'npcs':
-                    return `
-                        <div class="npc-generator">
-                            <h4>NPC Generator</h4>
-                            <div class="generator-controls">
-                                <select id="npc-type" class="form-select">
-                                    <option value="friendly">Friendly NPC</option>
-                                    <option value="merchant">Merchant</option>
-                                    <option value="guard">Guard</option>
-                                    <option value="noble">Noble</option>
-                                </select>
-                                <button class="action-btn primary" onclick="generateNPC()">
-                                    <i class="ra ra-dice"></i>Generate NPC
-                                </button>
-                            </div>
-                            <div id="generated-npc-display" class="npc-display">
-                                <p class="placeholder-text">Click "Generate NPC" to create a random character</p>
-                            </div>
-                        </div>
-                    `;
-                
-                case 'combat':
-                    return `
-                        <div class="combat-tracker">
-                            <h4>Combat Management</h4>
-                            <div class="combat-controls">
-                                <button class="action-btn success" onclick="startCombat()">
-                                    <i class="ra ra-sword"></i>Start Combat
-                                </button>
-                                <button class="action-btn warning" onclick="nextTurn()">
-                                    <i class="ra ra-cycle"></i>Next Turn
-                                </button>
-                                <button class="action-btn danger" onclick="endCombat()">
-                                    <i class="ra ra-shield"></i>End Combat
-                                </button>
-                            </div>
-                            <div id="combat-status" class="combat-status">
-                                <p>No active combat</p>
-                            </div>
-                        </div>
-                    `;
-                
-                case 'items':
-                    return `
-                        <div class="item-generator">
-                            <h4>Item Generator</h4>
-                            <div class="generator-controls">
-                                <select id="item-type" class="form-select">
-                                    <option value="weapon">Weapon</option>
-                                    <option value="armor">Armor</option>
-                                    <option value="treasure">Treasure</option>
-                                    <option value="potion">Potion</option>
-                                </select>
-                                <button class="action-btn primary" onclick="generateItem()">
-                                    <i class="ra ra-gem"></i>Generate Item
-                                </button>
-                            </div>
-                            <div id="generated-item-display" class="item-display">
-                                <p class="placeholder-text">Click "Generate Item" to create loot</p>
-                            </div>
-                        </div>
-                    `;
-                
-                case 'map':
-                    return `
-                        <div class="map-editor">
-                            <h4>Map Tools</h4>
-                            <div class="map-controls">
-                                <select id="map-size" class="form-select">
-                                    <option value="small">Small (10x10)</option>
-                                    <option value="medium">Medium (15x15)</option>
-                                    <option value="large">Large (20x20)</option>
-                                </select>
-                                <button class="action-btn primary" onclick="createMap()">
-                                    <i class="ra ra-map"></i>New Map
-                                </button>
-                            </div>
-                            <div class="map-display">
-                                <p class="placeholder-text">Map editor tools</p>
-                            </div>
-                        </div>
-                    `;
-                
-                case 'chat':
-                    return `
-                        <div class="chat-panel">
-                            <div id="chat-messages" class="chat-messages">
-                                <!-- Chat messages will appear here -->
-                            </div>
-                            <div class="chat-input-container">
-                                <input type="text" id="chat-input" class="chat-input" placeholder="Type a message...">
-                                <button class="send-btn" onclick="sendChatMessage()">
-                                    <i class="material-icons">send</i>
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                
-                case 'players':
-                    return `
-                        <div class="player-manager">
-                            <h4>Connected Players</h4>
-                            <div id="player-list" class="player-list">
-                                <div class="player-item">
-                                    <div class="player-info">
-                                        <span class="player-name">Waiting for players...</span>
-                                        <span class="player-status offline">Offline</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="player-actions">
-                                <button class="action-btn info" onclick="showSettings()">
-                                    <i class="material-icons">link</i>Get Player URL
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                
-                case 'quests':
-                    return `
-                        <div class="quest-tracker">
-                            <h4>Active Quests</h4>
-                            <div class="quest-controls">
-                                <button class="action-btn primary" onclick="addQuest()">
-                                    <i class="ra ra-scroll-unfurled"></i>Add Quest
-                                </button>
-                            </div>
-                            <div id="quest-list" class="quest-list">
-                                <p class="placeholder-text">No active quests</p>
-                            </div>
-                        </div>
-                    `;
-                
-                case 'notes':
-                    return `
-                        <div class="notes-panel">
-                            <h4>Session Notes</h4>
-                            <div class="notes-controls">
-                                <button class="action-btn primary" onclick="saveNotes()">
-                                    <i class="material-icons">save</i>Save Notes
-                                </button>
-                            </div>
-                            <textarea id="session-notes" class="session-notes" placeholder="Write your session notes here..."></textarea>
-                        </div>
-                    `;
-                
-                case 'dice':
-                    return `
-                        <div class="dice-roller">
-                            <h4>Dice Roller</h4>
-                            <div class="dice-controls">
-                                <button class="dice-btn" onclick="rollDice('d4')">d4</button>
-                                <button class="dice-btn" onclick="rollDice('d6')">d6</button>
-                                <button class="dice-btn" onclick="rollDice('d8')">d8</button>
-                                <button class="dice-btn" onclick="rollDice('d10')">d10</button>
-                                <button class="dice-btn" onclick="rollDice('d12')">d12</button>
-                                <button class="dice-btn" onclick="rollDice('d20')">d20</button>
-                                <button class="dice-btn" onclick="rollDice('d100')">d100</button>
-                            </div>
-                            <div id="dice-results" class="dice-results">
-                                <p class="placeholder-text">Click a die to roll</p>
-                            </div>
-                        </div>
-                    `;
-                
-                default:
-                    return `<p>Content for ${content} panel coming soon...</p>`;
-            }
         }
 
         function selectPlayer(playerName) {
@@ -1761,33 +1179,22 @@
                     emoji = '⚡';
             }
             
-            // Execute the command through DCC Chat Integration if available
-            if (window.dccChatIntegration && window.dccChatIntegration.commandParser) {
-                try {
-                    window.dccChatIntegration.processChatMessage(commandText);
-                    addChatMessage(`${emoji} Executed: ${commandText}`, 'system');
-                } catch (error) {
-                    console.error('Command execution error:', error);
-                    addChatMessage(`❌ Command failed: ${error.message}`, 'system');
+            // Execute the command
+            addChatMessage(`${emoji} Executed: ${commandText}`, 'system');
+            
+            // Simulate result
+            setTimeout(() => {
+                switch(command) {
+                    case 'loot':
+                        addChatMessage(`${emoji} ${selectedPlayer} found ${parameter.replace('_', ' ')}!`, 'system');
+                        break;
+                    case 'murder_hobo':
+                        addChatMessage(`💀 ${selectedPlayer} unlocked achievement: Murder Hobo - "Kill everything that moves"`, 'system');
+                        break;
+                    default:
+                        addChatMessage(`${emoji} Command completed for ${selectedPlayer}`, 'system');
                 }
-            } else {
-                // Fallback to simulation
-                addChatMessage(`${emoji} Executed: ${commandText}`, 'system');
-                
-                // Simulate result
-                setTimeout(() => {
-                    switch(command) {
-                        case 'loot':
-                            addChatMessage(`${emoji} ${selectedPlayer} found ${parameter.replace('_', ' ')}!`, 'system');
-                            break;
-                        case 'murder_hobo':
-                            addChatMessage(`💀 ${selectedPlayer} unlocked achievement: Murder Hobo - "Kill everything that moves"`, 'system');
-                            break;
-                        default:
-                            addChatMessage(`${emoji} Command completed for ${selectedPlayer}`, 'system');
-                    }
-                }, 500);
-            }
+            }, 500);
         }
 
         function addChatMessage(message, type = 'storyteller') {
@@ -1813,21 +1220,11 @@
                 addChatMessage(message, 'storyteller');
                 input.value = '';
                 
-                // Check if it's a command and process it
-                if (message.includes(':') && message.match(/^[A-Z]+:/)) {
-                    try {
-                        if (window.dccChatIntegration) {
-                            window.dccChatIntegration.processChatMessage(message);
-                        } else {
-                            // Simulate command processing
-                            setTimeout(() => {
-                                addChatMessage('Command processed (simulation mode)!', 'system');
-                            }, 300);
-                        }
-                    } catch (error) {
-                        console.error('Command processing error:', error);
-                        addChatMessage(`❌ Command error: ${error.message}`, 'system');
-                    }
+                // If it looks like a command, process it
+                if (message.includes(':')) {
+                    setTimeout(() => {
+                        addChatMessage('Command processed!', 'system');
+                    }, 300);
                 }
             }
         }
@@ -1859,205 +1256,7 @@
         }
 
         function showSettings() {
-            // Update player URL with proper session information
-            let playerURL = 'Not available - Start a session first';
-            
-            // Check if we have an active game session
-            if (window.currentGameSession && window.currentGameSession.session_code) {
-                const baseURL = window.location.origin + window.location.pathname.replace('index.html', '');
-                playerURL = `${baseURL}player-test.html?session=${window.currentGameSession.session_code}&mode=player`;
-            } else if (window.currentSession && window.currentSession.name !== 'New Session') {
-                // Fallback to local session for testing
-                const baseURL = window.location.origin + window.location.pathname.replace('index.html', '');
-                playerURL = `${baseURL}player-test.html?session=${encodeURIComponent(window.currentSession.name)}&mode=local`;
-            }
-            
-            document.getElementById('player-url').value = playerURL;
-            
-            // Show modal
-            document.getElementById('settings-modal').style.display = 'flex';
-        }
-
-        function hideSettings() {
-            document.getElementById('settings-modal').style.display = 'none';
-        }
-
-        function copyPlayerURL() {
-            const urlInput = document.getElementById('player-url');
-            urlInput.select();
-            urlInput.setSelectionRange(0, 99999); // For mobile devices
-            navigator.clipboard.writeText(urlInput.value);
-            
-            addChatMessage('🔗 Player URL copied to clipboard!', 'system');
-        }
-
-        // Panel Content Functions
-        function generateNPC() {
-            const npcTypes = ['friendly merchant', 'gruff guard', 'wise elder', 'mysterious stranger'];
-            const randomNPC = npcTypes[Math.floor(Math.random() * npcTypes.length)];
-            
-            const display = document.getElementById('generated-npc-display');
-            if (display) {
-                display.innerHTML = `<div class="generated-content">
-                    <h5>Generated NPC</h5>
-                    <p><strong>Type:</strong> ${randomNPC}</p>
-                    <p><strong>Name:</strong> ${generateRandomName()}</p>
-                    <p><strong>Mood:</strong> ${generateRandomMood()}</p>
-                </div>`;
-            }
-            addChatMessage(`🎭 Generated NPC: ${randomNPC}`, 'system');
-        }
-
-        function generateRandomName() {
-            const names = ['Aldric', 'Brenna', 'Caelum', 'Dara', 'Ewan', 'Fiona', 'Gareth', 'Hilda'];
-            return names[Math.floor(Math.random() * names.length)];
-        }
-
-        function generateRandomMood() {
-            const moods = ['friendly', 'suspicious', 'helpful', 'grumpy', 'excited', 'worried'];
-            return moods[Math.floor(Math.random() * moods.length)];
-        }
-
-        function sendChatMessage() {
-            const input = document.getElementById('chat-input');
-            if (input && input.value.trim()) {
-                addChatMessage(input.value, 'storyteller');
-                input.value = '';
-            }
-        }
-
-        // Additional panel functions
-        function generateItem() {
-            const itemTypes = ['Magic Sword', 'Health Potion', 'Gold Coins', 'Ancient Scroll'];
-            const randomItem = itemTypes[Math.floor(Math.random() * itemTypes.length)];
-            
-            const display = document.getElementById('generated-item-display');
-            if (display) {
-                display.innerHTML = `<div class="generated-content">
-                    <h5>Generated Item</h5>
-                    <p><strong>Item:</strong> ${randomItem}</p>
-                    <p><strong>Value:</strong> ${Math.floor(Math.random() * 100) + 10} gold</p>
-                </div>`;
-            }
-            addChatMessage(`💎 Generated Item: ${randomItem}`, 'system');
-        }
-
-        function startCombat() {
-            addChatMessage('⚔️ Combat started!', 'system');
-            const status = document.getElementById('combat-status');
-            if (status) {
-                status.innerHTML = '<p><strong>Combat Round 1</strong><br>Initiative order determined</p>';
-            }
-        }
-
-        function nextTurn() {
-            addChatMessage('🔄 Next turn...', 'system');
-        }
-
-        function endCombat() {
-            addChatMessage('🛡️ Combat ended!', 'system');
-            const status = document.getElementById('combat-status');
-            if (status) {
-                status.innerHTML = '<p>No active combat</p>';
-            }
-        }
-
-        function createMap() {
-            addChatMessage('🗺️ New map created!', 'system');
-        }
-
-        function addQuest() {
-            addChatMessage('📜 New quest added!', 'system');
-            const questList = document.getElementById('quest-list');
-            if (questList) {
-                questList.innerHTML = '<div class="quest-item"><h5>Find the Lost Artifact</h5><p>Status: Active</p></div>';
-            }
-        }
-
-        function saveNotes() {
-            const notes = document.getElementById('session-notes');
-            if (notes && notes.value.trim()) {
-                addChatMessage('📝 Session notes saved!', 'system');
-            }
-        }
-
-        function rollDice(diceType) {
-            const sides = parseInt(diceType.replace('d', ''));
-            const result = Math.floor(Math.random() * sides) + 1;
-            
-            addChatMessage(`🎲 Rolled ${diceType}: ${result}`, 'system');
-            
-            const results = document.getElementById('dice-results');
-            if (results) {
-                results.innerHTML = `<div class="dice-result">
-                    <h5>${diceType} Roll</h5>
-                    <div class="result-number">${result}</div>
-                </div>`;
-            }
-        }
-
-        // Game Session Functions
-        function startNewGameSession() {
-            const storytellerName = document.getElementById('storyteller-name').value.trim();
-            const sessionCode = document.getElementById('new-session-code').value.trim();
-            
-            if (!storytellerName) {
-                addChatMessage('❌ Please enter your name first', 'system');
-                return;
-            }
-            
-            if (!sessionCode) {
-                addChatMessage('❌ Please enter a session code', 'system');
-                return;
-            }
-            
-            // Store session information
-            window.currentGameSession = {
-                session_code: sessionCode,
-                dm_name: storytellerName,
-                is_active: true
-            };
-            
-            // Update UI
-            const statusElement = document.getElementById('session-status');
-            if (statusElement) {
-                statusElement.innerHTML = `
-                    <span class="status-dot connected"></span>
-                    <span class="status-text">Session: ${sessionCode}</span>
-                `;
-            }
-            
-            // Hide form, show session controls
-            const sessionForm = document.getElementById('session-form');
-            if (sessionForm) {
-                sessionForm.style.display = 'none';
-            }
-            
-            // Set global variables for compatibility
-            window.playerName = storytellerName;
-            window.isStoryteller = true;
-            
-            // Try to initialize real Supabase connection if available
-            if (window.startGameSession && typeof window.startGameSession === 'function') {
-                // Fill in the values for supabase system
-                const dmInput = document.getElementById('dm-name-input');
-                const codeInput = document.getElementById('session-code-input');
-                if (dmInput) dmInput.value = storytellerName;
-                if (codeInput) codeInput.value = sessionCode;
-                
-                // Call the real supabase function
-                window.startGameSession();
-            }
-            
-            addChatMessage(`🎮 Game session "${sessionCode}" started!`, 'system');
-            addChatMessage(`👑 ${storytellerName} is the Storyteller`, 'system');
-            addChatMessage('🔗 Player URL updated - check Settings to share', 'system');
-            
-            // Update player count
-            const playerCount = document.getElementById('player-count');
-            if (playerCount) {
-                playerCount.textContent = '1'; // Storyteller counts as 1
-            }
+            addChatMessage('Settings opened!', 'system');
         }
 
         function toggleTheme() {
@@ -2085,40 +1284,5 @@
             detectDevice();
         });
     </script>
-
-    <!-- Hidden compatibility elements for legacy modules -->
-    <div style="display: none;">
-        <!-- Tab Navigation Compatibility -->
-        <nav class="tab-nav" id="tabNav">
-            <div class="tab-container">
-                <!-- Content containers that modules expect -->
-                <div id="saved-npcs-grid"></div>
-                <div id="saved-loot-container"></div>
-                <div id="saved-maps-container"></div>
-                <div id="map-grid"></div>
-                
-                <!-- Form elements that modules expect -->
-                <select id="npc-filter"></select>
-                <select id="loot-filter"></select>
-                <select id="loot-type-select"></select>
-                <select id="map-size-select"></select>
-                <div id="special-items-group"></div>
-                
-                <!-- Display elements that modules expect -->
-                <div id="grid-size-display"></div>
-                <div id="tiles-placed"></div>
-            </div>
-        </nav>
-        
-        <!-- Session Management -->
-        <div id="session-modal" style="display: none;">
-            <input type="file" id="import-file" accept=".json">
-            <input id="session-name-input">
-            <div id="sessions-list"></div>
-        </div>
-        
-        <!-- Map Editor Elements -->
-        <div id="tile-selector"></div>
-    </div>
 </body>
 </html>
