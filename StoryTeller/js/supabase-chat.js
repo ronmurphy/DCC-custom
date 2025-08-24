@@ -299,6 +299,9 @@ async function fullSupabaseConnect(playerName, sessionCode, isStoryteller = fals
             throw new Error('Session code must be 10 characters or less');
         }
         
+        // Normalize session code to uppercase for consistency
+        sessionCode = sessionCode.toUpperCase();
+        
         console.log(`🔌 Starting full Supabase connect: ${playerName} ${mode === 'create' ? 'creating' : 'joining'} session ${sessionCode}`);
         
         // Step 2: Initialize Supabase if not already done

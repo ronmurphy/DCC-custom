@@ -836,6 +836,122 @@
             align-items: center;
         }
 
+        /* Chevron Collapsible Sections */
+        .chevron-section {
+            margin-bottom: 20px;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background: #1a1a1a;
+        }
+
+        .chevron-header {
+            padding: 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #2a2a2a;
+            border-radius: 8px 8px 0 0;
+            transition: background 0.2s;
+        }
+
+        .chevron-header:hover {
+            background: #333;
+        }
+
+        .chevron-header h4 {
+            margin: 0;
+            color: white;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .chevron-icon {
+            transition: transform 0.3s ease;
+            color: #ccc;
+        }
+
+        .chevron-section.collapsed .chevron-icon {
+            transform: rotate(-90deg);
+        }
+
+        .chevron-content {
+            padding: 20px;
+            background: #1a1a1a;
+            border-radius: 0 0 8px 8px;
+            max-height: 1000px;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+        }
+
+        .chevron-section.collapsed .chevron-content {
+            max-height: 0;
+            padding: 0 20px;
+        }
+
+        /* Compact/Tablet Mode */
+        @media (max-width: 1200px) {
+            .settings-modal-content {
+                max-width: 90vw;
+                max-height: 85vh;
+            }
+            
+            .chevron-header {
+                padding: 12px;
+            }
+            
+            .chevron-content {
+                padding: 15px;
+            }
+            
+            .form-group {
+                margin-bottom: 12px;
+            }
+            
+            .form-input {
+                padding: 8px;
+                font-size: 14px;
+            }
+            
+            .action-btn {
+                padding: 8px 12px;
+                font-size: 14px;
+            }
+        }
+
+        /* High Density Mode for Tablets */
+        .compact-mode .settings-modal-content {
+            max-width: 95vw;
+            max-height: 90vh;
+        }
+
+        .compact-mode .chevron-header {
+            padding: 10px;
+        }
+
+        .compact-mode .chevron-header h4 {
+            font-size: 1rem;
+        }
+
+        .compact-mode .chevron-content {
+            padding: 12px;
+        }
+
+        .compact-mode .form-group {
+            margin-bottom: 8px;
+        }
+
+        .compact-mode .form-input {
+            padding: 6px;
+            font-size: 13px;
+        }
+
+        .compact-mode .action-btn {
+            padding: 6px 10px;
+            font-size: 13px;
+        }
+
         .url-section label {
             display: block;
             color: var(--text-secondary);
@@ -979,46 +1095,122 @@
             </div>
             
             <div class="settings-body">
-                <!-- Supabase Configuration Section -->
-                <div class="settings-section">
-                    <h4>Real-Time Chat Configuration</h4>
-                    <div class="config-status-display" id="config-status-display">
-                        <span class="status-dot offline"></span>
-                        <span class="status-text">Not Configured</span>
+                <!-- Game Session (Chevron) -->
+                <div class="chevron-section" id="game-session-section">
+                    <div class="chevron-header" onclick="toggleChevron('game-session-section')">
+                        <h4>
+                            <i class="material-icons" style="margin-right: 10px;">games</i>
+                            Game Session
+                        </h4>
+                        <i class="material-icons chevron-icon">expand_more</i>
                     </div>
-                    
-                    <!-- Connection Test Status -->
-                    <div id="settings-connection-status" class="connection-status offline" style="margin: 10px 0;">
-                        <i class="material-icons">wifi_off</i>
-                        Connection Status: Not Tested
+                    <div class="chevron-content">
+                        <div class="session-controls">
+                            <div class="session-status" id="session-status">
+                                <span class="status-dot offline"></span>
+                                <span class="status-text">No active session</span>
+                            </div>
+                            
+                            <!-- Supabase URL for this session -->
+                            <div class="form-group" style="border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 15px;">
+                                <label for="session-supabase-url">
+                                    Supabase Project URL: 
+                                    <a href="#" onclick="showSupabaseGuide()" style="color: #4CAF50; margin-left: 10px; text-decoration: underline; font-size: 0.9em;">
+                                        📖 Setup Guide
+                                    </a>
+                                </label>
+                                <input type="text" id="session-supabase-url" placeholder="https://xxxxx.supabase.co" class="form-input">
+                                <p style="color: #888; font-size: 0.9em; margin-top: 5px;">
+                                    Use your own Supabase instance or leave blank to use defaults
+                                </p>
+                            </div>
+                            
+                            <div class="session-form" id="session-form">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="storyteller-name">Your Name (Storyteller):</label>
+                                        <input type="text" id="storyteller-name" placeholder="Enter your name" class="form-input">
+                                        <input type="hidden" id="dm-name-input">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="new-session-code">Session Code:</label>
+                                        <input type="text" id="new-session-code" placeholder="Enter session code" class="form-input">
+                                        <input type="hidden" id="session-code-input">
+                                    </div>
+                                </div>
+                                <button class="action-btn success" onclick="startNewGameSession()">
+                                    <i class="material-icons">play_arrow</i>Start Game Session
+                                </button>
+                            </div>
+                            <!-- Hidden elements for supabase compatibility -->
+                            <div id="chat-session-controls" style="display: none;"></div>
+                            <div id="chat-messages-container" style="display: none;"></div>
+                            <div id="current-session-code" style="display: none;"></div>
+                            <div id="chat-status" style="display: none;"></div>
+                        </div>
+                        
+                        <!-- Player Connection URL (moved here) -->
+                        <div class="url-section" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #333;">
+                            <label>Player Interface URL:</label>
+                            <div class="url-display">
+                                <input type="text" id="player-url" readonly class="url-input">
+                                <button class="copy-btn" onclick="copyPlayerURL()">
+                                    <i class="material-icons">content_copy</i>
+                                </button>
+                            </div>
+                            <p class="url-help">Share this URL with your players to let them join the session</p>
+                        </div>
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="supabase-url">Supabase Project URL:</label>
-                        <input type="text" id="supabase-url" placeholder="https://xxxxx.supabase.co" class="form-input">
+                </div>
+
+                <!-- Real-Time Chat Configuration (Chevron) -->
+                <div class="chevron-section" id="chat-config-section">
+                    <div class="chevron-header" onclick="toggleChevron('chat-config-section')">
+                        <h4>
+                            <i class="material-icons" style="margin-right: 10px;">chat</i>
+                            Real-Time Chat Configuration
+                        </h4>
+                        <i class="material-icons chevron-icon">expand_more</i>
                     </div>
-                    <div class="form-group">
-                        <label for="supabase-key">Supabase API Key (anon/public):</label>
-                        <input type="password" id="supabase-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." class="form-input">
-                    </div>
-                    <div class="config-actions">
-                        <button class="action-btn success" onclick="saveSupabaseConfig()">
-                            <i class="material-icons">save</i>Save Configuration
-                        </button>
-                        <button class="action-btn primary" onclick="testSupabaseConnection()">
-                            <i class="material-icons">wifi</i>Test Connection
-                        </button>
-                        <button class="action-btn warning" onclick="clearSupabaseConfig()">
-                            <i class="material-icons">clear</i>Clear Config
-                        </button>
+                    <div class="chevron-content">
+                        <div class="config-status-display" id="config-status-display">
+                            <span class="status-dot offline"></span>
+                            <span class="status-text">Not Configured</span>
+                        </div>
+                        
+                        <div id="settings-connection-status" class="connection-status offline" style="margin: 10px 0;">
+                            <i class="material-icons">wifi_off</i>
+                            Connection Status: Not Tested
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="supabase-url">Supabase Project URL:</label>
+                            <input type="text" id="supabase-url" placeholder="https://xxxxx.supabase.co" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label for="supabase-key">Supabase API Key (anon/public):</label>
+                            <input type="password" id="supabase-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." class="form-input">
+                        </div>
+                        <div class="config-actions">
+                            <button class="action-btn success" onclick="saveSupabaseConfig()">
+                                <i class="material-icons">save</i>Save Configuration
+                            </button>
+                            <button class="action-btn primary" onclick="testSupabaseConnection()">
+                                <i class="material-icons">wifi</i>Test Connection
+                            </button>
+                            <button class="action-btn warning" onclick="clearSupabaseConfig()">
+                                <i class="material-icons">clear</i>Clear Config
+                            </button>
+                        </div>
                     </div>
                 </div>
                 
-                <!-- Display Mode Section -->
+                <!-- Display Mode (Standalone) -->
                 <div class="settings-section">
                     <h4>Display Mode</h4>
                     <div class="mode-selector">
                         <div class="mode-option active" data-mode="tablet">Tablet</div>
+                        <div class="mode-option" data-mode="compact">Compact</div>
                         <div class="mode-option" data-mode="highres">High Res</div>
                         <div class="mode-option" data-mode="ultra">Ultra</div>
                     </div>
@@ -1027,62 +1219,21 @@
                     </div>
                 </div>
                 
-                <!-- Player URL Section -->
+                <!-- Local Settings & Export (Standalone) -->
                 <div class="settings-section">
-                    <h4>Player Connection</h4>
-                    <div class="url-section">
-                        <label>Player Interface URL:</label>
-                        <div class="url-display">
-                            <input type="text" id="player-url" readonly class="url-input">
-                            <button class="copy-btn" onclick="copyPlayerURL()">
-                                <i class="material-icons">content_copy</i>
-                            </button>
-                        </div>
-                        <p class="url-help">Share this URL with your players to let them join the session</p>
+                    <h4>Data Management</h4>
+                    <div class="local-session-controls">
+                        <button class="action-btn primary" onclick="showSessionManager()">
+                            <i class="material-icons">folder</i>Local Sessions
+                        </button>
+                        <button class="action-btn warning" onclick="exportSession()">
+                            <i class="material-icons">download</i>Export Data
+                        </button>
                     </div>
-                </div>
-                
-                <!-- Session Settings -->
-                <div class="settings-section">
-                    <h4>Game Session</h4>
-                    <div class="session-controls">
-                        <div class="session-status" id="session-status">
-                            <span class="status-dot offline"></span>
-                            <span class="status-text">No active session</span>
-                        </div>
-                        <div class="session-form" id="session-form">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="storyteller-name">Your Name (Storyteller):</label>
-                                    <input type="text" id="storyteller-name" placeholder="Enter your name" class="form-input">
-                                    <!-- Hidden input for supabase compatibility -->
-                                    <input type="hidden" id="dm-name-input">
-                                </div>
-                                <div class="form-group">
-                                    <label for="new-session-code">Session Code:</label>
-                                    <input type="text" id="new-session-code" placeholder="Enter session code" class="form-input">
-                                    <!-- Hidden input for supabase compatibility -->
-                                    <input type="hidden" id="session-code-input">
-                                </div>
-                            </div>
-                            <button class="action-btn success" onclick="startNewGameSession()">
-                                <i class="material-icons">play_arrow</i>Start Game Session
-                            </button>
-                        </div>
-                        <!-- Hidden elements for supabase compatibility -->
-                        <div id="chat-session-controls" style="display: none;"></div>
-                        <div id="chat-messages-container" style="display: none;"></div>
-                        <div id="current-session-code" style="display: none;"></div>
-                        <div id="chat-status" style="display: none;"></div>
-                        <div class="local-session-controls">
-                            <button class="action-btn primary" onclick="showSessionManager()">
-                                <i class="material-icons">folder</i>Local Sessions
-                            </button>
-                            <button class="action-btn warning" onclick="exportSession()">
-                                <i class="material-icons">download</i>Export Data
-                            </button>
-                        </div>
-                    </div>
+                    <p style="color: #888; font-size: 0.9em; margin-top: 10px;">
+                        Local Sessions: Manage saved game states<br>
+                        Export Data: Download session and player data as JSON
+                    </p>
                 </div>
             </div>
         </div>
@@ -2203,6 +2354,146 @@
 
         function hideSettings() {
             document.getElementById('settings-modal').style.display = 'none';
+        }
+
+        // Chevron Section Toggle
+        function toggleChevron(sectionId) {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.classList.toggle('collapsed');
+            }
+        }
+
+        // Display Mode Management
+        function setDisplayMode(mode) {
+            // Remove all mode classes
+            document.body.classList.remove('compact-mode', 'highres-mode', 'ultra-mode');
+            
+            // Add new mode class
+            if (mode !== 'tablet') {
+                document.body.classList.add(mode + '-mode');
+            }
+            
+            // Update mode selector
+            document.querySelectorAll('.mode-option').forEach(option => {
+                option.classList.remove('active');
+                if (option.dataset.mode === mode) {
+                    option.classList.add('active');
+                }
+            });
+            
+            // Update device info
+            const deviceInfo = document.getElementById('device-info');
+            const modeNames = {
+                'tablet': 'Standard Tablet Mode',
+                'compact': 'Compact High-Density Mode',
+                'highres': 'High Resolution Mode', 
+                'ultra': 'Ultra Wide Mode'
+            };
+            deviceInfo.textContent = modeNames[mode] || 'Unknown Mode';
+            
+            // Save preference
+            localStorage.setItem('storyteller-display-mode', mode);
+        }
+
+        // Initialize display mode from storage
+        function initializeDisplayMode() {
+            const savedMode = localStorage.getItem('storyteller-display-mode') || 'tablet';
+            setDisplayMode(savedMode);
+        }
+
+        // Mode selector click handler
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize display mode
+            initializeDisplayMode();
+            
+            // Add click handlers to mode options
+            document.querySelectorAll('.mode-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    setDisplayMode(this.dataset.mode);
+                });
+            });
+        });
+
+        // Supabase Setup Guide Modal
+        function showSupabaseGuide() {
+            // Create modal if it doesn't exist
+            let modal = document.getElementById('supabase-guide-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'supabase-guide-modal';
+                modal.innerHTML = `
+                    <div class="settings-modal" style="display: block;">
+                        <div class="settings-modal-content" style="max-width: 800px; max-height: 80vh;">
+                            <div class="settings-header">
+                                <h3>🗄️ Supabase Setup Guide</h3>
+                                <button class="close-btn" onclick="hideSupabaseGuide()">
+                                    <i class="material-icons">close</i>
+                                </button>
+                            </div>
+                            <div class="settings-body" style="overflow-y: auto; max-height: 60vh;">
+                                <div class="guide-content">
+                                    <p><strong>Why use your own Supabase?</strong></p>
+                                    <p>Using your own Supabase instance gives you full control over your data, better performance, and ensures your gaming sessions are private.</p>
+                                    
+                                    <h4>Quick Setup Steps:</h4>
+                                    <ol>
+                                        <li><strong>Create Account:</strong> Go to <a href="https://supabase.com" target="_blank" style="color: #4CAF50;">supabase.com</a> and sign up</li>
+                                        <li><strong>New Project:</strong> Create a new project in your dashboard</li>
+                                        <li><strong>Get URL & Key:</strong> Find your Project URL and anon/public API key in Settings > API</li>
+                                        <li><strong>Setup Tables:</strong> Use the SQL editor to create required tables</li>
+                                    </ol>
+                                    
+                                    <div style="background: #2a2a2a; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                                        <h4>Required SQL Tables:</h4>
+                                        <pre style="color: #4CAF50; font-size: 0.9em; overflow-x: auto;">
+-- Game Sessions Table
+CREATE TABLE game_sessions (
+  id SERIAL PRIMARY KEY,
+  session_code VARCHAR(20) UNIQUE NOT NULL,
+  dm_name VARCHAR(100) NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW(),
+  is_active BOOLEAN DEFAULT true
+);
+
+-- Game Messages Table  
+CREATE TABLE game_messages (
+  id SERIAL PRIMARY KEY,
+  session_code VARCHAR(20) NOT NULL,
+  player_name VARCHAR(100) NOT NULL,
+  message_text TEXT NOT NULL,
+  message_type VARCHAR(50) DEFAULT 'chat',
+  is_storyteller BOOLEAN DEFAULT false,
+  created_at TIMESTAMP DEFAULT NOW(),
+  FOREIGN KEY (session_code) REFERENCES game_sessions(session_code)
+);
+
+-- Enable Real-time
+ALTER TABLE game_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE game_sessions ENABLE ROW LEVEL SECURITY;
+                                        </pre>
+                                    </div>
+                                    
+                                    <p><strong>📖 Detailed Guide:</strong> Check the <code>SupabaseConnect.md</code> file in your project folder for complete step-by-step instructions.</p>
+                                    
+                                    <div style="background: #1a3d1a; padding: 10px; border-radius: 5px; margin-top: 15px;">
+                                        <strong>💡 Pro Tip:</strong> You can start with the default instance for testing, then switch to your own when ready!
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+            modal.style.display = 'block';
+        }
+
+        function hideSupabaseGuide() {
+            const modal = document.getElementById('supabase-guide-modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
         }
 
         // Supabase Configuration Functions
