@@ -1307,8 +1307,12 @@ async function loadRecentMessages(sessionCode) {
             chatMessages.innerHTML = '';
         }
         
-        // Display each message
+        // Display each message (filter out heartbeat messages)
         messages.forEach(message => {
+            // Filter out heartbeat messages (don't display them)
+            if (message.message_type === 'heartbeat' || message.player_name === 'Heartbeat') {
+                return; // Skip heartbeat messages
+            }
             displayChatMessage(message);
         });
         
