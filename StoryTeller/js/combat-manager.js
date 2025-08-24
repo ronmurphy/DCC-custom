@@ -1,6 +1,42 @@
 // ========================================
-// COMBAT MANAGER
-// Handle combat encounters and enemy management
+// Combat Manager - Handle combat encounters and enemy management
+// ========================================
+
+function addCombatTab() {
+    // Add tab button
+    const tabNav = document.querySelector('.tab-nav');
+    if (!tabNav) return;
+    
+    const combatTabBtn = document.createElement('button');
+    combatTabBtn.className = 'tab-btn';
+    combatTabBtn.setAttribute('data-tab', 'combat');
+    combatTabBtn.innerHTML = `
+        <span class="tab-icon"><i class="ra ra-crossed-swords"></i></span>
+        <span class="tab-label">Combat</span>
+    `;
+    tabNav.appendChild(combatTabBtn);
+    
+    // Add tab content
+    const tabContainer = document.querySelector('.tab-container');
+    if (!tabContainer) return;
+    
+    const combatTab = document.createElement('section');
+    combatTab.className = 'tab-content';
+    combatTab.id = 'combat';
+    combatTab.innerHTML = createCombatTabContent();
+    tabContainer.appendChild(combatTab);
+    
+    // Add event listener for tab switching
+    combatTabBtn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        
+        combatTabBtn.classList.add('active');
+        combatTab.classList.add('active');
+    });
+}
+
+// Combat Manager - Handle combat encounters and enemy management
 // ========================================
 
 // ========================================
@@ -50,6 +86,8 @@ function addCombatTab() {
     
     // Add tab button
     const tabNav = document.querySelector('.tab-nav');
+    if (!tabNav) return;
+    
     const combatTabBtn = document.createElement('button');
     combatTabBtn.className = 'tab-btn';
     combatTabBtn.setAttribute('data-tab', 'combat');
@@ -61,6 +99,8 @@ function addCombatTab() {
     
     // Add tab content
     const tabContainer = document.querySelector('.tab-container');
+    if (!tabContainer) return;
+    
     const combatTab = document.createElement('section');
     combatTab.className = 'tab-content';
     combatTab.id = 'combat';

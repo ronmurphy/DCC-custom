@@ -11,13 +11,17 @@ class SupabaseConfig {
         this.storagePrefix = 'st-supabase-';
         this.urlKey = this.storagePrefix + 'url';
         this.keyKey = this.storagePrefix + 'key';
+        this.deployedUrlKey = this.storagePrefix + 'deployed-url';
     }
 
     // Save configuration to browser storage
-    saveConfig(supabaseUrl, supabaseKey) {
+    saveConfig(supabaseUrl, supabaseKey, deployedUrl = null) {
         try {
             localStorage.setItem(this.urlKey, supabaseUrl);
             localStorage.setItem(this.keyKey, supabaseKey);
+            if (deployedUrl) {
+                localStorage.setItem(this.deployedUrlKey, deployedUrl);
+            }
             return { success: true, message: 'Configuration saved successfully' };
         } catch (error) {
             console.error('Failed to save configuration:', error);
@@ -30,11 +34,12 @@ class SupabaseConfig {
         try {
             const supabaseUrl = localStorage.getItem(this.urlKey);
             const supabaseKey = localStorage.getItem(this.keyKey);
+            const deployedUrl = localStorage.getItem(this.deployedUrlKey);
             
             if (supabaseUrl && supabaseKey) {
                 return { 
                     success: true, 
-                    data: { supabaseUrl, supabaseKey } 
+                    data: { supabaseUrl, supabaseKey, deployedUrl } 
                 };
             } else {
                 return { 
@@ -53,6 +58,7 @@ class SupabaseConfig {
         try {
             localStorage.removeItem(this.urlKey);
             localStorage.removeItem(this.keyKey);
+            localStorage.removeItem(this.deployedUrlKey);
             return { success: true, message: 'Configuration cleared' };
         } catch (error) {
             console.error('Failed to clear configuration:', error);
@@ -102,11 +108,11 @@ const supabaseConfig = new SupabaseConfig();
 // CONFIGURATION TAB CREATION
 // ========================================
 function addConfigurationTab() {
-    // Check if config tab already exists
-    if (document.querySelector('[data-tab="config"]')) return;
-    
-    // Add tab button (insert before chat tab if it exists, otherwise at the end)
+    // Get tab navigation container
     const tabNav = document.querySelector('.tab-nav');
+    if (!tabNav) return;
+    
+    // Create tab button
     const configTabBtn = document.createElement('button');
     configTabBtn.className = 'tab-btn';
     configTabBtn.setAttribute('data-tab', 'config');
@@ -121,18 +127,21 @@ function addConfigurationTab() {
     
     // Add tab content
     const tabContainer = document.querySelector('.tab-container');
+    if (!tabContainer) return;
+    
     const configTab = document.createElement('section');
     configTab.className = 'tab-content';
     configTab.id = 'config';
     configTab.innerHTML = createConfigTabContent();
     tabContainer.appendChild(configTab);
     
-    // Add event listener
+    // Add event listener for tab switching
     configTabBtn.addEventListener('click', () => {
-        switchTab('config');
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        
         configTabBtn.classList.add('active');
-        refreshConfigDisplay();
+        configTab.classList.add('active');
     });
 }
 
@@ -225,6 +234,14 @@ function createConfigTabContent() {
                 </div>
                 
                 <div class="config-form">
+                    <div class="form-group">
+                        <label for="deployed-url-input">
+                            Deployed App URL (GitHub Pages/Netlify/etc.)
+                            <span class="field-help">Your actual deployed URL (e.g., https://yourusername.github.io/DCC-custom/StoryTeller/)</span>
+                        </label>
+                        <input type="url" id="deployed-url-input" placeholder="https://yourusername.github.io/DCC-custom/StoryTeller/" class="config-input">
+                    </div>
+                    
                     <div class="form-group">
                         <label for="supabase-url-input">
                             Supabase Project URL
@@ -327,6 +344,9 @@ function refreshConfigDisplay() {
         // Fill form with existing values
         document.getElementById('supabase-url-input').value = config.data.supabaseUrl;
         document.getElementById('supabase-key-input').value = config.data.supabaseKey;
+        if (config.data.deployedUrl) {
+            document.getElementById('deployed-url-input').value = config.data.deployedUrl;
+        }
         
         // Show sharing card and update values
         sharingCard.style.display = 'block';
@@ -334,11 +354,7 @@ function refreshConfigDisplay() {
         document.getElementById('display-key').textContent = config.data.supabaseKey.substring(0, 20) + '...';
         
         // Generate share link
-        const shareData = btoa(JSON.stringify({
-            url: config.data.supabaseUrl,
-            key: config.data.supabaseKey
-        }));
-        const shareLink = `${window.location.origin}${window.location.pathname}?config=${shareData}`;
+        const shareLink = generateConfigShareUrl(config.data.supabaseUrl, config.data.supabaseKey);
         document.getElementById('config-share-link').value = shareLink;
         
     } else {
@@ -358,6 +374,7 @@ function refreshConfigDisplay() {
 function saveSupabaseConfig() {
     const supabaseUrl = document.getElementById('supabase-url-input').value.trim();
     const supabaseKey = document.getElementById('supabase-key-input').value.trim();
+    const deployedUrl = document.getElementById('deployed-url-input').value.trim();
     
     // Validate input
     const validation = supabaseConfig.validateConfig(supabaseUrl, supabaseKey);
@@ -368,7 +385,7 @@ function saveSupabaseConfig() {
     }
     
     // Save configuration
-    const result = supabaseConfig.saveConfig(supabaseUrl, supabaseKey);
+    const result = supabaseConfig.saveConfig(supabaseUrl, supabaseKey, deployedUrl);
     
     if (result.success) {
         showConfigFeedback('Configuration saved successfully! You can now use the Game Chat.', 'success');
@@ -434,6 +451,7 @@ function clearSupabaseConfig() {
             showConfigFeedback('Configuration cleared', 'info');
             document.getElementById('supabase-url-input').value = '';
             document.getElementById('supabase-key-input').value = '';
+            document.getElementById('deployed-url-input').value = '';
             refreshConfigDisplay();
         } else {
             showConfigFeedback(result.message, 'error');
@@ -453,6 +471,45 @@ function showConfigFeedback(message, type) {
             feedback.style.display = 'none';
         }, 5000);
     }
+}
+
+// ========================================
+// UTILITY FUNCTIONS
+// ========================================
+function generateAppBaseUrl() {
+    // Check if we have a configured deployed URL
+    const config = supabaseConfig.loadConfig();
+    if (config.success && config.data.deployedUrl) {
+        // Use the configured deployed URL
+        return config.data.deployedUrl.replace(/\/$/, ''); // Remove trailing slash
+    }
+    
+    // Fallback to current location (for development)
+    return `${window.location.origin}${window.location.pathname}`;
+}
+
+function generateSessionUrl(sessionCode) {
+    // Generate a session URL using the Supabase connection URL + session parameter
+    // This is what players use to connect to the same database session
+    const config = supabaseConfig.loadConfig();
+    if (config.success && config.data.supabaseUrl) {
+        // Use the stored Supabase URL with session parameter
+        return `${config.data.supabaseUrl}?session=${sessionCode}`;
+    }
+    
+    // Fallback - shouldn't happen if properly configured
+    console.warn('No Supabase URL found in configuration');
+    return `Not available - Configure Supabase first`;
+}
+
+function generateConfigShareUrl(supabaseUrl, supabaseKey) {
+    // Generate a config sharing URL
+    const shareData = btoa(JSON.stringify({
+        url: supabaseUrl,
+        key: supabaseKey
+    }));
+    const baseUrl = generateAppBaseUrl();
+    return `${baseUrl}?config=${shareData}`;
 }
 
 // ========================================
@@ -578,6 +635,9 @@ if (typeof window !== 'undefined') {
         refreshConfigDisplay,
         saveSupabaseConfig,
         testSupabaseConnection,
-        clearSupabaseConfig
+        clearSupabaseConfig,
+        generateAppBaseUrl,
+        generateSessionUrl,
+        generateConfigShareUrl
     };
 }

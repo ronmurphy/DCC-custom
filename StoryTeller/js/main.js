@@ -433,7 +433,10 @@ function deleteSession(sessionName) {
 }
 
 function updateSessionDisplay() {
-    document.getElementById('session-name-display').textContent = currentSession.name;
+    const sessionDisplay = document.getElementById('session-name-display');
+    if (sessionDisplay) {
+        sessionDisplay.textContent = currentSession.name;
+    }
 }
 
 function hasSessionContent() {
