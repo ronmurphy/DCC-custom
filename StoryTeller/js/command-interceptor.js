@@ -149,6 +149,28 @@ async function generatePersonalResult(command, parameters) {
             return `🏆 Achievement Unlocked: ${parameters}!`;
         case 'LEVELUP':
             return `🎉 Congratulations! You've leveled up!`;
+        case 'HEALTH':
+            const healthAmount = parseInt(parameters);
+            if (healthAmount > 0) {
+                return `🩹 You were healed for ${healthAmount} health!`;
+            } else {
+                return `💥 You took ${Math.abs(healthAmount)} damage!`;
+            }
+        case 'EXP':
+            return `⭐ You gained ${parameters} experience points!`;
+        case 'SKILL':
+            const skillParts = parameters ? parameters.split(':') : [];
+            const skillName = skillParts[0] || 'Unknown Skill';
+            const skillExp = skillParts[1] || 'some';
+            return `📚 You trained ${skillName} and gained ${skillExp} experience!`;
+        case 'STAT':
+            const statParts = parameters ? parameters.split(':') : [];
+            const statName = statParts[0] || 'a stat';
+            const statChange = parseInt(statParts[1]) || 1;
+            return `📊 Your ${statName} ${statChange > 0 ? 'increased' : 'decreased'} by ${Math.abs(statChange)}!`;
+        case 'GOLD':
+            const goldAmount = parseInt(parameters) || 0;
+            return `💰 You ${goldAmount > 0 ? 'gained' : 'lost'} ${Math.abs(goldAmount)} gold!`;
         default:
             return `You received: ${command}${parameters ? ' - ' + parameters : ''}`;
     }
@@ -164,7 +186,20 @@ function generateStorytelleroResult(command, targetPlayer, parameters) {
         case 'ACHIEVEMENT':
             return `📋 ${targetPlayer} earned achievement: ${parameters}`;
         case 'LEVELUP':
-            return `📋 ${targetPlayer} leveled up to level ${parameters}`;
+            return `📋 ${targetPlayer} leveled up to level null`;
+        case 'HEALTH':
+            const healthAmount = parseInt(parameters);
+            return `📋 ${targetPlayer} ${healthAmount > 0 ? 'healed' : 'took damage'}: ${Math.abs(healthAmount)} HP`;
+        case 'EXP':
+            return `📋 ${targetPlayer} gained ${parameters} experience`;
+        case 'SKILL':
+            const skillParts = parameters ? parameters.split(':') : [];
+            return `📋 ${targetPlayer} trained ${skillParts[0] || 'a skill'}`;
+        case 'STAT':
+            const statParts = parameters ? parameters.split(':') : [];
+            return `📋 ${targetPlayer}'s ${statParts[0] || 'stat'} changed by ${statParts[1] || '1'}`;
+        case 'GOLD':
+            return `📋 ${targetPlayer} ${parseInt(parameters) > 0 ? 'gained' : 'lost'} ${Math.abs(parseInt(parameters))} gold`;
         default:
             return `📋 ${targetPlayer} received ${command}: ${parameters}`;
     }

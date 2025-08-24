@@ -1999,37 +1999,35 @@
                     commandText = `SKILL:${selectedPlayer}:Powerful Strike:100`;
                     emoji = '📚';
                     break;
+                case 'experience':
+                    commandText = `EXP:${selectedPlayer}:50`;
+                    emoji = '⭐';
+                    break;
+                case 'stat_boost':
+                    commandText = `STAT:${selectedPlayer}:strength:1`;
+                    emoji = '📊';
+                    break;
+                case 'heroic_deed':
+                    commandText = `ACHIEVEMENT:${selectedPlayer}:heroic_deed`;
+                    emoji = '🦸';
+                    break;
                 default:
                     commandText = `${command.toUpperCase()}:${selectedPlayer}`;
                     emoji = '⚡';
             }
             
-            // Execute the command through DCC Chat Integration if available
-            if (window.dccChatIntegration && window.dccChatIntegration.commandParser) {
+            // Send command through the chat system (if connected)
+            if (typeof sendChatMessageAsync === 'function') {
                 try {
-                    window.dccChatIntegration.processChatMessage(commandText);
-                    addChatMessage(`${emoji} Executed: ${commandText}`, 'system');
+                    sendChatMessageAsync(commandText);
+                    console.log(`🎮 Command Center executed: ${commandText}`);
                 } catch (error) {
                     console.error('Command execution error:', error);
                     addChatMessage(`❌ Command failed: ${error.message}`, 'system');
                 }
             } else {
-                // Fallback to simulation
-                addChatMessage(`${emoji} Executed: ${commandText}`, 'system');
-                
-                // Simulate result
-                setTimeout(() => {
-                    switch(command) {
-                        case 'loot':
-                            addChatMessage(`${emoji} ${selectedPlayer} found ${parameter.replace('_', ' ')}!`, 'system');
-                            break;
-                        case 'murder_hobo':
-                            addChatMessage(`💀 ${selectedPlayer} unlocked achievement: Murder Hobo - "Kill everything that moves"`, 'system');
-                            break;
-                        default:
-                            addChatMessage(`${emoji} Command completed for ${selectedPlayer}`, 'system');
-                    }
-                }, 500);
+                // Fallback if chat system not ready
+                addChatMessage(`⚠️ Chat system not connected. Command would be: ${commandText}`, 'system');
             }
         }
 
