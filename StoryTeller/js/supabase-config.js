@@ -11,17 +11,13 @@ class SupabaseConfig {
         this.storagePrefix = 'st-supabase-';
         this.urlKey = this.storagePrefix + 'url';
         this.keyKey = this.storagePrefix + 'key';
-        this.deployedUrlKey = this.storagePrefix + 'deployed-url';
     }
 
     // Save configuration to browser storage
-    saveConfig(supabaseUrl, supabaseKey, deployedUrl = null) {
+    saveConfig(supabaseUrl, supabaseKey) {
         try {
             localStorage.setItem(this.urlKey, supabaseUrl);
             localStorage.setItem(this.keyKey, supabaseKey);
-            if (deployedUrl) {
-                localStorage.setItem(this.deployedUrlKey, deployedUrl);
-            }
             return { success: true, message: 'Configuration saved successfully' };
         } catch (error) {
             console.error('Failed to save configuration:', error);
@@ -34,12 +30,11 @@ class SupabaseConfig {
         try {
             const supabaseUrl = localStorage.getItem(this.urlKey);
             const supabaseKey = localStorage.getItem(this.keyKey);
-            const deployedUrl = localStorage.getItem(this.deployedUrlKey);
             
             if (supabaseUrl && supabaseKey) {
                 return { 
                     success: true, 
-                    data: { supabaseUrl, supabaseKey, deployedUrl } 
+                    data: { supabaseUrl, supabaseKey } 
                 };
             } else {
                 return { 
@@ -61,9 +56,55 @@ class SupabaseConfig {
             localStorage.removeItem(this.deployedUrlKey);
             return { success: true, message: 'Configuration cleared' };
         } catch (error) {
+            console.error('Failed to load configuration:', error);
+            return { success: false, message: 'Failed to load configuration' };
+        }
+    }
+
+    // Clear stored configuration
+    clearConfig() {
+        try {
+            localStorage.removeItem(this.urlKey);
+            localStorage.removeItem(this.keyKey);
+            return { success: true, message: 'Configuration cleared' };
+        } catch (error) {
             console.error('Failed to clear configuration:', error);
             return { success: false, message: 'Failed to clear configuration' };
         }
+    }
+
+    // Check if configuration exists
+    hasConfig() {
+        const config = this.loadConfig();
+        return config.success;
+    }
+
+    // Validate configuration format
+    validateConfig(supabaseUrl, supabaseKey) {
+        const errors = [];
+
+        // Validate URL format
+        if (!supabaseUrl || !supabaseUrl.trim()) {
+            errors.push('Supabase URL is required');
+        } else if (!supabaseUrl.includes('supabase.co')) {
+            errors.push('URL should contain "supabase.co"');
+        } else if (!supabaseUrl.startsWith('https://')) {
+            errors.push('URL should start with "https://"');
+        }
+
+        // Validate API key format
+        if (!supabaseKey || !supabaseKey.trim()) {
+            errors.push('Supabase API key is required');
+        } else if (!supabaseKey.startsWith('eyJ')) {
+            errors.push('API key should start with "eyJ"');
+        } else if (supabaseKey.length < 100) {
+            errors.push('API key seems too short');
+        }
+
+        return {
+            valid: errors.length === 0,
+            errors: errors
+        };
     }
 
     // Check if configuration exists

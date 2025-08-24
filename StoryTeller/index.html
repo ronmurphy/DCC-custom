@@ -511,6 +511,22 @@
             height: 100%;
         }
 
+        .chat-error {
+            background: #ffebee;
+            border: 1px solid #e57373;
+            color: #c62828;
+            padding: 12px;
+            border-radius: var(--border-radius);
+            margin-bottom: var(--grid-gap);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chat-error .material-icons {
+            color: #e57373;
+        }
+
         .chat-messages {
             background: #f8f9fa;
             border-radius: var(--border-radius);
@@ -921,6 +937,34 @@
             </div>
             
             <div class="settings-body">
+                <!-- Supabase Configuration Section -->
+                <div class="settings-section">
+                    <h4>Real-Time Chat Configuration</h4>
+                    <div class="config-status-display" id="config-status-display">
+                        <span class="status-dot offline"></span>
+                        <span class="status-text">Not Configured</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="supabase-url">Supabase Project URL:</label>
+                        <input type="text" id="supabase-url" placeholder="https://xxxxx.supabase.co" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="supabase-key">Supabase API Key (anon/public):</label>
+                        <input type="password" id="supabase-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." class="form-input">
+                    </div>
+                    <div class="config-actions">
+                        <button class="action-btn success" onclick="saveSupabaseConfig()">
+                            <i class="material-icons">save</i>Save Configuration
+                        </button>
+                        <button class="action-btn primary" onclick="testSupabaseConnection()">
+                            <i class="material-icons">wifi</i>Test Connection
+                        </button>
+                        <button class="action-btn warning" onclick="clearSupabaseConfig()">
+                            <i class="material-icons">clear</i>Clear Config
+                        </button>
+                    </div>
+                </div>
+                
                 <!-- Display Mode Section -->
                 <div class="settings-section">
                     <h4>Display Mode</h4>
@@ -962,16 +1006,25 @@
                                 <div class="form-group">
                                     <label for="storyteller-name">Your Name (Storyteller):</label>
                                     <input type="text" id="storyteller-name" placeholder="Enter your name" class="form-input">
+                                    <!-- Hidden input for supabase compatibility -->
+                                    <input type="hidden" id="dm-name-input">
                                 </div>
                                 <div class="form-group">
                                     <label for="new-session-code">Session Code:</label>
                                     <input type="text" id="new-session-code" placeholder="Enter session code" class="form-input">
+                                    <!-- Hidden input for supabase compatibility -->
+                                    <input type="hidden" id="session-code-input">
                                 </div>
                             </div>
                             <button class="action-btn success" onclick="startNewGameSession()">
                                 <i class="material-icons">play_arrow</i>Start Game Session
                             </button>
                         </div>
+                        <!-- Hidden elements for supabase compatibility -->
+                        <div id="chat-session-controls" style="display: none;"></div>
+                        <div id="chat-messages-container" style="display: none;"></div>
+                        <div id="current-session-code" style="display: none;"></div>
+                        <div id="chat-status" style="display: none;"></div>
                         <div class="local-session-controls">
                             <button class="action-btn primary" onclick="showSessionManager()">
                                 <i class="material-icons">folder</i>Local Sessions
@@ -1273,6 +1326,9 @@
                 <div class="panel-content" id="right-panel-content">
                     <!-- Chat Interface -->
                     <div class="chat-interface">
+                        <!-- Error message container for Supabase -->
+                        <div id="chat-error-message" class="chat-error" style="display: none;"></div>
+                        
                         <div class="chat-messages" id="chat-messages">
                             <div class="chat-message system">
                                 <strong>System:</strong> Session started. Welcome to Epic Adventure!
@@ -1296,6 +1352,8 @@
                         
                         <div class="chat-input-area">
                             <input type="text" class="chat-input" placeholder="Type your message or command..." id="chat-input">
+                            <!-- Hidden input for supabase compatibility -->
+                            <input type="hidden" id="chat-message-input">
                             <button class="send-btn" onclick="sendMessage()">Send</button>
                         </div>
                     </div>
@@ -1810,7 +1868,24 @@
             const message = input.value.trim();
             
             if (message) {
-                addChatMessage(message, 'storyteller');
+                // Sync with hidden compatibility field for Supabase
+                document.getElementById('chat-message-input').value = message;
+                
+                // Try to send via Supabase first
+                if (window.sendChatMessage && typeof window.sendChatMessage === 'function') {
+                    try {
+                        window.sendChatMessage();
+                        // Don't add local message if Supabase handles it
+                    } catch (error) {
+                        console.error('Supabase send error:', error);
+                        // Fallback to local display
+                        addChatMessage(message, 'storyteller');
+                    }
+                } else {
+                    // Local-only mode
+                    addChatMessage(message, 'storyteller');
+                }
+                
                 input.value = '';
                 
                 // Check if it's a command and process it
@@ -2011,6 +2086,10 @@
                 return;
             }
             
+            // Sync with hidden compatibility fields for Supabase
+            document.getElementById('dm-name-input').value = storytellerName;
+            document.getElementById('session-code-input').value = sessionCode;
+            
             // Store session information
             window.currentGameSession = {
                 session_code: sessionCode,
@@ -2039,17 +2118,17 @@
             
             // Try to initialize real Supabase connection if available
             if (window.startGameSession && typeof window.startGameSession === 'function') {
-                // Fill in the values for supabase system
-                const dmInput = document.getElementById('dm-name-input');
-                const codeInput = document.getElementById('session-code-input');
-                if (dmInput) dmInput.value = storytellerName;
-                if (codeInput) codeInput.value = sessionCode;
-                
                 // Call the real supabase function
-                window.startGameSession();
+                try {
+                    window.startGameSession();
+                    addChatMessage(`🎮 Real-time session "${sessionCode}" started! Players can now join.`, 'system');
+                } catch (error) {
+                    console.error('Supabase session start error:', error);
+                    addChatMessage(`⚠️ Session "${sessionCode}" started in local mode. Real-time chat may not work.`, 'system');
+                }
+            } else {
+                addChatMessage(`🎮 Session "${sessionCode}" started in local mode.`, 'system');
             }
-            
-            addChatMessage(`🎮 Game session "${sessionCode}" started!`, 'system');
             addChatMessage(`👑 ${storytellerName} is the Storyteller`, 'system');
             addChatMessage('🔗 Player URL updated - check Settings to share', 'system');
             
