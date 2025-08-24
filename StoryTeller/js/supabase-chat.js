@@ -1309,10 +1309,6 @@ async function loadRecentMessages(sessionCode) {
         
         // Display each message
         messages.forEach(message => {
-            // Filter out heartbeat messages from history too
-            if (message.message_type === 'heartbeat' || message.player_name === 'Heartbeat') {
-                return; // Skip heartbeat messages
-            }
             displayChatMessage(message);
         });
         
