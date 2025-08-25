@@ -18,6 +18,11 @@ let messagesSubscription = null;
 let isStoryTeller = false;
 let playerName = '';
 
+// Global debug toggle - set to false to reduce console spam
+if (typeof window.showDebug === 'undefined') {
+    window.showDebug = false;
+}
+
 // ========================================
 // AUTO-RECONNECTION SYSTEM
 // ========================================
@@ -1240,12 +1245,14 @@ async function leaveGameSession() {
 // REAL-TIME MESSAGING
 // ========================================
 function subscribeToSession(sessionCode) {
-    console.log('🔍 DEBUG - Setting up real-time subscription for session:', sessionCode);
-    console.log('🔍 DEBUG - Current player name:', window.playerName);
-    console.log('🔍 DEBUG - Is storyteller:', window.isStoryTeller);
+    if (window.showDebug) {
+        console.log('🔍 DEBUG - Setting up real-time subscription for session:', sessionCode);
+        console.log('🔍 DEBUG - Current player name:', window.playerName);
+        console.log('🔍 DEBUG - Is storyteller:', window.isStoryTeller);
+    }
     
     if (messagesSubscription) {
-        console.log('🔍 DEBUG - Unsubscribing from previous subscription');
+        if (window.showDebug) console.log('🔍 DEBUG - Unsubscribing from previous subscription');
         messagesSubscription.unsubscribe();
     }
     
@@ -1259,9 +1266,11 @@ function subscribeToSession(sessionCode) {
                 filter: `session_code=eq.${sessionCode}`
             }, 
             (payload) => {
-                console.log('🔍 DEBUG - Real-time message received:', payload);
-                console.log('🔍 DEBUG - Message session_code:', payload.new.session_code);
-                console.log('🔍 DEBUG - Expected session_code:', sessionCode);
+                if (window.showDebug) {
+                    console.log('🔍 DEBUG - Real-time message received:', payload);
+                    console.log('🔍 DEBUG - Message session_code:', payload.new.session_code);
+                    console.log('🔍 DEBUG - Expected session_code:', sessionCode);
+                }
                 
                 // Update heartbeat timestamp on any message received
                 lastHeartbeat = Date.now();
@@ -1271,15 +1280,15 @@ function subscribeToSession(sessionCode) {
             }
         )
         .subscribe((status) => {
-            console.log('🔍 DEBUG - Subscription status:', status);
+            if (window.showDebug) console.log('🔍 DEBUG - Subscription status:', status);
             
             if (status === 'SUBSCRIBED') {
                 lastHeartbeat = Date.now();
                 showConnectionStatus('Connected', 'success');
-                console.log('🔍 DEBUG - Successfully subscribed to session:', sessionCode);
+                if (window.showDebug) console.log('🔍 DEBUG - Successfully subscribed to session:', sessionCode);
             } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
                 showConnectionStatus('Connection issues detected', 'warning');
-                console.log('🔍 DEBUG - Subscription error for session:', sessionCode);
+                if (window.showDebug) console.log('🔍 DEBUG - Subscription error for session:', sessionCode);
                 // The connection monitor will handle reconnection
             }
         });
@@ -1371,13 +1380,15 @@ async function updateConnectedPlayersList() {
 }
 
 async function sendChatMessageAsync(messageText = null) {
-    console.log('🔍 DEBUG - Sending message:', messageText);
-    console.log('🔍 DEBUG - Supabase available:', !!supabase);
-    console.log('🔍 DEBUG - Current session:', currentGameSession);
-    console.log('🔍 DEBUG - window.playerName:', window.playerName);
-    console.log('🔍 DEBUG - local playerName:', playerName);
-    console.log('🔍 DEBUG - window.isStoryTeller:', window.isStoryTeller);
-    console.log('🔍 DEBUG - local isStoryTeller:', isStoryTeller);
+    if (window.showDebug) {
+        console.log('🔍 DEBUG - Sending message:', messageText);
+        console.log('🔍 DEBUG - Supabase available:', !!supabase);
+        console.log('🔍 DEBUG - Current session:', currentGameSession);
+        console.log('🔍 DEBUG - window.playerName:', window.playerName);
+        console.log('🔍 DEBUG - local playerName:', playerName);
+        console.log('🔍 DEBUG - window.isStoryTeller:', window.isStoryTeller);
+        console.log('🔍 DEBUG - local isStoryTeller:', isStoryTeller);
+    }
     
     if (!supabase) {
         console.error('Supabase not initialized');
@@ -1403,7 +1414,7 @@ async function sendChatMessageAsync(messageText = null) {
             is_storyteller: window.isStoryTeller || isStoryTeller || false
         };
         
-        console.log('🔍 DEBUG - Inserting message:', messageData);
+        if (window.showDebug) console.log('🔍 DEBUG - Inserting message:', messageData);
         
         const { data, error } = await supabase
             .from('game_messages')
@@ -1473,14 +1484,16 @@ async function sendGameResponse(responseText) {
 // MESSAGE PROCESSING
 // ========================================
 function handleIncomingMessage(message) {
-    console.log('🔍 DEBUG - Handling incoming message:', message);
-    console.log('🔍 DEBUG - Message is_storyteller:', message.is_storyteller);
-    console.log('🔍 DEBUG - Message player_name:', message.player_name);
-    console.log('🔍 DEBUG - Current window.playerName:', window.playerName);
+    if (window.showDebug) {
+        console.log('🔍 DEBUG - Handling incoming message:', message);
+        console.log('🔍 DEBUG - Message is_storyteller:', message.is_storyteller);
+        console.log('🔍 DEBUG - Message player_name:', message.player_name);
+        console.log('🔍 DEBUG - Current window.playerName:', window.playerName);
+    }
     
     // Filter out heartbeat messages (don't display them)
     if (message.message_type === 'heartbeat' || message.player_name === 'Heartbeat') {
-        console.log('📡 Heartbeat received, connection healthy');
+        if (window.showDebug) console.log('📡 Heartbeat received, connection healthy');
         return;
     }
     

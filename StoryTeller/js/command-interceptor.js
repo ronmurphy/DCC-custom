@@ -3,7 +3,15 @@
  * ========================
  * 
  * This file intercepts chat messages AFTER supabase processes them but BEFORE they display.
- * It provides "distributed computing" style command processing where:
+ * It provides "distributed computing" st        case 'STAT':
+            const statParts = parameters ? parameters.split(':') : [];
+            return `📋 ${targetPlayer}'s ${statParts[0] || 'stat'} changed by ${statParts[1] || '1'}`;
+        case 'GOLD':
+            return `📋 ${targetPlayer} ${parseInt(parameters) > 0 ? 'gained' : 'lost'} ${Math.abs(parseInt(parameters) || 0)} gold`;
+        case 'CLEAN':
+            return `📋 Database cleanup performed: ${parameters || 'standard cleanup'}`;
+        default:
+            return `📋 ${targetPlayer} received a ${command.toLowerCase()}`;mand processing where:
  * - Generic commands are sent via chat (e.g., "LOOT:PlayerName:handful_gold")
  * - Each client calculates specific results based on their perspective
  * - Players see personal results, storyteller sees details, others see generic descriptions
@@ -26,6 +34,11 @@
 // Global variables for command processing
 let originalDisplayChatMessage = null;
 let commandParser = null;
+
+// Debug toggle - use global window variable
+if (typeof window.showDebug === 'undefined') {
+    window.showDebug = false;
+}
 
 /**
  * Initialize the command interceptor system
@@ -65,7 +78,7 @@ function initializeCommandInterceptor() {
 async function interceptChatMessage(message) {
     // Check if this looks like a command
     if (message.message_text && isCommandMessage(message.message_text)) {
-        console.log('🎯 Command detected:', message.message_text);
+        if (window.showDebug) console.log('🎯 Command detected:', message.message_text);
         
         // Process the command and get the appropriate display version
         const processedMessage = await processCommandMessage(message);
@@ -83,7 +96,7 @@ async function interceptChatMessage(message) {
  */
 function isCommandMessage(messageText) {
     // Look for patterns like: COMMAND:PlayerName or COMMAND:PlayerName:parameters
-    const commandPattern = /^(LOOT|ACHIEVEMENT|LEVELUP|ITEM|SKILL|EXP|GOLD|HEALTH|STAT):[^:]+/;
+    const commandPattern = /^(LOOT|ACHIEVEMENT|LEVELUP|ITEM|SKILL|EXP|GOLD|HEALTH|STAT|CLEAN):[^:]+/;
     return commandPattern.test(messageText);
 }
 
@@ -171,6 +184,9 @@ async function generatePersonalResult(command, parameters) {
         case 'GOLD':
             const goldAmount = parseInt(parameters) || 0;
             return `💰 You ${goldAmount > 0 ? 'gained' : 'lost'} ${Math.abs(goldAmount)} gold!`;
+        case 'CLEAN':
+            // For players, just show a generic cleanup message
+            return `🧹 The storyteller performed database maintenance`;
         default:
             return `You received: ${command}${parameters ? ' - ' + parameters : ''}`;
     }
@@ -216,6 +232,8 @@ function generateGenericResult(command, targetPlayer, parameters) {
             return `${targetPlayer} accomplished something noteworthy`;
         case 'LEVELUP':
             return `${targetPlayer} has grown stronger`;
+        case 'CLEAN':
+            return `🧹 Database maintenance performed`;
         default:
             return `${targetPlayer} received a ${command.toLowerCase()}`;
     }
