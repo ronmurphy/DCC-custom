@@ -88,8 +88,6 @@ function initializeMapEditor() {
 
 function createTileSelector() {
     const selector = document.getElementById('tile-selector');
-    if (!selector) return;
-    
     selector.innerHTML = '';
     
     tileOptions.forEach((opt, i) => {
@@ -149,14 +147,11 @@ function initializeMapTypeSelector() {
 }
 
 function initializeMapSizeSelector() {
-    const mapSizeSelect = document.getElementById('map-size-select');
-    if (mapSizeSelect) {
-        mapSizeSelect.addEventListener('change', (e) => {
-            const sizeMap = { small: 10, medium: 15, large: 20 };
-            currentMap.size = sizeMap[e.target.value];
-            resizeMap();
-        });
-    }
+    document.getElementById('map-size-select').addEventListener('change', (e) => {
+        const sizeMap = { small: 10, medium: 15, large: 20 };
+        currentMap.size = sizeMap[e.target.value];
+        resizeMap();
+    });
 }
 
 // ========================================
@@ -172,8 +167,6 @@ function resizeMap() {
     
     // Update grid
     const grid = document.getElementById('map-grid');
-    if (!grid) return;
-    
     grid.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
     grid.innerHTML = '';
     
@@ -207,10 +200,7 @@ function resizeMap() {
     });
     
     // Update display
-    const gridSizeDisplay = document.getElementById('grid-size-display');
-    if (gridSizeDisplay) {
-        gridSizeDisplay.textContent = `${size}x${size}`;
-    }
+    document.getElementById('grid-size-display').textContent = `${size}x${size}`;
     updateTilesPlacedCounter();
 }
 
@@ -266,10 +256,7 @@ function renderTile(tile, mapData, playerData) {
 function updateTilesPlacedCounter() {
     const placedCount = currentMap.mapData.filter(tile => tile !== null).length +
                       currentMap.playerLayer.filter(tile => tile !== null).length;
-    const tilesPlacedElement = document.getElementById('tiles-placed');
-    if (tilesPlacedElement) {
-        tilesPlacedElement.textContent = placedCount;
-    }
+    document.getElementById('tiles-placed').textContent = placedCount;
 }
 
 // ========================================
@@ -880,7 +867,6 @@ function importMapFromFile() {
 // ========================================
 function refreshSavedMaps() {
     const container = document.getElementById('saved-maps-container');
-    if (!container) return;
     
     if (!currentSession.maps || currentSession.maps.length === 0) {
         container.innerHTML = `

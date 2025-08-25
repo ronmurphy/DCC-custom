@@ -55,10 +55,11 @@ function createChatSystem() {
 }
 
 function addChatTab() {
+    // Check if chat tab already exists
+    if (document.querySelector('[data-tab="chat"]')) return;
+    
     // Add tab button
     const tabNav = document.querySelector('.tab-nav');
-    if (!tabNav) return;
-    
     const chatTabBtn = document.createElement('button');
     chatTabBtn.className = 'tab-btn';
     chatTabBtn.setAttribute('data-tab', 'chat');
@@ -71,21 +72,18 @@ function addChatTab() {
     
     // Add tab content
     const tabContainer = document.querySelector('.tab-container');
-    if (!tabContainer) return;
-    
     const chatTab = document.createElement('section');
     chatTab.className = 'tab-content';
     chatTab.id = 'chat';
     chatTab.innerHTML = createChatTabContent();
     tabContainer.appendChild(chatTab);
     
-    // Add event listener for tab switching
+    // Add event listener
     chatTabBtn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-        
+        switchTab('chat');
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         chatTabBtn.classList.add('active');
-        chatTab.classList.add('active');
+        clearChatNotification();
     });
 }
 

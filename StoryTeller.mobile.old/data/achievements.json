@@ -9,14 +9,6 @@
       "category": "survival"
     },
     {
-      "id": "murder_hobo",
-      "name": "Murder Hobo",
-      "description": "Kill everything that moves without asking questions first",
-      "effect": "+2 to Attack Damage, -1 to Charisma (Social consequences)",
-      "rarity": "uncommon",
-      "category": "combat"
-    },
-    {
       "id": "lucky_bastard",
       "name": "Lucky Bastard",
       "description": "Survive three situations that should have killed you",

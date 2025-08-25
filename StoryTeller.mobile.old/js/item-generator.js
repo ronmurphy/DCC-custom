@@ -488,10 +488,7 @@ function formatLootForText(lootTable) {
 // ========================================
 function refreshSavedLoot() {
     const container = document.getElementById('saved-loot-container');
-    if (!container) return;
-    
-    const filterElement = document.getElementById('loot-filter');
-    const filter = filterElement ? filterElement.value : 'all';
+    const filter = document.getElementById('loot-filter').value;
     
     let lootToShow = currentSession.items || [];
     if (filter !== 'all') {
@@ -666,15 +663,8 @@ function capitalize(str) {
 // ========================================
 function initializeItemGenerator() {
     // Loot type change listener
-    const lootTypeSelect = document.getElementById('loot-type-select');
-    const lootFilter = document.getElementById('loot-filter');
-    
-    if (lootTypeSelect) {
-        lootTypeSelect.addEventListener('change', updateLootOptions);
-    }
-    if (lootFilter) {
-        lootFilter.addEventListener('change', refreshSavedLoot);
-    }
+    document.getElementById('loot-type-select').addEventListener('change', updateLootOptions);
+    document.getElementById('loot-filter').addEventListener('change', refreshSavedLoot);
     
     // Initialize options visibility
     updateLootOptions();
@@ -683,14 +673,13 @@ function initializeItemGenerator() {
 }
 
 function updateLootOptions() {
-    const lootTypeElement = document.getElementById('loot-type-select');
-    const lootType = lootTypeElement ? lootTypeElement.value : 'treasure';
+    const lootType = document.getElementById('loot-type-select').value;
     const specialItemsGroup = document.getElementById('special-items-group');
     
     // Show/hide special items option based on loot type
-    if (lootType === 'shop' && specialItemsGroup) {
+    if (lootType === 'shop') {
         specialItemsGroup.style.display = 'block';
-    } else if (specialItemsGroup) {
+    } else {
         specialItemsGroup.style.display = 'none';
     }
 }
