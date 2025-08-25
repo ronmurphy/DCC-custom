@@ -682,6 +682,28 @@
             grid-template-columns: 1fr calc(var(--padding-base) * 12);
             gap: var(--padding-base);
             height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e0 #f1f5f9;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Admin Interface - Similar to Command Interface but simpler */
+        .admin-interface {
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e0 #f1f5f9;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .admin-categories {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(calc(var(--padding-base) * 15), 1fr));
+            gap: var(--grid-gap);
+            grid-auto-rows: max-content;
         }
 
         .command-categories {
@@ -1054,6 +1076,8 @@
             .command-interface {
                 grid-template-columns: 1fr;
                 grid-template-rows: auto 1fr;
+                height: 100%;
+                overflow-y: auto;
             }
             
             .command-categories {
@@ -1645,6 +1669,9 @@
                     <a class="dropdown-item" onclick="loadPanel('left', 'map')">
                         <i class="ra ra-treasure-map"></i>Map
                     </a>
+                    <a class="dropdown-item" onclick="loadPanel('left', 'admin')">
+                        <i class="ra ra-gears"></i>Admin
+                    </a>
                     <a class="dropdown-item" onclick="loadPanel('left', 'chat')">
                         <i class="material-icons">chat</i>Chat
                     </a>
@@ -1684,6 +1711,9 @@
                     </a>
                     <a class="dropdown-item" onclick="loadPanel('right', 'map')">
                         <i class="ra ra-treasure-map"></i>Map
+                    </a>
+                    <a class="dropdown-item" onclick="loadPanel('right', 'admin')">
+                        <i class="ra ra-gears"></i>Admin
                     </a>
                     <a class="dropdown-item" onclick="loadPanel('right', 'chat')">
                         <i class="material-icons">chat</i>Chat
@@ -1815,7 +1845,9 @@
                                 </div>
                             </div>
 
-                            <!-- Database Management -->
+                            <!-- Database Management - Commented out for space optimization -->
+                            <!-- TODO: Move to Admin panel in future -->
+                            <!--
                             <div class="command-category">
                                 <div class="category-header">
                                     <i class="ra ra-anvil"></i>
@@ -1835,6 +1867,7 @@
                                     </div>
                                 </div>
                             </div>
+                            -->
 
                             <!-- Quick Actions -->
                             <div class="command-category">
@@ -2175,6 +2208,7 @@
                 'combat': 'Combat Tracker',
                 'items': 'Item Generator',
                 'map': 'Map Editor',
+                'admin': 'Admin Panel',
                 'chat': 'Chat & Communication',
                 'players': 'Player Management',
                 'quests': 'Quest Tracker',
@@ -2300,6 +2334,59 @@
                                 </div>
                                 <div class="no-players" id="no-players" style="display: none; padding: 15px; text-align: center; color: #666;">
                                     No players connected yet. Share the player URL to invite players!
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                
+                case 'admin':
+                    return `
+                        <!-- Admin Panel -->
+                        <div class="admin-interface">
+                            <div class="admin-categories">
+                                <!-- Database Management -->
+                                <div class="command-category">
+                                    <div class="category-header">
+                                        <i class="ra ra-anvil"></i>
+                                        Database Management
+                                    </div>
+                                    <div class="category-content">
+                                        <div class="command-grid">
+                                            <button class="command-btn warning" onclick="executeCommand('clean', 'old')" title="Remove messages older than 7 days">
+                                                🧹 Clean Old
+                                            </button>
+                                            <button class="command-btn danger" onclick="executeCommand('clean', 'all')" title="Remove ALL session messages - be careful!">
+                                                🗑️ Clean All
+                                            </button>
+                                        </div>
+                                        <div class="command-note">
+                                            <small>Free Supabase: 500MB limit. Clean old messages to save space.</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- System Management -->
+                                <div class="command-category">
+                                    <div class="category-header">
+                                        <i class="ra ra-gears"></i>
+                                        System Management
+                                    </div>
+                                    <div class="category-content">
+                                        <div class="command-grid">
+                                            <button class="command-btn" onclick="exportAllData()" title="Export all session data">
+                                                📤 Export Data
+                                            </button>
+                                            <button class="command-btn" onclick="showBackupStatus()" title="Check backup status">
+                                                💾 Backup Status
+                                            </button>
+                                            <button class="command-btn warning" onclick="resetSession()" title="Reset current session">
+                                                🔄 Reset Session
+                                            </button>
+                                        </div>
+                                        <div class="command-note">
+                                            <small>System administration and maintenance tools.</small>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -3996,6 +4083,24 @@ Notes: ${npc.notes || 'None'}`;
 
         // Make function globally available
         window.loadRecentChatHistory = loadRecentChatHistory;
+
+        // Admin Panel Functions
+        function exportAllData() {
+            alert('Export Data: This feature will export all session data to a JSON file.');
+            // TODO: Implement data export functionality
+        }
+
+        function showBackupStatus() {
+            alert('Backup Status: Checking backup status...');
+            // TODO: Implement backup status check
+        }
+
+        function resetSession() {
+            if (confirm('Are you sure you want to reset the current session? This will clear all data!')) {
+                alert('Reset Session: This feature will reset the current session.');
+                // TODO: Implement session reset functionality
+            }
+        }
     </script>
 
     <!-- Hidden compatibility elements for legacy modules -->
