@@ -3183,9 +3183,18 @@
                                 <div class="notes-list-container">
                                     <div class="notes-list-header">
                                         <h5>Notes List</h5>
-                                        <button class="notes-btn" onclick="window.notesManager.searchNotes(prompt('Search notes:'))" title="Search Notes" style="padding: 4px; min-height: 24px;">
-                                            <i class="material-icons" style="font-size: 16px;">search</i>
-                                        </button>
+                                        <div class="notes-list-controls">
+                                            <select id="priority-filter" onchange="window.notesManager.filterByPriority(this.value)" title="Filter by Priority">
+                                                <option value="">All Notes</option>
+                                                <option value="hot">🔥 Hot</option>
+                                                <option value="new-idea">💡 New Ideas</option>
+                                                <option value="important">⭐ Important</option>
+                                                <option value="normal">📝 Normal</option>
+                                            </select>
+                                            <button class="notes-btn" onclick="window.notesManager.searchNotes(prompt('Search notes:'))" title="Search Notes" style="padding: 4px; min-height: 24px;">
+                                                <i class="material-icons" style="font-size: 16px;">search</i>
+                                            </button>
+                                        </div>
                                     </div>
                                     <div class="notes-list" id="notes-list">
                                         <!-- Notes will be populated by JavaScript -->
@@ -3195,6 +3204,11 @@
                                 <div class="notes-editor-container">
                                     <div class="notes-editor-header">
                                         <input type="text" id="note-title-input" class="note-title-input" placeholder="Note title...">
+                                        <div class="note-priority-controls">
+                                            <button class="notes-btn priority-quick" onclick="window.notesManager.quickSetPriority('hot')" title="Mark as Hot">🔥</button>
+                                            <button class="notes-btn priority-quick" onclick="window.notesManager.quickSetPriority('new-idea')" title="Mark as New Idea">💡</button>
+                                            <button class="notes-btn priority-quick" onclick="window.notesManager.quickSetPriority('important')" title="Mark as Important">⭐</button>
+                                        </div>
                                     </div>
                                     
                                     <div class="editor-toolbar">
@@ -3204,6 +3218,13 @@
                                         <button class="toolbar-btn" onclick="formatSelectedText('italic')" title="Italic">
                                             <i class="material-icons">format_italic</i>
                                         </button>
+                                        <button class="toolbar-btn" onclick="formatSelectedText('highlight')" title="Highlight">
+                                            <i class="material-icons">highlight</i>
+                                        </button>
+                                        <button class="toolbar-btn" onclick="formatSelectedText('strikethrough')" title="Strikethrough">
+                                            <i class="material-icons">strikethrough_s</i>
+                                        </button>
+                                        <div class="toolbar-separator"></div>
                                         <button class="toolbar-btn" onclick="formatSelectedText('heading')" title="Heading">
                                             <i class="material-icons">title</i>
                                         </button>
