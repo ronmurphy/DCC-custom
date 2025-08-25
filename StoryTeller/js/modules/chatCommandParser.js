@@ -20,7 +20,8 @@ class ChatCommandParser {
             EXPERIENCE: /^EXP:([^:]+):(\d+)$/i,
             GOLD: /^GOLD:([^:]+):(\d+)$/i,
             HEALTH: /^HEALTH:([^:]+):([+-]?\d+)$/i,
-            STAT: /^STAT:([^:]+):([^:]+):([+-]?\d+)$/i
+            STAT: /^STAT:([^:]+):([^:]+):([+-]?\d+)$/i,
+            CLEAN: /^CLEAN:([^:]+):?(.*)$/i
         };
         
         // Active players (should be populated from session)
@@ -134,6 +135,12 @@ class ChatCommandParser {
      */
     async executeCommand(commandType, match, senderName) {
         const playerName = match[1];
+        
+        // CLEAN command doesn't require a player to be registered
+        if (commandType === 'CLEAN') {
+            return await this.handleCleanCommand(playerName, match[2], senderName);
+        }
+        
         const player = this.getPlayer(playerName);
 
         if (!player) {
@@ -172,6 +179,9 @@ class ChatCommandParser {
             
             case 'STAT':
                 return await this.handleStatCommand(player, playerName, match[2], parseInt(match[3]), senderName);
+            
+            case 'CLEAN':
+                return await this.handleCleanCommand(playerName, match[2], senderName);
             
             default:
                 throw new Error(`Unknown command type: ${commandType}`);
@@ -574,6 +584,102 @@ class ChatCommandParser {
     }
 
     /**
+     * Handle CLEAN command to manage database storage
+     * @param {string} targetPlayer - Usually "session" for session cleanup
+     * @param {string} cleanType - Type of cleanup (messages, old, all)
+     * @param {string} senderName - Command sender
+     * @returns {Object} Command result
+     */
+    async handleCleanCommand(targetPlayer, cleanType, senderName) {
+        // Only allow storytellers to use clean commands
+        if (senderName !== 'StoryTeller' && !window.isStoryTeller && !window.isStoryteller) {
+            return {
+                success: false,
+                command: 'CLEAN',
+                error: 'Only storytellers can use CLEAN commands',
+                targetPlayer: targetPlayer
+            };
+        }
+
+        const sessionCode = window.currentGameSession || window.currentSession;
+        if (!sessionCode) {
+            return {
+                success: false,
+                command: 'CLEAN',
+                error: 'No active session found',
+                targetPlayer: targetPlayer
+            };
+        }
+
+        try {
+            let deletedCount = 0;
+            let operation = '';
+
+            switch (cleanType.toLowerCase()) {
+                case 'old':
+                case 'messages':
+                    // Delete messages older than 7 days from current session
+                    const sevenDaysAgo = new Date();
+                    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+                    
+                    const { count: messageCount, error: msgError } = await window.supabase
+                        .from('game_messages')
+                        .delete()
+                        .eq('session_code', sessionCode.toUpperCase())
+                        .lt('created_at', sevenDaysAgo.toISOString());
+                        
+                    if (msgError) throw msgError;
+                    deletedCount = messageCount || 0;
+                    operation = 'old messages (7+ days)';
+                    break;
+                    
+                case 'session':
+                case 'all':
+                    // Delete ALL messages from current session (careful!)
+                    const { count: allCount, error: allError } = await window.supabase
+                        .from('game_messages')
+                        .delete()
+                        .eq('session_code', sessionCode.toUpperCase());
+                        
+                    if (allError) throw allError;
+                    deletedCount = allCount || 0;
+                    operation = 'all session messages';
+                    break;
+                    
+                default:
+                    return {
+                        success: false,
+                        command: 'CLEAN',
+                        error: `Unknown clean type: ${cleanType}. Use 'old', 'messages', 'session', or 'all'`,
+                        targetPlayer: targetPlayer
+                    };
+            }
+
+            return {
+                success: true,
+                command: 'CLEAN',
+                message: `🧹 Database cleaned: ${deletedCount} ${operation} removed from session ${sessionCode}`,
+                targetPlayer: targetPlayer,
+                sender: senderName,
+                details: {
+                    deletedCount: deletedCount,
+                    operation: operation,
+                    session: sessionCode
+                }
+            };
+
+        } catch (error) {
+            console.error('❌ Clean command failed:', error);
+            return {
+                success: false,
+                command: 'CLEAN',
+                error: `Database cleanup failed: ${error.message}`,
+                targetPlayer: targetPlayer
+            };
+        }
+    }
+
+    /**
      * Get list of available commands
      * @returns {Array} Array of command descriptions
      */
@@ -587,7 +693,9 @@ class ChatCommandParser {
             { command: 'EXP:PlayerName:amount', description: 'Award general experience' },
             { command: 'GOLD:PlayerName:amount', description: 'Give/take gold (use negative for taking)' },
             { command: 'HEALTH:PlayerName:amount', description: 'Heal/damage player' },
-            { command: 'STAT:PlayerName:stat_name:modifier', description: 'Modify player stat' }
+            { command: 'STAT:PlayerName:stat_name:modifier', description: 'Modify player stat' },
+            { command: 'CLEAN:session:old', description: 'Remove messages older than 7 days (storyteller only)' },
+            { command: 'CLEAN:session:all', description: 'Remove ALL session messages (storyteller only)' }
         ];
     }
 

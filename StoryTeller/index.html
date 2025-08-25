@@ -35,6 +35,296 @@
             --danger-gradient: linear-gradient(135deg, #ff7675 0%, #d63031 100%);
             --warning-gradient: linear-gradient(135deg, #fdcb6e 0%, #e17055 100%);
             --action-gradient: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+            
+            /* Theme colors */
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --border-color: #e9ecef;
+            --panel-bg: rgba(255, 255, 255, 0.95);
+            --header-bg: rgba(0, 0, 0, 0.2);
+        }
+
+        /* Dark Theme */
+        .dark-theme {
+            --primary-gradient: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 100%);
+            --panel-gradient: linear-gradient(135deg, #16213e 0%, #0f3460 100%);
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --text-primary: #eee6ff;
+            --text-secondary: #a8a8b3;
+            --border-color: #16213e;
+            --panel-bg: rgba(22, 33, 62, 0.95);
+            --header-bg: rgba(0, 0, 0, 0.5);
+        }
+
+        .dark-theme body {
+            color: var(--text-primary);
+            background: var(--primary-gradient);
+        }
+
+        .dark-theme .panel {
+            background: var(--panel-bg);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
+        .dark-theme .chat-messages {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
+        .dark-theme .chat-message {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        .dark-theme .chat-message.system {
+            background: rgba(33, 150, 243, 0.2);
+            border-left-color: #2196f3;
+            color: var(--text-primary);
+        }
+
+        .dark-theme .chat-message.player {
+            background: rgba(156, 39, 176, 0.2);
+            border-left-color: #9c27b0;
+            color: var(--text-primary);
+        }
+
+        .dark-theme .chat-message.storyteller {
+            background: rgba(255, 152, 0, 0.2);
+            border-left-color: #ff9800;
+            color: var(--text-primary);
+        }
+
+        .dark-theme .player-selector {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
+        .dark-theme .player-selector h4 {
+            color: var(--text-primary);
+        }
+
+        .dark-theme .player-item {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
+        .dark-theme .player-item:hover {
+            border-color: #74b9ff;
+            box-shadow: 0 2px 8px rgba(116, 185, 255, 0.3);
+        }
+
+        .dark-theme .player-item.selected {
+            border-color: #0984e3;
+            background: rgba(227, 242, 253, 0.1);
+            box-shadow: 0 2px 12px rgba(9, 132, 227, 0.4);
+        }
+
+        .dark-theme .player-name {
+            color: var(--text-primary);
+        }
+
+        .dark-theme .player-stats {
+            color: var(--text-secondary);
+        }
+
+        .dark-theme .command-category {
+            background: var(--bg-secondary);
+            border-color: var(--border-color);
+        }
+
+        .dark-theme .chat-input {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
+        .dark-theme .chat-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .dark-theme .chat-error {
+            background: rgba(255, 235, 238, 0.1);
+            border-color: rgba(229, 115, 115, 0.3);
+            color: #ff8a80;
+        }
+
+        .dark-theme .panel-content {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        .dark-theme input, 
+        .dark-theme textarea, 
+        .dark-theme select {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
+        .dark-theme input::placeholder,
+        .dark-theme textarea::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .dark-theme .header-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
+        .dark-theme .header-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .dark-theme .quick-connect-btn {
+            background: var(--action-gradient);
+            color: white;
+        }
+
+        .dark-theme .quick-connect-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(116, 185, 255, 0.4);
+        }
+
+        .dark-theme .panel-btn,
+        .dark-theme .command-btn {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
+        .dark-theme .panel-btn:hover,
+        .dark-theme .command-btn:hover {
+            background: var(--bg-secondary);
+            border-color: #74b9ff;
+        }
+
+        .dark-theme .send-btn {
+            background: var(--action-gradient);
+            color: white;
+        }
+
+        .dark-theme .send-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(116, 185, 255, 0.4);
+        }
+
+        .dark-theme .close-btn {
+            background: var(--danger-gradient);
+            color: white;
+        }
+
+        .dark-theme .chat-input-area {
+            background: var(--bg-secondary);
+            border-color: var(--border-color);
+        }
+
+        .dark-theme .chat-input {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
+        .dark-theme .chat-input:focus {
+            border-color: #74b9ff;
+        }
+
+        .dark-theme .command-grid {
+            background: var(--bg-secondary);
+        }
+
+        .dark-theme .command-btn {
+            background: var(--action-gradient);
+            color: white;
+            border-color: var(--border-color);
+        }
+
+        .dark-theme .command-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(116, 185, 255, 0.4);
+        }
+
+        .dark-theme .command-btn.danger {
+            background: var(--danger-gradient);
+        }
+
+        .dark-theme .command-btn.success {
+            background: var(--success-gradient);
+        }
+
+        .dark-theme .command-btn.warning {
+            background: var(--warning-gradient);
+        }
+
+        .dark-theme .command-note {
+            background: var(--bg-primary);
+            color: var(--text-secondary);
+            border-color: var(--border-color);
+        }
+
+        .dark-theme .tab-bar {
+            background: var(--bg-secondary);
+            border-color: var(--border-color);
+        }
+
+        .dark-theme .tab-selector {
+            background: transparent;
+            color: var(--text-secondary);
+            border-color: var(--border-color);
+        }
+
+        .dark-theme .tab-selector:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+
+        .dark-theme .tab-selector.active {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border-color: #74b9ff;
+        }
+
+        .dark-theme .settings-modal-content {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
+        .dark-theme .settings-header {
+            background: var(--panel-gradient);
+            color: white;
+        }
+
+        .dark-theme .settings-section {
+            background: var(--bg-secondary);
+            border-color: var(--border-color);
+        }
+
+        .dark-theme .chevron-section {
+            background: var(--bg-secondary);
+            border-color: var(--border-color);
+        }
+
+        .dark-theme .chevron-header {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
+        .dark-theme .chevron-header:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .dark-theme .chevron-content {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
         }
 
         /* Tablet Mode (Default) */
@@ -282,6 +572,29 @@
             background: rgba(255, 255, 255, 0.3);
         }
 
+        .quick-connect-section {
+            margin-left: auto;
+        }
+
+        .quick-connect-btn {
+            background: var(--success-gradient) !important;
+            font-weight: 600;
+        }
+
+        .quick-connect-btn:hover {
+            background: linear-gradient(135deg, #00a085 0%, #00b894 100%) !important;
+            transform: translateY(-1px);
+        }
+
+        .quick-connect-btn.connecting {
+            background: var(--warning-gradient) !important;
+            cursor: not-allowed;
+        }
+
+        .quick-connect-btn.connected {
+            background: var(--action-gradient) !important;
+        }
+
         .tab-selector i {
             font-size: calc(var(--base-font-size) * 1.1);
         }
@@ -446,6 +759,19 @@
             background: var(--warning-gradient);
         }
 
+        .command-note {
+            margin-top: 8px;
+            padding: 6px 8px;
+            background: rgba(var(--warning-rgb), 0.1);
+            border-radius: 4px;
+            border-left: 3px solid var(--warning-color);
+        }
+
+        .command-note small {
+            color: #6c757d;
+            font-size: 0.8em;
+        }
+
         /* Player Selection */
         .player-selector {
             background: #f8f9fa;
@@ -506,8 +832,8 @@
 
         /* Chat Interface */
         .chat-interface {
-            display: grid;
-            grid-template-rows: 1fr auto;
+            display: flex;
+            flex-direction: column;
             height: 100%;
         }
 
@@ -530,21 +856,24 @@
         .chat-messages {
             background: #f8f9fa;
             border-radius: var(--border-radius);
-            margin-bottom: 0; /* Removed margin to prevent overflow */
-            padding: var(--padding-base);
-            overflow-y: auto;
+            margin-bottom: 0;
+            padding: 8px; /* Reduced padding for tablet efficiency */
+            overflow-y: scroll;
+            overflow-x: hidden;
             border: 1px solid #e9ecef;
             font-size: calc(var(--base-font-size) * 0.95);
-            height: 100%;
-            min-height: 0; /* Important for grid flex behavior */
+            height: calc(100vh - 280px);
+            max-height: calc(100vh - 280px); /* Match height to prevent issues */
+            min-height: 200px;
+            flex-shrink: 0;
         }
 
         .chat-message {
-            margin-bottom: var(--grid-gap);
-            padding: calc(var(--padding-base) * 0.6);
+            margin-bottom: 6px; /* Reduced from var(--grid-gap) */
+            padding: 8px; /* Reduced from calc(var(--padding-base) * 0.6) */
             border-radius: var(--border-radius);
             font-size: calc(var(--base-font-size) * 0.9);
-            line-height: 1.4;
+            line-height: 1.3; /* Slightly tighter line height */
         }
 
         .chat-message.system {
@@ -565,10 +894,11 @@
         .chat-input-area {
             display: flex;
             gap: var(--grid-gap);
-            padding: var(--padding-base);
+            padding: 8px; /* Reduced from var(--padding-base) */
             background: var(--primary-color);
             border-top: 1px solid #e9ecef;
-            min-height: calc(var(--input-height) + var(--padding-base) * 2);
+            min-height: calc(var(--input-height) + 16px); /* Adjusted for smaller padding */
+            margin-top: var(--grid-gap);
         }
 
         .chat-input {
@@ -1235,6 +1565,20 @@
                         Export Data: Download session and player data as JSON
                     </p>
                 </div>
+                
+                <!-- Debug Controls -->
+                <div class="settings-section">
+                    <h4>Developer Options</h4>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="debug-toggle" onchange="toggleDebugMode()" style="margin-right: 8px;">
+                            Show Debug Messages
+                        </label>
+                        <p style="color: #888; font-size: 0.9em; margin: 5px 0 0 0;">
+                            Enable console debug output for troubleshooting
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1364,6 +1708,13 @@
                 <i class="material-icons">fullscreen</i>
                 Single Panel
             </button>
+            
+            <div class="quick-connect-section">
+                <button class="tab-selector quick-connect-btn" onclick="quickConnect()" id="quick-connect-btn">
+                    <i class="material-icons">flash_on</i>
+                    Quick Connect
+                </button>
+            </div>
         </div>
 
         <!-- Main Content Area -->
@@ -1456,6 +1807,27 @@
                                         <button class="command-btn warning" onclick="executeCommand('condition')">
                                             🔮 Condition
                                         </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Database Management -->
+                            <div class="command-category">
+                                <div class="category-header">
+                                    <i class="ra ra-anvil"></i>
+                                    Database Management
+                                </div>
+                                <div class="category-content">
+                                    <div class="command-grid">
+                                        <button class="command-btn warning" onclick="executeCommand('clean', 'old')" title="Remove messages older than 7 days">
+                                            🧹 Clean Old
+                                        </button>
+                                        <button class="command-btn danger" onclick="executeCommand('clean', 'all')" title="Remove ALL session messages - be careful!">
+                                            🗑️ Clean All
+                                        </button>
+                                    </div>
+                                    <div class="command-note">
+                                        <small>Free Supabase: 500MB limit. Clean old messages to save space.</small>
                                     </div>
                                 </div>
                             </div>
@@ -2113,7 +2485,8 @@
         }
 
         function executeCommand(command, parameter = '') {
-            if (!selectedPlayer) {
+            // Clean commands don't require a player selection
+            if (command !== 'clean' && !selectedPlayer) {
                 addChatMessage('Please select a player first!', 'system');
                 return;
             }
@@ -2161,6 +2534,24 @@
                 case 'heroic_deed':
                     commandText = `ACHIEVEMENT:${selectedPlayer}:heroic_deed`;
                     emoji = '🦸';
+                    break;
+                case 'clean':
+                    // Special handling for clean commands - doesn't need a player
+                    if (parameter === 'old') {
+                        commandText = `CLEAN:session:old`;
+                        emoji = '🧹';
+                    } else if (parameter === 'all') {
+                        // Add confirmation for dangerous operation
+                        if (confirm('⚠️ This will DELETE ALL messages in the current session! Are you sure?')) {
+                            commandText = `CLEAN:session:all`;
+                            emoji = '🗑️';
+                        } else {
+                            return; // User cancelled
+                        }
+                    } else {
+                        commandText = `CLEAN:session:old`; // Default to safe option
+                        emoji = '🧹';
+                    }
                     break;
                 default:
                     commandText = `${command.toUpperCase()}:${selectedPlayer}`;
@@ -2671,6 +3062,151 @@ ALTER TABLE game_sessions ENABLE ROW LEVEL SECURITY;
             addChatMessage('🔗 Player URL copied to clipboard!', 'system');
         }
 
+        // Debug mode toggle
+        function toggleDebugMode() {
+            const debugToggle = document.getElementById('debug-toggle');
+            window.showDebug = debugToggle.checked;
+            
+            console.log(`🔧 Debug mode ${window.showDebug ? 'ENABLED' : 'DISABLED'}`);
+            addChatMessage(`🔧 Debug mode ${window.showDebug ? 'enabled' : 'disabled'}`, 'system');
+        }
+
+        // Quick Connect function
+        async function quickConnect() {
+            const button = document.getElementById('quick-connect-btn');
+            const icon = button.querySelector('i');
+            const originalText = button.innerHTML;
+            
+            try {
+                // Update button state
+                button.classList.add('connecting');
+                button.innerHTML = '<i class="material-icons">sync</i>Connecting...';
+                button.disabled = true;
+                
+                // Load config from browser storage
+                const config = loadSupabaseConfig();
+                if (!config) {
+                    throw new Error('No Supabase configuration found. Please configure in Settings first.');
+                }
+                
+                // Get session info from storage or use defaults
+                const playerName = localStorage.getItem('storyteller-name') || 'Storyteller';
+                const sessionCode = localStorage.getItem('last-session-code') || generateSessionCode();
+                
+                // Initialize Supabase if needed
+                if (!window.supabaseInitialized) {
+                    const initSuccess = initializeSupabase(config.url, config.key);
+                    if (!initSuccess) {
+                        throw new Error('Failed to initialize Supabase connection');
+                    }
+                }
+                
+                // Connect to session
+                const result = await fullSupabaseConnect(playerName, sessionCode, true, 'create');
+                
+                if (result.success) {
+                    // Success - update button and copy URL
+                    button.classList.remove('connecting');
+                    button.classList.add('connected');
+                    button.innerHTML = '<i class="material-icons">check_circle</i>Connected';
+                    
+                    // Update main connection status to show active session
+                    updateConnectionStatus(`Connected & Ready`, 'success');
+                    
+                    // *** CRITICAL: Set up game session data (same as startNewGameSession) ***
+                    // Sync with hidden compatibility fields
+                    document.getElementById('dm-name-input').value = playerName;
+                    document.getElementById('session-code-input').value = sessionCode;
+                    
+                    // Store session information globally for chat functionality
+                    window.currentGameSession = {
+                        session_code: sessionCode,
+                        sessionCode: sessionCode,
+                        dm_name: playerName,
+                        playerName: playerName,
+                        isStoryteller: true,
+                        isStoryTeller: true,
+                        mode: 'create',
+                        ...result.sessionInfo
+                    };
+                    
+                    // Auto-copy player URL
+                    const playerUrl = generatePlayerUrl(sessionCode);
+                    await navigator.clipboard.writeText(playerUrl);
+                    
+                    // Show success messages
+                    addChatMessage(`🚀 Session ${sessionCode} created and active`, 'system');
+                    addChatMessage(`🎯 You are the Storyteller for this session`, 'system');
+                    addChatMessage(`� Real-time chat active - players can now join`, 'system');
+                    addChatMessage(`📋 Player URL copied to clipboard`, 'system');
+                    
+                    // Store session code for future use
+                    localStorage.setItem('last-session-code', sessionCode);
+                    
+                } else {
+                    throw new Error(result.error || 'Connection failed');
+                }
+                
+            } catch (error) {
+                console.error('Quick Connect failed:', error);
+                
+                // Show error
+                addChatMessage(`❌ Connection failed: ${error.message}`, 'system');
+                
+                // Reset button
+                button.classList.remove('connecting');
+                button.innerHTML = originalText;
+                
+            } finally {
+                button.disabled = false;
+            }
+        }
+        
+        // Generate player URL
+        function generatePlayerUrl(sessionCode) {
+            const config = loadSupabaseConfig();
+            if (config && config.url) {
+                // Use the player app URL if available
+                const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
+                return `${baseUrl}player-test.html?session=${sessionCode}`;
+            }
+            return `${window.location.origin}${window.location.pathname}?session=${sessionCode}`;
+        }
+        
+        // Generate random session code
+        function generateSessionCode() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            let result = '';
+            for (let i = 0; i < 6; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        // Theme toggle function
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = localStorage.getItem('theme') || 'light';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            
+            if (newTheme === 'dark') {
+                body.classList.add('dark-theme');
+            } else {
+                body.classList.remove('dark-theme');
+            }
+            
+            localStorage.setItem('theme', newTheme);
+            addChatMessage(`🎨 Switched to ${newTheme} theme`, 'system');
+        }
+        
+        // Load theme on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-theme');
+            }
+        });
+
         // Panel Content Functions
         function generateNPC() {
             const npcTypes = ['friendly merchant', 'gruff guard', 'wise elder', 'mysterious stranger'];
@@ -2971,10 +3507,6 @@ ALTER TABLE game_sessions ENABLE ROW LEVEL SECURITY;
             }
             
             console.log(`🔄 Connection Status: ${message}`);
-        }
-
-        function toggleTheme() {
-            addChatMessage('Theme toggled!', 'system');
         }
 
         // Event Listeners
