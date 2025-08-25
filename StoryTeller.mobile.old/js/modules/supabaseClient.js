@@ -32,7 +32,8 @@ class SupabaseClient {
             id SERIAL PRIMARY KEY,
             session_code VARCHAR(10) UNIQUE NOT NULL,
             dm_name VARCHAR(100) NOT NULL,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            is_active BOOLEAN DEFAULT true
         );
 
         -- Game Messages Table  
