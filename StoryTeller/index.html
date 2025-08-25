@@ -10,6 +10,10 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/rpg-awesome/0.2.0/css/rpg-awesome.min.css">
 
+    <!-- ported StoryTeller.mobile.old css goes here -->
+    <link rel="stylesheet" href="css/npc-enhanced.css">
+    <!-- end ported css -->
+
     <style>
         * {
             margin: 0;
@@ -1927,6 +1931,11 @@
     <script src="js/modules/equipmentBonusSystem.js"></script>
     <script src="js/modules/chatCommandParser.js"></script>
     <script src="js/modules/dccUtilities.js"></script>
+    
+    <!-- ported StoryTeller.mobile.old js goes here -->
+    <script src="js/modules/NPCGenerator.js"></script>
+    <!-- end ported js -->
+    
     <script src="js/modules/dccChatIntegration.js"></script>
     
     <!-- Chat System Modules -->
@@ -2298,21 +2307,98 @@
                 
                 case 'npcs':
                     return `
-                        <div class="npc-generator">
-                            <h4>NPC Generator</h4>
-                            <div class="generator-controls">
-                                <select id="npc-type" class="form-select">
-                                    <option value="friendly">Friendly NPC</option>
-                                    <option value="merchant">Merchant</option>
-                                    <option value="guard">Guard</option>
-                                    <option value="noble">Noble</option>
-                                </select>
-                                <button class="action-btn primary" onclick="generateNPC()">
-                                    <i class="ra ra-dice"></i>Generate NPC
+                        <!-- Enhanced NPC Manager - Redesigned for Tablets -->
+                        <div class="npc-panel-container">
+                            <!-- Tab Navigation -->
+                            <div class="npc-tabs">
+                                <button class="npc-tab active" onclick="switchNPCTab('new')" data-tab="new">
+                                    <i class="ra ra-user-plus"></i> New NPC
+                                </button>
+                                <button class="npc-tab" onclick="switchNPCTab('saved')" data-tab="saved">
+                                    <i class="ra ra-users"></i> Saved NPCs
+                                    <span class="saved-count" id="saved-npc-count">0</span>
                                 </button>
                             </div>
-                            <div id="generated-npc-display" class="npc-display">
-                                <p class="placeholder-text">Click "Generate NPC" to create a random character</p>
+
+                            <!-- New NPC Tab Content -->
+                            <div class="npc-tab-content active" id="new-npc-tab">
+                                <!-- Quick Generate Buttons -->
+                                <div class="npc-quick-generate">
+                                    <button class="npc-type-btn friendly" onclick="generateNPCType('npc')">
+                                        <i class="ra ra-user"></i>
+                                        <span>🤝 Friendly NPC</span>
+                                    </button>
+                                    <button class="npc-type-btn encounter" onclick="generateNPCType('encounter')">
+                                        <i class="ra ra-sword"></i>
+                                        <span>⚔️ Encounter</span>
+                                    </button>
+                                </div>
+
+                                <!-- Current NPC Display -->
+                                <div class="npc-current-display" id="generated-npc">
+                                    <div class="npc-placeholder">
+                                        <i class="ra ra-user-plus"></i>
+                                        <p>Click a button above to generate an NPC</p>
+                                    </div>
+                                </div>
+
+                                <!-- Manual Controls (Hidden by default) -->
+                                <div class="manual-controls" id="manual-controls" style="display: none;">
+                                    <div class="manual-header">
+                                        <h5><i class="ra ra-settings"></i> Edit NPC</h5>
+                                        <button class="btn-close" onclick="hideManualControls()">✕</button>
+                                    </div>
+                                    <div class="controls-grid">
+                                        <div class="control-group">
+                                            <label for="manual-name">Name</label>
+                                            <input type="text" id="manual-name" class="control-input">
+                                        </div>
+                                        <div class="control-group">
+                                            <label for="manual-level">Level</label>
+                                            <input type="number" id="manual-level" class="control-input" min="0" max="10">
+                                        </div>
+                                        <div class="control-group">
+                                            <label for="manual-race">Race</label>
+                                            <select id="manual-race" class="control-select"></select>
+                                        </div>
+                                        <div class="control-group">
+                                            <label for="manual-background">Background</label>
+                                            <select id="manual-background" class="control-select"></select>
+                                        </div>
+                                        <div class="control-group">
+                                            <label for="manual-class">Class</label>
+                                            <select id="manual-class" class="control-select"></select>
+                                        </div>
+                                    </div>
+                                    <div class="manual-actions">
+                                        <button class="btn-secondary" onclick="applyManualChanges()">Apply Changes</button>
+                                        <button class="btn-secondary" onclick="hideManualControls()">Cancel</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Saved NPCs Tab Content -->
+                            <div class="npc-tab-content" id="saved-npc-tab">
+                                <!-- Filter Controls -->
+                                <div class="saved-controls">
+                                    <select id="npc-filter" class="filter-select" onchange="filterSavedNPCs()">
+                                        <option value="all">All NPCs</option>
+                                        <option value="npc">🤝 Friendly</option>
+                                        <option value="encounter">⚔️ Encounters</option>
+                                    </select>
+                                    <button class="clear-btn" onclick="clearAllNPCs()">
+                                        <i class="ra ra-trash"></i> Clear All
+                                    </button>
+                                </div>
+
+                                <!-- Saved NPCs Grid -->
+                                <div class="saved-npcs-container" id="saved-npcs-container">
+                                    <div class="no-npcs">
+                                        <i class="ra ra-users"></i>
+                                        <p>No saved NPCs yet</p>
+                                        <p>Generate and save some NPCs to see them here</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     `;
@@ -3207,21 +3293,345 @@ ALTER TABLE game_sessions ENABLE ROW LEVEL SECURITY;
             }
         });
 
-        // Panel Content Functions
-        function generateNPC() {
+        // Enhanced NPC Generator Integration Functions
+        let npcGenerator;
+
+        // Initialize the enhanced NPC generator when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize the NPC generator with a delay to ensure all modules are loaded
+            setTimeout(() => {
+                if (window.NPCGenerator) {
+                    npcGenerator = new NPCGenerator();
+                    npcGenerator.init();
+                    
+                    // Update saved count on initialization
+                    updateSavedNPCCount();
+                    
+                    // Populate manual control dropdowns
+                    populateManualControls();
+                } else {
+                    console.warn('NPCGenerator module not loaded yet, retrying...');
+                    // Retry after a longer delay
+                    setTimeout(() => {
+                        if (window.NPCGenerator) {
+                            npcGenerator = new NPCGenerator();
+                            npcGenerator.init();
+                            updateSavedNPCCount();
+                            populateManualControls();
+                        }
+                    }, 2000);
+                }
+            }, 1000);
+        });
+
+        /**
+         * Generate a random NPC using the enhanced generator
+         */
+        function generateRandomNPC() {
+            if (npcGenerator) {
+                npcGenerator.generateRandomNPC();
+            } else {
+                console.error('Enhanced NPC Generator not initialized, falling back to basic generation');
+                // Fallback to basic generation
+                generateBasicNPC();
+            }
+        }
+
+        /**
+         * Generate NPC of specific type - new direct function
+         */
+        function generateNPCType(type) {
+            console.log(`🎲 Generating ${type} NPC...`);
+            if (npcGenerator) {
+                // Create temporary select for compatibility with existing generateRandomNPC method
+                const existingSelect = document.getElementById('npc-type-select');
+                if (existingSelect) {
+                    existingSelect.remove();
+                }
+                
+                const tempSelect = document.createElement('select');
+                tempSelect.id = 'npc-type-select';
+                tempSelect.value = type;
+                tempSelect.style.display = 'none';
+                
+                // Add option to make value stick
+                const option = document.createElement('option');
+                option.value = type;
+                option.selected = true;
+                tempSelect.appendChild(option);
+                
+                document.body.appendChild(tempSelect);
+                
+                npcGenerator.generateRandomNPC();
+                
+                // Update saved count
+                updateSavedNPCCount();
+                
+            } else {
+                console.error('Enhanced NPC Generator not initialized');
+                alert('NPC Generator is not available. Please reload the page.');
+            }
+        }
+
+        /**
+         * Switch between NPC tabs
+         */
+        function switchNPCTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.npc-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            
+            // Update tab content
+            document.querySelectorAll('.npc-tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabName}-npc-tab`).classList.add('active');
+            
+            // Update saved NPCs when switching to saved tab
+            if (tabName === 'saved' && npcGenerator) {
+                // Refresh saved NPCs from localStorage to ensure we have latest data
+                npcGenerator.savedNPCs = npcGenerator.loadSavedNPCs();
+                npcGenerator.displaySavedNPCs();
+                updateSavedNPCCount();
+            }
+        }
+
+        /**
+         * Update saved NPC count badge
+         */
+        function updateSavedNPCCount() {
+            const countBadge = document.getElementById('saved-npc-count');
+            if (countBadge && npcGenerator) {
+                const count = npcGenerator.savedNPCs ? npcGenerator.savedNPCs.length : 0;
+                countBadge.textContent = count;
+                countBadge.style.display = count > 0 ? 'flex' : 'none';
+            }
+        }
+
+        /**
+         * Save current NPC - updated for new interface
+         */
+        function saveCurrentNPC() {
+            if (npcGenerator && npcGenerator.currentNPC) {
+                npcGenerator.saveCurrentNPC();
+                updateSavedNPCCount();
+                addChatMessage(`💾 Saved NPC: ${npcGenerator.currentNPC.name}`, 'system');
+            } else {
+                alert('No NPC to save. Generate an NPC first.');
+            }
+        }
+
+        /**
+         * Copy NPC to clipboard
+         */
+        function copyNPCToClipboard() {
+            if (npcGenerator && npcGenerator.currentNPC) {
+                const npc = npcGenerator.currentNPC;
+                const text = `${npc.name} (${npc.type === 'npc' ? 'Friendly' : 'Encounter'})
+Level ${npc.level} ${npc.race} ${npc.background}
+STR: ${npc.strength}, AGL: ${npc.agility}, STA: ${npc.stamina}, PER: ${npc.personality}, INT: ${npc.intellect}, LCK: ${npc.luck}
+HP: ${npc.hitPoints}, AC: ${npc.armorClass}
+Skills: ${npc.skills ? npc.skills.join(', ') : 'None'}
+Equipment: ${npc.equipment ? npc.equipment.join(', ') : 'None'}
+Notes: ${npc.notes || 'None'}`;
+                
+                navigator.clipboard.writeText(text).then(() => {
+                    addChatMessage(`📋 Copied ${npc.name} to clipboard`, 'system');
+                }).catch(() => {
+                    // Fallback for older browsers
+                    const textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    addChatMessage(`📋 Copied ${npc.name} to clipboard`, 'system');
+                });
+            } else {
+                alert('No NPC to copy. Generate an NPC first.');
+            }
+        }
+
+        /**
+         * Filter saved NPCs
+         */
+        function filterSavedNPCs() {
+            if (npcGenerator) {
+                npcGenerator.displaySavedNPCs();
+            }
+        }
+
+        /**
+         * Clear all saved NPCs
+         */
+        function clearAllNPCs() {
+            if (confirm('Are you sure you want to clear all saved NPCs? This cannot be undone.')) {
+                if (npcGenerator) {
+                    npcGenerator.clearAllNPCs();
+                    updateSavedNPCCount();
+                    addChatMessage('🗑️ Cleared all saved NPCs', 'system');
+                }
+            }
+        }
+
+        /**
+         * Hide manual controls
+         */
+        function hideManualControls() {
+            const controls = document.getElementById('manual-controls');
+            if (controls) {
+                controls.style.display = 'none';
+            }
+        }
+
+        /**
+         * Fallback basic NPC generation
+         */
+        function generateBasicNPC() {
             const npcTypes = ['friendly merchant', 'gruff guard', 'wise elder', 'mysterious stranger'];
             const randomNPC = npcTypes[Math.floor(Math.random() * npcTypes.length)];
             
-            const display = document.getElementById('generated-npc-display');
+            const display = document.getElementById('generated-npc');
             if (display) {
-                display.innerHTML = `<div class="generated-content">
-                    <h5>Generated NPC</h5>
-                    <p><strong>Type:</strong> ${randomNPC}</p>
+                display.innerHTML = `<div class="npc-placeholder">
+                    <i class="ra ra-hood"></i>
+                    <p><strong>Basic NPC:</strong> ${randomNPC}</p>
                     <p><strong>Name:</strong> ${generateRandomName()}</p>
                     <p><strong>Mood:</strong> ${generateRandomMood()}</p>
+                    <p><em>Enhanced generator loading...</em></p>
                 </div>`;
             }
-            addChatMessage(`🎭 Generated NPC: ${randomNPC}`, 'system');
+            addChatMessage(`🎭 Generated basic NPC: ${randomNPC}`, 'system');
+        }
+
+        /**
+         * Show manual controls for editing
+         */
+        function showManualControls() {
+            const controls = document.getElementById('manual-controls');
+            if (controls && npcGenerator && npcGenerator.currentNPC) {
+                // Populate fields with current NPC data
+                document.getElementById('manual-name').value = npcGenerator.currentNPC.name;
+                document.getElementById('manual-level').value = npcGenerator.currentNPC.level;
+                document.getElementById('manual-race').value = npcGenerator.currentNPC.race;
+                document.getElementById('manual-background').value = npcGenerator.currentNPC.background;
+                document.getElementById('manual-class').value = npcGenerator.currentNPC.characterClass;
+                
+                controls.style.display = 'block';
+            }
+        }
+
+        /**
+         * Hide manual controls
+         */
+        function hideManualControls() {
+            const controls = document.getElementById('manual-controls');
+            if (controls) {
+                controls.style.display = 'none';
+            }
+        }
+
+        /**
+         * Apply manual changes to current NPC
+         */
+        function applyManualChanges() {
+            if (!npcGenerator || !npcGenerator.currentNPC) return;
+            
+            // Get values from form
+            const name = document.getElementById('manual-name').value;
+            const level = parseInt(document.getElementById('manual-level').value);
+            const race = document.getElementById('manual-race').value;
+            const background = document.getElementById('manual-background').value;
+            const characterClass = document.getElementById('manual-class').value;
+            
+            // Update current NPC
+            npcGenerator.currentNPC.name = name;
+            npcGenerator.currentNPC.level = level;
+            npcGenerator.currentNPC.race = race;
+            npcGenerator.currentNPC.background = background;
+            npcGenerator.currentNPC.characterClass = characterClass;
+            
+            // Recalculate stats based on new values
+            npcGenerator.currentNPC.stats = npcGenerator.generateStats(level);
+            
+            // Apply racial bonus
+            const raceData = npcGenerator.npcRaces[race];
+            if (raceData && raceData.statBonus) {
+                Object.entries(raceData.statBonus).forEach(([stat, bonus]) => {
+                    npcGenerator.currentNPC.stats[stat] = (npcGenerator.currentNPC.stats[stat] || 0) + bonus;
+                });
+            }
+            
+            // Recalculate derived stats
+            npcGenerator.currentNPC.healthPoints = npcGenerator.currentNPC.stats.constitution + level;
+            npcGenerator.currentNPC.magicPoints = npcGenerator.currentNPC.stats.wisdom + npcGenerator.currentNPC.stats.intelligence;
+            
+            // Regenerate skills
+            npcGenerator.currentNPC.skills = npcGenerator.generateSkills(background, characterClass);
+            
+            // Regenerate equipment
+            npcGenerator.currentNPC.equipment = npcGenerator.generateEquipment(characterClass, level);
+            
+            // Redisplay NPC
+            npcGenerator.displayNPC(npcGenerator.currentNPC);
+            
+            // Hide controls
+            hideManualControls();
+            
+            // Show success message
+            addChatMessage('✅ NPC updated successfully!', 'system');
+        }
+
+        /**
+         * Copy current NPC to clipboard
+         */
+        function copyNPCToClipboard() {
+            if (npcGenerator && npcGenerator.currentNPC) {
+                const npcText = npcGenerator.formatNPCForCopy(npcGenerator.currentNPC);
+                navigator.clipboard.writeText(npcText).then(() => {
+                    addChatMessage('📋 NPC copied to clipboard!', 'system');
+                }).catch(err => {
+                    console.error('Failed to copy NPC:', err);
+                    addChatMessage('❌ Failed to copy NPC to clipboard', 'system');
+                });
+            }
+        }
+
+        /**
+         * Populate manual control dropdowns
+         */
+        function populateManualControls() {
+            if (!npcGenerator) return;
+            
+            // Wait for data to load
+            setTimeout(() => {
+                const raceSelect = document.getElementById('manual-race');
+                const backgroundSelect = document.getElementById('manual-background');
+                const classSelect = document.getElementById('manual-class');
+                
+                if (raceSelect && npcGenerator.npcRaces) {
+                    raceSelect.innerHTML = Object.keys(npcGenerator.npcRaces).map(key => {
+                        const race = npcGenerator.npcRaces[key];
+                        return `<option value="${key}">${race.name}</option>`;
+                    }).join('');
+                }
+                
+                if (backgroundSelect && npcGenerator.npcBackgrounds) {
+                    backgroundSelect.innerHTML = Object.keys(npcGenerator.npcBackgrounds).map(key => {
+                        const bg = npcGenerator.npcBackgrounds[key];
+                        return `<option value="${key}">${bg.name}</option>`;
+                    }).join('');
+                }
+                
+                if (classSelect && npcGenerator.npcClasses) {
+                    classSelect.innerHTML = Object.keys(npcGenerator.npcClasses).map(key => {
+                        const cls = npcGenerator.npcClasses[key];
+                        return `<option value="${key}">${cls.name}</option>`;
+                    }).join('');
+                }
+            }, 500);
         }
 
         function generateRandomName() {
