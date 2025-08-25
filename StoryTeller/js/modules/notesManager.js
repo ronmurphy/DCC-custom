@@ -58,6 +58,16 @@ class NotesManager {
             const stored = localStorage.getItem('storyteller_notes');
             if (stored) {
                 this.notes = JSON.parse(stored);
+                
+                // Migrate old notes to include priority and tags
+                this.notes.forEach(note => {
+                    if (!note.priority) note.priority = 'normal';
+                    if (!note.tags) note.tags = [];
+                });
+                
+                // Save back the migrated structure
+                this.saveNotes();
+                
                 console.log(`Loaded ${this.notes.length} notes from storage`);
             }
         } catch (error) {
@@ -84,7 +94,9 @@ class NotesManager {
             content: content,
             created: new Date().toISOString(),
             modified: new Date().toISOString(),
-            wordCount: content.trim().split(/\s+/).filter(w => w.length > 0).length
+            wordCount: content.trim().split(/\s+/).filter(w => w.length > 0).length,
+            tags: [], // For storing tags like 'hot', 'new-idea', 'important'
+            priority: 'normal' // normal, hot, new-idea, important
         };
         
         this.notes.unshift(note); // Add to beginning of array
@@ -224,6 +236,169 @@ class NotesManager {
         return this.notes.find(n => n.id === this.currentNoteId);
     }
     
+    // Priority and tagging methods
+    setNotePriority(noteId, priority) {
+        const note = this.notes.find(n => n.id === noteId);
+        if (!note) return false;
+        
+        note.priority = priority;
+        note.modified = new Date().toISOString();
+        this.saveNotes();
+        this.renderNotesList();
+        
+        // Add chat notification
+        if (typeof addChatMessage === 'function') {
+            const priorityEmoji = {
+                'hot': '🔥',
+                'new-idea': '💡',
+                'important': '⭐',
+                'normal': '📝'
+            };
+            addChatMessage(`${priorityEmoji[priority]} Set note priority: "${note.title}" → ${priority}`, 'system');
+        }
+        
+        return true;
+    }
+    
+    toggleNoteTag(noteId, tag) {
+        const note = this.notes.find(n => n.id === noteId);
+        if (!note) return false;
+        
+        if (!note.tags) note.tags = [];
+        
+        const tagIndex = note.tags.indexOf(tag);
+        if (tagIndex === -1) {
+            note.tags.push(tag);
+        } else {
+            note.tags.splice(tagIndex, 1);
+        }
+        
+        note.modified = new Date().toISOString();
+        this.saveNotes();
+        this.renderNotesList();
+        
+        return true;
+    }
+    
+    getPriorityColor(priority) {
+        const colors = {
+            'hot': '#ff4757',        // Red
+            'new-idea': '#ffa502',   // Orange  
+            'important': '#2ed573',  // Green
+            'normal': 'transparent'  // No color
+        };
+        return colors[priority] || colors.normal;
+    }
+    
+    getPriorityEmoji(priority) {
+        const emojis = {
+            'hot': '🔥',
+            'new-idea': '💡',
+            'important': '⭐',
+            'normal': ''
+        };
+        return emojis[priority] || '';
+    }
+    
+    showPriorityMenu(noteId) {
+        const note = this.notes.find(n => n.id === noteId);
+        if (!note) return;
+        
+        const priorities = [
+            { key: 'normal', label: '📝 Normal', desc: 'Regular note' },
+            { key: 'new-idea', label: '💡 New Idea', desc: 'Fresh creative concept' },
+            { key: 'important', label: '⭐ Important', desc: 'High priority content' },
+            { key: 'hot', label: '🔥 Hot', desc: 'Urgent or exciting!' }
+        ];
+        
+        const options = priorities.map(p => `${p.label} - ${p.desc}`).join('\n');
+        const choice = prompt(`Set priority for "${note.title}":\n\n${options}\n\nEnter: normal, new-idea, important, or hot`, note.priority || 'normal');
+        
+        if (choice && priorities.find(p => p.key === choice.toLowerCase())) {
+            this.setNotePriority(noteId, choice.toLowerCase());
+        }
+    }
+    
+    filterByPriority(priority) {
+        const container = document.getElementById('notes-list');
+        if (!container) return;
+        
+        let filteredNotes = this.notes;
+        
+        if (priority) {
+            filteredNotes = this.notes.filter(note => (note.priority || 'normal') === priority);
+        }
+        
+        if (filteredNotes.length === 0) {
+            const priorityLabels = {
+                'hot': '🔥 Hot',
+                'new-idea': '💡 New Ideas',
+                'important': '⭐ Important', 
+                'normal': '📝 Normal'
+            };
+            
+            container.innerHTML = `
+                <div class="notes-empty">
+                    <i class="material-icons">filter_list_off</i>
+                    <h5>No ${priorityLabels[priority] || 'Notes'} Found</h5>
+                    <p>No notes found with this priority level.</p>
+                    <button class="notes-btn" onclick="document.getElementById('priority-filter').value=''; window.notesManager.renderNotesList()">
+                        <i class="material-icons">clear</i>Show All Notes
+                    </button>
+                </div>
+            `;
+            return;
+        }
+        
+        // Render filtered notes (similar to renderNotesList but with filteredNotes)
+        const html = filteredNotes.map(note => {
+            const isActive = note.id === this.currentNoteId;
+            const preview = note.content.slice(0, 100).replace(/\n/g, ' ') || 'No content';
+            const dateStr = new Date(note.modified).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            const notePriority = note.priority || 'normal';
+            const tags = note.tags || [];
+            const priorityColor = this.getPriorityColor(notePriority);
+            const priorityEmoji = this.getPriorityEmoji(notePriority);
+            
+            return `
+                <div class="note-item ${isActive ? 'active' : ''} priority-${notePriority}" 
+                     onclick="window.notesManager.selectNote('${note.id}')"
+                     style="border-left: 4px solid ${priorityColor};">
+                    <div class="note-content">
+                        <div class="note-title">
+                            ${priorityEmoji ? `<span class="priority-indicator">${priorityEmoji}</span>` : ''}
+                            ${this.escapeHtml(note.title)}
+                        </div>
+                        <div class="note-preview">${this.escapeHtml(preview)}</div>
+                        ${tags.length > 0 ? `<div class="note-tags">${tags.map(tag => `<span class="note-tag">#${tag}</span>`).join(' ')}</div>` : ''}
+                    </div>
+                    <div class="note-meta">
+                        <span class="note-date">${dateStr}</span>
+                        <div class="note-actions">
+                            <button class="note-action-btn priority-btn" onclick="event.stopPropagation(); window.notesManager.showPriorityMenu('${note.id}')" title="Set Priority">
+                                <i class="material-icons">flag</i>
+                            </button>
+                            <button class="note-action-btn" onclick="event.stopPropagation(); window.notesManager.duplicateNote('${note.id}')" title="Duplicate">
+                                <i class="material-icons">content_copy</i>
+                            </button>
+                            <button class="note-action-btn danger" onclick="event.stopPropagation(); window.notesManager.deleteNote('${note.id}')" title="Delete">
+                                <i class="material-icons">delete</i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        container.innerHTML = html;
+    }
+    
     renderNotesList() {
         const container = document.getElementById('notes-list');
         if (!container) return;
@@ -252,15 +427,30 @@ class NotesManager {
                 minute: '2-digit'
             });
             
+            // Handle priority and tags for backward compatibility
+            const priority = note.priority || 'normal';
+            const tags = note.tags || [];
+            const priorityColor = this.getPriorityColor(priority);
+            const priorityEmoji = this.getPriorityEmoji(priority);
+            
             return `
-                <div class="note-item ${isActive ? 'active' : ''}" onclick="window.notesManager.selectNote('${note.id}')">
+                <div class="note-item ${isActive ? 'active' : ''} priority-${priority}" 
+                     onclick="window.notesManager.selectNote('${note.id}')"
+                     style="border-left: 4px solid ${priorityColor};">
                     <div class="note-content">
-                        <div class="note-title">${this.escapeHtml(note.title)}</div>
+                        <div class="note-title">
+                            ${priorityEmoji ? `<span class="priority-indicator">${priorityEmoji}</span>` : ''}
+                            ${this.escapeHtml(note.title)}
+                        </div>
                         <div class="note-preview">${this.escapeHtml(preview)}</div>
+                        ${tags.length > 0 ? `<div class="note-tags">${tags.map(tag => `<span class="note-tag">#${tag}</span>`).join(' ')}</div>` : ''}
                     </div>
                     <div class="note-meta">
                         <span class="note-date">${dateStr}</span>
                         <div class="note-actions">
+                            <button class="note-action-btn priority-btn" onclick="event.stopPropagation(); window.notesManager.showPriorityMenu('${note.id}')" title="Set Priority">
+                                <i class="material-icons">flag</i>
+                            </button>
                             <button class="note-action-btn" onclick="event.stopPropagation(); window.notesManager.duplicateNote('${note.id}')" title="Duplicate">
                                 <i class="material-icons">content_copy</i>
                             </button>
@@ -482,6 +672,12 @@ class NotesManager {
             case 'italic':
                 formattedText = `*${selectedText}*`;
                 break;
+            case 'highlight':
+                formattedText = `==${selectedText}==`;
+                break;
+            case 'strikethrough':
+                formattedText = `~~${selectedText}~~`;
+                break;
             case 'heading':
                 formattedText = `# ${selectedText}`;
                 break;
@@ -558,6 +754,9 @@ class NotesManager {
         html = html.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
         html = html.replace(/^##### (.+)$/gm, '<h5>$1</h5>');
         html = html.replace(/^###### (.+)$/gm, '<h6>$1</h6>');
+        
+        // Convert highlighting (using ==text== syntax like Obsidian)
+        html = html.replace(/==(.+?)==/g, '<mark class="highlight">$1</mark>');
         
         // Convert strikethrough text
         html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
@@ -650,6 +849,15 @@ class NotesManager {
         }).join('');
         
         container.innerHTML = html;
+    }
+    
+    quickSetPriority(priority) {
+        if (!this.currentNoteId) {
+            alert('Please select a note first');
+            return;
+        }
+        
+        this.setNotePriority(this.currentNoteId, priority);
     }
 }
 
