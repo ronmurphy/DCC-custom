@@ -13,6 +13,7 @@
     <!-- ported StoryTeller.mobile.old css goes here -->
     <link rel="stylesheet" href="css/npc-enhanced.css">
     <link rel="stylesheet" href="css/notes-panel.css">
+    <link rel="stylesheet" href="css/dice-panel.css">
     <!-- end ported css -->
 
     <style>
@@ -28,7 +29,8 @@
             --base-font-size: 16px;
             --touch-target-min: 44px;
             --panel-gap: 2px;
-            --padding-base: 20px;
+            /* --padding-base: 20px; */
+            --padding-base: 10px;
             --border-radius: 6px;
             --header-height: 60px;
             --tab-height: 50px;
@@ -337,7 +339,8 @@
             --base-font-size: 16px;
             --touch-target-min: 44px;
             --panel-gap: 2px;
-            --padding-base: 20px;
+            /* --padding-base: 20px; */
+            --padding-base: 10px;
             --border-radius: 6px;
             --header-height: 60px;
             --tab-height: 50px;
@@ -2492,6 +2495,9 @@
     <!-- Notes Manager Module -->
     <script src="js/modules/notesManager.js"></script>
     
+    <!-- Dice Manager Module -->
+    <script src="js/modules/diceManager.js"></script>
+    
     <script src="js/modules/dccChatIntegration.js"></script>
     
     <!-- Chat System Modules -->
@@ -2726,6 +2732,15 @@
                 setTimeout(() => {
                     if (typeof initializeNotesPanel === 'function') {
                         initializeNotesPanel();
+                    }
+                }, 100); // Small delay to ensure DOM is ready
+            }
+            
+            // Initialize dice panel if dice panel is loaded
+            if (content === 'dice') {
+                setTimeout(() => {
+                    if (typeof initializeDicePanel === 'function') {
+                        initializeDicePanel();
                     }
                 }, 100); // Small delay to ensure DOM is ready
             }
@@ -3223,15 +3238,88 @@
                 case 'dice':
                     return `
                         <div class="dice-roller">
-                            <h4>Dice Roller</h4>
+                            <!-- Dice Mode Toggle -->
+                            <div class="dice-mode-toggle">
+                                <button class="dice-mode-btn active" data-mode="roll" onclick="toggleDiceMode('roll')">
+                                    🎲 Roll Mode
+                                </button>
+                                <button class="dice-mode-btn" data-mode="build" onclick="toggleDiceMode('build')">
+                                    🔧 Build Mode
+                                </button>
+                            </div>
+                            
+                            <!-- Standard D&D Dice (Always Visible) -->
                             <div class="dice-controls">
-                                <button class="dice-btn" onclick="rollDice('d4')">d4</button>
-                                <button class="dice-btn" onclick="rollDice('d6')">d6</button>
-                                <button class="dice-btn" onclick="rollDice('d8')">d8</button>
-                                <button class="dice-btn" onclick="rollDice('d10')">d10</button>
-                                <button class="dice-btn" onclick="rollDice('d12')">d12</button>
-                                <button class="dice-btn" onclick="rollDice('d20')">d20</button>
-                                <button class="dice-btn" onclick="rollDice('d100')">d100</button>
+                                <button class="dice-btn" onclick="rollSimpleDie('d4')" title="d4">d4</button>
+                                <button class="dice-btn" onclick="rollSimpleDie('d6')" title="d6">d6</button>
+                                <button class="dice-btn" onclick="rollSimpleDie('d8')" title="d8">d8</button>
+                                <button class="dice-btn" onclick="rollSimpleDie('d10')" title="d10">d10</button>
+                                <button class="dice-btn" onclick="rollSimpleDie('d12')" title="d12">d12</button>
+                                <button class="dice-btn" onclick="rollSimpleDie('d20')" title="d20">d20</button>
+                                <button class="dice-btn" onclick="rollSimpleDie('d100')" title="d100">d100</button>
+                            </div>
+                            
+                            <!-- Unified Roll Builder (shown in build mode) -->
+                            <div class="dice-builder">
+                                <div class="builder-area">
+                                    <h5>Roll Builder</h5>
+                                    <!-- Unified input - editable for typing OR clicking dice -->
+                                    <div class="unified-roll-input">
+                                        <input type="text" 
+                                               id="unified-roll-input" 
+                                               class="roll-input" 
+                                               placeholder="Click dice above OR type: 2d6+3, 1d20+5, etc..."
+                                               onkeypress="if(event.key==='Enter') rollUnifiedFormula()">
+                                        <div class="roll-controls">
+                                            <button class="roll-btn" onclick="rollUnifiedFormula()">
+                                                <i class="material-icons">casino</i>Roll
+                                            </button>
+                                            <button class="roll-btn" onclick="saveUnifiedRoll()" title="Save this roll">
+                                                <i class="material-icons">bookmark_add</i>Save
+                                            </button>
+                                            <button class="roll-btn clear" onclick="clearUnifiedBuilder()">
+                                                Clear
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Advantage/Disadvantage (Always Visible) -->
+                            <div class="advantage-controls">
+                                <button id="advantage-btn" class="advantage-btn" onclick="setAdvantageMode('advantage')">
+                                    <i class="material-icons">trending_up</i>Advantage
+                                </button>
+                                <button id="disadvantage-btn" class="disadvantage-btn" onclick="setAdvantageMode('disadvantage')">
+                                    <i class="material-icons">trending_down</i>Disadvantage
+                                </button>
+                            </div>
+                            
+                            <!-- Saved Rolls -->
+                            <div class="saved-rolls-section">
+                                <div class="saved-rolls-header">
+                                    <h5>Saved Rolls</h5>
+                                    <div class="saved-rolls-controls">
+                                        <button class="delete-mode-btn" onclick="toggleDeleteMode()">🗑 Delete</button>
+                                        <button class="saved-roll-btn" onclick="exportDiceRolls()" title="Export Rolls">
+                                            <i class="material-icons">download</i>
+                                        </button>
+                                        <button class="saved-roll-btn" onclick="importDiceRolls()" title="Import Rolls">
+                                            <i class="material-icons">upload</i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="saved-rolls-list" class="saved-rolls-list">
+                                    <!-- Saved rolls will be populated by JavaScript -->
+                                </div>
+                            </div>
+                            
+                            <!-- Roll Results and History -->
+                            <div class="roll-history-header">
+                                <h5>Roll Results</h5>
+                                <button class="clear-history-btn" onclick="clearRollHistory()" title="Clear History">
+                                    <i class="material-icons">clear_all</i>Clear
+                                </button>
                             </div>
                             <div id="dice-results" class="dice-results">
                                 <p class="placeholder-text">Click a die to roll</p>
@@ -4390,21 +4478,6 @@ Notes: ${npc.notes || 'None'}`;
             const notes = document.getElementById('session-notes');
             if (notes && notes.value.trim()) {
                 addChatMessage('📝 Session notes saved!', 'system');
-            }
-        }
-
-        function rollDice(diceType) {
-            const sides = parseInt(diceType.replace('d', ''));
-            const result = Math.floor(Math.random() * sides) + 1;
-            
-            addChatMessage(`🎲 Rolled ${diceType}: ${result}`, 'system');
-            
-            const results = document.getElementById('dice-results');
-            if (results) {
-                results.innerHTML = `<div class="dice-result">
-                    <h5>${diceType} Roll</h5>
-                    <div class="result-number">${result}</div>
-                </div>`;
             }
         }
 
