@@ -12,6 +12,7 @@
 
     <!-- ported StoryTeller.mobile.old css goes here -->
     <link rel="stylesheet" href="css/npc-enhanced.css">
+    <link rel="stylesheet" href="css/notes-panel.css">
     <!-- end ported css -->
 
     <style>
@@ -2488,6 +2489,9 @@
     <!-- Session Timer Module -->
     <script src="js/modules/sessionTimer.js"></script>
     
+    <!-- Notes Manager Module -->
+    <script src="js/modules/notesManager.js"></script>
+    
     <script src="js/modules/dccChatIntegration.js"></script>
     
     <!-- Chat System Modules -->
@@ -2713,6 +2717,15 @@
                     } else {
                         // If no chat history function, just reset the container
                         resetChatContainer();
+                    }
+                }, 100); // Small delay to ensure DOM is ready
+            }
+            
+            // Initialize notes panel if notes panel is loaded
+            if (content === 'notes') {
+                setTimeout(() => {
+                    if (typeof initializeNotesPanel === 'function') {
+                        initializeNotesPanel();
                     }
                 }, 100); // Small delay to ensure DOM is ready
             }
@@ -3130,13 +3143,80 @@
                 case 'notes':
                     return `
                         <div class="notes-panel">
-                            <h4>Session Notes</h4>
-                            <div class="notes-controls">
-                                <button class="action-btn primary" onclick="saveNotes()">
-                                    <i class="material-icons">save</i>Save Notes
-                                </button>
+                            <div class="notes-header">
+                                <h4>
+                                    <i class="material-icons">note</i>
+                                    Session Notes
+                                </h4>
+                                <div class="notes-controls">
+                                    <button class="notes-btn new" onclick="createNewNote()" title="Create New Note">
+                                        <i class="material-icons">add</i>New
+                                    </button>
+                                    <button class="notes-btn save" onclick="saveNotes()" title="Save Current Note (Ctrl+S)">
+                                        <i class="material-icons">save</i>Save
+                                    </button>
+                                    <button class="notes-btn export" onclick="exportNotes()" title="Export All Notes">
+                                        <i class="material-icons">download</i>Export
+                                    </button>
+                                    <button class="notes-btn import" onclick="importNotes()" title="Import Notes">
+                                        <i class="material-icons">upload</i>Import
+                                    </button>
+                                </div>
                             </div>
-                            <textarea id="session-notes" class="session-notes" placeholder="Write your session notes here..."></textarea>
+                            
+                            <div class="notes-container">
+                                <div class="notes-list-container">
+                                    <div class="notes-list-header">
+                                        <h5>Notes List</h5>
+                                        <button class="notes-btn" onclick="window.notesManager.searchNotes(prompt('Search notes:'))" title="Search Notes" style="padding: 4px; min-height: 24px;">
+                                            <i class="material-icons" style="font-size: 16px;">search</i>
+                                        </button>
+                                    </div>
+                                    <div class="notes-list" id="notes-list">
+                                        <!-- Notes will be populated by JavaScript -->
+                                    </div>
+                                </div>
+                                
+                                <div class="notes-editor-container">
+                                    <div class="notes-editor-header">
+                                        <input type="text" id="note-title-input" class="note-title-input" placeholder="Note title...">
+                                    </div>
+                                    
+                                    <div class="editor-toolbar">
+                                        <button class="toolbar-btn" onclick="formatSelectedText('bold')" title="Bold">
+                                            <i class="material-icons">format_bold</i>
+                                        </button>
+                                        <button class="toolbar-btn" onclick="formatSelectedText('italic')" title="Italic">
+                                            <i class="material-icons">format_italic</i>
+                                        </button>
+                                        <button class="toolbar-btn" onclick="formatSelectedText('heading')" title="Heading">
+                                            <i class="material-icons">title</i>
+                                        </button>
+                                        <button class="toolbar-btn" onclick="formatSelectedText('bullet')" title="Bullet List">
+                                            <i class="material-icons">format_list_bulleted</i>
+                                        </button>
+                                        <button class="toolbar-btn" onclick="formatSelectedText('number')" title="Numbered List">
+                                            <i class="material-icons">format_list_numbered</i>
+                                        </button>
+                                        <div class="toolbar-separator"></div>
+                                        <button class="toolbar-btn" id="markdown-view-toggle" onclick="toggleMarkdownView()" title="Toggle Markdown Preview">
+                                            <i class="material-icons">visibility</i>
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="editor-content">
+                                        <textarea id="session-notes" class="session-notes" placeholder="Select a note to start editing, or create a new one"></textarea>
+                                        <div id="markdown-preview" class="markdown-preview" style="display: none;"></div>
+                                    </div>
+                                    
+                                    <div class="notes-stats" id="notes-stats">
+                                        <div class="notes-stats-item">
+                                            <i class="material-icons">info</i>
+                                            <span>No note selected</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     `;
                 
