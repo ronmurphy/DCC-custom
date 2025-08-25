@@ -578,11 +578,16 @@
 
         .quick-connect-section {
             margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: var(--grid-gap);
         }
 
         .quick-connect-btn {
             background: var(--success-gradient) !important;
             font-weight: 600;
+            min-width: var(--touch-target-min);
+            justify-content: center;
         }
 
         .quick-connect-btn:hover {
@@ -1434,6 +1439,518 @@
             flex-wrap: wrap;
         }
 
+        /* Session Clock Styles */
+        .session-clock-container {
+            display: flex;
+            align-items: center;
+            gap: calc(var(--grid-gap) * 0.5);
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: var(--border-radius);
+            padding: calc(var(--padding-base) * 0.5);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .clock-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .current-time {
+            font-family: 'Courier New', monospace;
+            font-size: calc(var(--base-font-size) * 1.1);
+            font-weight: bold;
+            color: #2c3e50;
+            line-height: 1;
+        }
+
+        .session-info {
+            font-size: calc(var(--base-font-size) * 0.75);
+            color: #6c757d;
+            line-height: 1;
+            text-align: center;
+            min-width: 60px;
+        }
+
+        .session-info.active {
+            color: #28a745;
+        }
+
+        .session-info.caution {
+            color: #ffc107;
+        }
+
+        .session-info.warning {
+            color: #dc3545;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+
+        .session-info.ended {
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .clock-controls {
+            display: flex;
+            align-items: center;
+        }
+
+        .clock-btn {
+            background: var(--action-gradient);
+            border: none;
+            color: white;
+            padding: 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            min-width: 32px;
+            min-height: 32px;
+        }
+
+        .clock-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(116, 185, 255, 0.4);
+        }
+
+        .clock-btn i {
+            font-size: 16px;
+        }
+
+        /* Session Timer Modal */
+        .session-timer-modal {
+            max-width: 500px;
+        }
+
+        .timer-form {
+            display: flex;
+            flex-direction: column;
+            gap: var(--grid-gap);
+        }
+
+        .current-session {
+            text-align: center;
+            padding: var(--padding-base);
+            background: #f8f9fa;
+            border-radius: var(--border-radius);
+            border: 1px solid #e9ecef;
+        }
+
+        .current-session h4 {
+            margin-bottom: var(--grid-gap);
+            color: #495057;
+        }
+
+        .current-session p {
+            margin: 4px 0;
+            color: #6c757d;
+        }
+
+        .new-session {
+            text-align: center;
+        }
+
+        .new-session h4 {
+            margin-bottom: calc(var(--grid-gap) * 1.5);
+            color: #495057;
+        }
+
+        .time-input-group {
+            margin-bottom: var(--grid-gap);
+        }
+
+        .time-input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .time-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .time-controls input[type="time"] {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: var(--base-font-size);
+            background: white;
+        }
+
+        .ampm-toggle {
+            display: flex;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .ampm-btn {
+            padding: 8px 12px;
+            background: white;
+            border: none;
+            cursor: pointer;
+            font-size: calc(var(--base-font-size) * 0.9);
+            transition: all 0.2s;
+            min-width: 40px;
+        }
+
+        .ampm-btn:hover {
+            background: #f8f9fa;
+        }
+
+        .ampm-btn.active {
+            background: var(--action-color);
+            color: white;
+        }
+
+        .ampm-btn:not(:last-child) {
+            border-right: 1px solid #ced4da;
+        }
+
+        .quick-add-section, .warning-section {
+            margin-bottom: var(--grid-gap);
+        }
+
+        .quick-add-section label, .warning-section label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .quick-add-buttons, .warning-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .quick-btn, .warning-btn {
+            flex: 1;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: calc(var(--base-font-size) * 0.9);
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .quick-btn:hover, .warning-btn:hover {
+            background: #e9ecef;
+            transform: translateY(-1px);
+        }
+
+        .warning-btn.active {
+            background: var(--warning-color);
+            color: white;
+            border-color: var(--warning-color);
+        }
+
+        .session-actions {
+            margin-top: calc(var(--grid-gap) * 1.5);
+            padding-top: var(--grid-gap);
+            border-top: 1px solid #e9ecef;
+        }
+
+        .duration-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: var(--grid-gap);
+            margin-bottom: var(--grid-gap);
+        }
+
+        .duration-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: calc(var(--padding-base) * 0.8);
+            background: var(--action-gradient);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 70px;
+            font-weight: 500;
+        }
+
+        .duration-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(116, 185, 255, 0.4);
+        }
+
+        .duration-btn:active {
+            transform: translateY(0);
+        }
+
+        .duration-btn i {
+            font-size: 20px;
+        }
+
+        .duration-btn span {
+            font-size: calc(var(--base-font-size) * 0.9);
+            line-height: 1;
+        }
+
+        .full-width {
+            width: 100%;
+            margin-top: var(--grid-gap);
+        }
+
+        .btn-danger {
+            background: var(--danger-gradient);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #c82333 0%, #dc3545 100%);
+            transform: translateY(-1px);
+        }
+
+        /* Modal Overlay Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--padding-base);
+            border-bottom: 1px solid #e9ecef;
+            background: var(--panel-gradient);
+            color: white;
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-body {
+            padding: var(--padding-base);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { 
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Dark theme support for modal */
+        .dark-theme .modal-content {
+            background: #343a40;
+            color: #f8f9fa;
+        }
+
+        .dark-theme .modal-header {
+            border-bottom-color: #495057;
+        }
+
+        .dark-theme .current-session {
+            background: #495057;
+            border-color: #6c757d;
+        }
+
+        .dark-theme .current-session h4 {
+            color: #f8f9fa;
+        }
+
+        .dark-theme .current-session p {
+            color: #adb5bd;
+        }
+
+        .dark-theme .new-session h4 {
+            color: #f8f9fa;
+        }
+
+        .dark-theme .time-input-group label,
+        .dark-theme .quick-add-section label,
+        .dark-theme .warning-section label {
+            color: #f8f9fa;
+        }
+
+        .dark-theme .time-controls input[type="time"] {
+            background: #495057;
+            border-color: #6c757d;
+            color: #f8f9fa;
+        }
+
+        .dark-theme .ampm-toggle {
+            border-color: #6c757d;
+        }
+
+        .dark-theme .ampm-btn {
+            background: #495057;
+            color: #f8f9fa;
+            border-color: #6c757d;
+        }
+
+        .dark-theme .ampm-btn:hover {
+            background: #5a6268;
+        }
+
+        .dark-theme .ampm-btn.active {
+            background: var(--action-color);
+            color: white;
+        }
+
+        .dark-theme .quick-btn,
+        .dark-theme .warning-btn {
+            background: #495057;
+            border-color: #6c757d;
+            color: #f8f9fa;
+        }
+
+        .dark-theme .quick-btn:hover,
+        .dark-theme .warning-btn:hover {
+            background: #5a6268;
+        }
+
+        .dark-theme .warning-btn.active {
+            background: var(--warning-color);
+            color: white;
+            border-color: var(--warning-color);
+        }
+
+        .dark-theme .session-actions {
+            border-top-color: #495057;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: calc(var(--base-font-size) * 0.9);
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--action-gradient);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(116, 185, 255, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-1px);
+        }
+
+        /* Dark theme support for clock */
+        .dark-theme .session-clock-container {
+            background: #343a40;
+            border-color: #495057;
+        }
+
+        .dark-theme .current-time {
+            color: #f8f9fa;
+        }
+
+        .dark-theme .session-info {
+            color: #adb5bd;
+        }
+
+        .dark-theme .session-info.active {
+            color: #40e759;
+        }
+
+        .dark-theme .session-info.caution {
+            color: #ffc107;
+        }
+
+        .dark-theme .session-info.warning {
+            color: #dc3545;
+        }
+
+        /* Responsive design for clock */
+        @media (max-width: 768px) {
+            .session-clock-container {
+                padding: calc(var(--padding-base) * 0.4);
+            }
+            
+            .current-time {
+                font-size: var(--base-font-size);
+            }
+            
+            .session-info {
+                font-size: calc(var(--base-font-size) * 0.7);
+            }
+        }
+
         /* Smooth transitions for mode changes */
         * {
             transition: font-size 0.3s ease, padding 0.3s ease, margin 0.3s ease, 
@@ -1744,9 +2261,8 @@
             </button>
             
             <div class="quick-connect-section">
-                <button class="tab-selector quick-connect-btn" onclick="quickConnect()" id="quick-connect-btn">
+                <button class="tab-selector quick-connect-btn" onclick="quickConnect()" id="quick-connect-btn" title="Quick Connect">
                     <i class="material-icons">flash_on</i>
-                    Quick Connect
                 </button>
             </div>
         </div>
@@ -1968,6 +2484,9 @@
     <!-- ported StoryTeller.mobile.old js goes here -->
     <script src="js/modules/NPCGenerator.js"></script>
     <!-- end ported js -->
+    
+    <!-- Session Timer Module -->
+    <script src="js/modules/sessionTimer.js"></script>
     
     <script src="js/modules/dccChatIntegration.js"></script>
     
