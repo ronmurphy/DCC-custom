@@ -55,7 +55,22 @@ class MessageFormatter {
 
         const content = document.createElement('div');
         content.className = 'message-content';
-        content.textContent = formattedMessage.content;
+        
+        // Process chat effects if available
+        if (window.chatEffectsManager) {
+            const processedContent = window.chatEffectsManager.processMessage(formattedMessage.content);
+            if (processedContent.hasEffects) {
+                content.innerHTML = processedContent.html;
+                // Add effect classes to the message container
+                if (processedContent.effectClasses) {
+                    messageDiv.className += ' ' + processedContent.effectClasses;
+                }
+            } else {
+                content.textContent = formattedMessage.content;
+            }
+        } else {
+            content.textContent = formattedMessage.content;
+        }
 
         messageDiv.appendChild(header);
         messageDiv.appendChild(content);
