@@ -7,103 +7,132 @@
 class NPCGenerator {
     constructor() {
         this.currentNPC = null;
-        this.savedNPCs = this.loadSavedNPCs();
+        this.savedNPCs = [];
         
         // Initialize utilities if available
         this.utils = window.dccUtilities || null;
         this.mechanics = window.dccMechanics || null;
         
         // Initialize data - will try to use JSON data if available
-        this.initializeData();
+        this.initializeData().then(() => {
+            // Load saved NPCs after data is initialized
+            this.savedNPCs = this.loadSavedNPCs();
+        });
     }
 
     /**
      * Initialize NPC data - prefer JSON data loader if available
      */
-    initializeData() {
-        // Try to use JSON data loader first
-        if (window.jsonDataLoader) {
-            this.initializeFromJSON();
-        } else {
-            this.initializeStaticData();
-        }
-    }
-
-    /**
-     * Initialize from JSON data loader (preferred)
-     */
-    async initializeFromJSON() {
+    async initializeData() {
         try {
-            // Use existing JSON data if available
-            if (window.jsonDataLoader) {
-                const races = await window.jsonDataLoader.getRaces();
-                const classes = await window.jsonDataLoader.getClasses(); 
-                const jobs = await window.jsonDataLoader.getJobs();
-                
-                // Convert to NPC format
-                this.npcRaces = this.convertRacesToNPCFormat(races);
-                this.npcClasses = this.convertClassesToNPCFormat(classes);
-                this.npcBackgrounds = this.convertJobsToBackgrounds(jobs);
+            // Load jobs, races, and items data directly
+            const [jobsData, racesData, itemsData] = await Promise.all([
+                this.loadJSONData('data/jobs.json'),
+                this.loadJSONData('data/races.json'),
+                this.loadJSONData('data/dcc-items.json')
+            ]);
+            
+            if (jobsData && racesData) {
+                console.log('Loading NPC data from JSON files...');
+                this.jobs = jobsData;
+                this.races = racesData;
+                this.items = itemsData || null;
+                this.initializeFromCustomJSON();
+            } else {
+                throw new Error('Could not load JSON data');
             }
         } catch (error) {
             console.warn('Could not load JSON data, falling back to static data:', error);
             this.initializeStaticData();
         }
     }
+    
+    /**
+     * Load JSON data from file
+     */
+    async loadJSONData(path) {
+        try {
+            const response = await fetch(path);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return await response.json();
+        } catch (error) {
+            console.error(`Failed to load ${path}:`, error);
+            return null;
+        }
+    }
 
     /**
-     * Convert races from JSON format to NPC format
+     * Initialize from your custom JSON data format
      */
-    convertRacesToNPCFormat(races) {
-        const npcRaces = {};
-        
-        Object.values(races).flat().forEach(race => {
-            const key = race.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-            npcRaces[key] = {
+    initializeFromCustomJSON() {
+        // Convert races - combine all categories
+        this.npcRaces = {};
+        Object.values(this.races).flat().forEach(race => {
+            const key = race.id || race.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+            this.npcRaces[key] = {
                 name: race.name,
-                icon: race.icon || '👤',
-                statBonus: this.parseStatBonus(race.description),
-                category: race.category || 'fantasy'
+                description: race.description,
+                statBonuses: race.statBonuses || {},
+                maximums: race.maximums || {},
+                skills: race.skills || [],
+                category: race.category,
+                icon: this.getRaceIcon(race.name)
             };
         });
         
-        return npcRaces;
-    }
-
-    /**
-     * Convert classes from JSON format to NPC format
-     */
-    convertClassesToNPCFormat(classes) {
-        const npcClasses = {};
-        
-        Object.values(classes).flat().forEach(charClass => {
-            const key = charClass.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-            npcClasses[key] = {
-                name: charClass.name,
-                skills: this.extractSkillsFromDescription(charClass.description),
-                category: charClass.category || 'traditional'
-            };
-        });
-        
-        return npcClasses;
-    }
-
-    /**
-     * Convert jobs to backgrounds
-     */
-    convertJobsToBackgrounds(jobs) {
-        const backgrounds = {};
-        
-        Object.values(jobs).flat().forEach(job => {
-            const key = job.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-            backgrounds[key] = {
+        // Convert jobs to backgrounds - combine all categories  
+        this.npcBackgrounds = {};
+        Object.values(this.jobs).flat().forEach(job => {
+            const key = job.id || job.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+            this.npcBackgrounds[key] = {
                 name: job.name,
-                skills: this.extractSkillsFromDescription(job.description),
-                category: job.category || 'professional'
+                description: job.description,
+                statBonuses: job.statBonuses || {},
+                skills: job.skills || [],
+                category: job.category
             };
         });
         
-        return backgrounds;
+        // Initialize NPC classes (since we don't have a classes.json file)
+        this.npcClasses = {
+            warrior: { name: 'Warrior', skills: ['Weapon Mastery', 'Shield Bash'], category: 'traditional' },
+            rogue: { name: 'Rogue', skills: ['Sneak Attack', 'Poison Knowledge'], category: 'traditional' },
+            mage: { name: 'Mage', skills: ['Spellcasting', 'Mana Manipulation'], category: 'traditional' },
+            ranger: { name: 'Ranger', skills: ['Tracking', 'Archery'], category: 'traditional' },
+            cleric: { name: 'Cleric', skills: ['Divine Healing', 'Turn Undead'], category: 'traditional' },
+            barbarian: { name: 'Barbarian', skills: ['Rage', 'Intimidating Roar'], category: 'traditional' },
+            bard: { name: 'Bard', skills: ['Bardic Inspiration', 'Charm'], category: 'traditional' },
+            paladin: { name: 'Paladin', skills: ['Divine Smite', 'Aura of Protection'], category: 'traditional' },
+            sorcerer: { name: 'Sorcerer', skills: ['Raw Magic', 'Metamagic'], category: 'traditional' },
+            monk: { name: 'Monk', skills: ['Martial Arts', 'Ki Focus'], category: 'traditional' },
+            gunslinger: { name: 'Gunslinger', skills: ['Quick Draw', 'Trick Shot'], category: 'modern' },
+            hacker: { name: 'Hacker', skills: ['System Breach', 'Data Mining'], category: 'modern' },
+            medic: { name: 'Medic', skills: ['Field Surgery', 'Pharmaceutical Knowledge'], category: 'modern' },
+            engineer: { name: 'Engineer', skills: ['Repair', 'Invention'], category: 'modern' }
+        };
+        
+        console.log(`Loaded ${Object.keys(this.npcRaces).length} races and ${Object.keys(this.npcBackgrounds).length} jobs for NPC generation`);
+    }
+    
+    /**
+     * Get appropriate icon for race
+     */
+    getRaceIcon(raceName) {
+        const icons = {
+            'human': '👤',
+            'elf': '🧝',
+            'dwarf': '🧙',
+            'halfling': '🧚',
+            'bopca': '👽',
+            'skyfowl': '🦅',
+            'rat-kin': '🐭',
+            'mutant': '🧬',
+            'android': '🤖',
+            'cyborg': '⚙️'
+        };
+        
+        const key = raceName.toLowerCase().replace(/[^a-z]/g, '');
+        return icons[key] || '👤';
     }
 
     /**
@@ -197,7 +226,7 @@ class NPCGenerator {
     }
 
     /**
-     * Generate a random NPC
+     * Generate a random NPC using custom JSON data
      */
     generateRandomNPC() {
         const npcType = document.getElementById('npc-type-select')?.value || 'npc';
@@ -206,33 +235,41 @@ class NPCGenerator {
         // Generate basic info
         const race = this.getRandomElement(Object.keys(this.npcRaces));
         const background = this.getRandomElement(Object.keys(this.npcBackgrounds));
-        const characterClass = this.getRandomElement(Object.keys(this.npcClasses));
         const name = this.generateNPCName();
         
-        // Generate stats
+        // Generate base stats
         const baseStats = this.generateStats(level);
         
-        // Apply racial bonus
+        // Apply racial bonuses from JSON data
         const raceData = this.npcRaces[race];
-        if (raceData.statBonus) {
-            Object.entries(raceData.statBonus).forEach(([stat, bonus]) => {
-                baseStats[stat] = (baseStats[stat] || 0) + bonus;
+        if (raceData && raceData.statBonuses) {
+            Object.entries(raceData.statBonuses).forEach(([stat, bonus]) => {
+                if (baseStats[stat] !== undefined) {
+                    baseStats[stat] = Math.min(baseStats[stat] + bonus, raceData.maximums?.[stat] || 18);
+                }
             });
         }
         
-        // Generate skills and equipment first
-        const skills = this.generateSkills(background, characterClass);
-        const equipment = this.generateEquipment(characterClass, level);
+        // Apply background bonuses from JSON data
+        const backgroundData = this.npcBackgrounds[background];
+        if (backgroundData && backgroundData.statBonuses) {
+            Object.entries(backgroundData.statBonuses).forEach(([stat, bonus]) => {
+                if (baseStats[stat] !== undefined) {
+                    baseStats[stat] = Math.min(baseStats[stat] + bonus, 18);
+                }
+            });
+        }
+        
+        // Generate skills from race and background
+        const skills = this.generateSkillsFromJSON(raceData, backgroundData);
+        const equipment = this.generateEquipment(background, level);
         
         // Calculate derived stats based on game rules
-        // HP = CON + DEX (as per user clarification)
         const healthPoints = baseStats.constitution + baseStats.dexterity;
         const magicPoints = baseStats.wisdom + baseStats.intelligence;
-        
-        // AC = Base 10 + armor bonuses + DEX modifier (as per game-reference.md)
         const armorClass = this.calculateArmorClass(baseStats.dexterity, equipment);
         
-        // Create NPC object
+        // Create NPC object with JSON data structure
         this.currentNPC = {
             id: this.generateId(),
             name: name,
@@ -240,7 +277,6 @@ class NPCGenerator {
             level: level,
             race: race,
             background: background,
-            characterClass: characterClass,
             stats: baseStats,
             healthPoints: healthPoints,
             magicPoints: magicPoints,
@@ -267,6 +303,63 @@ class NPCGenerator {
             wisdom: this.rollDice(4) + level,
             charisma: this.rollDice(4) + level
         };
+    }
+
+    /**
+     * Generate skills from JSON race and background data
+     */
+    generateSkillsFromJSON(raceData, backgroundData) {
+        const skills = [];
+        
+        // Add racial skills
+        if (raceData && raceData.skills) {
+            raceData.skills.forEach(skill => {
+                skills.push({
+                    name: skill.name,
+                    stat: skill.stat,
+                    source: 'racial',
+                    level: this.rollDice(3) + 1,
+                    description: `Racial ability: ${skill.name}`
+                });
+            });
+        }
+        
+        // Add background skills
+        if (backgroundData && backgroundData.skills) {
+            backgroundData.skills.forEach(skill => {
+                skills.push({
+                    name: skill.name,
+                    stat: skill.stat,
+                    source: 'background',
+                    level: this.rollDice(3) + 1,
+                    description: `Professional skill: ${skill.name}`
+                });
+            });
+        }
+        
+        // Add some general skills if not enough
+        if (skills.length < 3) {
+            const generalSkills = [
+                { name: 'Perception', stat: 'wisdom' },
+                { name: 'Athletics', stat: 'strength' },
+                { name: 'Stealth', stat: 'dexterity' },
+                { name: 'Persuasion', stat: 'charisma' }
+            ];
+            
+            const needed = 3 - skills.length;
+            for (let i = 0; i < needed; i++) {
+                const skill = this.getRandomElement(generalSkills);
+                skills.push({
+                    name: skill.name,
+                    stat: skill.stat,
+                    source: 'general',
+                    level: this.rollDice(2) + 1,
+                    description: `General skill: ${skill.name}`
+                });
+            }
+        }
+        
+        return skills;
     }
 
     /**
@@ -401,7 +494,7 @@ class NPCGenerator {
     }
 
     /**
-     * Display NPC in the interface
+     * Display NPC in the interface with enhanced JSON data
      */
     displayNPC(npc) {
         const container = document.getElementById('generated-npc');
@@ -409,7 +502,6 @@ class NPCGenerator {
         
         const raceData = this.npcRaces[npc.race];
         const backgroundData = this.npcBackgrounds[npc.background];
-        const classData = this.npcClasses[npc.characterClass];
         
         container.innerHTML = `
             <div class="npc-display">
@@ -446,14 +538,12 @@ class NPCGenerator {
                                 <div class="info-item">
                                     <span class="info-label">Race</span>
                                     <span class="info-value">${raceData?.name || 'Unknown'}</span>
+                                    ${raceData?.category ? `<small class="info-category">${raceData.category}</small>` : ''}
                                 </div>
                                 <div class="info-item">
                                     <span class="info-label">Background</span>
                                     <span class="info-value">${backgroundData?.name || 'Unknown'}</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Class</span>
-                                    <span class="info-value">${classData?.name || 'Unknown'}</span>
+                                    ${backgroundData?.category ? `<small class="info-category">${backgroundData.category}</small>` : ''}
                                 </div>
                             </div>
                             
@@ -488,13 +578,34 @@ class NPCGenerator {
                             </div>
                         </div>
                         
+                        <!-- Race and Background Descriptions -->
+                        ${raceData?.description || backgroundData?.description ? `
+                        <div class="npc-descriptions">
+                            ${raceData?.description ? `
+                                <div class="description-item">
+                                    <strong>Race:</strong> ${raceData.description}
+                                </div>
+                            ` : ''}
+                            ${backgroundData?.description ? `
+                                <div class="description-item">
+                                    <strong>Background:</strong> ${backgroundData.description}
+                                </div>
+                            ` : ''}
+                        </div>
+                        ` : ''}
+                        
                         <div class="npc-skills-equipment">
                             <div class="npc-skills">
-                                <div class="section-header">Skills</div>
+                                <div class="section-header">Skills & Abilities</div>
                                 <div class="skills-list">
-                                    ${npc.skills ? npc.skills.map(skill => 
-                                        `<span class="skill-badge">${typeof skill === 'string' ? skill : `${skill.name} (${skill.level})`}</span>`
-                                    ).join(' ') : '<span class="no-content">None</span>'}
+                                    ${npc.skills && npc.skills.length > 0 ? npc.skills.map(skill => 
+                                        `<div class="skill-item">
+                                            <span class="skill-name">${skill.name}</span>
+                                            <span class="skill-stat">(${skill.stat?.toUpperCase() || 'N/A'})</span>
+                                            <span class="skill-level">Level ${skill.level || 1}</span>
+                                            <span class="skill-source">${skill.source}</span>
+                                        </div>`
+                                    ).join('') : '<span class="no-content">No special abilities</span>'}
                                 </div>
                             </div>
                             
@@ -508,7 +619,7 @@ class NPCGenerator {
                                     ${npc.equipment && npc.equipment.items && npc.equipment.items.length > 0 ? 
                                         `<span><strong>Items:</strong> ${npc.equipment.items.join(', ')}</span>` : ''}
                                     ${(!npc.equipment || (!npc.equipment.weapons?.length && !npc.equipment.armor && !npc.equipment.items?.length)) ? 
-                                        '<span class="no-content">None</span>' : ''}
+                                        '<span class="no-content">Basic equipment</span>' : ''}
                                 </div>
                             </div>
                         </div>
@@ -593,19 +704,241 @@ class NPCGenerator {
     }
 
     /**
-     * Edit current NPC (placeholder for future implementation)
+     * Edit current NPC - Comprehensive inline edit mode
      */
     editCurrentNPC() {
         if (!this.currentNPC) return;
         
-        // For now, just show a message indicating this feature is planned
-        this.showMessage('Edit functionality coming soon!', 'info');
+        // Store original NPC data for potential revert
+        this.originalNPC = JSON.parse(JSON.stringify(this.currentNPC));
+        this.isEditMode = true;
+        
+        // Initialize attribute points if not set
+        if (this.currentNPC.attributePoints === undefined) {
+            this.currentNPC.attributePoints = 0;
+        }
+        
+        // Enable edit mode display
+        this.displayNPCEditMode(this.currentNPC);
+    }
+    
+    /**
+     * Display NPC in edit mode with inline editors
+     */
+    displayNPCEditMode(npc) {
+        const container = document.getElementById('generated-npc');
+        if (!container) return;
+        
+        const raceData = this.npcRaces[npc.race];
+        const backgroundData = this.npcBackgrounds[npc.background];
+        
+        // Get available weapons (common/uncommon only)
+        const availableWeapons = this.getAvailableWeapons();
+        
+        container.innerHTML = `
+            <div class="npc-display edit-mode">
+                <div class="npc-card">
+                    <div class="npc-header">
+                        <div class="npc-portrait ${npc.type}">
+                            ${raceData?.icon || '👤'}
+                        </div>
+                        <div class="npc-header-info">
+                            <div class="editable-field">
+                                <input type="text" id="edit-name" class="edit-input edit-name" value="${npc.name}" placeholder="NPC Name">
+                                <div class="edit-controls">
+                                    <button class="edit-accept" onclick="npcGenerator.acceptFieldEdit('name')" title="Accept">✓</button>
+                                    <button class="edit-cancel" onclick="npcGenerator.cancelFieldEdit('name')" title="Cancel">✗</button>
+                                </div>
+                            </div>
+                            <span class="npc-type-badge ${npc.type}">
+                                ${npc.type === 'npc' ? '🤝 Friendly' : '⚔️ Encounter'}
+                            </span>
+                        </div>
+                        <div class="npc-vital-stats">
+                            <div class="vital-stat">
+                                <span class="vital-label">HP</span>
+                                <span class="vital-value" id="display-hp">${npc.hitPoints || npc.healthPoints || 'N/A'}</span>
+                            </div>
+                            <div class="vital-stat">
+                                <span class="vital-label">AC</span>
+                                <span class="vital-value" id="display-ac">${npc.armorClass || 'N/A'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="npc-details">
+                        <div class="npc-info-grid">
+                            <div class="npc-basic-info">
+                                <div class="info-item">
+                                    <span class="info-label">Level</span>
+                                    <div class="editable-field">
+                                        <input type="number" id="edit-level" class="edit-input edit-level" value="${npc.level}" min="1" max="20">
+                                        <div class="edit-controls">
+                                            <button class="edit-accept" onclick="npcGenerator.acceptFieldEdit('level')" title="Accept">✓</button>
+                                            <button class="edit-cancel" onclick="npcGenerator.cancelFieldEdit('level')" title="Cancel">✗</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Race</span>
+                                    <div class="editable-field">
+                                        <select id="edit-race" class="edit-select" onchange="npcGenerator.handleRaceChange()">
+                                            ${Object.keys(this.npcRaces).map(raceKey => 
+                                                `<option value="${raceKey}" ${raceKey === npc.race ? 'selected' : ''}>${this.npcRaces[raceKey].name}</option>`
+                                            ).join('')}
+                                        </select>
+                                        <div class="edit-controls">
+                                            <button class="edit-accept" onclick="npcGenerator.acceptFieldEdit('race')" title="Accept">✓</button>
+                                            <button class="edit-cancel" onclick="npcGenerator.cancelFieldEdit('race')" title="Cancel">✗</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Background</span>
+                                    <div class="editable-field">
+                                        <select id="edit-background" class="edit-select" onchange="npcGenerator.handleBackgroundChange()">
+                                            ${Object.keys(this.npcBackgrounds).map(bgKey => 
+                                                `<option value="${bgKey}" ${bgKey === npc.background ? 'selected' : ''}>${this.npcBackgrounds[bgKey].name}</option>`
+                                            ).join('')}
+                                        </select>
+                                        <div class="edit-controls">
+                                            <button class="edit-accept" onclick="npcGenerator.acceptFieldEdit('background')" title="Accept">✓</button>
+                                            <button class="edit-cancel" onclick="npcGenerator.cancelFieldEdit('background')" title="Cancel">✗</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="npc-stats">
+                                <div class="stats-header">
+                                    Attributes
+                                    <div class="attribute-points">
+                                        Points: <span id="attribute-points-display">${npc.attributePoints || 0}</span>
+                                    </div>
+                                </div>
+                                <div class="stat-grid">
+                                    <div class="stat-item">
+                                        <span class="stat-label">STR</span>
+                                        <div class="stat-editor">
+                                            <button class="stat-btn stat-minus" onclick="npcGenerator.adjustStat('strength', -1)">−</button>
+                                            <span class="stat-value" id="stat-strength">${npc.stats?.strength || npc.strength || 10}</span>
+                                            <button class="stat-btn stat-plus" onclick="npcGenerator.adjustStat('strength', 1)">+</button>
+                                        </div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">DEX</span>
+                                        <div class="stat-editor">
+                                            <button class="stat-btn stat-minus" onclick="npcGenerator.adjustStat('dexterity', -1)">−</button>
+                                            <span class="stat-value" id="stat-dexterity">${npc.stats?.dexterity || npc.dexterity || 10}</span>
+                                            <button class="stat-btn stat-plus" onclick="npcGenerator.adjustStat('dexterity', 1)">+</button>
+                                        </div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">CON</span>
+                                        <div class="stat-editor">
+                                            <button class="stat-btn stat-minus" onclick="npcGenerator.adjustStat('constitution', -1)">−</button>
+                                            <span class="stat-value" id="stat-constitution">${npc.stats?.constitution || npc.constitution || 10}</span>
+                                            <button class="stat-btn stat-plus" onclick="npcGenerator.adjustStat('constitution', 1)">+</button>
+                                        </div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">INT</span>
+                                        <div class="stat-editor">
+                                            <button class="stat-btn stat-minus" onclick="npcGenerator.adjustStat('intelligence', -1)">−</button>
+                                            <span class="stat-value" id="stat-intelligence">${npc.stats?.intelligence || npc.intelligence || 10}</span>
+                                            <button class="stat-btn stat-plus" onclick="npcGenerator.adjustStat('intelligence', 1)">+</button>
+                                        </div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">WIS</span>
+                                        <div class="stat-editor">
+                                            <button class="stat-btn stat-minus" onclick="npcGenerator.adjustStat('wisdom', -1)">−</button>
+                                            <span class="stat-value" id="stat-wisdom">${npc.stats?.wisdom || npc.wisdom || 10}</span>
+                                            <button class="stat-btn stat-plus" onclick="npcGenerator.adjustStat('wisdom', 1)">+</button>
+                                        </div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">CHA</span>
+                                        <div class="stat-editor">
+                                            <button class="stat-btn stat-minus" onclick="npcGenerator.adjustStat('charisma', -1)">−</button>
+                                            <span class="stat-value" id="stat-charisma">${npc.stats?.charisma || npc.charisma || 10}</span>
+                                            <button class="stat-btn stat-plus" onclick="npcGenerator.adjustStat('charisma', 1)">+</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="npc-skills-equipment">
+                            <div class="npc-skills">
+                                <div class="section-header">Skills & Abilities</div>
+                                <div class="skills-list edit-skills" id="edit-skills-container">
+                                    ${this.renderEditableSkills(npc.skills || [])}
+                                </div>
+                                <button class="btn-small" onclick="npcGenerator.addSkill()">+ Add Skill</button>
+                            </div>
+                            
+                            <div class="npc-equipment">
+                                <div class="section-header">Equipment</div>
+                                <div class="equipment-edit">
+                                    <div class="equipment-section">
+                                        <label>Weapons:</label>
+                                        <div id="weapons-edit-container">
+                                            ${this.renderEditableWeapons(npc.equipment?.weapons || [])}
+                                        </div>
+                                        <button class="btn-small" onclick="npcGenerator.addWeapon()">+ Add Weapon</button>
+                                    </div>
+                                    
+                                    <div class="equipment-section">
+                                        <label>Armor:</label>
+                                        <input type="text" id="edit-armor" class="edit-input" value="${npc.equipment?.armor || ''}" placeholder="Armor type">
+                                    </div>
+                                    
+                                    <div class="equipment-section">
+                                        <label>Other Items:</label>
+                                        <textarea id="edit-items" class="edit-textarea" placeholder="Other equipment...">${(npc.equipment?.items || []).join(', ')}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="npc-notes">
+                            <div class="section-header">Notes</div>
+                            <textarea id="edit-notes" class="edit-textarea" placeholder="Add notes about this NPC...">${npc.notes || ''}</textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="npc-actions-bar edit-actions">
+                        <button class="btn btn-success" onclick="npcGenerator.saveNPCEdits()">
+                            💾 Save Changes
+                        </button>
+                        <button class="btn btn-warning" onclick="npcGenerator.saveAsNewNPC()">
+                            📄 Save as New
+                        </button>
+                        <button class="btn btn-secondary" onclick="npcGenerator.cancelEdit()">
+                            ❌ Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Update calculations based on current stats
+        this.updateCalculatedValues();
     }
 
     /**
      * Display saved NPCs
      */
     displaySavedNPCs() {
+        // Check if data is loaded
+        if (!this.npcRaces || !this.npcBackgrounds) {
+            console.log('NPC data not loaded yet, waiting...');
+            // Retry after data is loaded
+            setTimeout(() => this.displaySavedNPCs(), 100);
+            return;
+        }
+        
         // Try new container structure first, fall back to old
         let container = document.getElementById('saved-npcs-container');
         if (!container) {
@@ -654,17 +987,23 @@ class NPCGenerator {
      * Create saved NPC card HTML
      */
     createSavedNPCCard(npc) {
-        const raceData = this.npcRaces[npc.race];
+        // Safety check for race data
+        const raceData = this.npcRaces && this.npcRaces[npc.race] ? this.npcRaces[npc.race] : null;
+        const backgroundData = this.npcBackgrounds && this.npcBackgrounds[npc.background] ? this.npcBackgrounds[npc.background] : null;
+        
+        // Fallback values if data is missing
+        const raceIcon = raceData?.icon || '👤';
+        const raceName = raceData?.name || npc.race || 'Unknown';
         
         return `
             <div class="saved-npc-card" data-npc-id="${npc.id}">
                 <div class="saved-npc-header">
                     <div class="saved-npc-portrait ${npc.type}">
-                        ${raceData?.icon || '👤'}
+                        ${raceIcon}
                     </div>
                     <div class="saved-npc-info">
                         <h5 class="saved-npc-name">${npc.name}</h5>
-                        <span class="saved-npc-details">Lvl ${npc.level} ${raceData?.name || 'Unknown'}</span>
+                        <span class="saved-npc-details">Lvl ${npc.level} ${raceName}</span>
                         <span class="saved-npc-type ${npc.type}">
                             ${npc.type === 'npc' ? '🤝' : '⚔️'}
                         </span>
@@ -1063,13 +1402,24 @@ Background: ${backgroundData?.name || 'Unknown'}
      * Initialize the NPC generator interface
      */
     init() {
-        // Initialize UI if elements exist
-        this.displaySavedNPCs();
+        // Wait for data to be initialized before displaying NPCs
+        const initializeDisplay = () => {
+            if (!this.npcRaces || !this.npcBackgrounds) {
+                // Data not ready yet, wait a bit longer
+                setTimeout(initializeDisplay, 100);
+                return;
+            }
+            
+            // Initialize UI if elements exist
+            this.displaySavedNPCs();
+            
+            // Update saved count after displaying NPCs
+            if (typeof updateSavedNPCCount === 'function') {
+                updateSavedNPCCount();
+            }
+        };
         
-        // Update saved count after displaying NPCs
-        if (typeof updateSavedNPCCount === 'function') {
-            updateSavedNPCCount();
-        }
+        initializeDisplay();
         
         // Set up event listeners
         this.setupEventListeners();
@@ -1083,6 +1433,646 @@ Background: ${backgroundData?.name || 'Unknown'}
         const filterSelect = document.getElementById('npc-filter');
         if (filterSelect) {
             filterSelect.addEventListener('change', () => this.displaySavedNPCs());
+        }
+    }
+    
+    /**
+     * Render editable skills list
+     */
+    renderEditableSkills(skills) {
+        if (!skills || skills.length === 0) {
+            return '<div class="skill-item-edit">No skills assigned</div>';
+        }
+        
+        return skills.map((skill, index) => {
+            // Handle both string skills and skill objects
+            const skillName = typeof skill === 'string' ? skill : (skill.name || skill.skill || 'Unknown Skill');
+            
+            return `
+                <div class="skill-item-edit" data-skill-index="${index}">
+                    <input type="text" class="edit-input skill-edit-input" value="${skillName}" placeholder="Skill name">
+                    <button class="btn-small btn-danger" onclick="npcGenerator.removeSkill(${index})">✗</button>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    /**
+     * Render editable weapons list
+     */
+    renderEditableWeapons(weapons) {
+        if (!weapons || weapons.length === 0) {
+            return '<div class="weapon-item-edit">No weapons assigned</div>';
+        }
+        
+        const availableWeapons = this.getAvailableWeapons();
+        
+        return weapons.map((weapon, index) => `
+            <div class="weapon-item-edit" data-weapon-index="${index}">
+                <select class="edit-select weapon-select">
+                    <option value="${weapon}" selected>${weapon}</option>
+                    ${availableWeapons.filter(w => w !== weapon).map(w => 
+                        `<option value="${w}">${w}</option>`
+                    ).join('')}
+                </select>
+                <button class="btn-small btn-danger" onclick="npcGenerator.removeWeapon(${index})">✗</button>
+            </div>
+        `).join('');
+    }
+    
+    /**
+     * Get available weapons for edit mode
+     */
+    getAvailableWeapons() {
+        // Custom weapon list combining DCC and D&D weapons
+        return [
+            // Basic Weapons
+            'Dagger', 'Club', 'Staff', 'Sling', 'Dart',
+            // Swords
+            'Short Sword', 'Long Sword', 'Bastard Sword', 'Two-Handed Sword', 'Scimitar',
+            // Axes
+            'Hand Axe', 'Battle Axe', 'Great Axe', 'War Hammer',
+            // Polearms
+            'Spear', 'Pike', 'Halberd', 'Glaive', 'Pole Arm',
+            // Ranged
+            'Short Bow', 'Long Bow', 'Light Crossbow', 'Heavy Crossbow', 'Javelin',
+            // Exotic
+            'Mace', 'Flail', 'Morning Star', 'Warhammer', 'Maul',
+            // DCC Specific
+            'Crowbar', 'Pitchfork', 'Sickle', 'Hammer', 'Pick',
+            // Dungeon Crawler Carl inspired
+            'Chain Whip', 'Throwing Knives', 'Acid Bomb', 'Crystal Blade', 'Energy Weapon',
+            'Plasma Rifle', 'Nano Blade', 'Gravity Hammer', 'Tesla Coil', 'Quantum Sword'
+        ];
+    }
+    
+    /**
+     * Accept field edit
+     */
+    acceptFieldEdit(fieldName) {
+        const input = document.getElementById(`edit-${fieldName}`);
+        if (!input) return;
+        
+        const newValue = input.value.trim();
+        
+        switch(fieldName) {
+            case 'name':
+                this.currentNPC.name = newValue;
+                break;
+            case 'level':
+                const oldLevel = this.currentNPC.level || 1;
+                const newLevel = parseInt(newValue) || 1;
+                this.handleLevelChange(oldLevel, newLevel);
+                this.currentNPC.level = newLevel;
+                this.updateCalculatedValues();
+                break;
+            case 'race':
+                this.currentNPC.race = newValue;
+                this.handleRaceChange();
+                break;
+            case 'background':
+                this.currentNPC.background = newValue;
+                this.handleBackgroundChange();
+                break;
+        }
+        
+        this.showMessage(`${fieldName} updated!`, 'success');
+    }
+    
+    /**
+     * Handle level changes with attribute point system
+     */
+    handleLevelChange(oldLevel, newLevel) {
+        if (!this.currentNPC.attributePoints) {
+            this.currentNPC.attributePoints = 0;
+        }
+        
+        const levelDiff = newLevel - oldLevel;
+        
+        if (levelDiff > 0) {
+            // Level up: gain attribute points
+            this.currentNPC.attributePoints += levelDiff * 2; // 2 points per level
+            this.showMessage(`Level increased! You gained ${levelDiff * 2} attribute points.`, 'success');
+        } else if (levelDiff < 0) {
+            // Level down: randomly reduce attributes
+            const levelsLost = Math.abs(levelDiff);
+            this.handleLevelDown(levelsLost);
+            this.showMessage(`Level decreased! Attributes randomly reduced.`, 'warning');
+        }
+        
+        this.updateAttributePointsDisplay();
+    }
+    
+    /**
+     * Handle level down by randomly reducing attributes
+     */
+    handleLevelDown(levelsLost) {
+        const attributes = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
+        
+        for (let level = 0; level < levelsLost; level++) {
+            // Pick 3 random attributes to reduce
+            const shuffled = [...attributes].sort(() => 0.5 - Math.random());
+            const toReduce = shuffled.slice(0, 3);
+            
+            toReduce.forEach(attr => {
+                const currentValue = this.currentNPC.stats?.[attr] || this.currentNPC[attr] || 10;
+                if (currentValue > 2) { // Can't go below 2
+                    const newValue = currentValue - 1;
+                    if (!this.currentNPC.stats) this.currentNPC.stats = {};
+                    this.currentNPC.stats[attr] = newValue;
+                    this.currentNPC[attr] = newValue;
+                    
+                    // Update display
+                    const statElement = document.getElementById(`stat-${attr}`);
+                    if (statElement) {
+                        statElement.textContent = newValue;
+                    }
+                }
+            });
+        }
+    }
+    
+    /**
+     * Update attribute points display
+     */
+    updateAttributePointsDisplay() {
+        const pointsDisplay = document.getElementById('attribute-points-display');
+        if (pointsDisplay) {
+            const points = this.currentNPC.attributePoints || 0;
+            pointsDisplay.textContent = points;
+            pointsDisplay.style.color = points > 0 ? '#4caf50' : '#f44336';
+        }
+    }
+    
+    /**
+     * Cancel field edit
+     */
+    cancelFieldEdit(fieldName) {
+        const input = document.getElementById(`edit-${fieldName}`);
+        if (!input) return;
+        
+        // Restore original value
+        switch(fieldName) {
+            case 'name':
+                input.value = this.originalNPC.name;
+                break;
+            case 'level':
+                input.value = this.originalNPC.level;
+                break;
+            case 'race':
+                input.value = this.originalNPC.race;
+                break;
+            case 'background':
+                input.value = this.originalNPC.background;
+                break;
+        }
+    }
+    
+    /**
+     * Adjust stat value
+     */
+    adjustStat(statName, delta) {
+        if (!this.currentNPC.stats) {
+            this.currentNPC.stats = {};
+        }
+        
+        const currentValue = this.currentNPC.stats[statName] || this.currentNPC[statName] || 10;
+        const newValue = currentValue + delta;
+        
+        // Check limits
+        if (newValue < 3 || newValue > 18) {
+            this.showMessage('Attributes must be between 3 and 18', 'warning');
+            return;
+        }
+        
+        // Check attribute points for increases
+        if (delta > 0) {
+            const pointsNeeded = delta;
+            const availablePoints = this.currentNPC.attributePoints || 0;
+            
+            if (availablePoints < pointsNeeded) {
+                this.showMessage('Not enough attribute points!', 'warning');
+                return;
+            }
+            
+            // Spend points
+            this.currentNPC.attributePoints -= pointsNeeded;
+        } else if (delta < 0) {
+            // Refund points when decreasing
+            this.currentNPC.attributePoints = (this.currentNPC.attributePoints || 0) + Math.abs(delta);
+        }
+        
+        // Apply the change
+        this.currentNPC.stats[statName] = newValue;
+        this.currentNPC[statName] = newValue; // Also set flat property for compatibility
+        
+        // Update display
+        const statElement = document.getElementById(`stat-${statName}`);
+        if (statElement) {
+            statElement.textContent = newValue;
+        }
+        
+        // Update attribute points display
+        this.updateAttributePointsDisplay();
+        
+        // Recalculate dependent values
+        this.updateCalculatedValues();
+    }
+    
+    /**
+     * Handle race change in edit mode
+     */
+    handleRaceChange() {
+        const raceSelect = document.getElementById('edit-race');
+        if (!raceSelect) return;
+        
+        const newRace = raceSelect.value;
+        this.currentNPC.race = newRace;
+        
+        // Update race-specific maximums and recalculate
+        this.updateCalculatedValues();
+        this.showMessage('Race changed! Stats recalculated.', 'info');
+    }
+    
+    /**
+     * Handle background change in edit mode
+     */
+    handleBackgroundChange() {
+        const backgroundSelect = document.getElementById('edit-background');
+        if (!backgroundSelect) return;
+        
+        const newBackground = backgroundSelect.value;
+        this.currentNPC.background = newBackground;
+        
+        this.showMessage('Background updated!', 'success');
+    }
+    
+    /**
+     * Update calculated values (HP, AC, etc.)
+     */
+    updateCalculatedValues() {
+        if (!this.currentNPC) return;
+        
+        // Get current stats
+        const stats = this.currentNPC.stats || {};
+        const con = stats.constitution || this.currentNPC.constitution || 10;
+        const dex = stats.dexterity || this.currentNPC.dexterity || 10;
+        const level = this.currentNPC.level || 1;
+        
+        // Calculate HP (base + con modifier + level)
+        const conMod = Math.floor((con - 10) / 2);
+        const baseHP = this.currentNPC.type === 'enemy' ? 8 : 6;
+        const newHP = Math.max(1, baseHP + conMod + (level - 1) * (baseHP/2 + conMod));
+        
+        // Calculate AC with armor type restrictions
+        const dexMod = Math.floor((dex - 10) / 2);
+        const armorType = (this.currentNPC.equipment?.armor || '').toLowerCase();
+        const armorBonus = this.getArmorBonus(armorType);
+        
+        // Apply DEX restrictions based on armor type
+        let effectiveDexMod = dexMod;
+        if (this.isHeavyArmor(armorType)) {
+            effectiveDexMod = 0; // Heavy armor: no DEX bonus
+        } else if (this.isMediumArmor(armorType)) {
+            effectiveDexMod = Math.min(dexMod, 2); // Medium armor: max DEX +2
+        }
+        // Light armor and no armor: full DEX bonus
+        
+        const newAC = 10 + effectiveDexMod + armorBonus;
+        
+        // Update NPC data
+        this.currentNPC.hitPoints = Math.round(newHP);
+        this.currentNPC.healthPoints = Math.round(newHP);
+        this.currentNPC.armorClass = newAC;
+        
+        // Update display
+        const hpDisplay = document.getElementById('display-hp');
+        const acDisplay = document.getElementById('display-ac');
+        
+        if (hpDisplay) hpDisplay.textContent = Math.round(newHP);
+        if (acDisplay) acDisplay.textContent = newAC;
+    }
+    
+    /**
+     * Check if armor type is heavy armor
+     */
+    isHeavyArmor(armorType) {
+        const heavyArmors = ['chain mail', 'splint', 'plate', 'plate mail', 'full plate', 'field plate'];
+        return heavyArmors.includes(armorType.toLowerCase());
+    }
+    
+    /**
+     * Check if armor type is medium armor
+     */
+    isMediumArmor(armorType) {
+        const mediumArmors = ['hide', 'chain shirt', 'scale mail', 'breastplate', 'ring mail'];
+        return mediumArmors.includes(armorType.toLowerCase());
+    }
+    
+    /**
+     * Get armor bonus for AC calculation
+     */
+    getArmorBonus(armorType) {
+        const armorBonuses = {
+            // No Armor
+            'unarmored': 0,
+            'clothing': 0,
+            'robes': 0,
+            
+            // Light Armor (+1-3 AC, no DEX penalty)
+            'padded': 1,
+            'leather': 1,
+            'studded leather': 2,
+            'leather jacket': 1,
+            
+            // Medium Armor (+4-6 AC, max DEX +2)
+            'hide': 4,
+            'chain shirt': 5,
+            'scale mail': 6,
+            'breastplate': 5,
+            'ring mail': 4,
+            
+            // Heavy Armor (+7-9 AC, no DEX bonus)
+            'chain mail': 7,
+            'splint': 8,
+            'plate': 9,
+            'plate mail': 9,
+            'full plate': 9,
+            'field plate': 8,
+            
+            // Shields (+2 AC, requires off-hand slot)
+            'shield': 2,
+            'buckler': 1,
+            'tower shield': 3,
+            
+            // Special/Magical
+            'mithril': 4,
+            'dragon scale': 6,
+            'crystal armor': 5,
+            'power armor': 9,
+            'nano suit': 7
+        };
+        
+        return armorBonuses[armorType.toLowerCase()] || 0;
+    }
+    
+    /**
+     * Add new skill
+     */
+    addSkill() {
+        if (!this.currentNPC.skills) {
+            this.currentNPC.skills = [];
+        }
+        
+        this.currentNPC.skills.push('New Skill');
+        
+        // Re-render skills section
+        const skillsContainer = document.getElementById('edit-skills-container');
+        if (skillsContainer) {
+            skillsContainer.innerHTML = this.renderEditableSkills(this.currentNPC.skills);
+        }
+    }
+    
+    /**
+     * Remove skill
+     */
+    removeSkill(index) {
+        if (!this.currentNPC.skills || index < 0 || index >= this.currentNPC.skills.length) return;
+        
+        this.currentNPC.skills.splice(index, 1);
+        
+        // Re-render skills section
+        const skillsContainer = document.getElementById('edit-skills-container');
+        if (skillsContainer) {
+            skillsContainer.innerHTML = this.renderEditableSkills(this.currentNPC.skills);
+        }
+    }
+    
+    /**
+     * Add new weapon
+     */
+    addWeapon() {
+        if (!this.currentNPC.equipment) {
+            this.currentNPC.equipment = { weapons: [], armor: '', items: [] };
+        }
+        if (!this.currentNPC.equipment.weapons) {
+            this.currentNPC.equipment.weapons = [];
+        }
+        
+        const availableWeapons = this.getAvailableWeapons();
+        const newWeapon = availableWeapons[0] || 'Dagger';
+        
+        this.currentNPC.equipment.weapons.push(newWeapon);
+        
+        // Re-render weapons section
+        const weaponsContainer = document.getElementById('weapons-edit-container');
+        if (weaponsContainer) {
+            weaponsContainer.innerHTML = this.renderEditableWeapons(this.currentNPC.equipment.weapons);
+        }
+    }
+    
+    /**
+     * Remove weapon
+     */
+    removeWeapon(index) {
+        if (!this.currentNPC.equipment?.weapons || index < 0 || index >= this.currentNPC.equipment.weapons.length) return;
+        
+        this.currentNPC.equipment.weapons.splice(index, 1);
+        
+        // Re-render weapons section
+        const weaponsContainer = document.getElementById('weapons-edit-container');
+        if (weaponsContainer) {
+            weaponsContainer.innerHTML = this.renderEditableWeapons(this.currentNPC.equipment.weapons);
+        }
+    }
+    
+    /**
+     * Save NPC edits
+     */
+    saveNPCEdits() {
+        // Collect all current edit values
+        this.collectEditValues();
+        
+        // Update storage
+        this.updateStoredNPC();
+        
+        // Exit edit mode
+        this.isEditMode = false;
+        this.originalNPC = null;
+        
+        // Refresh display
+        this.displayNPC(this.currentNPC);
+        
+        // Refresh the saved NPCs list if we're on that tab
+        const activeTab = document.querySelector('.npc-tab.active');
+        if (activeTab && activeTab.textContent.includes('Saved')) {
+            this.displaySavedNPCs();
+        }
+        
+        this.showMessage('NPC saved successfully!', 'success');
+    }
+    
+    /**
+     * Save as new NPC
+     */
+    saveAsNewNPC() {
+        // Collect all current edit values
+        this.collectEditValues();
+        
+        // Create new NPC with unique ID
+        const newNPC = {
+            ...this.currentNPC,
+            id: `npc_${Date.now()}`,
+            name: this.currentNPC.name + ' (Copy)'
+        };
+        
+        // Save to storage
+        this.saveNPCToStorage(newNPC);
+        
+        // Set as current NPC
+        this.currentNPC = newNPC;
+        
+        // Exit edit mode
+        this.isEditMode = false;
+        this.originalNPC = null;
+        
+        // Refresh display
+        this.displayNPC(this.currentNPC);
+        
+        // Refresh the saved NPCs list if we're on that tab
+        const activeTab = document.querySelector('.npc-tab.active');
+        if (activeTab && activeTab.textContent.includes('Saved')) {
+            this.displaySavedNPCs();
+        }
+        
+        this.showMessage('NPC saved as new character!', 'success');
+    }
+    
+    /**
+     * Cancel edit mode
+     */
+    cancelEdit() {
+        if (this.originalNPC) {
+            // Restore original NPC data
+            this.currentNPC = JSON.parse(JSON.stringify(this.originalNPC));
+        }
+        
+        // Exit edit mode
+        this.isEditMode = false;
+        this.originalNPC = null;
+        
+        // Refresh display
+        this.displayNPC(this.currentNPC);
+        
+        this.showMessage('Edit cancelled', 'info');
+    }
+    
+    /**
+     * Collect all edit values from form
+     */
+    collectEditValues() {
+        // Basic info
+        const nameInput = document.getElementById('edit-name');
+        const levelInput = document.getElementById('edit-level');
+        const raceSelect = document.getElementById('edit-race');
+        const backgroundSelect = document.getElementById('edit-background');
+        
+        if (nameInput) this.currentNPC.name = nameInput.value.trim();
+        if (levelInput) this.currentNPC.level = parseInt(levelInput.value) || 1;
+        if (raceSelect) this.currentNPC.race = raceSelect.value;
+        if (backgroundSelect) this.currentNPC.background = backgroundSelect.value;
+        
+        // Skills
+        const skillInputs = document.querySelectorAll('.skill-edit-input');
+        this.currentNPC.skills = Array.from(skillInputs)
+            .map(input => input.value.trim())
+            .filter(skill => skill.length > 0);
+        
+        // Weapons
+        const weaponSelects = document.querySelectorAll('.weapon-select');
+        if (!this.currentNPC.equipment) this.currentNPC.equipment = {};
+        this.currentNPC.equipment.weapons = Array.from(weaponSelects)
+            .map(select => select.value)
+            .filter(weapon => weapon.length > 0);
+        
+        // Armor
+        const armorInput = document.getElementById('edit-armor');
+        if (armorInput) {
+            this.currentNPC.equipment.armor = armorInput.value.trim();
+        }
+        
+        // Other items
+        const itemsTextarea = document.getElementById('edit-items');
+        if (itemsTextarea) {
+            this.currentNPC.equipment.items = itemsTextarea.value
+                .split(',')
+                .map(item => item.trim())
+                .filter(item => item.length > 0);
+        }
+        
+        // Notes
+        const notesTextarea = document.getElementById('edit-notes');
+        if (notesTextarea) {
+            this.currentNPC.notes = notesTextarea.value.trim();
+        }
+    }
+    
+    /**
+     * Save NPC to storage
+     */
+    saveNPCToStorage(npc) {
+        try {
+            const savedNPCs = JSON.parse(localStorage.getItem('storyteller_saved_npcs') || '[]');
+            
+            // Check if NPC already exists
+            const existingIndex = savedNPCs.findIndex(saved => saved.id === npc.id);
+            
+            if (existingIndex >= 0) {
+                // Update existing
+                savedNPCs[existingIndex] = npc;
+            } else {
+                // Add new
+                savedNPCs.push(npc);
+            }
+            
+            localStorage.setItem('storyteller_saved_npcs', JSON.stringify(savedNPCs));
+            
+            // Update internal array
+            this.savedNPCs = savedNPCs;
+            
+            // Update saved count if panel is active
+            this.updateSavedCount();
+            
+        } catch (error) {
+            console.error('Error saving NPC to storage:', error);
+            this.showMessage('Error saving NPC', 'error');
+        }
+    }
+    
+    /**
+     * Update stored NPC
+     */
+    updateStoredNPC() {
+        if (!this.currentNPC || !this.currentNPC.id) {
+            // If no ID, create one and save as new
+            this.currentNPC.id = `npc_${Date.now()}`;
+        }
+        
+        this.saveNPCToStorage(this.currentNPC);
+    }
+    
+    /**
+     * Update saved NPCs count display
+     */
+    updateSavedCount() {
+        try {
+            const savedNPCs = JSON.parse(localStorage.getItem('storyteller_saved_npcs') || '[]');
+            const countElement = document.querySelector('.saved-count');
+            if (countElement) {
+                countElement.textContent = savedNPCs.length;
+            }
+        } catch (error) {
+            console.error('Error updating saved count:', error);
         }
     }
 }

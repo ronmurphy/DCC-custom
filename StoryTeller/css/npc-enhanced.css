@@ -1,17 +1,165 @@
 /* ========================================
    NPC MANAGER - REDESIGNED FOR TABLETS
    Clean tabbed interface optimized for low-res tablets
+   Enhanced with JSON data support for races and jobs
    ======================================== */
 
 /* ========================================
-   MAIN CONTAINER
+   MAIN CONTAINER - Optimized for Low-Resolution Tablets
    ======================================== */
 .npc-panel-container {
     display: flex;
     flex-direction: column;
     height: 100%;
-    max-height: calc(100vh - 150px);
+    max-height: calc(100vh - 120px); /* More conservative for low-res tablets */
     overflow: hidden;
+}
+
+/* Specific height adjustments for very low resolution displays */
+@media (max-height: 600px) {
+    .npc-panel-container {
+        max-height: calc(100vh - 100px);
+    }
+    
+    .npc-tab-content {
+        max-height: calc(100vh - 160px);
+    }
+    
+    .npc-display {
+        max-height: calc(100vh - 200px);
+    }
+}
+
+/* For extremely low resolution (old tablets) */
+@media (max-height: 480px) {
+    .npc-panel-container {
+        max-height: calc(100vh - 80px);
+    }
+    
+    .npc-tab-content {
+        max-height: calc(100vh - 140px);
+    }
+    
+    .npc-display {
+        max-height: calc(100vh - 180px);
+    }
+    
+    .saved-npcs-container {
+        max-height: calc(100vh - 200px);
+    }
+    
+    /* More compact padding for very small screens */
+    .npc-display {
+        padding: 10px;
+    }
+    
+    .npc-tab-content {
+        padding: 6px;
+    }
+    
+    /* Reduce gaps and spacing */
+    .npc-card {
+        gap: 10px;
+    }
+    
+    .npc-info-grid {
+        gap: 8px;
+    }
+    
+    .npc-skills-equipment {
+        gap: 8px;
+    }
+}
+
+/* Enhanced skill display */
+.skill-item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    background: var(--bg-secondary);
+    border-radius: 6px;
+    margin: 2px 0;
+    border-left: 3px solid var(--action-gradient);
+    min-height: 32px; /* Ensure consistent height */
+    word-break: break-word; /* Prevent long skill names from breaking layout */
+}
+
+.skill-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    flex: 1 1 auto;
+    min-width: 0; /* Allow text to shrink */
+}
+
+.skill-stat {
+    font-size: 0.8em;
+    color: var(--text-secondary);
+    background: rgba(102, 126, 234, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.skill-level {
+    font-size: 0.8em;
+    background: var(--success-gradient);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.skill-source {
+    font-size: 0.7em;
+    color: var(--text-secondary);
+    background: var(--border-color);
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.skill-source[data-source="racial"] {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.skill-source[data-source="background"] {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.skill-source[data-source="general"] {
+    background: #f1f8e9;
+    color: #388e3c;
+}
+
+/* Race and background descriptions */
+.npc-descriptions {
+    background: var(--bg-secondary);
+    padding: 12px;
+    border-radius: 6px;
+    margin: 8px 0;
+    border-left: 4px solid var(--panel-gradient);
+}
+
+.description-item {
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+.description-item:last-child {
+    margin-bottom: 0;
+}
+
+.info-category {
+    display: block;
+    font-size: 0.7em;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
 }
 
 /* ========================================
@@ -76,7 +224,7 @@
 }
 
 /* ========================================
-   TAB CONTENT
+   TAB CONTENT - Enhanced for Low-Res Tablets
    ======================================== */
 .npc-tab-content {
     display: none;
@@ -87,11 +235,37 @@
     border-top: none;
     border-radius: 0 0 var(--border-radius) var(--border-radius);
     padding: 8px;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: calc(100vh - 200px); /* Ensures content doesn't exceed viewport */
+    
+    /* Enhanced scrolling for touch devices */
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) transparent;
 }
 
 .npc-tab-content.active {
     display: flex;
+}
+
+/* Scrollbar styling for tab content */
+.npc-tab-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.npc-tab-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.npc-tab-content::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+.npc-tab-content::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
 }
 
 /* ========================================
@@ -213,10 +387,37 @@
 }
 
 /* ========================================
-   NPC DISPLAY CONTENT - OPTIMIZED LAYOUT
+   NPC DISPLAY CONTENT - Optimized for Low-Res Tablets
    ======================================== */
 .npc-display {
     padding: 15px;
+    max-height: calc(100vh - 250px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    
+    /* Enhanced scrolling for touch devices */
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) transparent;
+}
+
+/* Scrollbar styling for NPC display */
+.npc-display::-webkit-scrollbar {
+    width: 8px;
+}
+
+.npc-display::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.npc-display::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+.npc-display::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
 }
 
 .npc-card {
@@ -379,6 +580,19 @@
     letter-spacing: 0.5px;
     margin-bottom: 8px;
     text-align: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.attribute-points {
+    font-size: 0.8rem;
+    font-weight: bold;
+    padding: 2px 8px;
+    background: rgba(74, 158, 255, 0.2);
+    border: 1px solid #4a9eff;
+    border-radius: 4px;
+    color: #4a9eff;
 }
 
 .stat-grid {
@@ -697,6 +911,7 @@
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     background: var(--bg-secondary);
+    max-height: calc(100vh - 300px); /* Ensure it doesn't exceed viewport */
     
     /* Enhanced scrolling */
     scroll-behavior: smooth;
@@ -1144,6 +1359,335 @@
     
     .modal-npc-display {
         padding: 10px;
+    }
+}
+
+/* ===== NPC EDIT MODE STYLES ===== */
+.npc-display.edit-mode {
+    background: linear-gradient(135deg, #2a3f5f 0%, #1e2938 100%);
+    border: 2px solid #4a9eff;
+    box-shadow: 0 0 20px rgba(74, 158, 255, 0.3);
+}
+
+.npc-display.edit-mode .npc-card {
+    border: 1px solid #4a9eff;
+}
+
+/* Editable Fields */
+.editable-field {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0;
+}
+
+.edit-input, .edit-select, .edit-textarea {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid #4a9eff;
+    border-radius: 4px;
+    color: #e0e6ed;
+    padding: 6px 8px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.edit-input:focus, .edit-select:focus, .edit-textarea:focus {
+    outline: none;
+    border-color: #7fb8ff;
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 8px rgba(74, 158, 255, 0.4);
+}
+
+.edit-name {
+    font-size: 18px;
+    font-weight: bold;
+    min-width: 200px;
+}
+
+.edit-level {
+    width: 60px;
+}
+
+.edit-select {
+    min-width: 120px;
+}
+
+.edit-textarea {
+    width: 100%;
+    min-height: 60px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+/* Edit Controls */
+.edit-controls {
+    display: flex;
+    gap: 4px;
+}
+
+.edit-accept, .edit-cancel {
+    background: transparent;
+    border: 1px solid;
+    border-radius: 3px;
+    color: white;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 2px 6px;
+    transition: all 0.2s ease;
+    min-width: 24px;
+    height: 24px;
+}
+
+.edit-accept {
+    border-color: #4caf50;
+    color: #4caf50;
+}
+
+.edit-accept:hover {
+    background: #4caf50;
+    color: white;
+}
+
+.edit-cancel {
+    border-color: #f44336;
+    color: #f44336;
+}
+
+.edit-cancel:hover {
+    background: #f44336;
+    color: white;
+}
+
+/* Stat Editors */
+.stat-editor {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    justify-content: center;
+}
+
+.stat-btn {
+    background: rgba(74, 158, 255, 0.2);
+    border: 1px solid #4a9eff;
+    border-radius: 3px;
+    color: #4a9eff;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    height: 24px;
+    transition: all 0.2s ease;
+    width: 24px;
+}
+
+.stat-btn:hover {
+    background: #4a9eff;
+    color: white;
+}
+
+.stat-btn:active {
+    transform: scale(0.95);
+}
+
+.stat-value {
+    color: #ffd700;
+    font-weight: bold;
+    min-width: 24px;
+    text-align: center;
+}
+
+/* Skills and Equipment Edit */
+.skill-item-edit, .weapon-item-edit {
+    align-items: center;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    display: flex;
+    gap: 8px;
+    margin: 4px 0;
+    padding: 8px;
+}
+
+.skill-edit-input {
+    flex: 1;
+    min-width: 0;
+}
+
+.weapon-select {
+    flex: 1;
+    min-width: 120px;
+}
+
+.btn-small {
+    background: rgba(74, 158, 255, 0.2);
+    border: 1px solid #4a9eff;
+    border-radius: 4px;
+    color: #4a9eff;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 8px 12px;
+    transition: all 0.2s ease;
+    min-width: 100px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.btn-small:hover {
+    background: #4a9eff;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(74, 158, 255, 0.3);
+}
+
+.btn-small.btn-danger {
+    background: rgba(244, 67, 54, 0.2);
+    border-color: #f44336;
+    color: #f44336;
+    min-width: 32px;
+    width: 32px;
+    height: 32px;
+    padding: 4px;
+}
+
+.btn-small.btn-danger:hover {
+    background: #f44336;
+    color: white;
+    transform: scale(1.1);
+}
+
+/* Equipment Sections */
+.equipment-edit {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.equipment-section {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    padding: 12px;
+}
+
+.equipment-section label {
+    color: #b8c5d1;
+    display: block;
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+/* Edit Actions Bar */
+.edit-actions {
+    background: linear-gradient(135deg, #1e2938 0%, #2a3f5f 100%);
+    border-top: 1px solid #4a9eff;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    padding: 16px;
+}
+
+.btn {
+    border: 1px solid;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    padding: 10px 16px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn-success {
+    background: rgba(76, 175, 80, 0.2);
+    border-color: #4caf50;
+    color: #4caf50;
+}
+
+.btn-success:hover {
+    background: #4caf50;
+    color: white;
+}
+
+.btn-warning {
+    background: rgba(255, 152, 0, 0.2);
+    border-color: #ff9800;
+    color: #ff9800;
+}
+
+.btn-warning:hover {
+    background: #ff9800;
+    color: white;
+}
+
+.btn-secondary {
+    background: rgba(158, 158, 158, 0.2);
+    border-color: #9e9e9e;
+    color: #9e9e9e;
+}
+
+.btn-secondary:hover {
+    background: #9e9e9e;
+    color: white;
+}
+
+/* Mobile Optimizations for Edit Mode */
+@media (max-width: 600px) {
+    .editable-field {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 4px;
+    }
+    
+    .edit-controls {
+        justify-content: center;
+    }
+    
+    .stat-editor {
+        gap: 8px;
+    }
+    
+    .stat-btn {
+        height: 32px;
+        width: 32px;
+        font-size: 16px;
+    }
+    
+    .skill-item-edit, .weapon-item-edit {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .edit-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .btn {
+        padding: 12px 16px;
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .edit-name {
+        font-size: 16px;
+        min-width: unset;
+        width: 100%;
+    }
+    
+    .npc-info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .equipment-edit {
+        gap: 8px;
+    }
+    
+    .equipment-section {
+        padding: 8px;
     }
 }
 
