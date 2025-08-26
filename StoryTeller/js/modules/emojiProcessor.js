@@ -28,13 +28,13 @@ class EmojiProcessor {
             ':roll:': '🎲', ':dice:': '🎲',
             ':sword:': '⚔️', ':shield:': '🛡️',
             ':treasure:': '💰', ':gold:': '💰',
-            ':magic:': '✨', ':spell:': '🔮',
+            ':mp:': '✨', ':spell:': '🔮',
             ':fire:': '🔥', ':ice:': '❄️',
             ':poison:': '☠️', ':heal:': '💚',
             
             // DCC specific
-            ':crit:': '💥', ':fumble:': '💢',
-            ':luck:': '🍀', ':doom:': '💀',
+            ':boom:': '💥', ':fumble:': '💢',
+            ':luck:': '🍀', ':skull:': '💀',
             ':cleric:': '⛪', ':wizard:': '🧙',
             ':warrior:': '⚔️', ':thief:': '🗡️',
             ':dwarf:': '🧔', ':elf:': '🧝',
@@ -101,10 +101,10 @@ class EmojiProcessor {
         console.log('🧪 Testing emoji processor...');
         const testCases = [
             'Hello :)',
-            'I cast :magic: spell',
-            'The :wizard: casts :doom:',
+            'I cast :mp: spell',
+            'The :wizard: uses :doom: effect',
             'Rolling :roll: for damage',
-            'Critical hit :crit: !'
+            'Explosion :boom: happens!'
         ];
         
         testCases.forEach(test => {
@@ -137,16 +137,16 @@ class EmojiProcessor {
                     { code: ':sword:', emoji: '⚔️', name: 'Sword' },
                     { code: ':shield:', emoji: '🛡️', name: 'Shield' },
                     { code: ':treasure:', emoji: '💰', name: 'Gold' },
-                    { code: ':magic:', emoji: '✨', name: 'Magic' },
+                    { code: ':mp:', emoji: '✨', name: 'Magic Points' },
                     { code: ':fire:', emoji: '🔥', name: 'Fire' }
                 ]
             },
             dcc: {
                 name: 'DCC',
                 emojis: [
-                    { code: ':crit:', emoji: '💥', name: 'Critical' },
+                    { code: ':boom:', emoji: '💥', name: 'Explosion' },
                     { code: ':luck:', emoji: '🍀', name: 'Lucky' },
-                    { code: ':doom:', emoji: '💀', name: 'Doom' },
+                    { code: ':skull:', emoji: '💀', name: 'Skull' },
                     { code: ':cleric:', emoji: '⛪', name: 'Cleric' },
                     { code: ':wizard:', emoji: '🧙', name: 'Wizard' },
                     { code: ':warrior:', emoji: '⚔️', name: 'Warrior' }
