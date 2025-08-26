@@ -56,22 +56,21 @@ class ChatEffectsManager {
         
         // Add main effect (take first one if multiple)
         if (mainEffects.length > 0) {
-            const effectName = mainEffects[0].replace(/:/g, '');
-            const effectData = this.getEffectData(effectName);
+            const effectCommand = mainEffects[0];
+            const effectData = this.getEffectDataByCommand(effectCommand);
             if (effectData) {
                 effectClasses.push('chat-effect', effectData.class);
-                appliedEffects.push(effectName);
+                appliedEffects.push(effectCommand);
                 hasEffects = true;
             }
         }
 
         // Add modifiers
         modifiers.forEach(modifier => {
-            const modifierName = modifier.replace(/:/g, '');
-            const modifierData = this.getModifierData(modifierName);
+            const modifierData = this.getModifierDataByCommand(modifier);
             if (modifierData) {
                 effectClasses.push(modifierData.class);
-                appliedEffects.push(modifierName);
+                appliedEffects.push(modifier);
                 hasEffects = true; // Modifiers should also trigger effects
             }
         });
@@ -111,12 +110,60 @@ class ChatEffectsManager {
 
         while ((match = regex.exec(message)) !== null) {
             const command = match[0];
+            console.log(`🔍 Found potential command: ${command}`);
             if (this.isValidEffect(command)) {
+                console.log(`✅ Valid effect command: ${command}`);
                 commands.push(command);
+            } else {
+                console.log(`❌ Invalid effect command: ${command}`);
             }
         }
 
+        console.log(`🔍 Final effect commands found: [${commands.join(', ')}]`);
         return commands;
+    }
+
+    /**
+     * Get effect data by command (like ':magic:')
+     * @param {string} command - Command with colons like ':magic:'
+     * @returns {object|null}
+     */
+    getEffectDataByCommand(command) {
+        if (!this.effects) return null;
+
+        // Check basic effects
+        for (const key in this.effects.effects.basic) {
+            if (this.effects.effects.basic[key].command === command) {
+                return this.effects.effects.basic[key];
+            }
+        }
+
+        // Check gaming effects
+        for (const key in this.effects.effects.gaming) {
+            if (this.effects.effects.gaming[key].command === command) {
+                return this.effects.effects.gaming[key];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Get modifier data by command (like ':fast:')
+     * @param {string} command - Command with colons like ':fast:'
+     * @returns {object|null}
+     */
+    getModifierDataByCommand(command) {
+        if (!this.effects) return null;
+
+        // Check modifiers
+        for (const key in this.effects.effects.modifiers) {
+            if (this.effects.effects.modifiers[key].command === command) {
+                return this.effects.effects.modifiers[key];
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -125,8 +172,7 @@ class ChatEffectsManager {
      * @returns {boolean}
      */
     isValidEffect(command) {
-        const effectName = command.replace(/:/g, '');
-        return this.getEffectData(effectName) !== null || this.getModifierData(effectName) !== null;
+        return this.getEffectDataByCommand(command) !== null || this.getModifierDataByCommand(command) !== null;
     }
 
     /**
@@ -135,12 +181,11 @@ class ChatEffectsManager {
      * @returns {boolean}
      */
     isModifier(command) {
-        const effectName = command.replace(/:/g, '');
-        return this.getModifierData(effectName) !== null;
+        return this.getModifierDataByCommand(command) !== null;
     }
 
     /**
-     * Get effect data by name
+     * Get effect data by name (legacy method for backwards compatibility)
      * @param {string} effectName - Name without colons
      * @returns {object|null}
      */

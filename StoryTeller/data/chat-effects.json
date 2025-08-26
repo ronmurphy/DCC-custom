@@ -121,6 +121,20 @@
         "description": "Makes text smaller",
         "command": ":small:",
         "modifier": true
+      },
+      "delay1": {
+        "name": "Short Delay",
+        "class": "effect-delay-1",
+        "description": "Delays animation start by 0.5 seconds",
+        "command": ":delay:",
+        "modifier": true
+      },
+      "delay2": {
+        "name": "Long Delay", 
+        "class": "effect-delay-2",
+        "description": "Delays animation start by 1 second",
+        "command": ":delay2:",
+        "modifier": true
       }
     }
   },
@@ -129,7 +143,9 @@
       ":bounce: :fast: This text bounces quickly!",
       ":glow: :slow: This text glows slowly",
       ":crit: :once: CRITICAL HIT!",
-      ":magic: :loop: ✨ Endless magic ✨"
+      ":magic: :loop: ✨ Endless magic ✨",
+      ":pulse: :delay: This text waits then pulses",
+      ":shake: :delay2: :big: Big delayed shake!"
     ]
   },
   "config": {
