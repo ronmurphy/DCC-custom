@@ -25,10 +25,11 @@ class NPCGenerator {
      */
     async initializeData() {
         try {
-            // Load jobs, races, and items data directly
-            const [jobsData, racesData, itemsData] = await Promise.all([
+            // Load jobs, races, classes, and items data directly
+            const [jobsData, racesData, classesData, itemsData] = await Promise.all([
                 this.loadJSONData('data/jobs.json'),
                 this.loadJSONData('data/races.json'),
+                this.loadJSONData('data/classes.json'),
                 this.loadJSONData('data/dcc-items.json')
             ]);
             
@@ -36,6 +37,7 @@ class NPCGenerator {
                 console.log('Loading NPC data from JSON files...');
                 this.jobs = jobsData;
                 this.races = racesData;
+                this.classes = classesData || null;
                 this.items = itemsData || null;
                 this.initializeFromCustomJSON();
             } else {
@@ -93,25 +95,42 @@ class NPCGenerator {
             };
         });
         
-        // Initialize NPC classes (since we don't have a classes.json file)
-        this.npcClasses = {
-            warrior: { name: 'Warrior', skills: ['Weapon Mastery', 'Shield Bash'], category: 'traditional' },
-            rogue: { name: 'Rogue', skills: ['Sneak Attack', 'Poison Knowledge'], category: 'traditional' },
-            mage: { name: 'Mage', skills: ['Spellcasting', 'Mana Manipulation'], category: 'traditional' },
-            ranger: { name: 'Ranger', skills: ['Tracking', 'Archery'], category: 'traditional' },
-            cleric: { name: 'Cleric', skills: ['Divine Healing', 'Turn Undead'], category: 'traditional' },
-            barbarian: { name: 'Barbarian', skills: ['Rage', 'Intimidating Roar'], category: 'traditional' },
-            bard: { name: 'Bard', skills: ['Bardic Inspiration', 'Charm'], category: 'traditional' },
-            paladin: { name: 'Paladin', skills: ['Divine Smite', 'Aura of Protection'], category: 'traditional' },
-            sorcerer: { name: 'Sorcerer', skills: ['Raw Magic', 'Metamagic'], category: 'traditional' },
-            monk: { name: 'Monk', skills: ['Martial Arts', 'Ki Focus'], category: 'traditional' },
-            gunslinger: { name: 'Gunslinger', skills: ['Quick Draw', 'Trick Shot'], category: 'modern' },
-            hacker: { name: 'Hacker', skills: ['System Breach', 'Data Mining'], category: 'modern' },
-            medic: { name: 'Medic', skills: ['Field Surgery', 'Pharmaceutical Knowledge'], category: 'modern' },
-            engineer: { name: 'Engineer', skills: ['Repair', 'Invention'], category: 'modern' }
-        };
+        // Initialize NPC classes - prefer JSON data if available
+        if (this.classes) {
+            console.log('Loading classes from classes.json...');
+            this.npcClasses = {};
+            Object.values(this.classes).flat().forEach(cls => {
+                const key = cls.id || cls.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                this.npcClasses[key] = {
+                    name: cls.name,
+                    description: cls.description,
+                    statBonuses: cls.statBonuses || {},
+                    skills: cls.skills || [],
+                    category: cls.category
+                };
+            });
+        } else {
+            console.log('No classes.json found, using fallback classes...');
+            // Initialize fallback NPC classes
+            this.npcClasses = {
+                warrior: { name: 'Warrior', skills: ['Weapon Mastery', 'Shield Bash'], category: 'traditional' },
+                rogue: { name: 'Rogue', skills: ['Sneak Attack', 'Poison Knowledge'], category: 'traditional' },
+                mage: { name: 'Mage', skills: ['Spellcasting', 'Mana Manipulation'], category: 'traditional' },
+                ranger: { name: 'Ranger', skills: ['Tracking', 'Archery'], category: 'traditional' },
+                cleric: { name: 'Cleric', skills: ['Divine Healing', 'Turn Undead'], category: 'traditional' },
+                barbarian: { name: 'Barbarian', skills: ['Rage', 'Intimidating Roar'], category: 'traditional' },
+                bard: { name: 'Bard', skills: ['Bardic Inspiration', 'Charm'], category: 'traditional' },
+                paladin: { name: 'Paladin', skills: ['Divine Smite', 'Aura of Protection'], category: 'traditional' },
+                sorcerer: { name: 'Sorcerer', skills: ['Raw Magic', 'Metamagic'], category: 'traditional' },
+                monk: { name: 'Monk', skills: ['Martial Arts', 'Ki Focus'], category: 'traditional' },
+                gunslinger: { name: 'Gunslinger', skills: ['Quick Draw', 'Trick Shot'], category: 'modern' },
+                hacker: { name: 'Hacker', skills: ['System Breach', 'Data Mining'], category: 'modern' },
+                medic: { name: 'Medic', skills: ['Field Surgery', 'Pharmaceutical Knowledge'], category: 'modern' },
+                engineer: { name: 'Engineer', skills: ['Repair', 'Invention'], category: 'modern' }
+            };
+        }
         
-        console.log(`Loaded ${Object.keys(this.npcRaces).length} races and ${Object.keys(this.npcBackgrounds).length} jobs for NPC generation`);
+        console.log(`Loaded ${Object.keys(this.npcRaces).length} races, ${Object.keys(this.npcBackgrounds).length} jobs, and ${Object.keys(this.npcClasses).length} classes for NPC generation`);
     }
     
     /**
@@ -283,7 +302,7 @@ class NPCGenerator {
             armorClass: armorClass,
             skills: skills,
             equipment: equipment,
-            notes: this.generateNotes(npcType),
+            notes: this.generateNotes(npcType, raceData, backgroundData),
             timestamp: new Date().toISOString()
         };
         
@@ -445,10 +464,10 @@ class NPCGenerator {
     }
 
     /**
-     * Generate contextual notes
+     * Generate contextual notes including race and background descriptions
      */
-    generateNotes(npcType) {
-        const notes = {
+    generateNotes(npcType, raceData, backgroundData) {
+        const contextualNotes = {
             npc: [
                 'Friendly and helpful to travelers',
                 'Has useful local information',
@@ -465,8 +484,23 @@ class NPCGenerator {
             ]
         };
         
-        const noteList = notes[npcType] || notes.npc;
-        return this.getRandomElement(noteList);
+        const noteList = contextualNotes[npcType] || contextualNotes.npc;
+        let notes = this.getRandomElement(noteList);
+        
+        // Add race and background descriptions to notes
+        if (raceData?.description || backgroundData?.description) {
+            notes += '\n\n**Character Background:**';
+            
+            if (raceData?.description) {
+                notes += `\n**Race:** ${raceData.description}`;
+            }
+            
+            if (backgroundData?.description) {
+                notes += `\n**Background:** ${backgroundData.description}`;
+            }
+        }
+        
+        return notes;
     }
 
     /**
@@ -577,22 +611,6 @@ class NPCGenerator {
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- Race and Background Descriptions -->
-                        ${raceData?.description || backgroundData?.description ? `
-                        <div class="npc-descriptions">
-                            ${raceData?.description ? `
-                                <div class="description-item">
-                                    <strong>Race:</strong> ${raceData.description}
-                                </div>
-                            ` : ''}
-                            ${backgroundData?.description ? `
-                                <div class="description-item">
-                                    <strong>Background:</strong> ${backgroundData.description}
-                                </div>
-                            ` : ''}
-                        </div>
-                        ` : ''}
                         
                         <div class="npc-skills-equipment">
                             <div class="npc-skills">
