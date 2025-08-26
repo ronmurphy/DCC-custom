@@ -1513,16 +1513,18 @@ function handleIncomingMessage(message) {
     // Always display normal messages in chat
     displayChatMessage(message);
     
-    // Don't process our own messages for game commands
+    // Don't process our own messages for game commands, but allow other processing
     const currentPlayerName = window.playerName || playerName;
-    if (message.player_name === currentPlayerName) {
-        console.log('This is our own message, skipping command processing');
-        return;
+    const isOwnMessage = message.player_name === currentPlayerName;
+    
+    if (isOwnMessage) {
+        console.log('This is our own message, skipping game command processing but allowing effects');
     }
     
-    // Check if this is a game command for Story Teller to process
+    // Check if this is a game command for Story Teller to process (skip for own messages)
     if (message.message_type === 'game_command' && 
         isStoryTeller && 
+        !isOwnMessage &&
         document.getElementById('auto-process-toggle')?.checked) {
         processGameCommand(message);
     }

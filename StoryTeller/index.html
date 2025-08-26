@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="css/npc-enhanced.css">
     <link rel="stylesheet" href="css/notes-panel.css">
     <link rel="stylesheet" href="css/dice-panel.css">
+    <link rel="stylesheet" href="css/chat-effects.css">
     <!-- end ported css -->
 
     <style>
@@ -2526,6 +2527,7 @@
     <script src="js/modules/messageFormatter.js"></script>
     <script src="js/modules/chatManager.js"></script>
     <script src="js/modules/chatAdapter.js"></script>
+    <script src="js/modules/chatEffectsManager.js"></script>
     
     <!-- Command Processing (Non-invasive) -->
     <script src="js/command-interceptor.js"></script>
@@ -3171,6 +3173,22 @@
                                     " onmouseover="this.style.background='var(--warning)'; this.style.color='white'; this.style.borderColor='var(--warning)'" 
                                        onmouseout="this.style.background='none'; this.style.color='var(--text-secondary)'; this.style.borderColor='var(--border-color)'">
                                         <span>😊</span>
+                                    </button>
+                                    <button onclick="showEffectsPicker('${panel}')" title="Effects Picker" style="
+                                        background: none; 
+                                        border: 1px solid var(--border-color); 
+                                        color: var(--text-secondary);
+                                        padding: 2px 6px; 
+                                        border-radius: 3px; 
+                                        cursor: pointer; 
+                                        font-size: 0.7em;
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 2px;
+                                        transition: all 0.2s;
+                                    " onmouseover="this.style.background='var(--primary)'; this.style.color='white'; this.style.borderColor='var(--primary)'" 
+                                       onmouseout="this.style.background='none'; this.style.color='var(--text-secondary)'; this.style.borderColor='var(--border-color)'">
+                                        <span>🎨</span>
                                     </button>
                                     <button onclick="clearChat()" title="Clear Chat" style="
                                         background: none; 
@@ -3826,16 +3844,219 @@
             }
         }
 
+        // Effects picker functionality
+        function showEffectsPicker(panelSide) {
+            if (!window.chatEffectsManager) {
+                console.warn('Chat effects manager not loaded');
+                return;
+            }
+            
+            const inputId = `${panelSide}-chat-input`;
+            
+            // Create modal
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+            
+            // Create picker content
+            const picker = document.createElement('div');
+            picker.style.cssText = `
+                background: var(--bg-primary);
+                border-radius: 8px;
+                padding: 16px;
+                max-width: 500px;
+                max-height: 400px;
+                overflow-y: auto;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                border: 1px solid var(--border-color);
+            `;
+            
+            let pickerHTML = '<h4 style="margin: 0 0 12px 0; color: var(--text-primary);">🎨 Pick a Chat Effect</h4>';
+            
+            // Get effects from the manager
+            const effectsData = window.chatEffectsManager.effects;
+            if (effectsData && effectsData.effects) {
+                // Basic effects
+                if (effectsData.effects.basic) {
+                    pickerHTML += `<div style="margin-bottom: 12px;">`;
+                    pickerHTML += `<h5 style="margin: 0 0 6px 0; color: var(--text-secondary); font-size: 0.85em;">✨ Basic Effects</h5>`;
+                    pickerHTML += `<div style="display: flex; flex-wrap: wrap; gap: 4px;">`;
+                    
+                    Object.keys(effectsData.effects.basic).forEach(key => {
+                        const effect = effectsData.effects.basic[key];
+                        pickerHTML += `
+                            <button onclick="insertEffect('${inputId}', '${effect.command}')" 
+                                    style="
+                                        background: none;
+                                        border: 1px solid var(--border-color);
+                                        border-radius: 4px;
+                                        padding: 6px 10px;
+                                        cursor: pointer;
+                                        font-size: 0.8em;
+                                        transition: all 0.2s;
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 4px;
+                                    "
+                                    onmouseover="this.style.background='var(--bg-secondary)'"
+                                    onmouseout="this.style.background='none'"
+                                    title="${effect.description}">
+                                <span style="font-weight: bold;">${effect.name}</span>
+                                <span style="font-size: 0.7em; color: var(--text-tertiary);">${effect.command}</span>
+                            </button>
+                        `;
+                    });
+                    pickerHTML += `</div></div>`;
+                }
+                
+                // Gaming effects
+                if (effectsData.effects.gaming) {
+                    pickerHTML += `<div style="margin-bottom: 12px;">`;
+                    pickerHTML += `<h5 style="margin: 0 0 6px 0; color: var(--text-secondary); font-size: 0.85em;">🎮 Gaming Effects</h5>`;
+                    pickerHTML += `<div style="display: flex; flex-wrap: wrap; gap: 4px;">`;
+                    
+                    Object.keys(effectsData.effects.gaming).forEach(key => {
+                        const effect = effectsData.effects.gaming[key];
+                        pickerHTML += `
+                            <button onclick="insertEffect('${inputId}', '${effect.command}')" 
+                                    style="
+                                        background: none;
+                                        border: 1px solid var(--border-color);
+                                        border-radius: 4px;
+                                        padding: 6px 10px;
+                                        cursor: pointer;
+                                        font-size: 0.8em;
+                                        transition: all 0.2s;
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 4px;
+                                    "
+                                    onmouseover="this.style.background='var(--bg-secondary)'"
+                                    onmouseout="this.style.background='none'"
+                                    title="${effect.description}">
+                                <span style="font-weight: bold;">${effect.name}</span>
+                                <span style="font-size: 0.7em; color: var(--text-tertiary);">${effect.command}</span>
+                            </button>
+                        `;
+                    });
+                    pickerHTML += `</div></div>`;
+                }
+                
+                // Modifiers
+                if (effectsData.effects.modifiers) {
+                    pickerHTML += `<div style="margin-bottom: 12px;">`;
+                    pickerHTML += `<h5 style="margin: 0 0 6px 0; color: var(--text-secondary); font-size: 0.85em;">⚙️ Modifiers</h5>`;
+                    pickerHTML += `<div style="display: flex; flex-wrap: wrap; gap: 4px;">`;
+                    
+                    Object.keys(effectsData.effects.modifiers).forEach(key => {
+                        const effect = effectsData.effects.modifiers[key];
+                        pickerHTML += `
+                            <button onclick="insertEffect('${inputId}', '${effect.command}')" 
+                                    style="
+                                        background: none;
+                                        border: 1px solid var(--border-color);
+                                        border-radius: 4px;
+                                        padding: 6px 10px;
+                                        cursor: pointer;
+                                        font-size: 0.8em;
+                                        transition: all 0.2s;
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 4px;
+                                    "
+                                    onmouseover="this.style.background='var(--bg-secondary)'"
+                                    onmouseout="this.style.background='none'"
+                                    title="${effect.description}">
+                                <span style="font-weight: bold;">${effect.name}</span>
+                                <span style="font-size: 0.7em; color: var(--text-tertiary);">${effect.command}</span>
+                            </button>
+                        `;
+                    });
+                    pickerHTML += `</div></div>`;
+                }
+            }
+            
+            pickerHTML += `
+                <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-color); color: var(--text-tertiary); font-size: 0.75em;">
+                    💡 Tip: Combine effects like ":crit: :big:" for enhanced messages!
+                </div>
+                <div style="margin-top: 12px; text-align: right;">
+                    <button onclick="this.closest('.effects-modal').remove()" 
+                            style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: 4px; cursor: pointer;">
+                        Close
+                    </button>
+                </div>
+            `;
+            
+            picker.innerHTML = pickerHTML;
+            modal.className = 'effects-modal';
+            modal.appendChild(picker);
+            document.body.appendChild(modal);
+            
+            // Close on outside click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        }
+
+        function insertEffect(inputId, effectCommand) {
+            const input = document.getElementById(inputId);
+            if (input) {
+                const cursorPos = input.selectionStart;
+                const textBefore = input.value.substring(0, cursorPos);
+                const textAfter = input.value.substring(input.selectionEnd);
+                
+                input.value = textBefore + effectCommand + ' ' + textAfter;
+                input.setSelectionRange(cursorPos + effectCommand.length + 1, cursorPos + effectCommand.length + 1);
+                input.focus();
+                
+                // Close the modal
+                document.querySelector('.effects-modal')?.remove();
+            }
+        }
+
         function addChatMessage(message, type = 'storyteller', playerName = 'Storyteller') {
             const messageEl = document.createElement('div');
             messageEl.className = `chat-message ${type}`;
             
-            if (type === 'system') {
-                messageEl.innerHTML = `<strong>System:</strong> ${message}`;
-            } else if (type === 'player') {
-                messageEl.innerHTML = `<strong>${playerName}:</strong> ${message}`;
+            console.log('🔍 addChatMessage called with:', { message, type, playerName });
+            console.log('🔍 chatEffectsManager available:', !!window.chatEffectsManager);
+            
+            // Process message for chat effects
+            let processedMessage = message;
+            let hasEffects = false;
+            
+            if (window.chatEffectsManager) {
+                console.log('🔍 Processing message for effects:', message);
+                const effectResult = window.chatEffectsManager.processMessage(message);
+                console.log('🔍 Effect result:', effectResult);
+                if (effectResult.hasEffects) {
+                    processedMessage = effectResult.html;
+                    hasEffects = true;
+                    console.log('🎨 Applied chat effects to message:', effectResult.effects);
+                }
             } else {
-                messageEl.innerHTML = `<strong>${playerName}:</strong> ${message}`;
+                console.log('❌ chatEffectsManager not available');
+            }
+            
+            if (type === 'system') {
+                messageEl.innerHTML = `<strong>System:</strong> ${processedMessage}`;
+            } else if (type === 'player') {
+                messageEl.innerHTML = `<strong>${playerName}:</strong> ${processedMessage}`;
+            } else {
+                messageEl.innerHTML = `<strong>${playerName}:</strong> ${processedMessage}`;
             }
             
             // Add to all visible chat panels

@@ -7,6 +7,7 @@
     
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="css/chat-effects.css">
     
     <style>
         * {
@@ -325,6 +326,42 @@
             
             <!-- Chat Input -->
             <div class="chat-input-area">
+                <div style="display: flex; gap: 4px; margin-bottom: 8px;">
+                    <button onclick="showEmojiPicker()" title="Emoji Picker" style="
+                        background: none; 
+                        border: 1px solid #ddd; 
+                        color: #666;
+                        padding: 4px 8px; 
+                        border-radius: 4px; 
+                        cursor: pointer; 
+                        font-size: 0.8em;
+                        display: flex;
+                        align-items: center;
+                        gap: 4px;
+                        transition: all 0.2s;
+                    " onmouseover="this.style.background='#ff6b6b'; this.style.color='white'; this.style.borderColor='#ff6b6b'" 
+                       onmouseout="this.style.background='none'; this.style.color='#666'; this.style.borderColor='#ddd'">
+                        <span>😊</span>
+                        <span>Emoji</span>
+                    </button>
+                    <button onclick="showEffectsPicker()" title="Effects Picker" style="
+                        background: none; 
+                        border: 1px solid #ddd; 
+                        color: #666;
+                        padding: 4px 8px; 
+                        border-radius: 4px; 
+                        cursor: pointer; 
+                        font-size: 0.8em;
+                        display: flex;
+                        align-items: center;
+                        gap: 4px;
+                        transition: all 0.2s;
+                    " onmouseover="this.style.background='#667eea'; this.style.color='white'; this.style.borderColor='#667eea'" 
+                       onmouseout="this.style.background='none'; this.style.color='#666'; this.style.borderColor='#ddd'">
+                        <span>🎨</span>
+                        <span>Effects</span>
+                    </button>
+                </div>
                 <input type="text" class="chat-input" id="chat-input" placeholder="Type your message...">
                 <button class="send-btn" onclick="sendMessage()">Send</button>
             </div>
@@ -342,7 +379,8 @@
     <script src="js/modules/jsonDataLoader.js"></script>
     <script src="js/modules/dccUtilities.js"></script>
     <script src="js/modules/chatCommandParser.js"></script>
-    
+    <script src="js/modules/chatEffectsManager.js"></script>
+
     <script src="js/supabase-chat.js"></script>
     <script src="js/command-interceptor.js"></script>
     <script>
@@ -483,6 +521,19 @@
             const messageEl = document.createElement('div');
             messageEl.className = `chat-message ${type}`;
             
+            // Extract message text
+            const messageText = typeof message === 'object' ? message.message_text : message;
+            
+            // Process message for chat effects
+            let processedMessage = messageText;
+            if (window.chatEffectsManager) {
+                const effectResult = window.chatEffectsManager.processMessage(messageText);
+                if (effectResult.hasEffects) {
+                    processedMessage = effectResult.html;
+                    console.log('🎨 Applied chat effects to message:', effectResult.effects);
+                }
+            }
+            
             let prefix = '';
             if (type === 'system') {
                 prefix = '<strong>System:</strong> ';
@@ -492,7 +543,7 @@
                 prefix = `<strong>${sender || window.playerName}:</strong> `;
             }
             
-            messageEl.innerHTML = prefix + (typeof message === 'object' ? message.message_text : message);
+            messageEl.innerHTML = prefix + processedMessage;
             chatMessages.appendChild(messageEl);
             chatMessages.scrollTop = chatMessages.scrollHeight;
             
@@ -593,6 +644,303 @@
                 });
             }
         });
+
+        // Simple emoji picker for player-test.html
+        function showEmojiPicker() {
+            const inputId = 'chat-input';
+            
+            // Create modal
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+            
+            // Create picker content
+            const picker = document.createElement('div');
+            picker.style.cssText = `
+                background: white;
+                border-radius: 8px;
+                padding: 16px;
+                max-width: 400px;
+                max-height: 300px;
+                overflow-y: auto;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                border: 1px solid #ddd;
+            `;
+            
+            // Basic emoji set for player testing
+            const basicEmojis = [
+                { emoji: '😊', code: ':)', name: 'Happy' },
+                { emoji: '😄', code: ':D', name: 'Laughing' },
+                { emoji: '😎', code: '8)', name: 'Cool' },
+                { emoji: '😢', code: ':(', name: 'Sad' },
+                { emoji: '🎲', code: ':dice:', name: 'Dice' },
+                { emoji: '⚔️', code: ':sword:', name: 'Sword' },
+                { emoji: '🛡️', code: ':shield:', name: 'Shield' },
+                { emoji: '🏹', code: ':bow:', name: 'Bow' },
+                { emoji: '✨', code: ':sparkles:', name: 'Magic' },
+                { emoji: '💥', code: ':boom:', name: 'Explosion' },
+                { emoji: '👍', code: ':thumbsup:', name: 'Thumbs Up' },
+                { emoji: '👎', code: ':thumbsdown:', name: 'Thumbs Down' }
+            ];
+            
+            let pickerHTML = '<h4 style="margin: 0 0 12px 0; color: #333;">Pick an Emoji</h4>';
+            pickerHTML += '<div style="display: flex; flex-wrap: wrap; gap: 4px;">';
+            
+            basicEmojis.forEach(emoji => {
+                pickerHTML += `
+                    <button onclick="insertEmoji('${inputId}', '${emoji.code}')" 
+                            style="
+                                background: none;
+                                border: 1px solid #ddd;
+                                border-radius: 4px;
+                                padding: 6px 8px;
+                                cursor: pointer;
+                                font-size: 0.8em;
+                                transition: all 0.2s;
+                                display: flex;
+                                align-items: center;
+                                gap: 4px;
+                            "
+                            onmouseover="this.style.background='#f0f0f0'"
+                            onmouseout="this.style.background='none'"
+                            title="${emoji.name}">
+                        <span>${emoji.emoji}</span>
+                        <span style="font-size: 0.7em; color: #666;">${emoji.code}</span>
+                    </button>
+                `;
+            });
+            
+            pickerHTML += '</div>';
+            pickerHTML += `
+                <div style="margin-top: 12px; text-align: right;">
+                    <button onclick="this.closest('.emoji-modal').remove()" 
+                            style="background: #f0f0f0; border: 1px solid #ddd; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
+                        Close
+                    </button>
+                </div>
+            `;
+            
+            picker.innerHTML = pickerHTML;
+            modal.className = 'emoji-modal';
+            modal.appendChild(picker);
+            document.body.appendChild(modal);
+            
+            // Close on outside click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        }
+
+        // Effects picker for player-test.html
+        function showEffectsPicker() {
+            if (!window.chatEffectsManager) {
+                console.warn('Chat effects manager not loaded');
+                return;
+            }
+            
+            const inputId = 'chat-input';
+            
+            // Create modal
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+            
+            // Create picker content
+            const picker = document.createElement('div');
+            picker.style.cssText = `
+                background: white;
+                border-radius: 8px;
+                padding: 16px;
+                max-width: 500px;
+                max-height: 400px;
+                overflow-y: auto;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                border: 1px solid #ddd;
+            `;
+            
+            let pickerHTML = '<h4 style="margin: 0 0 12px 0; color: #333;">🎨 Pick a Chat Effect</h4>';
+            
+            // Get effects from the manager
+            const effectsData = window.chatEffectsManager.effects;
+            if (effectsData && effectsData.effects) {
+                // Basic effects
+                if (effectsData.effects.basic) {
+                    pickerHTML += `<div style="margin-bottom: 12px;">`;
+                    pickerHTML += `<h5 style="margin: 0 0 6px 0; color: #666; font-size: 0.85em;">✨ Basic Effects</h5>`;
+                    pickerHTML += `<div style="display: flex; flex-wrap: wrap; gap: 4px;">`;
+                    
+                    Object.keys(effectsData.effects.basic).forEach(key => {
+                        const effect = effectsData.effects.basic[key];
+                        pickerHTML += `
+                            <button onclick="insertEffect('${inputId}', '${effect.command}')" 
+                                    style="
+                                        background: none;
+                                        border: 1px solid #ddd;
+                                        border-radius: 4px;
+                                        padding: 6px 10px;
+                                        cursor: pointer;
+                                        font-size: 0.8em;
+                                        transition: all 0.2s;
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 4px;
+                                    "
+                                    onmouseover="this.style.background='#f0f0f0'"
+                                    onmouseout="this.style.background='none'"
+                                    title="${effect.description}">
+                                <span style="font-weight: bold;">${effect.name}</span>
+                                <span style="font-size: 0.7em; color: #666;">${effect.command}</span>
+                            </button>
+                        `;
+                    });
+                    pickerHTML += `</div></div>`;
+                }
+                
+                // Gaming effects
+                if (effectsData.effects.gaming) {
+                    pickerHTML += `<div style="margin-bottom: 12px;">`;
+                    pickerHTML += `<h5 style="margin: 0 0 6px 0; color: #666; font-size: 0.85em;">🎮 Gaming Effects</h5>`;
+                    pickerHTML += `<div style="display: flex; flex-wrap: wrap; gap: 4px;">`;
+                    
+                    Object.keys(effectsData.effects.gaming).forEach(key => {
+                        const effect = effectsData.effects.gaming[key];
+                        pickerHTML += `
+                            <button onclick="insertEffect('${inputId}', '${effect.command}')" 
+                                    style="
+                                        background: none;
+                                        border: 1px solid #ddd;
+                                        border-radius: 4px;
+                                        padding: 6px 10px;
+                                        cursor: pointer;
+                                        font-size: 0.8em;
+                                        transition: all 0.2s;
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 4px;
+                                    "
+                                    onmouseover="this.style.background='#f0f0f0'"
+                                    onmouseout="this.style.background='none'"
+                                    title="${effect.description}">
+                                <span style="font-weight: bold;">${effect.name}</span>
+                                <span style="font-size: 0.7em; color: #666;">${effect.command}</span>
+                            </button>
+                        `;
+                    });
+                    pickerHTML += `</div></div>`;
+                }
+                
+                // Modifiers
+                if (effectsData.effects.modifiers) {
+                    pickerHTML += `<div style="margin-bottom: 12px;">`;
+                    pickerHTML += `<h5 style="margin: 0 0 6px 0; color: #666; font-size: 0.85em;">⚙️ Modifiers</h5>`;
+                    pickerHTML += `<div style="display: flex; flex-wrap: wrap; gap: 4px;">`;
+                    
+                    Object.keys(effectsData.effects.modifiers).forEach(key => {
+                        const effect = effectsData.effects.modifiers[key];
+                        pickerHTML += `
+                            <button onclick="insertEffect('${inputId}', '${effect.command}')" 
+                                    style="
+                                        background: none;
+                                        border: 1px solid #ddd;
+                                        border-radius: 4px;
+                                        padding: 6px 10px;
+                                        cursor: pointer;
+                                        font-size: 0.8em;
+                                        transition: all 0.2s;
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 4px;
+                                    "
+                                    onmouseover="this.style.background='#f0f0f0'"
+                                    onmouseout="this.style.background='none'"
+                                    title="${effect.description}">
+                                <span style="font-weight: bold;">${effect.name}</span>
+                                <span style="font-size: 0.7em; color: #666;">${effect.command}</span>
+                            </button>
+                        `;
+                    });
+                    pickerHTML += `</div></div>`;
+                }
+            }
+            
+            pickerHTML += `
+                <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid #ddd; color: #666; font-size: 0.75em;">
+                    💡 Tip: Combine effects like ":crit: :big:" for enhanced messages!
+                </div>
+                <div style="margin-top: 12px; text-align: right;">
+                    <button onclick="this.closest('.effects-modal').remove()" 
+                            style="background: #f0f0f0; border: 1px solid #ddd; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
+                        Close
+                    </button>
+                </div>
+            `;
+            
+            picker.innerHTML = pickerHTML;
+            modal.className = 'effects-modal';
+            modal.appendChild(picker);
+            document.body.appendChild(modal);
+            
+            // Close on outside click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        }
+
+        function insertEmoji(inputId, emojiCode) {
+            const input = document.getElementById(inputId);
+            if (input) {
+                const cursorPos = input.selectionStart;
+                const textBefore = input.value.substring(0, cursorPos);
+                const textAfter = input.value.substring(input.selectionEnd);
+                
+                input.value = textBefore + emojiCode + textAfter;
+                input.setSelectionRange(cursorPos + emojiCode.length, cursorPos + emojiCode.length);
+                input.focus();
+                
+                // Close the modal
+                document.querySelector('.emoji-modal')?.remove();
+            }
+        }
+
+        function insertEffect(inputId, effectCommand) {
+            const input = document.getElementById(inputId);
+            if (input) {
+                const cursorPos = input.selectionStart;
+                const textBefore = input.value.substring(0, cursorPos);
+                const textAfter = input.value.substring(input.selectionEnd);
+                
+                input.value = textBefore + effectCommand + ' ' + textAfter;
+                input.setSelectionRange(cursorPos + effectCommand.length + 1, cursorPos + effectCommand.length + 1);
+                input.focus();
+                
+                // Close the modal
+                document.querySelector('.effects-modal')?.remove();
+            }
+        }
     </script>
 </body>
 </html>
