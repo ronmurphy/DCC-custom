@@ -2500,6 +2500,9 @@
     
     <script src="js/modules/dccChatIntegration.js"></script>
     
+    <!-- URL Encoder for Supabase connections -->
+    <script src="js/supabaseUrlEncoder.js"></script>
+    
     <!-- Chat System Modules -->
     <script src="js/modules/supabaseClient.js"></script>
     <script src="js/modules/chatParser.js"></script>
@@ -4011,15 +4014,16 @@ ALTER TABLE game_sessions ENABLE ROW LEVEL SECURITY;
                         ...result.sessionInfo
                     };
                     
-                    // Auto-copy player URL
-                    const playerUrl = generatePlayerUrl(sessionCode);
-                    await navigator.clipboard.writeText(playerUrl);
+                    // Auto-copy shortened URL and show both in chat
+                    const playerUrls = generatePlayerUrl(sessionCode);
+                    await navigator.clipboard.writeText(playerUrls.short);
                     
                     // Show success messages
                     addChatMessage(`🚀 Session ${sessionCode} created and active`, 'system');
                     addChatMessage(`🎯 You are the Storyteller for this session`, 'system');
-                    addChatMessage(`� Real-time chat active - players can now join`, 'system');
-                    addChatMessage(`📋 Player URL copied to clipboard`, 'system');
+                    addChatMessage(`💫 Real-time chat active - players can now join`, 'system');
+                    addChatMessage(`📋 Shortened URL copied to clipboard: ${playerUrls.short}`, 'system');
+                    addChatMessage(`🔗 Full URL (backup): ${playerUrls.full}`, 'system');
                     
                     // Store session code for future use
                     localStorage.setItem('last-session-code', sessionCode);
@@ -4055,9 +4059,26 @@ ALTER TABLE game_sessions ENABLE ROW LEVEL SECURITY;
             if (config && config.url) {
                 // Use the Supabase URL as the base, not local server
                 const supabaseUrl = config.url;
-                return `${supabaseUrl}?session=${sessionCode}`;
+                const fullUrl = `${supabaseUrl}?session=${sessionCode}`;
+                
+                // Create shortened version using encoder
+                const shortUrl = window.supabaseUrlEncoder ? 
+                    window.supabaseUrlEncoder.encodeUrl(fullUrl) : fullUrl;
+                
+                // Return both URLs for different purposes
+                return {
+                    full: fullUrl,
+                    short: shortUrl,
+                    // Default to short for copying
+                    toString: () => shortUrl
+                };
             }
-            return `${window.location.origin}${window.location.pathname}?session=${sessionCode}`;
+            const fallback = `${window.location.origin}${window.location.pathname}?session=${sessionCode}`;
+            return {
+                full: fallback,
+                short: fallback,
+                toString: () => fallback
+            };
         }
         
         // Generate random session code
