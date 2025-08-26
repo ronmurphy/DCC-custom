@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>URL Display Test</title>
+</head>
+<body>
+    <h2>URL Encoder Test</h2>
+    <div id="test-results"></div>
+    
+    <script src="js/supabaseUrlEncoder.js"></script>
+    <script>
+        // Test the URL encoding and display
+        function testUrlDisplay() {
+            const testUrl = 'https://abcdefghijklmnop.supabase.co/auth/v1/authorize?session=ABC123';
+            const encoder = window.supabaseUrlEncoder;
+            
+            if (encoder) {
+                const shortUrl = encoder.encodeUrl(testUrl);
+                const isShortened = encoder.isShortened(shortUrl);
+                
+                document.getElementById('test-results').innerHTML = `
+                    <p><strong>Original URL:</strong> ${testUrl}</p>
+                    <p><strong>Shortened URL:</strong> ${shortUrl}</p>
+                    <p><strong>Is Shortened:</strong> ${isShortened}</p>
+                    <p><strong>Length Saved:</strong> ${testUrl.length - shortUrl.length} characters</p>
+                    <p><strong>Test Result:</strong> ${isShortened ? '✅ PASS' : '❌ FAIL'}</p>
+                `;
+            } else {
+                document.getElementById('test-results').innerHTML = '<p>❌ URL Encoder not loaded</p>';
+            }
+        }
+        
+        // Run test when page loads
+        window.addEventListener('load', testUrlDisplay);
+    </script>
+</body>
+</html>

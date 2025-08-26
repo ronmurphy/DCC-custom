@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat Panel Test</title>
+    <style>
+        .test-panel {
+            border: 2px solid #333;
+            margin: 10px;
+            padding: 10px;
+            width: 45%;
+            display: inline-block;
+            vertical-align: top;
+        }
+        .chat-messages {
+            height: 200px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            overflow-y: auto;
+            background: #f9f9f9;
+        }
+        .chat-message {
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        .chat-message.system {
+            background: #e3f2fd;
+        }
+        button {
+            margin: 5px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Dual Chat Panel Test</h2>
+    
+    <div class="test-panel">
+        <h3>Left Panel (Dynamic)</h3>
+        <div class="chat-messages" id="left-chat-messages">
+            <div class="chat-message system">
+                <strong>System:</strong> Left chat ready
+            </div>
+        </div>
+    </div>
+    
+    <div class="test-panel">
+        <h3>Right Panel (Static)</h3>
+        <div class="chat-messages" id="right-chat-messages">
+            <div class="chat-message system">
+                <strong>System:</strong> Right chat ready
+            </div>
+        </div>
+    </div>
+    
+    <div>
+        <button onclick="testAddMessage()">Add Test Message</button>
+        <button onclick="testSystemMessage()">Add System Message</button>
+        <button onclick="testClearChat()">Clear Chat</button>
+        <button onclick="toggleLeftPanel()">Toggle Left Panel</button>
+        <button onclick="toggleRightPanel()">Toggle Right Panel</button>
+    </div>
+
+    <script>
+        // Copy the chat functions from index.html for testing
+        function getActiveChatMessages() {
+            const leftChat = document.getElementById('left-chat-messages');
+            if (leftChat && leftChat.offsetParent !== null) {
+                return leftChat;
+            }
+            
+            const rightChat = document.getElementById('right-chat-messages');
+            if (rightChat && rightChat.offsetParent !== null) {
+                return rightChat;
+            }
+            
+            return document.getElementById('chat-messages');
+        }
+
+        function addMessageToAllChats(messageEl) {
+            const panels = ['left-chat-messages', 'right-chat-messages'];
+            let addedToAny = false;
+            
+            panels.forEach(panelId => {
+                const chatMessages = document.getElementById(panelId);
+                if (chatMessages && chatMessages.offsetParent !== null) {
+                    const clonedMessage = messageEl.cloneNode(true);
+                    chatMessages.appendChild(clonedMessage);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                    addedToAny = true;
+                }
+            });
+            
+            if (!addedToAny) {
+                const fallbackChat = document.getElementById('chat-messages');
+                if (fallbackChat) {
+                    fallbackChat.appendChild(messageEl);
+                    fallbackChat.scrollTop = fallbackChat.scrollHeight;
+                }
+            }
+        }
+
+        function addChatMessage(message, type = 'storyteller', playerName = 'Storyteller') {
+            const messageEl = document.createElement('div');
+            messageEl.className = `chat-message ${type}`;
+            
+            if (type === 'system') {
+                messageEl.innerHTML = `<strong>System:</strong> ${message}`;
+            } else if (type === 'player') {
+                messageEl.innerHTML = `<strong>${playerName}:</strong> ${message}`;
+            } else {
+                messageEl.innerHTML = `<strong>${playerName}:</strong> ${message}`;
+            }
+            
+            addMessageToAllChats(messageEl);
+        }
+
+        // Test functions
+        function testAddMessage() {
+            addChatMessage('This is a test message from the storyteller!', 'storyteller');
+        }
+
+        function testSystemMessage() {
+            addChatMessage('📋 Shortened URL copied to clipboard: abc.sc/test?s=123', 'system');
+        }
+
+        function testClearChat() {
+            const panels = ['left-chat-messages', 'right-chat-messages'];
+            panels.forEach(panelId => {
+                const chatMessages = document.getElementById(panelId);
+                if (chatMessages && chatMessages.offsetParent !== null) {
+                    chatMessages.innerHTML = '';
+                }
+            });
+            addChatMessage('Chat cleared.', 'system');
+        }
+
+        function toggleLeftPanel() {
+            const panel = document.getElementById('left-chat-messages').parentElement;
+            panel.style.display = panel.style.display === 'none' ? 'inline-block' : 'none';
+        }
+
+        function toggleRightPanel() {
+            const panel = document.getElementById('right-chat-messages').parentElement;
+            panel.style.display = panel.style.display === 'none' ? 'inline-block' : 'none';
+        }
+    </script>
+</body>
+</html>

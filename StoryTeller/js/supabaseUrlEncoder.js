@@ -5,20 +5,28 @@
 // ⚠️⚠️⚠️ DO NOT CHANGE WITHOUT BACKING UP FIRST ⚠️⚠️⚠️
 
 /**
- * Supabase URL Encoder/Decoder
- * Converts full Supabase URLs to shortened, non-clickable formats
- * and back again for actual connection use.
+ * Supabase URL Encoder/Decoder - Enhanced Version
+ * Converts full Supabase URLs to much shorter, non-clickable formats
+ * Optimized to create the shortest possible URLs while maintaining functionality
  */
 class SupabaseUrlEncoder {
     constructor() {
         this.supabaseDomain = '.supabase.co';
         this.shortDomain = '.s_co';
+        // Enhanced optimization - simple string replacements (no regex needed)
+        this.replacements = [
+            ['https://', ''],      // Remove https entirely
+            ['http://', ''],       // Remove http entirely  
+            ['.supabase.co', '.sc'], // Shorten domain
+            ['?session=', '?s='],  // Shorten session parameter
+            ['&session=', '&s=']   // Shorten session parameter in URLs with other params
+        ];
     }
 
     /**
-     * Encode a full Supabase URL to a shortened format
+     * Encode a full Supabase URL to a highly optimized shortened format
      * @param {string} fullUrl - Full Supabase URL like https://skddvbmxzeprvxfslhlk.supabase.co?session=ABC123
-     * @returns {string} - Shortened URL like skddvbmxzeprvxfslhlk.s_co?session=ABC123
+     * @returns {string} - Optimized URL like skddvbmxzeprvxfslhlk.sc?s=ABC123
      */
     encodeUrl(fullUrl) {
         try {
@@ -27,13 +35,14 @@ class SupabaseUrlEncoder {
                 return fullUrl;
             }
 
-            // Remove https:// if present
-            let shortened = fullUrl.replace(/^https?:\/\//, '');
+            let shortened = fullUrl;
             
-            // Replace .supabase.co with .s_co
-            shortened = shortened.replace(this.supabaseDomain, this.shortDomain);
+            // Apply all optimizations using simple string replacement
+            for (const [searchStr, replaceStr] of this.replacements) {
+                shortened = shortened.replace(new RegExp(this.escapeRegex(searchStr), 'g'), replaceStr);
+            }
             
-            console.log('URL Encoded:', fullUrl, '→', shortened);
+            console.log('URL Encoded (Optimized):', fullUrl, '→', shortened);
             return shortened;
         } catch (error) {
             console.error('SupabaseUrlEncoder: Error encoding URL:', error);
@@ -42,8 +51,17 @@ class SupabaseUrlEncoder {
     }
 
     /**
-     * Decode a shortened URL back to full Supabase URL
-     * @param {string} shortUrl - Shortened URL like skddvbmxzeprvxfslhlk.s_co?session=ABC123
+     * Escape regex special characters in a string
+     * @param {string} string - String to escape
+     * @returns {string} - Escaped string safe for regex
+     */
+    escapeRegex(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    /**
+     * Decode an optimized shortened URL back to full Supabase URL
+     * @param {string} shortUrl - Shortened URL like skddvbmxzeprvxfslhlk.sc?s=ABC123
      * @returns {string} - Full URL like https://skddvbmxzeprvxfslhlk.supabase.co?session=ABC123
      */
     decodeUrl(shortUrl) {
@@ -55,21 +73,17 @@ class SupabaseUrlEncoder {
 
             let fullUrl = shortUrl;
 
-            // If it contains .s_co, decode it
-            if (fullUrl.includes(this.shortDomain)) {
-                // Replace .s_co with .supabase.co
-                fullUrl = fullUrl.replace(this.shortDomain, this.supabaseDomain);
-                
-                // Add https:// if not present
-                if (!fullUrl.startsWith('http')) {
-                    fullUrl = 'https://' + fullUrl;
-                }
-                
-                console.log('URL Decoded:', shortUrl, '→', fullUrl);
-            } else {
-                console.log('URL appears to be full format already:', shortUrl);
+            // Reverse the optimizations in reverse order
+            fullUrl = fullUrl.replace(/&s=/g, '&session=');     // &s= back to &session=
+            fullUrl = fullUrl.replace(/\?s=/g, '?session=');    // ?s= back to ?session=
+            fullUrl = fullUrl.replace(/\.sc(\/|\?|$)/g, '.supabase.co$1'); // .sc back to .supabase.co
+            
+            // Add https:// if not present
+            if (!fullUrl.startsWith('http')) {
+                fullUrl = 'https://' + fullUrl;
             }
-
+            
+            console.log('URL Decoded (Optimized):', shortUrl, '→', fullUrl);
             return fullUrl;
         } catch (error) {
             console.error('SupabaseUrlEncoder: Error decoding URL:', error);
@@ -78,12 +92,18 @@ class SupabaseUrlEncoder {
     }
 
     /**
-     * Check if a URL is in shortened format
+     * Check if a URL is in shortened format (enhanced detection for all formats)
      * @param {string} url - URL to check
      * @returns {boolean} - True if URL is shortened
      */
     isShortened(url) {
-        return url && url.includes(this.shortDomain);
+        return url && (
+            url.includes('.sc?') ||      // New optimized format
+            url.includes('.sc') ||       // New optimized format  
+            url.includes('?s=') ||       // New session parameter
+            url.includes('.s_co') ||     // Old format (backwards compatibility)
+            (url.includes('.') && !url.includes('http') && !url.includes('.supabase.co'))
+        );
     }
 
     /**
@@ -92,7 +112,7 @@ class SupabaseUrlEncoder {
      * @returns {boolean} - True if URL is full format
      */
     isFull(url) {
-        return url && url.includes(this.supabaseDomain);
+        return url && (url.includes('.supabase.co') || url.startsWith('http'));
     }
 
     /**

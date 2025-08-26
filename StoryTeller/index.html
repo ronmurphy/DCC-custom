@@ -2449,24 +2449,28 @@
                     </div>
                 </div>
                 <div class="panel-content" id="right-panel-content">
-                    <!-- Chat Interface -->
+                    <!-- ⚠️ DEPRECATED: Static chat content removed in favor of dynamic loading ⚠️ -->
+                    <!-- This static chat implementation caused duplicate ID conflicts and inconsistent behavior -->
+                    <!-- The dynamic chat template (loaded via loadPanel) provides better functionality and consistency -->
+                    
+                    <!-- REMOVED STATIC CONTENT:
                     <div class="chat-interface">
-                        <!-- Error message container for Supabase -->
                         <div id="chat-error-message" class="chat-error" style="display: none;"></div>
-                        
-                        <div class="chat-messages" id="chat-messages">
+                        <div class="chat-messages" id="right-chat-messages">
                             <div class="chat-message system">
                                 <strong>System:</strong> Chat system ready. Start a session to begin messaging.
                             </div>
                         </div>
-                        
                         <div class="chat-input-area">
                             <input type="text" class="chat-input" placeholder="Type your message or command..." id="chat-input">
-                            <!-- Hidden input for supabase compatibility -->
                             <input type="hidden" id="chat-message-input">
                             <button class="send-btn" onclick="sendMessage()">Send</button>
                         </div>
                     </div>
+                    -->
+                    
+                    <!-- Dynamic content will be loaded here via loadPanel() -->
+                    <!-- This ensures consistent behavior between left and right panels -->
                 </div>
             </div>
         </div>
@@ -2706,11 +2710,11 @@
             if (panel === 'left') {
                 leftPanelContent = content;
                 document.getElementById('left-panel-title').textContent = getPanelTitle(content);
-                document.getElementById('left-panel-content').innerHTML = getPanelContent(content);
+                document.getElementById('left-panel-content').innerHTML = getPanelContent(content, panel);
             } else {
                 rightPanelContent = content;
                 document.getElementById('right-panel-title').textContent = getPanelTitle(content);
-                document.getElementById('right-panel-content').innerHTML = getPanelContent(content);
+                document.getElementById('right-panel-content').innerHTML = getPanelContent(content, panel);
             }
             
             // Close dropdowns
@@ -2721,6 +2725,9 @@
             // Load chat history if chat panel is loaded
             if (content === 'chat') {
                 setTimeout(() => {
+                    // Set up chat functionality for this panel
+                    setupChatPanel(panel);
+                    
                     if (window.loadRecentChatHistory) {
                         window.loadRecentChatHistory();
                     } else {
@@ -2768,7 +2775,7 @@
             return titles[content] || content;
         }
 
-        function getPanelContent(content) {
+        function getPanelContent(content, panel = 'left') {
             switch (content) {
                 case 'commands':
                     return `
@@ -3103,22 +3110,37 @@
                     `;
                 
                 case 'chat':
+                    // Generate unique IDs based on panel location
+                    const chatId = `${panel}-chat-messages`;
+                    const inputId = `${panel}-chat-input`;
+                    const hiddenInputId = `${panel}-chat-message-input`;
+                    
                     return `
                         <div class="chat-interface">
                             <!-- Error message container for Supabase -->
                             <div id="chat-error-message" class="chat-error" style="display: none;"></div>
                             
-                            <div class="chat-messages" id="chat-messages">
+                            <!-- Chat control buttons for easy access -->
+                            <div class="chat-controls" style="margin-bottom: 10px; display: flex; gap: 8px; justify-content: flex-end;">
+                                <button class="panel-btn" onclick="clearChat()" title="Clear Chat" style="background: var(--danger-gradient); color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 0.85em;">
+                                    <i class="material-icons" style="font-size: 16px;">clear</i> Clear
+                                </button>
+                                <button class="panel-btn" onclick="exportChat()" title="Export Chat" style="background: var(--action-gradient); color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 0.85em;">
+                                    <i class="material-icons" style="font-size: 16px;">download</i> Export
+                                </button>
+                            </div>
+                            
+                            <div class="chat-messages" id="${chatId}">
                                 <div class="chat-message system">
                                     <strong>System:</strong> Chat system ready. Start a session to begin messaging.
                                 </div>
                             </div>
                             
                             <div class="chat-input-area">
-                                <input type="text" class="chat-input" placeholder="Type your message or command..." id="chat-input">
+                                <input type="text" class="chat-input" placeholder="Type your message or command..." id="${inputId}">
                                 <!-- Hidden input for supabase compatibility -->
-                                <input type="hidden" id="chat-message-input">
-                                <button class="send-btn" onclick="sendMessage()">Send</button>
+                                <input type="hidden" id="${hiddenInputId}">
+                                <button class="send-btn" onclick="sendMessageFromPanel('${panel}')" id="${panel}-send-btn">Send</button>
                             </div>
                         </div>
                     `;
@@ -3457,8 +3479,155 @@
             }
         }
 
+        // Helper function to get the active chat messages container
+        function getActiveChatMessages() {
+            // Try left panel first (dynamic)
+            const leftChat = document.getElementById('left-chat-messages');
+            if (leftChat && leftChat.offsetParent !== null) {
+                return leftChat;
+            }
+            
+            // Fallback to right panel (static)
+            const rightChat = document.getElementById('right-chat-messages');
+            if (rightChat && rightChat.offsetParent !== null) {
+                return rightChat;
+            }
+            
+            // If no panel-specific chat found, return null
+            return null;
+        }
+
+        // Helper function to get the active chat input
+        function getActiveChatInput() {
+            // Check if user recently focused on an input
+            const leftInput = document.getElementById('left-chat-input');
+            const rightInput = document.getElementById('right-chat-input');
+            
+            // If one input is focused, return it
+            if (leftInput && leftInput === document.activeElement) {
+                return leftInput;
+            }
+            if (rightInput && rightInput === document.activeElement) {
+                return rightInput;
+            }
+            
+            // Try left panel first (if visible)
+            if (leftInput && leftInput.offsetParent !== null) {
+                return leftInput;
+            }
+            
+            // Try right panel (if visible)
+            if (rightInput && rightInput.offsetParent !== null) {
+                return rightInput;
+            }
+            
+            // If no panel-specific inputs found, return null
+            return null;
+        }
+
+        // Helper function to add message to all visible chat panels
+        function addMessageToAllChats(messageEl) {
+            const panels = ['left-chat-messages', 'right-chat-messages'];
+            let addedToAny = false;
+            
+            panels.forEach(panelId => {
+                const chatMessages = document.getElementById(panelId);
+                if (chatMessages) {
+                    const clonedMessage = messageEl.cloneNode(true);
+                    chatMessages.appendChild(clonedMessage);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                    addedToAny = true;
+                }
+            });
+            
+            // No fallback needed since dynamic panels handle all cases
+            if (!addedToAny) {
+                console.warn('No chat panels found to display message element');
+            }
+        }
+
+        // Setup chat functionality for a specific panel
+        function setupChatPanel(panelSide) {
+            const inputId = `${panelSide}-chat-input`;
+            const sendBtnId = `${panelSide}-send-btn`;
+            
+            // Get the input element
+            const input = document.getElementById(inputId);
+            if (!input) {
+                console.warn(`Chat input not found for panel: ${panelSide}`);
+                return;
+            }
+            
+            // Remove any existing event listeners by cloning the element
+            const newInput = input.cloneNode(true);
+            input.parentNode.replaceChild(newInput, input);
+            
+            // Add Enter key listener
+            newInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessageFromPanel(panelSide);
+                }
+            });
+            
+            // Also add support for touch devices
+            newInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey && e.target.value.trim()) {
+                    e.preventDefault();
+                    sendMessageFromPanel(panelSide);
+                }
+            });
+            
+            console.log(`✅ Chat panel setup complete for: ${panelSide}`);
+        }
+
+        // Send message from a specific panel
+        async function sendMessageFromPanel(panelSide) {
+            const inputId = `${panelSide}-chat-input`;
+            const input = document.getElementById(inputId);
+            
+            if (!input) {
+                console.warn(`Chat input not found for panel: ${panelSide}`);
+                return;
+            }
+            
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Check if we have an active session
+            if (!window.currentGameSession) {
+                addChatMessage('❌ No active session. Please start a session first.', 'system');
+                return;
+            }
+            
+            try {
+                // Send via Supabase real-time system ONLY - don't add locally
+                if (window.sendChatMessageAsync && typeof window.sendChatMessageAsync === 'function') {
+                    await window.sendChatMessageAsync(message);
+                    console.log(`✅ Message sent from ${panelSide} via Supabase real-time - waiting for echo`);
+                    
+                    // Clear input only after successful send
+                    input.value = '';
+                    
+                } else if (window.sendChatMessage && typeof window.sendChatMessage === 'function') {
+                    // Fallback to sync method
+                    window.sendChatMessage(message);
+                    input.value = '';
+                    console.log(`✅ Message sent from ${panelSide} via Supabase sync - waiting for echo`);
+                } else {
+                    // Local fallback
+                    addChatMessage(message, 'storyteller');
+                    input.value = '';
+                    console.log(`📝 Message added locally from ${panelSide} (no Supabase)`);
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+                addChatMessage(`❌ Error sending message: ${error.message}`, 'system');
+            }
+        }
+
         function addChatMessage(message, type = 'storyteller', playerName = 'Storyteller') {
-            const chatMessages = document.getElementById('chat-messages');
             const messageEl = document.createElement('div');
             messageEl.className = `chat-message ${type}`;
             
@@ -3470,8 +3639,8 @@
                 messageEl.innerHTML = `<strong>${playerName}:</strong> ${message}`;
             }
             
-            chatMessages.appendChild(messageEl);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+            // Add to all visible chat panels
+            addMessageToAllChats(messageEl);
             
             // Debounced reset for rapid message additions
             clearTimeout(window.chatResetTimeout);
@@ -3482,7 +3651,7 @@
 
         // Reset chat container dimensions after dynamic content changes
         function resetChatContainer() {
-            const chatMessages = document.getElementById('chat-messages');
+            const chatMessages = getActiveChatMessages();
             if (chatMessages) {
                 // Force recalculation of container dimensions
                 chatMessages.style.height = '';
@@ -3503,7 +3672,12 @@
 
         // Enhanced sendMessage function using real-time chat
         async function sendMessage() {
-            const input = document.getElementById('chat-input');
+            const input = getActiveChatInput();
+            if (!input) {
+                console.warn('No active chat input found');
+                return;
+            }
+            
             const message = input.value.trim();
             
             if (!message) return;
@@ -3595,8 +3769,68 @@
         }
 
         function clearChat() {
-            document.getElementById('chat-messages').innerHTML = '';
+            const panels = ['left-chat-messages', 'right-chat-messages'];
+            let clearedAny = false;
+            
+            panels.forEach(panelId => {
+                const chatMessages = document.getElementById(panelId);
+                if (chatMessages) {
+                    chatMessages.innerHTML = '';
+                    clearedAny = true;
+                }
+            });
+            
+            // No fallback needed since dynamic panels handle all cases
+            if (!clearedAny) {
+                console.warn('No chat panels found to clear');
+            }
+            
             addChatMessage('Chat cleared.', 'system');
+        }
+
+        function exportChat() {
+            const panels = ['left-chat-messages', 'right-chat-messages'];
+            let chatContent = '';
+            let foundAny = false;
+            
+            // Find the first available chat panel
+            for (const panelId of panels) {
+                const chatMessages = document.getElementById(panelId);
+                if (chatMessages) {
+                    const messages = chatMessages.querySelectorAll('.chat-message');
+                    messages.forEach(msg => {
+                        chatContent += msg.textContent.trim() + '\n';
+                    });
+                    foundAny = true;
+                    break; // Only export from one panel to avoid duplicates
+                }
+            }
+            
+            if (!foundAny) {
+                addChatMessage('❌ No chat content to export', 'system');
+                return;
+            }
+            
+            if (!chatContent.trim()) {
+                addChatMessage('❌ Chat is empty - nothing to export', 'system');
+                return;
+            }
+            
+            // Create and download the file
+            const sessionCode = window.currentGameSession?.session_code || 'unknown';
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+            const filename = `dcc-chat-${sessionCode}-${timestamp}.txt`;
+            
+            const blob = new Blob([chatContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            link.click();
+            
+            URL.revokeObjectURL(url);
+            addChatMessage(`📄 Chat exported as: ${filename}`, 'system');
         }
 
         function saveSession() {
@@ -3612,7 +3846,11 @@
                 // Generate Supabase URL + session for players to copy/paste
                 const config = loadSupabaseConfig();
                 if (config && config.url) {
-                    playerURL = `${config.url}?session=${window.currentGameSession.session_code}`;
+                    const fullUrl = `${config.url}?session=${window.currentGameSession.session_code}`;
+                    // Use shortened URL for display and copying
+                    const shortUrl = window.supabaseUrlEncoder ? 
+                        window.supabaseUrlEncoder.encodeUrl(fullUrl) : fullUrl;
+                    playerURL = shortUrl;
                 } else {
                     playerURL = 'Supabase not configured - please set up Supabase settings first';
                 }
@@ -3943,7 +4181,8 @@ ALTER TABLE game_sessions ENABLE ROW LEVEL SECURITY;
             urlInput.setSelectionRange(0, 99999); // For mobile devices
             navigator.clipboard.writeText(urlInput.value);
             
-            addChatMessage('🔗 Player URL copied to clipboard!', 'system');
+            // Show the actual shortened URL that was copied
+            addChatMessage(`� Shortened URL copied to clipboard: ${urlInput.value}`, 'system');
         }
 
         // Debug mode toggle
@@ -4467,7 +4706,7 @@ Notes: ${npc.notes || 'None'}`;
         }
 
         function sendChatMessage() {
-            const input = document.getElementById('chat-input');
+            const input = getActiveChatInput();
             if (input && input.value.trim()) {
                 addChatMessage(input.value, 'storyteller');
                 input.value = '';
@@ -4596,7 +4835,10 @@ Notes: ${npc.notes || 'None'}`;
                     const savedConfig = loadSupabaseConfig();
                     let playerURL = 'Supabase not configured';
                     if (savedConfig && savedConfig.url) {
-                        playerURL = `${savedConfig.url}?session=${sessionCode}`;
+                        const fullUrl = `${savedConfig.url}?session=${sessionCode}`;
+                        // Use shortened URL for display and copying
+                        playerURL = window.supabaseUrlEncoder ? 
+                            window.supabaseUrlEncoder.encodeUrl(fullUrl) : fullUrl;
                     }
                     const playerUrlInput = document.getElementById('player-url');
                     if (playerUrlInput) {
@@ -4620,7 +4862,7 @@ Notes: ${npc.notes || 'None'}`;
                         }
                         
                         // Enable chat input
-                        const chatInput = document.getElementById('chat-input');
+                        const chatInput = getActiveChatInput();
                         if (chatInput) {
                             chatInput.disabled = false;
                             chatInput.placeholder = 'Type your message...';
@@ -4726,13 +4968,6 @@ Notes: ${npc.notes || 'None'}`;
             console.log(`🔄 Connection Status: ${message}`);
         }
 
-        // Event Listeners
-        document.getElementById('chat-input').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
-
         // Close dropdowns when clicking outside
         document.addEventListener('click', function(e) {
             if (!e.target.closest('.panel-dropdown')) {
@@ -4745,19 +4980,6 @@ Notes: ${npc.notes || 'None'}`;
         // Window resize handler
         window.addEventListener('resize', function() {
             detectDevice();
-        });
-
-        // Chat functionality: Enter key support
-        document.addEventListener('DOMContentLoaded', function() {
-            const chatInput = document.getElementById('chat-input');
-            if (chatInput) {
-                chatInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        sendMessage();
-                    }
-                });
-            }
         });
 
         // Load recent chat messages (last minute) when panel loads
@@ -4780,7 +5002,7 @@ Notes: ${npc.notes || 'None'}`;
                 if (error) throw error;
                 
                 // Clear existing messages and display recent ones
-                const chatMessages = document.getElementById('chat-messages');
+                const chatMessages = getActiveChatMessages();
                 if (chatMessages && messages.length > 0) {
                     chatMessages.innerHTML = '';
                     messages.forEach(message => {
