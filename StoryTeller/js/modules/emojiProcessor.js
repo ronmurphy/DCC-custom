@@ -69,13 +69,14 @@ class EmojiProcessor {
         // Replace each emoticon with its emoji
         for (const emoticon of sortedKeys) {
             const emoji = this.allMappings[emoticon];
-            // Use word boundaries for short codes, exact match for symbols
+            
             if (emoticon.startsWith(':') && emoticon.endsWith(':')) {
-                // Short codes - use word boundaries
-                const regex = new RegExp(`\\b${this.escapeRegex(emoticon)}\\b`, 'gi');
-                processedMessage = processedMessage.replace(regex, emoji);
+                // Short codes like :doom: :wizard: - simple global replace
+                if (processedMessage.includes(emoticon)) {
+                    processedMessage = processedMessage.replaceAll(emoticon, emoji);
+                }
             } else {
-                // Symbol emoticons - exact match
+                // Symbol emoticons like :) :P - exact match with escaping
                 const regex = new RegExp(this.escapeRegex(emoticon), 'g');
                 processedMessage = processedMessage.replace(regex, emoji);
             }
@@ -91,6 +92,25 @@ class EmojiProcessor {
      */
     escapeRegex(string) {
         return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+    
+    /**
+     * Test function to verify emoji processing
+     */
+    test() {
+        console.log('🧪 Testing emoji processor...');
+        const testCases = [
+            'Hello :)',
+            'I cast :magic: spell',
+            'The :wizard: casts :doom:',
+            'Rolling :roll: for damage',
+            'Critical hit :crit: !'
+        ];
+        
+        testCases.forEach(test => {
+            const result = this.processMessage(test);
+            console.log(`Test: "${test}" → "${result}"`);
+        });
     }
     
     /**

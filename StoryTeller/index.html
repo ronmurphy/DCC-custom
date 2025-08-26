@@ -2488,6 +2488,17 @@
     <script src="js/modules/equipmentBonusSystem.js"></script>
     <script src="js/modules/chatCommandParser.js"></script>
     <script src="js/modules/emojiProcessor.js"></script>
+    <script>
+        // Test emoji processor after loading
+        setTimeout(() => {
+            if (window.emojiProcessor) {
+                console.log('✅ Emoji processor loaded successfully');
+                window.emojiProcessor.test();
+            } else {
+                console.error('❌ Emoji processor failed to load');
+            }
+        }, 100);
+    </script>
     <script src="js/modules/dccUtilities.js"></script>
     
     <!-- ported StoryTeller.mobile.old js goes here -->
@@ -3659,8 +3670,13 @@
             
             // Process emojis before sending
             if (window.emojiProcessor) {
+                const originalMessage = message;
                 message = window.emojiProcessor.processMessage(message);
-                console.log(`🎭 Emoji processing: "${input.value.trim()}" → "${message}"`);
+                if (originalMessage !== message) {
+                    console.log(`🎭 Emoji converted: "${originalMessage}" → "${message}"`);
+                }
+            } else {
+                console.warn('🎭 Emoji processor not available');
             }
             
             // Check if we have an active session
