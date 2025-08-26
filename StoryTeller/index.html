@@ -2487,6 +2487,7 @@
     <script src="js/modules/skillsManager.js"></script>
     <script src="js/modules/equipmentBonusSystem.js"></script>
     <script src="js/modules/chatCommandParser.js"></script>
+    <script src="js/modules/emojiProcessor.js"></script>
     <script src="js/modules/dccUtilities.js"></script>
     
     <!-- ported StoryTeller.mobile.old js goes here -->
@@ -3120,19 +3121,80 @@
                             <!-- Error message container for Supabase -->
                             <div id="chat-error-message" class="chat-error" style="display: none;"></div>
                             
-                            <!-- Chat control buttons for easy access -->
-                            <div class="chat-controls" style="margin-bottom: 10px; display: flex; gap: 8px; justify-content: flex-end;">
-                                <button class="panel-btn" onclick="clearChat()" title="Clear Chat" style="background: var(--danger-gradient); color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 0.85em;">
-                                    <i class="material-icons" style="font-size: 16px;">clear</i> Clear
-                                </button>
-                                <button class="panel-btn" onclick="exportChat()" title="Export Chat" style="background: var(--action-gradient); color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 0.85em;">
-                                    <i class="material-icons" style="font-size: 16px;">download</i> Export
-                                </button>
-                            </div>
-                            
                             <div class="chat-messages" id="${chatId}">
                                 <div class="chat-message system">
                                     <strong>System:</strong> Chat system ready. Start a session to begin messaging.
+                                </div>
+                            </div>
+                            
+                            <!-- Compact chat toolbar between messages and input -->
+                            <div class="chat-toolbar" style="
+                                display: flex; 
+                                align-items: center; 
+                                justify-content: space-between; 
+                                padding: 4px 8px; 
+                                background: var(--bg-secondary); 
+                                border-top: 1px solid var(--border-color);
+                                border-bottom: 1px solid var(--border-color);
+                                margin: 0;
+                                min-height: 28px;
+                                font-size: 0.75em;
+                            ">
+                                <div class="chat-info" style="color: var(--text-tertiary); font-size: 0.8em;">
+                                    <i class="material-icons" style="font-size: 12px; vertical-align: middle;">chat</i>
+                                    <span style="margin-left: 4px;">Chat</span>
+                                </div>
+                                <div class="chat-actions" style="display: flex; gap: 4px;">
+                                    <button onclick="showEmojiPicker('${panel}')" title="Emoji Picker" style="
+                                        background: none; 
+                                        border: 1px solid var(--border-color); 
+                                        color: var(--text-secondary);
+                                        padding: 2px 6px; 
+                                        border-radius: 3px; 
+                                        cursor: pointer; 
+                                        font-size: 0.7em;
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 2px;
+                                        transition: all 0.2s;
+                                    " onmouseover="this.style.background='var(--warning)'; this.style.color='white'; this.style.borderColor='var(--warning)'" 
+                                       onmouseout="this.style.background='none'; this.style.color='var(--text-secondary)'; this.style.borderColor='var(--border-color)'">
+                                        <span>😊</span>
+                                    </button>
+                                    <button onclick="clearChat()" title="Clear Chat" style="
+                                        background: none; 
+                                        border: 1px solid var(--border-color); 
+                                        color: var(--text-secondary);
+                                        padding: 2px 6px; 
+                                        border-radius: 3px; 
+                                        cursor: pointer; 
+                                        font-size: 0.7em;
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 2px;
+                                        transition: all 0.2s;
+                                    " onmouseover="this.style.background='var(--danger)'; this.style.color='white'; this.style.borderColor='var(--danger)'" 
+                                       onmouseout="this.style.background='none'; this.style.color='var(--text-secondary)'; this.style.borderColor='var(--border-color)'">
+                                        <i class="material-icons" style="font-size: 10px;">clear</i>
+                                        <span>Clear</span>
+                                    </button>
+                                    <button onclick="exportChat()" title="Export Chat" style="
+                                        background: none; 
+                                        border: 1px solid var(--border-color); 
+                                        color: var(--text-secondary);
+                                        padding: 2px 6px; 
+                                        border-radius: 3px; 
+                                        cursor: pointer; 
+                                        font-size: 0.7em;
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 2px;
+                                        transition: all 0.2s;
+                                    " onmouseover="this.style.background='var(--primary)'; this.style.color='white'; this.style.borderColor='var(--primary)'" 
+                                       onmouseout="this.style.background='none'; this.style.color='var(--text-secondary)'; this.style.borderColor='var(--border-color)'">
+                                        <i class="material-icons" style="font-size: 10px;">download</i>
+                                        <span>Export</span>
+                                    </button>
                                 </div>
                             </div>
                             
@@ -3591,9 +3653,15 @@
                 return;
             }
             
-            const message = input.value.trim();
+            let message = input.value.trim();
             
             if (!message) return;
+            
+            // Process emojis before sending
+            if (window.emojiProcessor) {
+                message = window.emojiProcessor.processMessage(message);
+                console.log(`🎭 Emoji processing: "${input.value.trim()}" → "${message}"`);
+            }
             
             // Check if we have an active session
             if (!window.currentGameSession) {
@@ -3624,6 +3692,121 @@
             } catch (error) {
                 console.error('Error sending message:', error);
                 addChatMessage(`❌ Error sending message: ${error.message}`, 'system');
+            }
+        }
+
+        // Emoji picker functionality
+        function showEmojiPicker(panelSide) {
+            if (!window.emojiProcessor) {
+                console.warn('Emoji processor not loaded');
+                return;
+            }
+            
+            const emoticonList = window.emojiProcessor.getEmoticonList();
+            const inputId = `${panelSide}-chat-input`;
+            
+            // Create modal
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+            
+            // Create picker content
+            const picker = document.createElement('div');
+            picker.style.cssText = `
+                background: var(--bg-primary);
+                border-radius: 8px;
+                padding: 16px;
+                max-width: 400px;
+                max-height: 300px;
+                overflow-y: auto;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                border: 1px solid var(--border-color);
+            `;
+            
+            let pickerHTML = '<h4 style="margin: 0 0 12px 0; color: var(--text-primary);">Pick an Emoji</h4>';
+            
+            Object.keys(emoticonList).forEach(category => {
+                const cat = emoticonList[category];
+                pickerHTML += `<div style="margin-bottom: 12px;">`;
+                pickerHTML += `<h5 style="margin: 0 0 6px 0; color: var(--text-secondary); font-size: 0.85em;">${cat.name}</h5>`;
+                pickerHTML += `<div style="display: flex; flex-wrap: wrap; gap: 4px;">`;
+                
+                cat.emojis.forEach(emoji => {
+                    pickerHTML += `
+                        <button onclick="insertEmoji('${inputId}', '${emoji.code}')" 
+                                style="
+                                    background: none;
+                                    border: 1px solid var(--border-color);
+                                    border-radius: 4px;
+                                    padding: 4px 8px;
+                                    cursor: pointer;
+                                    font-size: 0.8em;
+                                    transition: all 0.2s;
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 4px;
+                                "
+                                onmouseover="this.style.background='var(--bg-secondary)'"
+                                onmouseout="this.style.background='none'"
+                                title="${emoji.name}">
+                            <span>${emoji.emoji}</span>
+                            <span style="font-size: 0.7em; color: var(--text-tertiary);">${emoji.code}</span>
+                        </button>
+                    `;
+                });
+                
+                pickerHTML += `</div></div>`;
+            });
+            
+            pickerHTML += `
+                <div style="margin-top: 12px; text-align: right;">
+                    <button onclick="this.closest('.emoji-modal').remove()" 
+                            style="
+                                background: var(--bg-secondary);
+                                border: 1px solid var(--border-color);
+                                border-radius: 4px;
+                                padding: 6px 12px;
+                                cursor: pointer;
+                                color: var(--text-primary);
+                            ">Close</button>
+                </div>
+            `;
+            
+            picker.innerHTML = pickerHTML;
+            modal.appendChild(picker);
+            modal.className = 'emoji-modal';
+            
+            // Close on background click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.remove();
+            });
+            
+            document.body.appendChild(modal);
+        }
+        
+        function insertEmoji(inputId, emojiCode) {
+            const input = document.getElementById(inputId);
+            if (input) {
+                const cursorPos = input.selectionStart;
+                const textBefore = input.value.substring(0, cursorPos);
+                const textAfter = input.value.substring(input.selectionEnd);
+                
+                input.value = textBefore + emojiCode + textAfter;
+                input.setSelectionRange(cursorPos + emojiCode.length, cursorPos + emojiCode.length);
+                input.focus();
+                
+                // Close the modal
+                document.querySelector('.emoji-modal')?.remove();
             }
         }
 
