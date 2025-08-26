@@ -178,6 +178,233 @@ if (message.includes(':bounce:')) {
 - **Dual Display**: Public sees generic message, recipient sees actual content
 - **DM Integration**: Storyteller can send private hints, rewards, instructions
 
+**ENHANCED @ MENTION SYSTEM - Evening Implementation Candidate**
+
+**User Experience Flow:**
+1. User types `@` → Auto-complete popup shows all active players + Storyteller
+2. User types `@Al` → Popup filters to matching names (Alice, Albert, etc.)
+3. User clicks name or presses Tab → Input becomes `@Alice ` (space added)
+4. User continues: `@Alice can you cast healing on me?`
+5. Message sent → Interceptor processes private routing
+
+**Message Display Logic:**
+- **Recipient (Alice) sees:** `"Brad: can you cast healing on me?"` (clean, direct message)
+- **Everyone else sees:** `"Brad sent a private message to @Alice"` (awareness without content)
+- **Optional Enhancement:** Small notification badge/sound for recipient
+
+**Technical Implementation Architecture:**
+
+**File Structure:**
+```
+js/modules/mentionParser.js     - @ detection and auto-complete logic
+js/modules/mentionInterceptor.js - Based on command-interceptor.js copy
+css/mentions.css               - Popup styling (or add to chat.css)
+```
+
+**Core Components:**
+
+1. **Auto-Complete Popup System:**
+```javascript
+class MentionParser {
+    constructor() {
+        this.activePlayers = new Map(); // From session data
+        this.mentionRegex = /@(\w*)$/; // Match @word at cursor position
+    }
+    
+    detectMention(inputText, cursorPosition) {
+        const textBeforeCursor = inputText.substring(0, cursorPosition);
+        const match = textBeforeCursor.match(this.mentionRegex);
+        
+        if (match) {
+            const partial = match[1];
+            return this.getMatchingPlayers(partial);
+        }
+        return null;
+    }
+    
+    getMatchingPlayers(partial) {
+        const matches = [];
+        // Always include Storyteller first
+        if ('storyteller'.startsWith(partial.toLowerCase())) {
+            matches.push({ name: 'Storyteller', id: 'storyteller', icon: '🎭' });
+        }
+        
+        // Add matching active players
+        this.activePlayers.forEach((player, playerId) => {
+            if (player.name.toLowerCase().startsWith(partial.toLowerCase())) {
+                matches.push({ name: player.name, id: playerId, icon: '👤' });
+            }
+        });
+        
+        return matches;
+    }
+}
+```
+
+2. **Input Enhancement Integration:**
+```javascript
+// Add to setupChatPanel() function in index.html
+function setupMentionAutoComplete(inputElement, panelSide) {
+    inputElement.addEventListener('input', (e) => {
+        const mentions = mentionParser.detectMention(e.target.value, e.target.selectionStart);
+        
+        if (mentions && mentions.length > 0) {
+            showMentionPopup(mentions, inputElement, panelSide);
+        } else {
+            hideMentionPopup();
+        }
+    });
+    
+    // Show all players when @ is typed
+    inputElement.addEventListener('keydown', (e) => {
+        if (e.key === '@') {
+            setTimeout(() => {
+                const allPlayers = mentionParser.getMatchingPlayers('');
+                showMentionPopup(allPlayers, inputElement, panelSide);
+            }, 10);
+        }
+    });
+}
+```
+
+3. **Message Interceptor Logic:**
+```javascript
+// Copy command-interceptor.js → mentionInterceptor.js and modify
+class MentionInterceptor {
+    processMention(message, senderName) {
+        const mentionMatch = message.match(/@(\w+)\s+(.+)/);
+        
+        if (mentionMatch) {
+            const targetPlayer = mentionMatch[1];
+            const privateMessage = mentionMatch[2];
+            
+            return {
+                isPrivate: true,
+                publicMessage: `${senderName} sent a private message to @${targetPlayer}`,
+                privateMessage: privateMessage,
+                targetPlayer: targetPlayer,
+                sender: senderName
+            };
+        }
+        
+        return { isPrivate: false };
+    }
+}
+```
+
+4. **Visual Popup Design:**
+```javascript
+function showMentionPopup(players, inputElement, panelSide) {
+    // Remove existing popup
+    document.querySelector('.mention-popup')?.remove();
+    
+    const popup = document.createElement('div');
+    popup.className = 'mention-popup';
+    popup.style.cssText = `
+        position: absolute;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+        min-width: 150px;
+    `;
+    
+    players.forEach((player, index) => {
+        const item = document.createElement('div');
+        item.className = 'mention-item';
+        item.style.cssText = `
+            padding: 8px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid var(--border-color);
+            transition: background 0.2s;
+        `;
+        
+        item.innerHTML = `
+            <span class="player-avatar">${player.icon}</span>
+            <span class="player-name">@${player.name}</span>
+        `;
+        
+        // Hover effects
+        item.addEventListener('mouseenter', () => {
+            item.style.background = 'var(--bg-secondary)';
+        });
+        item.addEventListener('mouseleave', () => {
+            item.style.background = 'none';
+        });
+        
+        item.addEventListener('click', () => {
+            insertMention(inputElement, player.name);
+            popup.remove();
+        });
+        
+        popup.appendChild(item);
+    });
+    
+    // Position popup above input
+    const rect = inputElement.getBoundingClientRect();
+    popup.style.left = rect.left + 'px';
+    popup.style.top = (rect.top - popup.offsetHeight - 5) + 'px';
+    
+    document.body.appendChild(popup);
+}
+
+function insertMention(inputElement, playerName) {
+    const value = inputElement.value;
+    const cursorPos = inputElement.selectionStart;
+    
+    // Find the @ symbol position
+    const beforeCursor = value.substring(0, cursorPos);
+    const atIndex = beforeCursor.lastIndexOf('@');
+    
+    if (atIndex !== -1) {
+        const beforeAt = value.substring(0, atIndex);
+        const afterCursor = value.substring(cursorPos);
+        
+        inputElement.value = beforeAt + `@${playerName} ` + afterCursor;
+        inputElement.setSelectionRange(atIndex + playerName.length + 2, atIndex + playerName.length + 2);
+        inputElement.focus();
+    }
+}
+```
+
+**Integration Points:**
+
+1. **With Existing Chat System:**
+   - Modify `sendMessageFromPanel()` to check for mentions before emoji processing
+   - Add mention interceptor to message display chain
+   - Update chat message display to handle private vs public messages
+
+2. **With Session Management:**
+   - Update `mentionParser.activePlayers` when players join/leave session
+   - Include player status (online/offline) for future enhancement
+
+3. **With Current Architecture:**
+   - Extends existing emoji processing pipeline
+   - Uses established panel-specific event handling
+   - Maintains theme-aware styling consistency
+
+**User Experience Benefits:**
+- **Familiar Pattern**: Everyone knows @ mentions from Discord/Slack
+- **Intuitive Auto-Complete**: Shows available targets immediately
+- **Clean Message Flow**: Private content hidden from others naturally
+- **Enhanced Roleplay**: Secret coordination without breaking immersion
+- **DM Efficiency**: Private hints/clues without disrupting table flow
+
+**Technical Benefits:**
+- **Leverages Existing Code**: Based on proven command-interceptor pattern
+- **Modular Design**: Can be implemented independently and integrated gradually
+- **Performance Efficient**: Lightweight popup with minimal DOM manipulation
+- **Cross-Device Compatible**: Touch-friendly for tablets, keyboard-friendly for desktop
+
+**Evening Implementation Priority: HIGH** 🌟
+This feature would immediately enhance the private communication system with minimal complexity. The @ pattern is universally understood and the technical implementation builds directly on existing, working systems.
+
 **Technical Architecture:**
 ```javascript
 // Based on command-interceptor pattern
