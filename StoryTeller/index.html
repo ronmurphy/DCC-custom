@@ -4634,7 +4634,16 @@ ALTER TABLE game_sessions ENABLE ROW LEVEL SECURITY;
                 
                 // Get session info from storage or use defaults
                 const playerName = localStorage.getItem('storyteller-name') || 'Storyteller';
-                const sessionCode = localStorage.getItem('last-session-code') || generateSessionCode();
+                const storedSessionCode = localStorage.getItem('last-session-code');
+                const sessionCode = storedSessionCode || generateSessionCode();
+                
+                console.log(`🔍 Quick Connect session lookup:`, {
+                    stored: storedSessionCode,
+                    using: sessionCode,
+                    isFromStorage: !!storedSessionCode
+                });
+                
+                console.log(`🚀 Quick Connect attempting: ${playerName} ${storedSessionCode ? 'rejoining' : 'creating'} session ${sessionCode}`);
                 
                 // Initialize Supabase if needed
                 if (!window.supabaseInitialized) {
@@ -4644,8 +4653,15 @@ ALTER TABLE game_sessions ENABLE ROW LEVEL SECURITY;
                     }
                 }
                 
-                // Connect to session
-                const result = await fullSupabaseConnect(playerName, sessionCode, true, 'create');
+                // Try to JOIN existing session first (this is what Quick Connect should do)
+                console.log(`🔄 Attempting to join existing session ${sessionCode}...`);
+                let result = await fullSupabaseConnect(playerName, sessionCode, true, 'join');
+                
+                // If join fails and it's because session doesn't exist, then create it
+                if (!result.success && (result.error?.includes('No rows') || result.error?.includes('not found') || result.error?.includes('PGRST116'))) {
+                    console.log(`📝 Session ${sessionCode} doesn't exist, creating new session...`);
+                    result = await fullSupabaseConnect(playerName, sessionCode, true, 'create');
+                }
                 
                 if (result.success) {
                     // Success - update button and copy URL
@@ -4655,6 +4671,12 @@ ALTER TABLE game_sessions ENABLE ROW LEVEL SECURITY;
                     
                     // Update main connection status to show active session
                     updateConnectionStatus(`Connected & Ready`, 'success');
+                    
+                    // Update session display in header
+                    const sessionNameDisplay = document.getElementById('session-name-display');
+                    if (sessionNameDisplay) {
+                        sessionNameDisplay.textContent = sessionCode;
+                    }
                     
                     // *** CRITICAL: Set up game session data (same as startNewGameSession) ***
                     // Sync with hidden compatibility fields
@@ -4669,7 +4691,7 @@ ALTER TABLE game_sessions ENABLE ROW LEVEL SECURITY;
                         playerName: playerName,
                         isStoryteller: true,
                         isStoryTeller: true,
-                        mode: 'create',
+                        mode: 'join-or-create',
                         ...result.sessionInfo
                     };
                     
@@ -4678,7 +4700,8 @@ ALTER TABLE game_sessions ENABLE ROW LEVEL SECURITY;
                     await navigator.clipboard.writeText(playerUrls.short);
                     
                     // Show success messages
-                    addChatMessage(`🚀 Session ${sessionCode} created and active`, 'system');
+                    const actionTaken = storedSessionCode ? 'rejoined existing' : 'created new';
+                    addChatMessage(`🚀 Session ${sessionCode} ready - ${actionTaken} session`, 'system');
                     addChatMessage(`🎯 You are the Storyteller for this session`, 'system');
                     addChatMessage(`💫 Real-time chat active - players can now join`, 'system');
                     addChatMessage(`📋 Shortened URL copied to clipboard: ${playerUrls.short}`, 'system');
@@ -4686,6 +4709,7 @@ ALTER TABLE game_sessions ENABLE ROW LEVEL SECURITY;
                     
                     // Store session code for future use
                     localStorage.setItem('last-session-code', sessionCode);
+                    console.log(`💾 Stored session code for Quick Connect: ${sessionCode}`);
                     
                 } else {
                     throw new Error(result.error || 'Connection failed');
@@ -5293,6 +5317,11 @@ Notes: ${npc.notes || 'None'}`;
                         if (sessionNameDisplay) {
                             sessionNameDisplay.textContent = sessionCode;
                         }
+                        
+                        // Store session code for future Quick Connect use
+                        localStorage.setItem('last-session-code', sessionCode);
+                        localStorage.setItem('storyteller-name', storytellerName);
+                        console.log(`💾 Stored session for Quick Connect: ${sessionCode} (${storytellerName})`);
                         
                     } else {
                         throw new Error(result.error || 'Connection failed');
