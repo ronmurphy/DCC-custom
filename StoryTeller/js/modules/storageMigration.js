@@ -110,37 +110,83 @@ class StorageMigration {
     async emergencyCleanup() {
         console.log('🚨 Running emergency cleanup...');
         
-        // Remove oldest roll history entries
+        let cleanedItems = 0;
+        
+        // Define items to migrate to IndexedDB or clean up
+        const itemsToMigrate = [
+            'wasteland_characters',
+            'storyteller_notes',
+            'storyteller_roll_history',
+            'storyteller_saved_npcs',
+            'storyteller_saved_rolls',
+            'characterData',
+            'savedCharacters',
+            'campaign_data',
+            'session_notes'
+        ];
+
+        // Migrate large items to IndexedDB
+        for (const key of itemsToMigrate) {
+            try {
+                const data = localStorage.getItem(key);
+                if (data) {
+                    const size = data.length;
+                    console.log(`📋 Found ${key}: ${(size / 1024).toFixed(1)}KB`);
+                    
+                    if (size > 10000) { // >10KB items
+                        if (window.advancedStorageManager) {
+                            const parsed = JSON.parse(data);
+                            await window.advancedStorageManager.setItem(key, parsed, { forceMethod: 'indexeddb' });
+                            localStorage.removeItem(key);
+                            console.log(`📦 Migrated ${key} to IndexedDB (${(size / 1024).toFixed(1)}KB)`);
+                            cleanedItems++;
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error(`❌ Failed to migrate ${key}:`, error);
+            }
+        }
+
+        // Clean up old roll history (keep only last 20 entries)
         try {
             const rollHistory = JSON.parse(localStorage.getItem('storyteller_roll_history') || '[]');
-            if (rollHistory.length > 100) {
-                const trimmed = rollHistory.slice(-50); // Keep only last 50
-                localStorage.setItem('storyteller_roll_history', JSON.stringify(trimmed));
+            if (rollHistory.length > 20) {
+                const trimmed = rollHistory.slice(-20);
+                if (window.advancedStorageManager) {
+                    await window.advancedStorageManager.setItem('storyteller_roll_history', trimmed);
+                } else {
+                    localStorage.setItem('storyteller_roll_history', JSON.stringify(trimmed));
+                }
                 console.log(`🧹 Trimmed roll history from ${rollHistory.length} to ${trimmed.length} entries`);
+                cleanedItems++;
             }
         } catch (error) {
             console.error('❌ Failed to trim roll history:', error);
         }
 
-        // Compress notes if very large
-        try {
-            const notes = localStorage.getItem('storyteller_notes');
-            if (notes && notes.length > 500000) { // >500KB
-                const parsed = JSON.parse(notes);
-                if (window.advancedStorageManager) {
-                    await window.advancedStorageManager.setItem('storyteller_notes', parsed, { forceMethod: 'indexeddb' });
-                    localStorage.removeItem('storyteller_notes');
-                    console.log('📦 Moved large notes to IndexedDB');
-                }
-            }
-        } catch (error) {
-            console.error('❌ Failed to move notes:', error);
+        // Remove temporary/cache items
+        const tempKeys = Object.keys(localStorage).filter(key => 
+            key.includes('temp_') || 
+            key.includes('cache_') || 
+            key.includes('_backup') ||
+            key.startsWith('debug_')
+        );
+        
+        for (const key of tempKeys) {
+            localStorage.removeItem(key);
+            console.log(`🗑️ Removed temporary item: ${key}`);
+            cleanedItems++;
         }
+
+        console.log(`✅ Emergency cleanup completed: ${cleanedItems} items processed`);
 
         // Show updated usage
         if (window.advancedStorageManager) {
             window.advancedStorageManager.monitorStorageUsage();
         }
+
+        return cleanedItems;
     }
 
     // Get migration status

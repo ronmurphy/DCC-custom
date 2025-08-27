@@ -12,15 +12,22 @@ let characterManager = {
 // ========================================
 // LOCAL STORAGE FUNCTIONS
 // ========================================
-function saveCharactersToStorage() {
+async function saveCharactersToStorage() {
     try {
-        console.log('Attempting to save characters to localStorage');
+        console.log('Attempting to save characters to storage');
         console.log('Characters array length:', characterManager.characters.length);
-        const dataToSave = JSON.stringify(characterManager.characters);
-        console.log('Data size to save:', dataToSave.length, 'characters');
         
-        localStorage.setItem('wasteland_characters', dataToSave);
-        console.log('Successfully saved to localStorage');
+        // Use advanced storage manager if available
+        if (window.advancedStorageManager) {
+            await window.advancedStorageManager.setItem('wasteland_characters', characterManager.characters);
+            console.log('Successfully saved to advanced storage');
+        } else {
+            // Fallback to localStorage
+            const dataToSave = JSON.stringify(characterManager.characters);
+            console.log('Data size to save:', dataToSave.length, 'characters');
+            localStorage.setItem('wasteland_characters', dataToSave);
+            console.log('Successfully saved to localStorage');
+        }
         return true;
     } catch (error) {
         console.error('Failed to save characters:', error);
@@ -29,18 +36,45 @@ function saveCharactersToStorage() {
         
         // Check if it's a quota exceeded error
         if (error.name === 'QuotaExceededError') {
-            alert('Storage quota exceeded! Please delete some old characters or clear browser data.');
+            alert('Storage quota exceeded! Please use the Storage Manager to free up space.');
         }
         return false;
     }
 }
 
-function loadCharactersFromStorage() {
+async function loadCharactersFromStorage() {
     try {
-        const stored = localStorage.getItem('wasteland_characters');
-        if (stored) {
-            characterManager.characters = JSON.parse(stored);
+        let characters = null;
+        
+        // Try advanced storage manager first
+        if (window.advancedStorageManager) {
+            characters = await window.advancedStorageManager.getItem('wasteland_characters');
+            console.log('Loaded characters from advanced storage:', characters ? characters.length : 0);
         }
+        
+        // Fallback to localStorage if no data found
+        if (!characters) {
+            const stored = localStorage.getItem('wasteland_characters');
+            if (stored) {
+                characters = JSON.parse(stored);
+                console.log('Loaded characters from localStorage:', characters.length);
+                
+                // Migrate to advanced storage if available
+                if (window.advancedStorageManager && characters.length > 0) {
+                    console.log('🔄 Migrating characters to advanced storage...');
+                    await window.advancedStorageManager.setItem('wasteland_characters', characters);
+                    localStorage.removeItem('wasteland_characters');
+                    console.log('✅ Characters migrated to advanced storage');
+                }
+            }
+        }
+        
+        if (characters) {
+            characterManager.characters = characters;
+        } else {
+            characterManager.characters = [];
+        }
+        
         return true;
     } catch (error) {
         console.error('Failed to load characters:', error);
@@ -104,6 +138,87 @@ function getCharacterDisplayInfo(charData) {
 // ========================================
 // CHARACTER CARD CREATION
 // ========================================
+// STORAGE UTILITIES
+// ========================================
+async function getCharacterStorageLocation(charData) {
+    // Check if character exists in localStorage
+    const localData = localStorage.getItem('wasteland_characters');
+    let isInLocalStorage = false;
+    if (localData) {
+        try {
+            const localChars = JSON.parse(localData);
+            isInLocalStorage = localChars.some(char => char.id === charData.id);
+        } catch (e) {
+            isInLocalStorage = false;
+        }
+    }
+    
+    // Check if character exists in IndexedDB
+    let isInIndexedDB = false;
+    if (window.advancedStorageManager) {
+        try {
+            const indexedData = await window.advancedStorageManager.getItem('wasteland_characters');
+            if (indexedData) {
+                isInIndexedDB = indexedData.some(char => char.id === charData.id);
+            }
+        } catch (e) {
+            isInIndexedDB = false;
+        }
+    }
+    
+    // Return storage location
+    if (isInIndexedDB) return 'indexeddb';
+    if (isInLocalStorage) return 'localstorage';
+    return 'unknown';
+}
+
+function getStorageIcon(storageLocation) {
+    switch (storageLocation) {
+        case 'indexeddb':
+            return '💾'; // Database icon
+        case 'localstorage':
+            return '🌐'; // Web icon
+        default:
+            return '❓'; // Unknown
+    }
+}
+
+async function updateStorageIndicator(charData) {
+    console.log('Updating storage indicator for character:', charData.id);
+    const indicator = document.getElementById(`storage-${charData.id}`);
+    if (!indicator) {
+        console.warn('Storage indicator element not found for:', charData.id);
+        return;
+    }
+    
+    try {
+        const storageLocation = await getCharacterStorageLocation(charData);
+        console.log('Storage location for', charData.id, ':', storageLocation);
+        const icon = getStorageIcon(storageLocation);
+        
+        let title;
+        switch (storageLocation) {
+            case 'indexeddb':
+                title = 'Stored in IndexedDB (optimized storage)';
+                break;
+            case 'localstorage':
+                title = 'Stored in localStorage (browser storage)';
+                break;
+            default:
+                title = 'Storage location unknown';
+        }
+        
+        indicator.textContent = icon;
+        indicator.title = title;
+        console.log('Updated indicator for', charData.id, 'with icon:', icon);
+    } catch (error) {
+        console.error('Failed to update storage indicator:', error);
+        indicator.textContent = '❓';
+        indicator.title = 'Storage check failed';
+    }
+}
+
+// ========================================
 function createCharacterCard(charData) {
     const card = document.createElement('div');
     card.className = 'character-card';
@@ -119,7 +234,10 @@ function createCharacterCard(charData) {
     card.innerHTML = `
         <div class="character-card-portrait">
             ${portraitContent}
-            <div class="character-level">Lv.${charData.level || 1}</div>
+            <div class="character-level-container">
+                <div class="character-level">Lv.${charData.level || 1}</div>
+                <div class="character-storage-indicator" id="storage-${charData.id}" title="Loading storage info...">⏳</div>
+            </div>
         </div>
         <div class="character-card-info">
             <h3 class="character-name">${charData.name || 'Unnamed Character'}</h3>
@@ -143,6 +261,9 @@ function createCharacterCard(charData) {
             </button>
         </div>
     `;
+    
+    // Asynchronously update storage indicator after DOM insertion
+    setTimeout(() => updateStorageIndicator(charData), 100);
     
     return card;
 }
@@ -447,7 +568,7 @@ function deleteCharacterConfirm(characterId) {
 
 function deleteCharacter(characterId) {
     characterManager.characters = characterManager.characters.filter(char => char.id !== characterId);
-    saveCharactersToStorage();
+    saveCharactersToStorage().catch(err => console.error('Save failed:', err));
     renderCharacterGrid();
     
     // If we deleted the currently loaded character, go back to landing
@@ -624,9 +745,9 @@ function stopAutoSave() {
 // ========================================
 // PAGE LIFECYCLE MANAGEMENT
 // ========================================
-function initializeCharacterManager() {
+async function initializeCharacterManager() {
     // Load characters from storage
-    loadCharactersFromStorage();
+    await loadCharactersFromStorage();
     
     // Show landing screen on startup
     showLandingScreen();
