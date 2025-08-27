@@ -59,8 +59,27 @@ let availableTilesets = [];
 let tilesetData = null;
 
 async function loadAvailableTilesets() {
-    // Try to load known tilesets
-    const knownTilesets = ['default', 'forest', 'GreenTest'];
+    // Load tileset list from external file
+    let knownTilesets = ['default']; // Fallback
+    
+    try {
+        const response = await fetch('assets/tileset.list');
+        if (response.ok) {
+            const tilesetListText = await response.text();
+            // Parse the file - split by lines, remove comments and empty lines
+            knownTilesets = tilesetListText
+                .split('\n')
+                .map(line => line.trim())
+                .filter(line => line && !line.startsWith('#'))
+                .filter(line => line.length > 0);
+            console.log('📋 Loaded tileset list from file:', knownTilesets);
+        } else {
+            console.log('⚠️ Could not load tileset.list, using fallback');
+        }
+    } catch (error) {
+        console.log('⚠️ Error loading tileset.list:', error, 'using fallback');
+    }
+    
     availableTilesets = {};
     
     for (const tileset of knownTilesets) {
