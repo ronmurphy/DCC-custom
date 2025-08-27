@@ -5,7 +5,7 @@
 echo "🏗️  Starting Cordova Android build..."
 
 # Define directories
-CORDOVA_DIR="/home/brad/Documents/DCC-custom/V3/Cordova/DCWorld"
+CORDOVA_DIR="/home/brad/Documents/DCC-custom/V4/Cordova/DCWorld"
 BUILD_DIR="$CORDOVA_DIR/builds"
 APK_SOURCE="$CORDOVA_DIR/platforms/android/app/build/outputs/apk/debug/app-debug.apk"
 
