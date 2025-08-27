@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="css/notes-panel.css">
     <link rel="stylesheet" href="css/dice-panel.css">
     <link rel="stylesheet" href="css/chat-effects.css">
+    <link rel="stylesheet" href="css/map.css">
     <!-- end ported css -->
 
     <style>
@@ -3176,147 +3177,31 @@
                 
                 case 'map':
                     return `
-                        <div class="map-editor">
-                            <!-- Compact Controls Row -->
-                            <div class="map-controls-row" style="
-                                display: flex; 
-                                align-items: center; 
-                                gap: 12px; 
-                                margin-bottom: 16px; 
-                                flex-wrap: wrap;
-                                background: var(--bg-secondary);
-                                padding: 8px 12px;
-                                border-radius: var(--radius-md);
-                                border: 1px solid var(--border-color);
-                            ">
-                                <!-- Map Size Buttons -->
-                                <div class="size-buttons" style="display: flex; gap: 4px;">
-                                    <button class="size-btn" data-size="small" onclick="setMapSize('small')" style="
-                                        padding: 6px 12px;
-                                        background: var(--bg-primary);
-                                        border: 1px solid var(--border-color);
-                                        border-radius: var(--radius-sm);
-                                        color: var(--text-primary);
-                                        cursor: pointer;
-                                        font-size: 0.8rem;
-                                        transition: all 0.2s;
-                                    ">10x</button>
-                                    <button class="size-btn active" data-size="medium" onclick="setMapSize('medium')" style="
-                                        padding: 6px 12px;
-                                        background: var(--accent-color);
-                                        border: 1px solid var(--accent-color);
-                                        border-radius: var(--radius-sm);
-                                        color: white;
-                                        cursor: pointer;
-                                        font-size: 0.8rem;
-                                        transition: all 0.2s;
-                                    ">15x</button>
-                                    <button class="size-btn" data-size="large" onclick="setMapSize('large')" style="
-                                        padding: 6px 12px;
-                                        background: var(--bg-primary);
-                                        border: 1px solid var(--border-color);
-                                        border-radius: var(--radius-sm);
-                                        color: var(--text-primary);
-                                        cursor: pointer;
-                                        font-size: 0.8rem;
-                                        transition: all 0.2s;
-                                    ">20x</button>
-                                </div>
-                                
-                                <!-- Action Buttons -->
-                                <button class="action-btn primary" onclick="resizeMap()" style="
-                                    padding: 6px 12px;
-                                    background: var(--success-color);
-                                    border: 1px solid var(--success-color);
-                                    border-radius: var(--radius-sm);
+                        <div class="map-panel-simple">
+                            <div style="text-align: center; padding: 20px;">
+                                <h3>Map Editor</h3>
+                                <p>Create and edit battle maps with enhanced sprite tiles</p>
+                                <button id="open-map-modal" class="btn primary" style="
+                                    padding: 12px 24px;
+                                    font-size: 1.1rem;
+                                    background: var(--accent-color);
                                     color: white;
+                                    border: none;
+                                    border-radius: var(--radius-md);
                                     cursor: pointer;
-                                    font-size: 0.8rem;
-                                    transition: all 0.2s;
-                                    display: flex;
-                                    align-items: center;
-                                    gap: 4px;
+                                    margin: 16px 0;
                                 ">
-                                    <i class="ra ra-map" style="font-size: 0.9em;"></i>New
+                                    🗺️ Open Map Editor
                                 </button>
-                                <button class="action-btn secondary" onclick="clearMap()" style="
-                                    padding: 6px 12px;
-                                    background: var(--warning-color);
-                                    border: 1px solid var(--warning-color);
-                                    border-radius: var(--radius-sm);
-                                    color: white;
-                                    cursor: pointer;
-                                    font-size: 0.8rem;
-                                    transition: all 0.2s;
-                                    display: flex;
-                                    align-items: center;
-                                    gap: 4px;
-                                ">
-                                    <i class="ra ra-cancel" style="font-size: 0.9em;"></i>Clear
-                                </button>
-                                
-                                <!-- Sprite Status -->
-                                <div id="sprite-status" class="sprite-status-indicator" style="margin-left: auto;"></div>
-                            </div>
-                            
-                            <!-- Tile Selector -->
-                            <div class="tile-selector-container">
-                                <h5 style="margin: 0 0 8px 0; color: var(--text-secondary); font-size: 0.9rem;">Tiles:</h5>
-                                <div id="tile-selector" class="tile-selector-grid"></div>
-                            </div>
-                            
-                            <!-- Map Grid -->
-                            <div class="map-container" style="margin: 16px 0;">
-                                <div id="map-grid" class="map-grid"></div>
-                            </div>
-                            
-                            <!-- Map Actions -->
-                            <div class="map-actions" style="
-                                display: flex;
-                                gap: 8px;
-                                align-items: center;
-                                padding: 8px 12px;
-                                background: var(--bg-secondary);
-                                border-radius: var(--radius-md);
-                                border: 1px solid var(--border-color);
-                            ">
-                                <input type="text" id="map-name" placeholder="Map name..." style="
-                                    flex: 1;
-                                    padding: 6px 8px;
-                                    background: var(--bg-primary);
+                                <div id="current-map-display" style="
+                                    margin-top: 20px;
+                                    padding: 16px;
+                                    background: var(--bg-secondary);
+                                    border-radius: var(--radius-md);
                                     border: 1px solid var(--border-color);
-                                    border-radius: var(--radius-sm);
-                                    color: var(--text-primary);
-                                    font-size: 0.85rem;
                                 ">
-                                <button class="action-btn success" onclick="saveCurrentMap()" style="
-                                    padding: 6px 12px;
-                                    background: var(--success-color);
-                                    border: 1px solid var(--success-color);
-                                    border-radius: var(--radius-sm);
-                                    color: white;
-                                    cursor: pointer;
-                                    font-size: 0.8rem;
-                                    display: flex;
-                                    align-items: center;
-                                    gap: 4px;
-                                ">
-                                    <i class="ra ra-save" style="font-size: 0.9em;"></i>Save
-                                </button>
-                                <button class="action-btn info" onclick="loadMapDialog()" style="
-                                    padding: 6px 12px;
-                                    background: var(--info-color);
-                                    border: 1px solid var(--info-color);
-                                    border-radius: var(--radius-sm);
-                                    color: white;
-                                    cursor: pointer;
-                                    font-size: 0.8rem;
-                                    display: flex;
-                                    align-items: center;
-                                    gap: 4px;
-                                ">
-                                    <i class="ra ra-load" style="font-size: 0.9em;"></i>Load
-                                </button>
+                                    <p style="color: var(--text-secondary); margin: 0;">No map loaded</p>
+                                </div>
                             </div>
                         </div>
                     `;
@@ -5724,6 +5609,61 @@ ${stats.cordova?.detected ? '📱 Cordova app detected' : '🌐 Web browser mode
             <input type="file" id="import-file" accept=".json">
             <input id="session-name-input">
             <div id="sessions-list"></div>
+        </div>
+        
+        <!-- Map Editor Modal -->
+        <div id="map-editor-modal" class="map-editor-modal" style="display: none;" onclick="closeMapModal(event)">
+            <div class="modal-content map-editor-modal-content" onclick="event.stopPropagation()">
+                <!-- Modal Header -->
+                <div class="modal-header">
+                    <h2>🗺️ Map Editor</h2>
+                    <div class="modal-header-controls">
+                        <div id="modal-sprite-status" class="sprite-status-indicator"></div>
+                        <button id="close-map-modal" class="btn-close">×</button>
+                    </div>
+                </div>
+                
+                <!-- Modal Body -->
+                <div class="modal-body">
+                    <!-- Map Controls -->
+                    <div class="map-controls-section">
+                        <div class="control-group">
+                            <label>Map Size:</label>
+                            <div class="size-buttons">
+                                <button class="size-btn" data-size="small" onclick="setMapSize('small')">10×10</button>
+                                <button class="size-btn active" data-size="medium" onclick="setMapSize('medium')">15×15</button>
+                                <button class="size-btn" data-size="large" onclick="setMapSize('large')">20×20</button>
+                            </div>
+                        </div>
+                        
+                        <div class="control-group">
+                            <button onclick="clearMap()" class="btn warning">🗑️ Clear Map</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Tile Selector -->
+                    <div class="tile-selector-section">
+                        <h4>Select Tile:</h4>
+                        <div id="modal-tile-selector" class="tile-selector-grid"></div>
+                    </div>
+                    
+                    <!-- Map Grid -->
+                    <div class="map-grid-section">
+                        <div id="modal-map-grid" class="map-grid"></div>
+                    </div>
+                </div>
+                
+                <!-- Modal Footer -->
+                <div class="modal-footer">
+                    <div class="map-name-section">
+                        <input type="text" id="modal-map-name" placeholder="Enter map name..." value="Untitled Map">
+                    </div>
+                    <div class="modal-actions">
+                        <button onclick="saveMapAsFile()" class="btn success">💾 Save Map</button>
+                        <button onclick="closeMapModal()" class="btn secondary">❌ Close</button>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <!-- Map Editor Elements -->
