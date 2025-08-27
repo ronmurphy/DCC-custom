@@ -2568,6 +2568,46 @@
         let currentMode = 'tablet';
         let deviceInfo = {};
 
+        // Chat system loading flags
+        window.isChatEffectsLoaded = false;
+        window.isEmojiProcessorLoaded = false;
+
+        // Function to wait for chat dependencies and then initialize right panel
+        function waitForChatDependenciesAndInitialize() {
+            const checkCount = window.chatDependencyCheckCount || 0;
+            window.chatDependencyCheckCount = checkCount + 1;
+            
+            // Check if the actual objects exist instead of relying on flags
+            const chatEffectsReady = !!(window.chatEffectsManager && typeof window.chatEffectsManager.processMessage === 'function');
+            const emojiReady = !!(window.emojiProcessor && typeof window.emojiProcessor.processMessage === 'function');
+            
+            // Only log every 10 checks to reduce spam
+            if (checkCount % 10 === 0 || checkCount < 3) {
+                console.log(`🔍 Chat dependency check #${checkCount}:`, {
+                    chatEffectsReady,
+                    emojiReady,
+                    chatEffectsManager: !!window.chatEffectsManager,
+                    emojiProcessor: !!window.emojiProcessor
+                });
+            }
+
+            if (chatEffectsReady && emojiReady) {
+                // Both dependencies loaded, wait additional 100ms then initialize
+                console.log('✅ All chat dependencies loaded, initializing right panel...');
+                setTimeout(() => {
+                    loadPanel('right', rightPanelContent);
+                    console.log('✅ Right panel chat initialized with dependencies');
+                }, 100);
+            } else if (checkCount > 50) {
+                // Give up after 5 seconds and try anyway
+                console.warn('⚠️ Chat dependencies taking too long, initializing anyway...');
+                loadPanel('right', rightPanelContent);
+            } else {
+                // Not ready yet, check again in 100ms
+                setTimeout(waitForChatDependenciesAndInitialize, 100);
+            }
+        }
+
         // Device Detection and Mode Management
         function detectDevice() {
             const userAgent = navigator.userAgent;
@@ -2708,8 +2748,8 @@
             }
             
             // Initialize panels with default content
-            // Only initialize right panel - left panel has rich static content
-            loadPanel('right', rightPanelContent);
+            // Wait for chat dependencies before initializing right panel
+            waitForChatDependenciesAndInitialize();
             
             // Update left panel title to match the content
             document.getElementById('left-panel-title').textContent = getPanelTitle(leftPanelContent);
@@ -3680,7 +3720,7 @@
             
             // No fallback needed since dynamic panels handle all cases
             if (!addedToAny) {
-                console.warn('No chat panels found to display message element');
+                console.debug('No chat panels found to display message element (panels may not be ready yet)');
             }
         }
 
