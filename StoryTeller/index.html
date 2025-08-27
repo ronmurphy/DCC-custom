@@ -3177,50 +3177,145 @@
                 case 'map':
                     return `
                         <div class="map-editor">
-                            <div class="map-header">
-                                <h4>🗺️ Map Editor</h4>
-                                <div id="sprite-status" class="sprite-status-indicator" style="display: inline-block; margin-left: 10px; padding: 4px 8px; border-radius: 4px; font-size: 0.8em;"></div>
-                            </div>
-                            
-                            <!-- Map Controls -->
-                            <div class="map-controls">
-                                <div class="control-group">
-                                    <label>Map Size:</label>
-                                    <select id="map-size" class="form-select">
-                                        <option value="small">Small (10x10)</option>
-                                        <option value="medium">Medium (15x15)</option>
-                                        <option value="large">Large (20x20)</option>
-                                    </select>
+                            <!-- Compact Controls Row -->
+                            <div class="map-controls-row" style="
+                                display: flex; 
+                                align-items: center; 
+                                gap: 12px; 
+                                margin-bottom: 16px; 
+                                flex-wrap: wrap;
+                                background: var(--bg-secondary);
+                                padding: 8px 12px;
+                                border-radius: var(--radius-md);
+                                border: 1px solid var(--border-color);
+                            ">
+                                <!-- Map Size Buttons -->
+                                <div class="size-buttons" style="display: flex; gap: 4px;">
+                                    <button class="size-btn" data-size="small" onclick="setMapSize('small')" style="
+                                        padding: 6px 12px;
+                                        background: var(--bg-primary);
+                                        border: 1px solid var(--border-color);
+                                        border-radius: var(--radius-sm);
+                                        color: var(--text-primary);
+                                        cursor: pointer;
+                                        font-size: 0.8rem;
+                                        transition: all 0.2s;
+                                    ">10x</button>
+                                    <button class="size-btn active" data-size="medium" onclick="setMapSize('medium')" style="
+                                        padding: 6px 12px;
+                                        background: var(--accent-color);
+                                        border: 1px solid var(--accent-color);
+                                        border-radius: var(--radius-sm);
+                                        color: white;
+                                        cursor: pointer;
+                                        font-size: 0.8rem;
+                                        transition: all 0.2s;
+                                    ">15x</button>
+                                    <button class="size-btn" data-size="large" onclick="setMapSize('large')" style="
+                                        padding: 6px 12px;
+                                        background: var(--bg-primary);
+                                        border: 1px solid var(--border-color);
+                                        border-radius: var(--radius-sm);
+                                        color: var(--text-primary);
+                                        cursor: pointer;
+                                        font-size: 0.8rem;
+                                        transition: all 0.2s;
+                                    ">20x</button>
                                 </div>
-                                <div class="control-group">
-                                    <button class="action-btn primary" onclick="resizeMap()">
-                                        <i class="ra ra-map"></i>New Map
-                                    </button>
-                                    <button class="action-btn secondary" onclick="clearMap()">
-                                        <i class="ra ra-cancel"></i>Clear
-                                    </button>
-                                </div>
+                                
+                                <!-- Action Buttons -->
+                                <button class="action-btn primary" onclick="resizeMap()" style="
+                                    padding: 6px 12px;
+                                    background: var(--success-color);
+                                    border: 1px solid var(--success-color);
+                                    border-radius: var(--radius-sm);
+                                    color: white;
+                                    cursor: pointer;
+                                    font-size: 0.8rem;
+                                    transition: all 0.2s;
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 4px;
+                                ">
+                                    <i class="ra ra-map" style="font-size: 0.9em;"></i>New
+                                </button>
+                                <button class="action-btn secondary" onclick="clearMap()" style="
+                                    padding: 6px 12px;
+                                    background: var(--warning-color);
+                                    border: 1px solid var(--warning-color);
+                                    border-radius: var(--radius-sm);
+                                    color: white;
+                                    cursor: pointer;
+                                    font-size: 0.8rem;
+                                    transition: all 0.2s;
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 4px;
+                                ">
+                                    <i class="ra ra-cancel" style="font-size: 0.9em;"></i>Clear
+                                </button>
+                                
+                                <!-- Sprite Status -->
+                                <div id="sprite-status" class="sprite-status-indicator" style="margin-left: auto;"></div>
                             </div>
                             
                             <!-- Tile Selector -->
                             <div class="tile-selector-container">
-                                <h5>Tiles:</h5>
+                                <h5 style="margin: 0 0 8px 0; color: var(--text-secondary); font-size: 0.9rem;">Tiles:</h5>
                                 <div id="tile-selector" class="tile-selector-grid"></div>
                             </div>
                             
                             <!-- Map Grid -->
-                            <div class="map-container">
+                            <div class="map-container" style="margin: 16px 0;">
                                 <div id="map-grid" class="map-grid"></div>
                             </div>
                             
                             <!-- Map Actions -->
-                            <div class="map-actions">
-                                <input type="text" id="map-name" placeholder="Map name..." class="form-input">
-                                <button class="action-btn success" onclick="saveCurrentMap()">
-                                    <i class="ra ra-save"></i>Save Map
+                            <div class="map-actions" style="
+                                display: flex;
+                                gap: 8px;
+                                align-items: center;
+                                padding: 8px 12px;
+                                background: var(--bg-secondary);
+                                border-radius: var(--radius-md);
+                                border: 1px solid var(--border-color);
+                            ">
+                                <input type="text" id="map-name" placeholder="Map name..." style="
+                                    flex: 1;
+                                    padding: 6px 8px;
+                                    background: var(--bg-primary);
+                                    border: 1px solid var(--border-color);
+                                    border-radius: var(--radius-sm);
+                                    color: var(--text-primary);
+                                    font-size: 0.85rem;
+                                ">
+                                <button class="action-btn success" onclick="saveCurrentMap()" style="
+                                    padding: 6px 12px;
+                                    background: var(--success-color);
+                                    border: 1px solid var(--success-color);
+                                    border-radius: var(--radius-sm);
+                                    color: white;
+                                    cursor: pointer;
+                                    font-size: 0.8rem;
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 4px;
+                                ">
+                                    <i class="ra ra-save" style="font-size: 0.9em;"></i>Save
                                 </button>
-                                <button class="action-btn info" onclick="loadMapDialog()">
-                                    <i class="ra ra-load"></i>Load Map
+                                <button class="action-btn info" onclick="loadMapDialog()" style="
+                                    padding: 6px 12px;
+                                    background: var(--info-color);
+                                    border: 1px solid var(--info-color);
+                                    border-radius: var(--radius-sm);
+                                    color: white;
+                                    cursor: pointer;
+                                    font-size: 0.8rem;
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 4px;
+                                ">
+                                    <i class="ra ra-load" style="font-size: 0.9em;"></i>Load
                                 </button>
                             </div>
                         </div>
