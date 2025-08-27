@@ -52,6 +52,101 @@ let isDragging = false;
 let spritesEnabled = false;
 
 // ========================================
+// TILESET SYSTEM
+// ========================================
+let currentTileset = 'default';
+let availableTilesets = [];
+let tilesetData = null;
+
+async function loadAvailableTilesets() {
+    // Try to load known tilesets
+    const knownTilesets = ['default', 'forest'];
+    availableTilesets = {};
+    
+    for (const tileset of knownTilesets) {
+        try {
+            // Check if both PNG and JSON exist by trying to load the JSON
+            const response = await fetch(`assets/${tileset}.json`);
+            if (response.ok) {
+                const config = await response.json();
+                availableTilesets[tileset] = config;
+                console.log(`✅ Found tileset: ${tileset}`);
+            }
+        } catch (error) {
+            console.log(`⚠️ Tileset ${tileset} not available`);
+        }
+    }
+    
+    // Load custom tilesets from IndexedDB
+    await loadCustomTilesetsOnInit();
+    
+    // Ensure default is always available as fallback
+    if (!availableTilesets.default) {
+        availableTilesets.default = {
+            name: "Default",
+            description: "Default dungeon tileset",
+            backgroundColors: {},
+            sprites: {}
+        };
+    }
+    
+    console.log('📁 Available tilesets:', Object.keys(availableTilesets));
+    return availableTilesets;
+}
+
+async function loadTilesetData(tilesetName) {
+    try {
+        // Check if it's a custom tileset first
+        if (availableTilesets[tilesetName] && availableTilesets[tilesetName].imageUrl) {
+            // Custom tileset from IndexedDB
+            tilesetData = availableTilesets[tilesetName];
+            console.log(`✅ Loaded custom tileset data: ${tilesetData.name}`);
+            return tilesetData;
+        } else {
+            // Regular tileset from assets folder
+            const response = await fetch(`assets/${tilesetName}.json`);
+            tilesetData = await response.json();
+            console.log(`✅ Loaded tileset data: ${tilesetData.name}`);
+            return tilesetData;
+        }
+    } catch (error) {
+        console.error(`❌ Failed to load tileset data for ${tilesetName}:`, error);
+        return null;
+    }
+}
+
+async function switchTileset(tilesetName) {
+    currentTileset = tilesetName;
+    
+    // Load tileset data
+    await loadTilesetData(tilesetName);
+    
+    // Remove any existing tileset styles to prevent conflicts
+    const existingStyles = document.querySelectorAll('style[data-tileset-style]');
+    existingStyles.forEach(style => style.remove());
+    
+    // Update CSS to use new sprite sheet
+    const styleElement = document.createElement('style');
+    styleElement.setAttribute('data-tileset-style', 'true'); // Mark for easy removal
+    const imageUrl = (tilesetData && tilesetData.imageUrl) ? 
+        tilesetData.imageUrl : 
+        `../assets/${tilesetName}.png`;
+    styleElement.textContent = `.sprite { background-image: url('${imageUrl}') !important; }`;
+    document.head.appendChild(styleElement);
+    
+    console.log(`🎨 Updated sprite CSS to use: ${imageUrl}`);
+    
+    // Update tile selector
+    const modal = document.getElementById('map-editor-modal');
+    if (modal && modal.style.display === 'flex') {
+        createModalTileSelector();
+        resizeModalMap();
+    }
+    
+    console.log(`🔄 Switched to tileset: ${tilesetName}`);
+}
+
+// ========================================
 // MODAL MANAGEMENT
 // ========================================
 function openMapModal() {
@@ -112,6 +207,15 @@ function openMapModal() {
             ">
                 <h2 style="margin: 0 !important; color: var(--text-primary, #333) !important; font-size: 1.5rem !important;">🗺️ Map Editor</h2>
                 <div style="display: flex !important; align-items: center !important; gap: 16px !important;">
+                    <div class="tileset-dropdown">
+                        <select id="tileset-selector" onchange="switchTileset(this.value)">
+                            <option value="default">Default Tileset</option>
+                        </select>
+                    </div>
+                    <button class="import-tileset-btn" onclick="importCustomTileset()">
+                        📁 Import Tileset
+                    </button>
+                    <input type="file" class="import-tileset-input" id="tileset-file-input" accept=".png,.json" multiple onchange="handleTilesetFiles(this.files)">
                     <div id="modal-sprite-status" style="
                         padding: 4px 8px !important;
                         background: #28a745 !important;
@@ -307,14 +411,19 @@ async function checkSprites() {
         await new Promise((resolve, reject) => {
             img.onload = resolve;
             img.onerror = reject;
-            img.src = 'assets/dungeon_sprite_sheet_ordered.png';
+            
+            // Use custom tileset URL if available, otherwise default to assets folder
+            const imageUrl = (tilesetData && tilesetData.imageUrl) ? 
+                tilesetData.imageUrl : 
+                `assets/${currentTileset}.png`;
+            img.src = imageUrl;
         });
         spritesEnabled = true;
-        console.log('✅ Sprites loaded successfully!');
+        console.log(`✅ Sprites loaded successfully: ${currentTileset}`);
         return true;
     } catch (error) {
         spritesEnabled = false;
-        console.log('❌ Sprites not found, using emoji fallback');
+        console.log(`❌ Sprites not found for ${currentTileset}, using emoji fallback`);
         return false;
     }
 }
@@ -337,6 +446,13 @@ function updateSpriteStatus() {
 async function initializeModalMapEditor() {
     console.log('🗺️ Initializing Modal Map Editor...');
     
+    // Load available tilesets and populate dropdown
+    await loadAvailableTilesets();
+    populateTilesetDropdown();
+    
+    // Load current tileset data
+    await loadTilesetData(currentTileset);
+    
     // Check for sprites first
     await checkSprites();
     updateSpriteStatus();
@@ -346,6 +462,23 @@ async function initializeModalMapEditor() {
     resizeModalMap();
     
     console.log('✅ Modal Map editor initialized successfully!');
+}
+
+function populateTilesetDropdown() {
+    const dropdown = document.getElementById('tileset-selector');
+    if (!dropdown) return;
+    
+    dropdown.innerHTML = '';
+    
+    for (const [tilesetKey, tilesetConfig] of Object.entries(availableTilesets)) {
+        const option = document.createElement('option');
+        option.value = tilesetKey;
+        option.textContent = tilesetConfig.name || (tilesetKey.charAt(0).toUpperCase() + tilesetKey.slice(1) + ' Tileset');
+        if (tilesetKey === currentTileset) {
+            option.selected = true;
+        }
+        dropdown.appendChild(option);
+    }
 }
 
 function createModalTileSelector() {
@@ -366,6 +499,12 @@ function createModalTileSelector() {
         if (opt.type === "sprite" && spritesEnabled) {
             const spriteDiv = document.createElement('div');
             spriteDiv.className = `sprite ${opt.value}`;
+            
+            // Apply background color from tileset data
+            if (tilesetData && tilesetData.backgroundColors && tilesetData.backgroundColors[opt.value]) {
+                tile.style.backgroundColor = tilesetData.backgroundColors[opt.value];
+            }
+            
             tile.appendChild(spriteDiv);
         } else if (opt.type === "player") {
             const player = document.createElement('div');
@@ -475,11 +614,23 @@ function renderTile(tile, mapData, playerData) {
         if (mapData.type === "sprite" && spritesEnabled) {
             const spriteDiv = document.createElement('div');
             spriteDiv.className = `sprite ${mapData.value}`;
+            
+            // Apply background color to the sprite div, not the tile container
+            if (tilesetData && tilesetData.backgroundColors && tilesetData.backgroundColors[mapData.value]) {
+                spriteDiv.style.backgroundColor = tilesetData.backgroundColors[mapData.value];
+            }
+            
             tile.appendChild(spriteDiv);
         } else {
             // Fallback to emoji
             tile.textContent = mapData.emoji || mapData.value;
         }
+    } else {
+        // Clear background color when no map data (erase tool)
+        // Clear both tile and any existing sprite background colors
+        tile.style.backgroundColor = '';
+        const sprites = tile.querySelectorAll('.sprite');
+        sprites.forEach(sprite => sprite.style.backgroundColor = '');
     }
     
     // Render player data (overlay)
@@ -602,6 +753,195 @@ function initializeMapEditor() {
 }
 
 // ========================================
+// CUSTOM TILESET IMPORT SYSTEM
+// ========================================
+
+// IndexedDB setup for storing custom tilesets
+let tilesetDB;
+
+function initTilesetDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open('MapEditorTilesets', 1);
+        
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+            tilesetDB = request.result;
+            resolve(tilesetDB);
+        };
+        
+        request.onupgradeneeded = () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains('tilesets')) {
+                const store = db.createObjectStore('tilesets', { keyPath: 'name' });
+                store.createIndex('name', 'name', { unique: true });
+            }
+        };
+    });
+}
+
+function saveCustomTileset(name, imageBlob, configData) {
+    return new Promise((resolve, reject) => {
+        if (!tilesetDB) {
+            reject(new Error('Database not initialized'));
+            return;
+        }
+        
+        const transaction = tilesetDB.transaction(['tilesets'], 'readwrite');
+        const store = transaction.objectStore('tilesets');
+        
+        const tilesetData = {
+            name: name,
+            image: imageBlob,
+            config: configData,
+            dateAdded: new Date().toISOString()
+        };
+        
+        const request = store.put(tilesetData);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(tilesetData);
+    });
+}
+
+function loadCustomTilesets() {
+    return new Promise((resolve, reject) => {
+        if (!tilesetDB) {
+            resolve([]);
+            return;
+        }
+        
+        const transaction = tilesetDB.transaction(['tilesets'], 'readonly');
+        const store = transaction.objectStore('tilesets');
+        const request = store.getAll();
+        
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result || []);
+    });
+}
+
+function importCustomTileset() {
+    const fileInput = document.getElementById('tileset-file-input');
+    fileInput.click();
+}
+
+async function handleTilesetFiles(files) {
+    if (!files || files.length === 0) return;
+    
+    try {
+        // Initialize DB if needed
+        if (!tilesetDB) {
+            await initTilesetDB();
+        }
+        
+        let pngFile = null;
+        let jsonFile = null;
+        
+        // Find PNG and JSON files
+        for (const file of files) {
+            if (file.type === 'image/png') {
+                pngFile = file;
+            } else if (file.type === 'application/json' || file.name.endsWith('.json')) {
+                jsonFile = file;
+            }
+        }
+        
+        if (!pngFile) {
+            alert('Please select a PNG image file for the tileset.');
+            return;
+        }
+        
+        // Generate tileset name from PNG filename
+        const tilesetName = pngFile.name.replace('.png', '');
+        
+        let configData = null;
+        if (jsonFile) {
+            // Read JSON config
+            const jsonText = await readFileAsText(jsonFile);
+            try {
+                configData = JSON.parse(jsonText);
+            } catch (e) {
+                console.warn('Invalid JSON config file, using default sprite layout');
+            }
+        }
+        
+        // If no JSON config, create a default one
+        if (!configData) {
+            configData = generateDefaultTilesetConfig(tilesetName);
+        }
+        
+        // Save to IndexedDB
+        await saveCustomTileset(tilesetName, pngFile, configData);
+        
+        // Add to available tilesets
+        availableTilesets[tilesetName] = configData;
+        
+        // Update dropdown
+        populateTilesetDropdown();
+        
+        // Switch to the new tileset
+        await switchTileset(tilesetName);
+        
+        console.log(`✅ Custom tileset "${tilesetName}" imported successfully`);
+        
+        // Show success message
+        const statusDiv = document.getElementById('modal-sprite-status');
+        if (statusDiv) {
+            const originalText = statusDiv.textContent;
+            statusDiv.textContent = 'Tileset Imported!';
+            statusDiv.style.background = '#28a745';
+            setTimeout(() => {
+                statusDiv.textContent = originalText;
+                statusDiv.style.background = '#28a745';
+            }, 2000);
+        }
+        
+    } catch (error) {
+        console.error('Error importing tileset:', error);
+        alert('Error importing tileset: ' + error.message);
+    }
+}
+
+function readFileAsText(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsText(file);
+    });
+}
+
+function generateDefaultTilesetConfig(name) {
+    return {
+        name: name,
+        description: "Custom imported tileset",
+        backgroundColors: {},
+        sprites: {}
+    };
+}
+
+// Load custom tilesets on initialization
+async function loadCustomTilesetsOnInit() {
+    try {
+        await initTilesetDB();
+        const customTilesets = await loadCustomTilesets();
+        
+        for (const tileset of customTilesets) {
+            // Create blob URL for the image
+            const imageUrl = URL.createObjectURL(tileset.image);
+            
+            // Add to available tilesets with the blob URL
+            availableTilesets[tileset.name] = {
+                ...tileset.config,
+                imageUrl: imageUrl
+            };
+        }
+        
+        console.log(`📁 Loaded ${customTilesets.length} custom tilesets from storage`);
+    } catch (error) {
+        console.warn('Could not load custom tilesets:', error);
+    }
+}
+
+// ========================================
 // GLOBAL FUNCTIONS
 // ========================================
 window.openMapModal = openMapModal;
@@ -610,5 +950,7 @@ window.setMapSize = setMapSize;
 window.clearMap = clearMap;
 window.saveMapAsFile = saveMapAsFile;
 window.initializeMapEditor = initializeMapEditor;
+window.importCustomTileset = importCustomTileset;
+window.handleTilesetFiles = handleTilesetFiles;
 
 console.log('🗺️ Map Editor loaded (modal version)');
