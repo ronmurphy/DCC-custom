@@ -2785,6 +2785,15 @@
                 }, 100); // Small delay to ensure DOM is ready
             }
             
+            // Initialize map editor if map panel is loaded
+            if (content === 'map') {
+                setTimeout(() => {
+                    if (typeof initializeMapEditor === 'function') {
+                        initializeMapEditor();
+                    }
+                }, 100); // Small delay to ensure DOM is ready
+            }
+            
             addChatMessage(`${getPanelTitle(content)} loaded in ${panel} panel`, 'system');
         }
 
@@ -3128,19 +3137,51 @@
                 case 'map':
                     return `
                         <div class="map-editor">
-                            <h4>Map Tools</h4>
-                            <div class="map-controls">
-                                <select id="map-size" class="form-select">
-                                    <option value="small">Small (10x10)</option>
-                                    <option value="medium">Medium (15x15)</option>
-                                    <option value="large">Large (20x20)</option>
-                                </select>
-                                <button class="action-btn primary" onclick="createMap()">
-                                    <i class="ra ra-map"></i>New Map
-                                </button>
+                            <div class="map-header">
+                                <h4>🗺️ Map Editor</h4>
+                                <div id="sprite-status" class="sprite-status-indicator" style="display: inline-block; margin-left: 10px; padding: 4px 8px; border-radius: 4px; font-size: 0.8em;"></div>
                             </div>
-                            <div class="map-display">
-                                <p class="placeholder-text">Map editor tools</p>
+                            
+                            <!-- Map Controls -->
+                            <div class="map-controls">
+                                <div class="control-group">
+                                    <label>Map Size:</label>
+                                    <select id="map-size" class="form-select">
+                                        <option value="small">Small (10x10)</option>
+                                        <option value="medium">Medium (15x15)</option>
+                                        <option value="large">Large (20x20)</option>
+                                    </select>
+                                </div>
+                                <div class="control-group">
+                                    <button class="action-btn primary" onclick="resizeMap()">
+                                        <i class="ra ra-map"></i>New Map
+                                    </button>
+                                    <button class="action-btn secondary" onclick="clearMap()">
+                                        <i class="ra ra-cancel"></i>Clear
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Tile Selector -->
+                            <div class="tile-selector-container">
+                                <h5>Tiles:</h5>
+                                <div id="tile-selector" class="tile-selector-grid"></div>
+                            </div>
+                            
+                            <!-- Map Grid -->
+                            <div class="map-container">
+                                <div id="map-grid" class="map-grid"></div>
+                            </div>
+                            
+                            <!-- Map Actions -->
+                            <div class="map-actions">
+                                <input type="text" id="map-name" placeholder="Map name..." class="form-input">
+                                <button class="action-btn success" onclick="saveCurrentMap()">
+                                    <i class="ra ra-save"></i>Save Map
+                                </button>
+                                <button class="action-btn info" onclick="loadMapDialog()">
+                                    <i class="ra ra-load"></i>Load Map
+                                </button>
                             </div>
                         </div>
                     `;
@@ -5551,7 +5592,7 @@ ${stats.cordova?.detected ? '📱 Cordova app detected' : '🌐 Web browser mode
         </div>
         
         <!-- Map Editor Elements -->
-        <div id="tile-selector"></div>
+        <!-- Tile selector now integrated into map panel -->
     </div>
 </body>
 </html>

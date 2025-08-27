@@ -6,35 +6,97 @@
 // ========================================
 // MAP DATA DEFINITIONS
 // ========================================
+
+// Sprite sheet configuration
+const SPRITE_CONFIG = {
+    enabled: true, // Set to false to fallback to emojis
+    path: 'assets/dungeon_sprite_sheet_ordered.png',
+    tileSize: 64, // Each tile is 64x64 pixels
+    sheetSize: 256, // Total sheet is 256x256 pixels
+    tilesPerRow: 4
+};
+
 const tileOptions = [
     // Terrain
-    { type: "emoji", value: "🌳", name: "Tree", category: "terrain" },
-    { type: "emoji", value: "🏔️", name: "Mountain", category: "terrain" },
-    { type: "emoji", value: "💧", name: "Water", category: "terrain" },
-    { type: "emoji", value: "🌿", name: "Grass", category: "terrain" },
-    { type: "emoji", value: "🗻", name: "Rock", category: "terrain" },
+    { type: "sprite", spriteIndex: 0, emoji: "🏔️", name: "Mountain", category: "terrain" },
+    { type: "sprite", spriteIndex: 1, emoji: "💧", name: "Water", category: "terrain" },
+    { type: "sprite", spriteIndex: 2, emoji: "🌿", name: "Grass", category: "terrain" },
+    { type: "sprite", spriteIndex: 3, emoji: "🗻", name: "Rock", category: "terrain" },
     
     // Buildings
-    { type: "emoji", value: "🏰", name: "Castle", category: "buildings" },
-    { type: "emoji", value: "🏠", name: "House", category: "buildings" },
-    { type: "emoji", value: "🏪", name: "Shop", category: "buildings" },
-    { type: "emoji", value: "⛪", name: "Temple", category: "buildings" },
-    { type: "material", value: "home", name: "Home", category: "buildings" },
+    { type: "sprite", spriteIndex: 4, emoji: "🏰", name: "Castle", category: "buildings" },
+    { type: "sprite", spriteIndex: 5, emoji: "🏠", name: "House", category: "buildings" },
+    { type: "sprite", spriteIndex: 6, emoji: "🏪", name: "Shop", category: "buildings" },
+    { type: "sprite", spriteIndex: 7, emoji: "⛪", name: "Temple", category: "buildings" },
     
     // RPG Icons
-    { type: "rpg", value: "ra-dragon", name: "Dragon", category: "monsters" },
-    { type: "rpg", value: "ra-sword", name: "Sword", category: "items" },
-    { type: "rpg", value: "ra-gem", name: "Treasure", category: "items" },
-    { type: "rpg", value: "ra-skull", name: "Danger", category: "hazards" },
-    { type: "rpg", value: "ra-tower", name: "Tower", category: "buildings" },
+    { type: "sprite", spriteIndex: 8, emoji: "🐉", name: "Dragon", category: "monsters" },
+    { type: "sprite", spriteIndex: 9, emoji: "⚔️", name: "Sword", category: "items" },
+    { type: "sprite", spriteIndex: 10, emoji: "💀", name: "Skull", category: "hazards" },
+    { type: "sprite", spriteIndex: 11, emoji: "⚠️", name: "Danger", category: "hazards" },
     
     // Special
-    { type: "road", value: "🛤️", name: "Road", category: "paths" },
-    { type: "emoji", value: "🚪", name: "Door", category: "features" },
-    { type: "emoji", value: "🔥", name: "Fire", category: "hazards" },
+    { type: "sprite", spriteIndex: 12, emoji: "🗼", name: "Tower", category: "buildings" },
+    { type: "sprite", spriteIndex: 13, emoji: "🛤️", name: "Road", category: "paths" },
+    { type: "sprite", spriteIndex: 14, emoji: "🚪", name: "Door", category: "features" },
+    { type: "sprite", spriteIndex: 15, emoji: "🔥", name: "Fire", category: "hazards" },
+    
+    // Legacy/Additional tiles
+    { type: "emoji", value: "🌳", name: "Tree", category: "terrain" },
     { type: "player", value: "👤", name: "Player", category: "tokens" },
     { type: "clear", value: "", name: "Clear", category: "tools" }
 ];
+
+// ========================================
+// SPRITE SHEET UTILITIES
+// ========================================
+function getSpritePosition(spriteIndex) {
+    const row = Math.floor(spriteIndex / SPRITE_CONFIG.tilesPerRow);
+    const col = spriteIndex % SPRITE_CONFIG.tilesPerRow;
+    const x = col * SPRITE_CONFIG.tileSize;
+    const y = row * SPRITE_CONFIG.tileSize;
+    return { x, y };
+}
+
+function createSpriteCSS(spriteIndex) {
+    const pos = getSpritePosition(spriteIndex);
+    return `
+        background-image: url('${SPRITE_CONFIG.path}');
+        background-position: -${pos.x}px -${pos.y}px;
+        background-size: ${SPRITE_CONFIG.sheetSize}px ${SPRITE_CONFIG.sheetSize}px;
+        width: 32px;
+        height: 32px;
+        image-rendering: pixelated;
+    `;
+}
+
+function getTileDisplay(tileOption) {
+    if (SPRITE_CONFIG.enabled && tileOption.type === "sprite") {
+        return `<div class="sprite-tile" style="${createSpriteCSS(tileOption.spriteIndex)}"></div>`;
+    } else {
+        // Fallback to emoji or other display methods
+        const value = tileOption.emoji || tileOption.value || "";
+        if (tileOption.type === "rpg") {
+            return `<i class="ra ${value}"></i>`;
+        } else if (tileOption.type === "material") {
+            return `<span class="material-icons">${value}</span>`;
+        } else {
+            return value;
+        }
+    }
+}
+
+// Check if sprite sheet is available
+function checkSpriteAvailability() {
+    if (!SPRITE_CONFIG.enabled) return false;
+    
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(true);
+        img.onerror = () => resolve(false);
+        img.src = SPRITE_CONFIG.path;
+    });
+}
 
 const mapTemplates = {
     dungeon: {
@@ -76,14 +138,36 @@ let isDragging = false;
 // ========================================
 // MAP INITIALIZATION
 // ========================================
-function initializeMapEditor() {
+async function initializeMapEditor() {
+    // Check sprite availability first
+    const spritesAvailable = await checkSpriteAvailability();
+    if (!spritesAvailable) {
+        console.warn('🎨 Sprite sheet not found, falling back to emoji tiles');
+        SPRITE_CONFIG.enabled = false;
+    } else {
+        console.log('🎨 Sprite sheet loaded successfully!');
+    }
+    
     createTileSelector();
     initializeMapTypeSelector();
     initializeMapSizeSelector();
     resizeMap();
     refreshSavedMaps();
     
+    // Show sprite status to user
+    showSpriteStatus(spritesAvailable);
+    
     console.log('Map editor initialized');
+}
+
+function showSpriteStatus(spritesAvailable) {
+    const statusElement = document.getElementById('sprite-status');
+    if (statusElement) {
+        statusElement.innerHTML = spritesAvailable ? 
+            '🎨 Enhanced sprites active' : 
+            '📝 Using emoji tiles (sprites not found)';
+        statusElement.className = spritesAvailable ? 'sprite-status-active' : 'sprite-status-fallback';
+    }
 }
 
 function createTileSelector() {
@@ -97,7 +181,10 @@ function createTileSelector() {
         tile.className = 'selector-tile';
         if (i === 0) tile.classList.add('selected');
         
-        if (opt.type === "emoji") {
+        if (opt.type === "sprite") {
+            // Use sprite display
+            tile.innerHTML = getTileDisplay(opt);
+        } else if (opt.type === "emoji") {
             tile.textContent = opt.value;
         } else if (opt.type === "material") {
             const icon = document.createElement('span');
@@ -237,7 +324,13 @@ function renderTile(tile, mapData, playerData) {
     
     // Render map data (terrain/buildings)
     if (mapData) {
-        if (mapData.type === "emoji") {
+        if (mapData.type === "sprite") {
+            // Create sprite tile
+            const spriteDiv = document.createElement('div');
+            spriteDiv.className = 'sprite-tile';
+            spriteDiv.style.cssText = createSpriteCSS(mapData.spriteIndex);
+            tile.appendChild(spriteDiv);
+        } else if (mapData.type === "emoji") {
             tile.textContent = mapData.value;
         } else if (mapData.type === "material") {
             const icon = document.createElement('span');

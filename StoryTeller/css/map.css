@@ -3,6 +3,128 @@
    ======================================== */
 
 /* ========================================
+   SPRITE TILE STYLES
+   ======================================== */
+.sprite-tile {
+    width: 32px;
+    height: 32px;
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    display: inline-block;
+}
+
+/* Sprite tile in map grid */
+.map-tile .sprite-tile {
+    width: 100%;
+    height: 100%;
+}
+
+/* Sprite tile in selector */
+.selector-tile .sprite-tile {
+    width: 32px;
+    height: 32px;
+    margin: auto;
+}
+
+/* Fallback styles for when sprites aren't available */
+.sprite-fallback {
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+}
+
+/* Sprite status indicator */
+.sprite-status-indicator {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.sprite-status-active {
+    background: rgba(34, 197, 94, 0.9);
+    color: white;
+    border: 1px solid rgba(34, 197, 94, 1);
+}
+
+.sprite-status-fallback {
+    background: rgba(249, 115, 22, 0.9);
+    color: white;
+    border: 1px solid rgba(249, 115, 22, 1);
+}
+
+/* Map editor panel layout */
+.map-editor .map-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+}
+
+.map-editor .control-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.map-editor .control-group label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.tile-selector-container {
+    margin: var(--spacing-md) 0;
+}
+
+.tile-selector-container h5 {
+    margin-bottom: var(--spacing-sm);
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.tile-selector-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: var(--spacing-sm);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+}
+
+.map-container {
+    margin: var(--spacing-md) 0;
+    text-align: center;
+}
+
+.map-grid {
+    display: inline-grid;
+    gap: 1px;
+    padding: var(--spacing-sm);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+}
+
+.map-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.map-actions .form-input {
+    flex: 1;
+    min-width: 150px;
+}
+
+/* ========================================
    MAP GENERATOR CONTROLS
    ======================================== */
 .map-generator-card {
