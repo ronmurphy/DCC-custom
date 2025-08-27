@@ -159,6 +159,10 @@ class EmojiProcessor {
 // Create global instance
 window.emojiProcessor = new EmojiProcessor();
 
+// Set global flag to indicate this module is loaded
+window.isEmojiProcessorLoaded = true;
+console.log('✅ EmojiProcessor loaded and ready');
+
 // Export for modules
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = EmojiProcessor;

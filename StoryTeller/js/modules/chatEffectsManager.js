@@ -293,6 +293,10 @@ class ChatEffectsManager {
 // Create global instance
 window.chatEffectsManager = new ChatEffectsManager();
 
+// Set global flag to indicate this module is loaded
+window.isChatEffectsLoaded = true;
+console.log('✅ ChatEffectsManager loaded and ready');
+
 // Export for module use
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = ChatEffectsManager;
