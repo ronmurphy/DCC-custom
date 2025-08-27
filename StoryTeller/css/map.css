@@ -255,8 +255,7 @@
 .sprite {
     width: 100%;
     height: 100%;
-    background-image: url('assets/dungeon_sprite_sheet_ordered.png');
-    background-size: 256px 256px;
+    background-image: url('../assets/dungeon_sprite_sheet_ordered.png');
     background-repeat: no-repeat;
     image-rendering: pixelated;
     image-rendering: -moz-crisp-edges;
@@ -264,29 +263,48 @@
     display: block;
 }
 
+/* Default sprite sizing for map grid (28x28) */
+.sprite {
+    background-size: 112px 112px; /* Scale down: 4 sprites × 28px = 112px */
+}
+
+/* Sprite sizing for tile selector (40x40) */
+.selector-tile .sprite {
+    width: 40px;
+    height: 40px;
+    background-size: 160px 160px; /* Scale: 4 sprites × 40px = 160px */
+}
+
+/* Sprite sizing for map grid tiles (28x28) */
+.map-tile .sprite {
+    width: 28px;
+    height: 28px;
+    background-size: 112px 112px; /* Scale: 4 sprites × 28px = 112px */
+}
+
 /* Terrain Sprites - Row 1 */
-.sprite.mountain { background-position: 0px 0px; }        /* Mountain */
-.sprite.water { background-position: -64px 0px; }         /* Water */
-.sprite.grass { background-position: -128px 0px; }        /* Grass */
-.sprite.rock { background-position: -192px 0px; }         /* Rock */
+.sprite.mountain { background-position: 0% 0%; }           /* Mountain */
+.sprite.water { background-position: 33.33% 0%; }          /* Water */
+.sprite.grass { background-position: 66.66% 0%; }          /* Grass */
+.sprite.rock { background-position: 100% 0%; }             /* Rock */
 
 /* Building Sprites - Row 2 */
-.sprite.castle { background-position: 0px -64px; }        /* Castle */
-.sprite.house { background-position: -64px -64px; }       /* House */
-.sprite.shop { background-position: -128px -64px; }       /* Shop */
-.sprite.temple { background-position: -192px -64px; }     /* Temple */
+.sprite.castle { background-position: 0% 33.33%; }         /* Castle */
+.sprite.house { background-position: 33.33% 33.33%; }      /* House */
+.sprite.shop { background-position: 66.66% 33.33%; }       /* Shop */
+.sprite.temple { background-position: 100% 33.33%; }       /* Temple */
 
 /* RPG Sprites - Row 3 */
-.sprite.dragon { background-position: 0px -128px; }       /* Dragon */
-.sprite.sword { background-position: -64px -128px; }      /* Sword */
-.sprite.skull { background-position: -128px -128px; }     /* Skull */
-.sprite.danger { background-position: -192px -128px; }    /* Danger */
+.sprite.dragon { background-position: 0% 66.66%; }         /* Dragon */
+.sprite.sword { background-position: 33.33% 66.66%; }      /* Sword */
+.sprite.skull { background-position: 66.66% 66.66%; }      /* Skull */
+.sprite.danger { background-position: 100% 66.66%; }       /* Danger */
 
 /* Special Sprites - Row 4 */
-.sprite.tower { background-position: 0px -192px; }        /* Tower */
-.sprite.road { background-position: -64px -192px; }       /* Road */
-.sprite.door { background-position: -128px -192px; }      /* Door */
-.sprite.fire { background-position: -192px -192px; }      /* Fire */
+.sprite.tower { background-position: 0% 100%; }            /* Tower */
+.sprite.road { background-position: 33.33% 100%; }         /* Road */
+.sprite.door { background-position: 66.66% 100%; }         /* Door */
+.sprite.fire { background-position: 100% 100%; }           /* Fire */
 
 /* ========================================
    TILE SELECTOR
@@ -320,8 +338,8 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s ease;
-    font-size: 20px;
+    transition: all 0.2s;
+    font-size: 24px;
     position: relative;
 }
 
