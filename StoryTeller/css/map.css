@@ -1,18 +1,195 @@
 /* ========================================
-   MAP EDITOR STYLES
+   SIMPLE MAP EDITOR STYLES
+   Clean approach with intuitive class names
    ======================================== */
 
 /* ========================================
-   SPRITE TILE STYLES
+   PANEL INTEGRATION
    ======================================== */
-.sprite-tile {
-    width: 32px;
-    height: 32px;
+.panel-content .map-editor {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* ========================================
+   MICHELLE'S SPRITE SYSTEM
+   ======================================== */
+
+/* Base sprite class */
+.sprite {
+    width: 100%;
+    height: 100%;
+    background-image: url('assets/dungeon_sprite_sheet_ordered.png');
+    background-size: 256px 256px;
     background-repeat: no-repeat;
     image-rendering: pixelated;
     image-rendering: -moz-crisp-edges;
     image-rendering: crisp-edges;
-    display: inline-block;
+    display: block;
+    /* Debug: Add red background to see if sprite elements exist */
+    background-color: red;
+}
+
+/* Terrain Sprites - Row 1 */
+.sprite.mountain { background-position: 0px 0px; }        /* Mountain */
+.sprite.water { background-position: -64px 0px; }         /* Water */
+.sprite.grass { background-position: -128px 0px; }        /* Grass */
+.sprite.rock { background-position: -192px 0px; }         /* Rock */
+
+/* Building Sprites - Row 2 */
+.sprite.castle { background-position: 0px -64px; }        /* Castle */
+.sprite.house { background-position: -64px -64px; }       /* House */
+.sprite.shop { background-position: -128px -64px; }       /* Shop */
+.sprite.temple { background-position: -192px -64px; }     /* Temple */
+
+/* RPG Sprites - Row 3 */
+.sprite.dragon { background-position: 0px -128px; }       /* Dragon */
+.sprite.sword { background-position: -64px -128px; }      /* Sword */
+.sprite.skull { background-position: -128px -128px; }     /* Skull */
+.sprite.danger { background-position: -192px -128px; }    /* Danger */
+
+/* Special Sprites - Row 4 */
+.sprite.tower { background-position: 0px -192px; }        /* Tower */
+.sprite.road { background-position: -64px -192px; }       /* Road */
+.sprite.door { background-position: -128px -192px; }      /* Door */
+.sprite.fire { background-position: -192px -192px; }      /* Fire */
+
+/* ========================================
+   TILE SELECTOR
+   ======================================== */
+
+.tile-selector-container {
+    margin-bottom: 16px;
+}
+
+.tile-selector-container h5 {
+    margin: 0 0 8px 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+}
+
+#tile-selector,
+.tile-selector-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+    gap: 8px;
+}
+
+.selector-tile {
+    width: 56px;
+    height: 56px;
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 24px;
+    position: relative;
+}
+
+.selector-tile:hover {
+    border-color: var(--accent-color);
+    background: var(--bg-tertiary);
+    transform: scale(1.05);
+}
+
+.selector-tile.selected {
+    border-color: var(--accent-color);
+    background: var(--accent-color);
+    color: white;
+    transform: scale(1.02);
+    box-shadow: 0 0 8px rgba(var(--accent-color-rgb), 0.3);
+}
+
+/* ========================================
+   MAP GRID
+   ======================================== */
+
+.map-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px;
+}
+
+#map-grid {
+    display: grid;
+    gap: 1px;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 8px;
+}
+
+.map-cell {
+    width: 32px;
+    height: 32px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.1s ease;
+    font-size: 16px;
+}
+
+.map-cell:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--accent-color);
+}
+
+/* ========================================
+   SPRITE STATUS
+   ======================================== */
+
+.sprite-status-indicator {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin-left: auto;
+}
+
+.sprite-status-active {
+    background: var(--success-color);
+    color: white;
+}
+
+.sprite-status-fallback {
+    background: var(--warning-color);
+    color: white;
+}
+
+/* ========================================
+   MOBILE RESPONSIVE
+   ======================================== */
+
+@media (max-width: 768px) {
+    #tile-selector {
+        grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+        gap: 6px;
+    }
+    
+    .selector-tile {
+        width: 48px;
+        height: 48px;
+        font-size: 20px;
+    }
+    
+    .map-cell {
+        width: 28px;
+        height: 28px;
+        font-size: 14px;
+    }
 }
 
 /* Sprite tile in map grid */
@@ -23,8 +200,8 @@
 
 /* Sprite tile in selector */
 .selector-tile .sprite-tile {
-    width: 32px;
-    height: 32px;
+    width: 100%;
+    height: 100%;
     margin: auto;
 }
 
@@ -91,16 +268,20 @@
 .tile-selector-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
-    padding: var(--spacing-sm);
+    gap: 6px;
+    padding: 12px;
     background: var(--bg-secondary);
     border-radius: var(--radius-md);
     border: 1px solid var(--border-color);
+    max-height: 300px;
+    overflow-y: auto;
 }
 
 .map-container {
     margin: var(--spacing-md) 0;
     text-align: center;
+    min-height: 400px; /* Ensure minimum height */
+    width: 100%;
 }
 
 .map-grid {
@@ -211,9 +392,9 @@
 }
 
 .selector-tile {
-    width: 50px;
-    height: 50px;
-    background: var(--bg-secondary);
+    width: 56px;
+    height: 56px;
+    background: var(--bg-primary);
     border: 2px solid var(--border-color);
     border-radius: var(--radius-sm);
     display: flex;
@@ -226,16 +407,22 @@
 }
 
 .selector-tile:hover {
-    border-color: var(--info);
-    transform: scale(1.1);
+    border-color: var(--accent-color);
+    background: var(--bg-tertiary);
+    transform: scale(1.05);
+    z-index: 10;
 }
 
 .selector-tile.selected {
-    border-color: var(--secondary);
-    background: var(--secondary);
-    color: var(--bg-primary);
-    transform: scale(1.05);
-    box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+    border-color: var(--accent-color);
+    background: var(--accent-color);
+    color: white;
+    transform: scale(1.02);
+    box-shadow: 0 0 8px rgba(var(--accent-color-rgb), 0.3);
+}
+
+.selector-tile.selected .sprite-tile {
+    filter: brightness(1.2);
 }
 
 .selector-tile .material-icons {
@@ -277,21 +464,75 @@
     max-height: 70vh;
 }
 
+/* Map grid styling with better visibility */
 .map-grid {
     display: grid;
-    gap: 1px;
+    gap: 2px;
     background: var(--border-color);
     border: 2px solid var(--border-color);
     border-radius: var(--radius-sm);
     width: fit-content;
     margin: 0 auto;
     grid-template-columns: repeat(15, 1fr); /* Will be updated dynamically */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 4px;
+    min-width: 600px; /* Ensure minimum width */
+    min-height: 600px; /* Ensure minimum height */
+}
+
+/* Map control button hover effects */
+.size-btn:hover, .action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.size-btn:active, .action-btn:active {
+    transform: translateY(0);
+}
+
+/* Ensure button text colors respect theme */
+.map-controls-row .size-btn {
+    background: var(--bg-primary) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.map-controls-row .size-btn.active,
+.map-controls-row .size-btn[data-size].active {
+    background: var(--accent-color) !important;
+    border: 1px solid var(--accent-color) !important;
+    color: white !important;
+}
+
+.map-controls-row .action-btn.primary {
+    background: var(--success-color) !important;
+    border: 1px solid var(--success-color) !important;
+    color: white !important;
+}
+
+.map-controls-row .action-btn.secondary {
+    background: var(--warning-color) !important;
+    border: 1px solid var(--warning-color) !important;
+    color: white !important;
+}
+
+.map-actions .action-btn.success {
+    background: var(--success-color) !important;
+    border: 1px solid var(--success-color) !important;
+    color: white !important;
+}
+
+.map-actions .action-btn.info {
+    background: var(--info-color) !important;
+    border: 1px solid var(--info-color) !important;
+    color: white !important;
 }
 
 .map-tile {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     background: var(--bg-primary);
+    border: 1px solid var(--border-color);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -304,6 +545,7 @@
 
 .map-tile:hover {
     background: var(--bg-tertiary);
+    border-color: var(--accent-color);
     transform: scale(1.05);
     z-index: 10;
 }
