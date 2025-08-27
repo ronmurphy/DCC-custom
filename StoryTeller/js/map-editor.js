@@ -443,20 +443,85 @@ function openMapModal() {
                         ">💾 Save Map</button>
                     </div>
                     
+                    <!-- Map Display Area with Pan/Zoom -->
                     <div style="
                         flex: 1 !important;
-                        overflow: auto !important;
                         display: flex !important;
-                        align-items: center !important;
-                        justify-content: center !important;
+                        flex-direction: column !important;
+                        overflow: hidden !important;
                     ">
-                        <div id="modal-map-grid" style="
-                            display: grid !important;
-                            gap: 1px !important;
-                            background: #ddd !important;
-                            padding: 1px !important;
+                        <!-- Zoom Controls -->
+                        <div style="
+                            display: flex !important;
+                            gap: 8px !important;
+                            align-items: center !important;
+                            padding: 8px !important;
+                            background: var(--bg-secondary, #f8f9fa) !important;
                             border-radius: 4px !important;
-                        "></div>
+                            margin-bottom: 8px !important;
+                        ">
+                            <button onclick="zoomOut()" style="
+                                padding: 4px 8px !important;
+                                background: var(--bg-primary, white) !important;
+                                border: 1px solid var(--border-color, #ccc) !important;
+                                border-radius: 4px !important;
+                                cursor: pointer !important;
+                            ">🔍−</button>
+                            <span id="zoom-level" style="
+                                font-size: 0.9rem !important;
+                                color: var(--text-primary, #333) !important;
+                                min-width: 50px !important;
+                                text-align: center !important;
+                            ">100%</span>
+                            <button onclick="zoomIn()" style="
+                                padding: 4px 8px !important;
+                                background: var(--bg-primary, white) !important;
+                                border: 1px solid var(--border-color, #ccc) !important;
+                                border-radius: 4px !important;
+                                cursor: pointer !important;
+                            ">🔍+</button>
+                            <button onclick="resetZoom()" style="
+                                padding: 4px 8px !important;
+                                background: var(--bg-primary, white) !important;
+                                border: 1px solid var(--border-color, #ccc) !important;
+                                border-radius: 4px !important;
+                                cursor: pointer !important;
+                                margin-left: 8px !important;
+                            ">Reset</button>
+                            <span style="
+                                font-size: 0.8rem !important;
+                                color: var(--text-secondary, #666) !important;
+                                margin-left: 12px !important;
+                            ">Right-click + drag to pan</span>
+                        </div>
+                        
+                        <!-- Pannable Map Container -->
+                        <div id="map-viewport" style="
+                            flex: 1 !important;
+                            overflow: hidden !important;
+                            position: relative !important;
+                            background: var(--bg-primary, white) !important;
+                            border: 2px solid var(--border-color, #ccc) !important;
+                            border-radius: 8px !important;
+                            cursor: grab !important;
+                        ">
+                            <div id="map-canvas" style="
+                                position: absolute !important;
+                                top: 50% !important;
+                                left: 50% !important;
+                                transform: translate(-50%, -50%) scale(1) !important;
+                                transform-origin: center !important;
+                                transition: transform 0.1s ease !important;
+                            ">
+                                <div id="modal-map-grid" style="
+                                    display: grid !important;
+                                    gap: 1px !important;
+                                    background: #ddd !important;
+                                    padding: 1px !important;
+                                    border-radius: 4px !important;
+                                "></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -544,6 +609,9 @@ async function initializeModalMapEditor() {
     // Initialize components
     createModalTileSelector();
     resizeModalMap();
+    
+    // Initialize pan/zoom functionality
+    initializePanZoom();
     
     console.log('✅ Modal Map editor initialized successfully!');
 }
@@ -655,27 +723,62 @@ function resizeModalMap() {
         tile.className = 'map-tile';
         tile.dataset.idx = i;
         
-        // Mouse events for drawing
-        tile.addEventListener('mousedown', () => {
-            isDragging = true;
-            placeTile(i);
+        // Mouse events for drawing (left-click only)
+        tile.addEventListener('mousedown', (e) => {
+            if (e.button === 0 && !isPanning) { // Left click only, not during pan
+                isDragging = true;
+                placeTile(i);
+                e.stopPropagation(); // Prevent event bubbling to viewport
+            }
         });
         
-        tile.addEventListener('mouseenter', () => {
-            if (isDragging) placeTile(i);
+        tile.addEventListener('mouseenter', (e) => {
+            if (isDragging && !isPanning) placeTile(i);
         });
         
-        tile.addEventListener('mouseup', () => {
-            isDragging = false;
+        tile.addEventListener('mouseup', (e) => {
+            if (e.button === 0) { // Left click only
+                isDragging = false;
+            }
+        });
+        
+        // Touch events for mobile (single touch only, not during pinch)
+        tile.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1 && !isPanning && !isMultiTouch) {
+                isDragging = true;
+                placeTile(i);
+                e.stopPropagation();
+            }
+        });
+        
+        tile.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 1 && isDragging && !isPanning && !isMultiTouch) {
+                // Find which tile we're over
+                const touch = e.touches[0];
+                const element = document.elementFromPoint(touch.clientX, touch.clientY);
+                if (element && element.classList.contains('map-tile')) {
+                    const idx = parseInt(element.dataset.idx);
+                    if (!isNaN(idx)) placeTile(idx);
+                }
+                e.preventDefault();
+            }
+        });
+        
+        tile.addEventListener('touchend', (e) => {
+            if (e.touches.length === 0) {
+                isDragging = false;
+            }
         });
         
         renderTile(tile, null, null);
         grid.appendChild(tile);
     }
     
-    // Global mouse up to stop dragging
-    document.addEventListener('mouseup', () => {
-        isDragging = false;
+    // Global mouse up to stop dragging (left-click only)
+    document.addEventListener('mouseup', (e) => {
+        if (e.button === 0) {
+            isDragging = false;
+        }
     });
     
     console.log(`✅ Created ${size}x${size} modal map grid (${totalTiles} tiles)`);
@@ -1054,6 +1157,157 @@ async function loadCustomTilesetsOnInit() {
 }
 
 // ========================================
+// PAN/ZOOM FUNCTIONALITY
+// ========================================
+let currentZoom = 1;
+let panX = 0;
+let panY = 0;
+let isPanning = false;
+let isMultiTouch = false;
+let startX = 0;
+let startY = 0;
+let tileClickTimeout = null;
+
+function zoomIn() {
+    currentZoom = Math.min(currentZoom * 1.2, 3); // Max 300%
+    updateMapTransform();
+    updateZoomDisplay();
+}
+
+function zoomOut() {
+    currentZoom = Math.max(currentZoom / 1.2, 0.2); // Min 20%
+    updateMapTransform();
+    updateZoomDisplay();
+}
+
+function resetZoom() {
+    currentZoom = 1;
+    panX = 0;
+    panY = 0;
+    updateMapTransform();
+    updateZoomDisplay();
+}
+
+function updateMapTransform() {
+    const canvas = document.getElementById('map-canvas');
+    if (canvas) {
+        canvas.style.transform = `translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${currentZoom})`;
+    }
+}
+
+function updateZoomDisplay() {
+    const display = document.getElementById('zoom-level');
+    if (display) {
+        display.textContent = `${Math.round(currentZoom * 100)}%`;
+    }
+}
+
+function initializePanZoom() {
+    const viewport = document.getElementById('map-viewport');
+    if (!viewport) return;
+    
+    // Mouse events for desktop
+    viewport.addEventListener('mousedown', (e) => {
+        if (e.button === 2) { // Right click
+            isPanning = true;
+            startX = e.clientX - panX;
+            startY = e.clientY - panY;
+            viewport.style.cursor = 'grabbing';
+            e.preventDefault();
+        }
+    });
+    
+    viewport.addEventListener('mousemove', (e) => {
+        if (isPanning) {
+            panX = e.clientX - startX;
+            panY = e.clientY - startY;
+            updateMapTransform();
+            e.preventDefault();
+        }
+    });
+    
+    viewport.addEventListener('mouseup', (e) => {
+        if (e.button === 2) {
+            isPanning = false;
+            viewport.style.cursor = 'grab';
+        }
+    });
+    
+    // Prevent context menu on right click
+    viewport.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+    });
+    
+    // Mouse wheel zoom
+    viewport.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        if (e.deltaY < 0) {
+            zoomIn();
+        } else {
+            zoomOut();
+        }
+    });
+    
+    // Touch events for mobile
+    let lastTouchDistance = 0;
+    
+    viewport.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+            // Single touch - pan
+            isPanning = true;
+            isMultiTouch = false;
+            startX = e.touches[0].clientX - panX;
+            startY = e.touches[0].clientY - panY;
+        } else if (e.touches.length === 2) {
+            // Two finger pinch - zoom
+            isPanning = false;
+            isMultiTouch = true;
+            const touch1 = e.touches[0];
+            const touch2 = e.touches[1];
+            lastTouchDistance = Math.sqrt(
+                Math.pow(touch2.clientX - touch1.clientX, 2) +
+                Math.pow(touch2.clientY - touch1.clientY, 2)
+            );
+        }
+        e.preventDefault();
+    });
+    
+    viewport.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 1 && isPanning) {
+            // Pan
+            panX = e.touches[0].clientX - startX;
+            panY = e.touches[0].clientY - startY;
+            updateMapTransform();
+        } else if (e.touches.length === 2) {
+            // Pinch zoom
+            const touch1 = e.touches[0];
+            const touch2 = e.touches[1];
+            const distance = Math.sqrt(
+                Math.pow(touch2.clientX - touch1.clientX, 2) +
+                Math.pow(touch2.clientY - touch1.clientY, 2)
+            );
+            
+            if (lastTouchDistance > 0) {
+                const scale = distance / lastTouchDistance;
+                currentZoom = Math.max(0.2, Math.min(3, currentZoom * scale));
+                updateMapTransform();
+                updateZoomDisplay();
+            }
+            lastTouchDistance = distance;
+        }
+        e.preventDefault();
+    });
+    
+    viewport.addEventListener('touchend', (e) => {
+        isPanning = false;
+        isMultiTouch = false;
+        lastTouchDistance = 0;
+    });
+    
+    console.log('✅ Pan/Zoom initialized');
+}
+
+// ========================================
 // GLOBAL FUNCTIONS
 // ========================================
 window.openMapModal = openMapModal;
@@ -1064,5 +1318,8 @@ window.saveMapAsFile = saveMapAsFile;
 window.initializeMapEditor = initializeMapEditor;
 window.importCustomTileset = importCustomTileset;
 window.handleTilesetFiles = handleTilesetFiles;
+window.zoomIn = zoomIn;
+window.zoomOut = zoomOut;
+window.resetZoom = resetZoom;
 
 console.log('🗺️ Map Editor loaded (modal version)');
