@@ -178,6 +178,10 @@
                     <span class="tab-icon"><i class="ra ra-scroll-unfurled"></i></span>
                     <span class="tab-label">Notes & Backstory</span>
                 </button>
+                <button class="sidebar-tab" data-tab="storage">
+                    <span class="tab-icon">🗄️</span>
+                    <span class="tab-label">Storage Manager</span>
+                </button>
                 <button class="sidebar-tab" data-tab="reference">
                     <span class="tab-icon"><i class="material-icons">help_outline</i></span>
                     <span class="tab-label">How the Game Works</span>
@@ -1269,6 +1273,59 @@
                 </div>
             </section>
 
+            <!-- Storage Manager Tab -->
+            <section class="tab-content" id="storage">
+                <div class="content-wrapper">
+                    <div class="notes-header">
+                        <h2>🗄️ Storage Manager</h2>
+                        <button class="save-notes-btn" onclick="refreshStorageStats()">
+                            <span class="material-icons">refresh</span>
+                            Refresh Stats
+                        </button>
+                    </div>
+
+                    <div class="notes-grid">
+                        <div class="note-card">
+                            <div class="note-header">
+                                <span>📊</span>
+                                <h3>Storage Usage</h3>
+                            </div>
+                            <div id="storage-stats-display" style="padding: 15px; font-family: monospace; background: var(--bg-secondary); border-radius: 4px; margin: 10px 0;">
+                                <div style="color: var(--text-secondary);">Loading storage statistics...</div>
+                            </div>
+                        </div>
+
+                        <div class="note-card">
+                            <div class="note-header">
+                                <span>🛠️</span>
+                                <h3>Storage Actions</h3>
+                            </div>
+                            <div style="padding: 15px;">
+                                <button class="save-notes-btn" onclick="migratePlayerStorage()" style="width: 100%; margin-bottom: 10px;">
+                                    📦 Migrate to IndexedDB
+                                </button>
+                                <button class="save-notes-btn" onclick="cleanupPlayerStorage()" style="width: 100%; margin-bottom: 10px; background: var(--warning-gradient);">
+                                    🧹 Cleanup Old Data
+                                </button>
+                                <button class="save-notes-btn" onclick="exportPlayerData()" style="width: 100%; background: var(--success-gradient);">
+                                    💾 Export Character Data
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="note-card">
+                            <div class="note-header">
+                                <span>📋</span>
+                                <h3>Data Items</h3>
+                            </div>
+                            <div id="storage-items-display" style="padding: 15px; max-height: 300px; overflow-y: auto; font-family: monospace; font-size: 0.85em; background: var(--bg-secondary); border-radius: 4px; margin: 10px 0;">
+                                <div style="color: var(--text-secondary);">Loading data items...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Reference/How the Game Works Tab -->
             <section class="tab-content" id="reference">
                 <div class="content-wrapper">
@@ -1584,6 +1641,8 @@
     </div>
 
     <!-- Scripts -->
+    <script src="advancedStorageManager.js"></script>
+    <script src="storageMigration.js"></script>
     <script src="main.js"></script>
     <script src="character-manager.js"></script>
     <script src="cache-manager.js"></script>
@@ -1601,6 +1660,159 @@
             (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.body.classList.add('dark-theme');
         }
+
+        // Storage Management Functions for Player Apps
+        async function refreshStorageStats() {
+            try {
+                let stats;
+                if (window.advancedStorageManager) {
+                    stats = await window.advancedStorageManager.getStorageStats();
+                } else {
+                    // Fallback for basic localStorage stats
+                    let used = 0;
+                    for (let key in localStorage) {
+                        if (localStorage.hasOwnProperty(key)) {
+                            used += localStorage[key].length + key.length;
+                        }
+                    }
+                    stats = {
+                        localStorage: {
+                            used: used,
+                            usedMB: (used / (1024 * 1024)).toFixed(2),
+                            percentage: Math.round((used / (5 * 1024 * 1024)) * 100)
+                        }
+                    };
+                }
+
+                const statsDisplay = document.getElementById('storage-stats-display');
+                if (statsDisplay) {
+                    statsDisplay.innerHTML = `
+                        <div style="margin-bottom: 10px;">
+                            <strong>localStorage:</strong> ${stats.localStorage.usedMB}MB (${stats.localStorage.percentage}%)
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <strong>IndexedDB:</strong> ${stats.indexedDB?.supported ? '✅ Available' : '❌ Not Available'}
+                        </div>
+                        <div>
+                            <strong>Platform:</strong> ${stats.cordova?.detected ? '📱 Cordova App' : '🌐 Web Browser'}
+                        </div>
+                    `;
+                }
+
+                // Update items list
+                const itemsDisplay = document.getElementById('storage-items-display');
+                if (itemsDisplay) {
+                    let itemsHtml = '<div style="display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center;">';
+                    for (let key in localStorage) {
+                        if (localStorage.hasOwnProperty(key)) {
+                            const size = localStorage[key].length;
+                            const sizeMB = (size / (1024 * 1024)).toFixed(3);
+                            const isLarge = size > 50000;
+                            
+                            itemsHtml += `
+                                <span style="color: var(--text-primary);">${key}</span>
+                                <span style="color: ${isLarge ? 'var(--warning)' : 'var(--text-secondary)'};">${sizeMB}MB ${isLarge ? '⚠️' : ''}</span>
+                            `;
+                        }
+                    }
+                    itemsHtml += '</div>';
+                    itemsDisplay.innerHTML = itemsHtml;
+                }
+            } catch (error) {
+                console.error('Storage stats error:', error);
+                const statsDisplay = document.getElementById('storage-stats-display');
+                if (statsDisplay) {
+                    statsDisplay.innerHTML = '<div style="color: var(--error);">❌ Failed to load storage statistics</div>';
+                }
+            }
+        }
+
+        async function migratePlayerStorage() {
+            try {
+                if (!window.advancedStorageManager) {
+                    alert('❌ Advanced storage manager not available');
+                    return;
+                }
+
+                if (!window.storageMigration) {
+                    alert('❌ Storage migration not available');
+                    return;
+                }
+
+                const confirmMsg = '📦 This will move large data to IndexedDB to free up localStorage space. Continue?';
+                if (!confirm(confirmMsg)) return;
+
+                await window.storageMigration.runMigration();
+                alert('✅ Migration completed successfully!');
+                refreshStorageStats();
+            } catch (error) {
+                console.error('Migration error:', error);
+                alert('❌ Migration failed: ' + error.message);
+            }
+        }
+
+        async function cleanupPlayerStorage() {
+            if (!confirm('🧹 This will remove old data and compress storage. Continue?')) {
+                return;
+            }
+
+            try {
+                if (window.storageMigration) {
+                    await window.storageMigration.emergencyCleanup();
+                    alert('🧹 Cleanup completed successfully!');
+                    refreshStorageStats();
+                } else {
+                    alert('❌ Storage migration not available');
+                }
+            } catch (error) {
+                console.error('Cleanup error:', error);
+                alert('❌ Cleanup failed: ' + error.message);
+            }
+        }
+
+        async function exportPlayerData() {
+            try {
+                const data = {};
+                
+                // Export localStorage data
+                for (let key in localStorage) {
+                    if (localStorage.hasOwnProperty(key)) {
+                        try {
+                            data[key] = JSON.parse(localStorage[key]);
+                        } catch (e) {
+                            data[key] = localStorage[key];
+                        }
+                    }
+                }
+
+                // Create download
+                const dataStr = JSON.stringify(data, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `dcc-player-backup-${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+                
+                URL.revokeObjectURL(url);
+                alert('💾 Character data exported successfully!');
+            } catch (error) {
+                console.error('Export failed:', error);
+                alert('❌ Export failed: ' + error.message);
+            }
+        }
+
+        // Auto-load storage stats when storage tab is opened
+        document.addEventListener('DOMContentLoaded', () => {
+            // Monitor tab changes to load storage stats
+            const storageTab = document.querySelector('[data-tab="storage"]');
+            if (storageTab) {
+                storageTab.addEventListener('click', () => {
+                    setTimeout(refreshStorageStats, 100);
+                });
+            }
+        });
 
         // Accent Theme System
         function setAccentTheme(themeName) {

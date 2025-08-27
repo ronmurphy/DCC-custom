@@ -271,6 +271,20 @@
             background: var(--warning-gradient);
         }
 
+        .dark-theme .command-btn.storage {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+        }
+
+        .dark-theme .command-btn.storage:hover {
+            background: linear-gradient(135deg, #5dade2, #3498db);
+        }
+
+        .dark-theme .command-btn.primary {
+            background: var(--primary-gradient);
+            color: white;
+        }
+
         .dark-theme .command-note {
             background: var(--bg-primary);
             color: var(--text-secondary);
@@ -2481,6 +2495,8 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     
     <!-- DCC Module System -->
+    <script src="js/modules/advancedStorageManager.js"></script>
+    <script src="js/modules/storageMigration.js"></script>
     <script src="js/modules/dccMechanics.js"></script>
     <script src="js/modules/rollCalculator.js"></script>
     <script src="js/modules/jsonDataLoader.js"></script>
@@ -2952,6 +2968,12 @@
                                             </button>
                                             <button class="command-btn warning" onclick="resetSession()" title="Reset current session">
                                                 🔄 Reset Session
+                                            </button>
+                                            <button class="command-btn storage" onclick="showStorageStats()" title="View storage usage and manage data">
+                                                🗄️ Storage Manager
+                                            </button>
+                                            <button class="command-btn primary" onclick="migrateToIndexedDB()" title="Move large data to IndexedDB">
+                                                📦 Migrate Storage
                                             </button>
                                         </div>
                                         <div class="command-note">
@@ -5437,6 +5459,62 @@ Notes: ${npc.notes || 'None'}`;
             if (confirm('Are you sure you want to reset the current session? This will clear all data!')) {
                 alert('Reset Session: This feature will reset the current session.');
                 // TODO: Implement session reset functionality
+            }
+        }
+
+        // Storage Management Functions
+        async function showStorageStats() {
+            try {
+                let stats;
+                if (window.advancedStorageManager) {
+                    stats = await window.advancedStorageManager.getStorageStats();
+                } else {
+                    // Fallback for basic localStorage stats
+                    let used = 0;
+                    for (let key in localStorage) {
+                        if (localStorage.hasOwnProperty(key)) {
+                            used += localStorage[key].length + key.length;
+                        }
+                    }
+                    stats = {
+                        localStorage: {
+                            used: used,
+                            usedMB: (used / (1024 * 1024)).toFixed(2),
+                            percentage: Math.round((used / (5 * 1024 * 1024)) * 100)
+                        }
+                    };
+                }
+
+                const message = `📊 Storage Usage:
+localStorage: ${stats.localStorage.usedMB}MB (${stats.localStorage.percentage}%)
+${stats.indexedDB?.supported ? '✅ IndexedDB available' : '❌ IndexedDB not available'}
+${stats.cordova?.detected ? '📱 Cordova app detected' : '🌐 Web browser mode'}`;
+
+                addChatMessage(message, 'system');
+            } catch (error) {
+                console.error('Storage stats error:', error);
+                addChatMessage('❌ Failed to get storage statistics', 'system');
+            }
+        }
+
+        async function migrateToIndexedDB() {
+            try {
+                if (!window.advancedStorageManager) {
+                    addChatMessage('❌ Advanced storage manager not available', 'system');
+                    return;
+                }
+
+                if (!window.storageMigration) {
+                    addChatMessage('❌ Storage migration not available', 'system');
+                    return;
+                }
+
+                addChatMessage('📦 Starting migration to IndexedDB...', 'system');
+                await window.storageMigration.runMigration();
+                addChatMessage('✅ Migration completed successfully!', 'system');
+            } catch (error) {
+                console.error('Migration error:', error);
+                addChatMessage('❌ Migration failed: ' + error.message, 'system');
             }
         }
     </script>
