@@ -740,6 +740,10 @@
     border: 2px solid var(--border-color);
     overflow: auto;
     max-height: 70vh;
+    max-width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
 }
 
 /* Map grid styling with better visibility */
@@ -754,8 +758,11 @@
     grid-template-columns: repeat(15, 1fr); /* Will be updated dynamically */
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     padding: 4px;
-    min-width: 600px; /* Ensure minimum width */
-    min-height: 600px; /* Ensure minimum height */
+    /* Responsive sizing based on map size */
+    min-width: min(600px, 90vw);
+    min-height: min(600px, 60vh);
+    max-width: 90vw;
+    max-height: 60vh;
 }
 
 /* Map control button hover effects */

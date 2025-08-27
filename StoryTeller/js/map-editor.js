@@ -60,7 +60,7 @@ let tilesetData = null;
 
 async function loadAvailableTilesets() {
     // Try to load known tilesets
-    const knownTilesets = ['default', 'forest'];
+    const knownTilesets = ['default', 'forest', 'GreenTest'];
     availableTilesets = {};
     
     for (const tileset of knownTilesets) {
@@ -125,25 +125,56 @@ async function switchTileset(tilesetName) {
     const existingStyles = document.querySelectorAll('style[data-tileset-style]');
     existingStyles.forEach(style => style.remove());
     
-    // Update CSS to use new sprite sheet
+    // Update CSS to use new sprite sheet - inject specific rules for each sprite
     const styleElement = document.createElement('style');
     styleElement.setAttribute('data-tileset-style', 'true'); // Mark for easy removal
     const imageUrl = (tilesetData && tilesetData.imageUrl) ? 
         tilesetData.imageUrl : 
-        `../assets/${tilesetName}.png`;
-    styleElement.textContent = `.sprite { background-image: url('${imageUrl}') !important; }`;
+        `assets/${tilesetName}.png?v=${Date.now()}`; // Add cache buster
+    
+    // Create specific CSS rules for each sprite type to ensure override
+    const spriteClasses = [
+        'mountain', 'water', 'grass', 'rock', 'castle', 'house', 'shop', 'temple',
+        'dragon', 'sword', 'skull', 'danger', 'tower', 'road', 'door', 'fire'
+    ];
+    
+    let cssRules = `
+        /* Base sprite rule */
+        .sprite {
+            background-image: url('${imageUrl}') !important;
+        }
+        /* Specific sprite rules to ensure override */
+    `;
+    
+    spriteClasses.forEach(sprite => {
+        cssRules += `
+        .selector-tile .sprite.${sprite},
+        .map-tile .sprite.${sprite},
+        .sprite.${sprite} {
+            background-image: url('${imageUrl}') !important;
+        }`;
+    });
+    
+    styleElement.textContent = cssRules;
     document.head.appendChild(styleElement);
     
-    console.log(`🎨 Updated sprite CSS to use: ${imageUrl}`);
+    console.log(`🎨 Updated sprite CSS with specific rules for: ${imageUrl}`);
     
-    // Update tile selector
+    // Check if sprites are available and update status
+    await checkSprites();
+    updateSpriteStatus();
+    
+    // Force refresh the tile selector to apply new styles
     const modal = document.getElementById('map-editor-modal');
     if (modal && modal.style.display === 'flex') {
-        createModalTileSelector();
-        resizeModalMap();
+        // Small delay to ensure CSS is applied before recreating elements
+        setTimeout(() => {
+            createModalTileSelector();
+            resizeModalMap();
+        }, 100);
     }
     
-    console.log(`🔄 Switched to tileset: ${tilesetName}`);
+    console.log(`🔄 Switched to tileset: ${tilesetName}, sprites enabled: ${spritesEnabled}`);
 }
 
 // ========================================
@@ -264,6 +295,21 @@ function openMapModal() {
                         border: 1px solid var(--border-color, #ccc) !important;
                     ">
                         <h4 style="margin: 0 0 12px 0 !important; color: var(--text-primary, #333) !important;">Map Size:</h4>
+                        
+                        <!-- Size Slider -->
+                        <div style="margin-bottom: 12px !important;">
+                            <input type="range" id="map-size-slider" min="10" max="50" step="5" value="20" 
+                                   onchange="setMapSizeFromSlider(this.value)" style="
+                                width: 100% !important;
+                                margin-bottom: 8px !important;
+                            ">
+                            <div style="display: flex !important; justify-content: space-between !important; font-size: 0.8rem !important; color: var(--text-secondary, #666) !important;">
+                                <span>10x10</span>
+                                <span id="current-size-display">20x20</span>
+                                <span>50x50</span>
+                            </div>
+                        </div>
+                        
                         <div style="display: flex !important; gap: 8px !important; flex-wrap: wrap !important;">
                             <button class="size-btn" data-size="small" onclick="setMapSize('small')" style="
                                 padding: 8px 12px !important;
@@ -273,7 +319,7 @@ function openMapModal() {
                                 border-radius: 4px !important;
                                 cursor: pointer !important;
                                 font-size: 0.9rem !important;
-                            ">10×10</button>
+                            ">10</button>
                             <button class="size-btn active" data-size="medium" onclick="setMapSize('medium')" style="
                                 padding: 8px 12px !important;
                                 background: #28a745 !important;
@@ -282,16 +328,34 @@ function openMapModal() {
                                 border-radius: 4px !important;
                                 cursor: pointer !important;
                                 font-size: 0.9rem !important;
-                            ">15×15</button>
+                            ">20</button>
                             <button class="size-btn" data-size="large" onclick="setMapSize('large')" style="
                                 padding: 8px 12px !important;
-                                background: #007bff !important;
+                                background: #dcc149ff !important;
                                 color: white !important;
                                 border: none !important;
                                 border-radius: 4px !important;
                                 cursor: pointer !important;
                                 font-size: 0.9rem !important;
-                            ">20×20</button>
+                            ">30</button>
+                            <button class="size-btn" data-size="extra" onclick="setMapSize('extra')" style="
+                                padding: 8px 12px !important;
+                                background: #17a2b8 !important;
+                                color: white !important;
+                                border: none !important;
+                                border-radius: 4px !important;
+                                cursor: pointer !important;
+                                font-size: 0.9rem !important;
+                            ">40</button>
+                            <button class="size-btn" data-size="biggest" onclick="setMapSize('biggest')" style="
+                                padding: 8px 12px !important;
+                                background: #6f42c1 !important;
+                                color: white !important;
+                                border: none !important;
+                                border-radius: 4px !important;
+                                cursor: pointer !important;
+                                font-size: 0.9rem !important;
+                            ">50</button>
                         </div>
                         <button onclick="clearMap()" style="
                             margin-top: 12px !important;
@@ -345,7 +409,8 @@ function openMapModal() {
                             border: 1px solid var(--border-color, #ccc) !important;
                             border-radius: 4px !important;
                             font-size: 14px !important;
-                            background: white !important;
+                            background: var(--bg-primary, white) !important;
+                            color: var(--text-primary, #333) !important;
                             flex: 1 !important;
                             margin-right: 12px !important;
                         ">
@@ -505,6 +570,14 @@ function createModalTileSelector() {
                 tile.style.backgroundColor = tilesetData.backgroundColors[opt.value];
             }
             
+            // Debug: Log the sprite element creation
+            console.log(`🔍 Created sprite element for ${opt.value}:`, {
+                className: spriteDiv.className,
+                spritesEnabled: spritesEnabled,
+                currentTileset: currentTileset,
+                backgroundImage: getComputedStyle(spriteDiv).backgroundImage
+            });
+            
             tile.appendChild(spriteDiv);
         } else if (opt.type === "player") {
             const player = document.createElement('div');
@@ -615,9 +688,9 @@ function renderTile(tile, mapData, playerData) {
             const spriteDiv = document.createElement('div');
             spriteDiv.className = `sprite ${mapData.value}`;
             
-            // Apply background color to the sprite div, not the tile container
+            // Apply background color to the TILE (behind the transparent sprite)
             if (tilesetData && tilesetData.backgroundColors && tilesetData.backgroundColors[mapData.value]) {
-                spriteDiv.style.backgroundColor = tilesetData.backgroundColors[mapData.value];
+                tile.style.backgroundColor = tilesetData.backgroundColors[mapData.value];
             }
             
             tile.appendChild(spriteDiv);
@@ -627,10 +700,7 @@ function renderTile(tile, mapData, playerData) {
         }
     } else {
         // Clear background color when no map data (erase tool)
-        // Clear both tile and any existing sprite background colors
         tile.style.backgroundColor = '';
-        const sprites = tile.querySelectorAll('.sprite');
-        sprites.forEach(sprite => sprite.style.backgroundColor = '');
     }
     
     // Render player data (overlay)
@@ -646,7 +716,7 @@ function renderTile(tile, mapData, playerData) {
 // MAP CONTROLS
 // ========================================
 function setMapSize(size) {
-    const sizeMap = { small: 10, medium: 15, large: 20 };
+    const sizeMap = { small: 10, medium: 20, large: 30, extra: 40, biggest: 50 };
     currentMap.size = sizeMap[size] || 15;
     
     // Update button states
@@ -656,6 +726,29 @@ function setMapSize(size) {
     
     resizeModalMap();
     console.log(`Map size set to ${currentMap.size}x${currentMap.size}`);
+}
+
+function setMapSizeFromSlider(value) {
+    currentMap.size = parseInt(value);
+    
+    // Update slider display
+    const display = document.getElementById('current-size-display');
+    if (display) {
+        display.textContent = `${value}x${value}`;
+    }
+    
+    // Update button states (find closest match)
+    const sizeMap = { 10: 'small', 20: 'medium', 30: 'large', 40: 'extra', 50: 'biggest' };
+    const closestSize = Object.keys(sizeMap).reduce((prev, curr) => 
+        Math.abs(curr - value) < Math.abs(prev - value) ? curr : prev
+    );
+    
+    document.querySelectorAll('.size-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.size === sizeMap[closestSize]);
+    });
+    
+    resizeModalMap();
+    console.log(`Map size set to ${currentMap.size}x${currentMap.size} via slider`);
 }
 
 function clearMap() {
