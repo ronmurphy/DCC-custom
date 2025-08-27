@@ -1,6 +1,240 @@
 /* ========================================
-   SIMPLE MAP EDITOR STYLES
-   Clean approach with intuitive class names
+   MAP EDITOR MODAL
+   ======================================== */
+
+.map-editor-modal {
+    display: none !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(255, 0, 0, 0.9) !important; /* Bright red debug background */
+    z-index: 999999 !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 20px !important;
+    box-sizing: border-box !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+.map-editor-modal-content {
+    background: lime !important; /* Bright green debug background */
+    border-radius: var(--radius-lg) !important;
+    border: 10px solid red !important; /* Bright red debug border */
+    width: 800px !important;
+    height: 600px !important;
+    max-width: none !important;
+    display: block !important;
+    flex-direction: column !important;
+    overflow: visible !important;
+    z-index: 1000000 !important;
+    position: relative !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    margin: auto !important;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    background: var(--bg-secondary);
+    border-bottom: 2px solid var(--border-color);
+}
+
+.modal-header h2 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 1.5rem;
+}
+
+.modal-header-controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.btn-close {
+    background: var(--danger);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.btn-close:hover {
+    background: var(--danger-dark, #dc2626);
+    transform: scale(1.1);
+}
+
+.modal-body {
+    flex: 1;
+    padding: 24px;
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    grid-template-rows: auto auto 1fr;
+    gap: 24px;
+    overflow: hidden;
+}
+
+.map-controls-section {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    padding: 16px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+}
+
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.control-group label {
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.size-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.size-btn {
+    padding: 8px 16px;
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.size-btn:hover {
+    border-color: var(--accent-color);
+    background: var(--bg-tertiary);
+}
+
+.size-btn.active {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    color: white;
+}
+
+.tile-selector-section {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    padding: 16px;
+    overflow-y: auto;
+}
+
+.tile-selector-section h4 {
+    margin: 0 0 16px 0;
+    color: var(--text-secondary);
+    font-size: 1rem;
+    text-transform: uppercase;
+}
+
+.map-grid-section {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: auto;
+}
+
+#modal-map-grid {
+    display: grid;
+    gap: 1px;
+    background: var(--bg-tertiary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 8px;
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    background: var(--bg-secondary);
+    border-top: 2px solid var(--border-color);
+}
+
+.map-name-section input {
+    padding: 8px 12px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 1rem;
+    min-width: 250px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn.success {
+    background: var(--success-color);
+    color: white;
+}
+
+.btn.warning {
+    background: var(--warning-color);
+    color: white;
+}
+
+.btn.secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* ========================================
+   MAP EDITOR STYLES - Working Version
+   Based on StoryTeller.mobile.old with Michelle's sprites
    ======================================== */
 
 /* ========================================
@@ -28,8 +262,6 @@
     image-rendering: -moz-crisp-edges;
     image-rendering: crisp-edges;
     display: block;
-    /* Debug: Add red background to see if sprite elements exist */
-    background-color: red;
 }
 
 /* Terrain Sprites - Row 1 */
@@ -79,9 +311,9 @@
 }
 
 .selector-tile {
-    width: 56px;
-    height: 56px;
-    background: var(--bg-primary);
+    width: 50px;
+    height: 50px;
+    background: var(--bg-secondary);
     border: 2px solid var(--border-color);
     border-radius: var(--radius-sm);
     display: flex;
@@ -89,7 +321,7 @@
     justify-content: center;
     cursor: pointer;
     transition: all 0.2s ease;
-    font-size: 24px;
+    font-size: 20px;
     position: relative;
 }
 
@@ -107,6 +339,12 @@
     box-shadow: 0 0 8px rgba(var(--accent-color-rgb), 0.3);
 }
 
+/* Player icon styling */
+.player-icon {
+    font-size: 20px;
+    color: var(--primary);
+}
+
 /* ========================================
    MAP GRID
    ======================================== */
@@ -115,8 +353,9 @@
     flex: 1;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     min-height: 300px;
+    padding: 16px 0;
 }
 
 #map-grid {
@@ -126,11 +365,14 @@
     border: 2px solid var(--border-color);
     border-radius: var(--radius-md);
     padding: 8px;
+    max-width: 100%;
+    max-height: 70vh;
+    overflow: auto;
 }
 
-.map-cell {
-    width: 32px;
-    height: 32px;
+.map-tile {
+    width: 28px;
+    height: 28px;
     background: var(--bg-primary);
     border: 1px solid var(--border-color);
     border-radius: 2px;
@@ -139,12 +381,29 @@
     justify-content: center;
     cursor: pointer;
     transition: all 0.1s ease;
-    font-size: 16px;
+    font-size: 14px;
+    position: relative;
 }
 
-.map-cell:hover {
+.map-tile:hover {
     background: var(--bg-tertiary);
     border-color: var(--accent-color);
+}
+
+/* Player overlay */
+.player-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 2px;
+    font-size: 12px;
+    z-index: 2;
 }
 
 /* ========================================
@@ -174,21 +433,22 @@
    ======================================== */
 
 @media (max-width: 768px) {
-    #tile-selector {
+    #tile-selector,
+    .tile-selector-grid {
         grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
         gap: 6px;
     }
     
     .selector-tile {
-        width: 48px;
-        height: 48px;
-        font-size: 20px;
+        width: 45px;
+        height: 45px;
+        font-size: 18px;
     }
     
-    .map-cell {
-        width: 28px;
-        height: 28px;
-        font-size: 14px;
+    .map-tile {
+        width: 24px;
+        height: 24px;
+        font-size: 12px;
     }
 }
 
