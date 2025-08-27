@@ -2620,9 +2620,6 @@ body.sidebar-open {
 }
 
 .character-level {
-    position: absolute;
-    top: -5px;
-    right: -5px;
     background: var(--secondary);
     color: white;
     font-size: 0.75rem;
@@ -2631,6 +2628,37 @@ body.sidebar-open {
     border-radius: var(--radius-full);
     min-width: 24px;
     text-align: center;
+}
+
+.character-level-container {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    z-index: 2;
+}
+
+.character-storage-indicator {
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    font-size: 0.8rem;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    cursor: help;
+    transition: all 0.2s ease;
+    line-height: 1;
+    min-width: 20px;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.character-storage-indicator:hover {
+    background: rgba(0, 0, 0, 0.9);
+    transform: scale(1.1);
 }
 
 .character-card-info {

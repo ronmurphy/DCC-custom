@@ -1752,15 +1752,20 @@
         }
 
         async function cleanupPlayerStorage() {
-            if (!confirm('🧹 This will remove old data and compress storage. Continue?')) {
+            if (!confirm('🧹 This will migrate large data to IndexedDB and remove old cache items. Continue?')) {
                 return;
             }
 
             try {
                 if (window.storageMigration) {
-                    await window.storageMigration.emergencyCleanup();
-                    alert('🧹 Cleanup completed successfully!');
+                    const itemsProcessed = await window.storageMigration.emergencyCleanup();
+                    alert(`🧹 Cleanup completed! Processed ${itemsProcessed} items. Characters should now load from IndexedDB.`);
                     refreshStorageStats();
+                    
+                    // Reload character manager to use new storage
+                    if (typeof initializeCharacterManager === 'function') {
+                        await initializeCharacterManager();
+                    }
                 } else {
                     alert('❌ Storage migration not available');
                 }
