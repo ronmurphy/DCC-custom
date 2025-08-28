@@ -578,13 +578,10 @@ function closeMapModal(event) {
     // If clicking on modal content, don't close
     if (event && event.target !== event.currentTarget) return;
     
-    console.log('❌ closeMapModal called!');
-    
     const modal = document.getElementById('map-editor-modal');
     if (modal) {
         modal.style.display = 'none';
         document.body.style.overflow = ''; // Restore scrolling
-        console.log('✅ Modal hidden');
     }
 }
 
@@ -658,11 +655,11 @@ async function initializeModalMapEditor() {
         
         // Use the Maps Manager's LoadMapFormat function
         if (window.mapsManager && window.mapsManager.loadMapFormat) {
-            window.mapsManager.loadMapFormat(window.pendingMapToLoad.mapData, window.pendingMapToLoad.mapId);
+            await window.mapsManager.loadMapFormat(window.pendingMapToLoad.mapData, window.pendingMapToLoad.mapId);
         } else {
             // Fallback - call loadMapFromData directly
             console.log('⚠️ Maps Manager not available, using direct load');
-            loadMapFromData(window.pendingMapToLoad.mapData, window.pendingMapToLoad.mapId);
+            await loadMapFromData(window.pendingMapToLoad.mapData, window.pendingMapToLoad.mapId);
         }
         
         // Clear the pending flag
@@ -908,24 +905,27 @@ function renderTile(tile, mapData, playerData) {
     tile.innerHTML = '';
     tile.className = 'map-tile';
     
-    // Render map data (terrain/buildings)
-    if (mapData) {
-        if (mapData.type === "sprite" && spritesEnabled) {
-            const spriteDiv = document.createElement('div');
-            spriteDiv.className = `sprite ${mapData.value}`;
-            
-            // Apply background color to the TILE (behind the transparent sprite)
-            if (tilesetData && tilesetData.backgroundColors && tilesetData.backgroundColors[mapData.value]) {
-                tile.style.backgroundColor = tilesetData.backgroundColors[mapData.value];
-            }
-            
-            tile.appendChild(spriteDiv);
-        } else {
-            // Fallback to emoji
-            tile.textContent = mapData.emoji || mapData.value;
+    // Use the EXACT same approach as the working viewer
+    if (!mapData) {
+        tile.style.backgroundColor = '#f9f9f9';
+        return;
+    }
+    
+    // Handle sprite data exactly like the working viewer does
+    if (typeof mapData === 'object' && mapData.type === 'sprite') {
+        const spriteDiv = document.createElement('div');
+        spriteDiv.className = `sprite ${mapData.value}`;
+        
+        // Apply background color exactly like viewer
+        if (window.tilesetData && window.tilesetData.backgroundColors && window.tilesetData.backgroundColors[mapData.value]) {
+            tile.style.backgroundColor = window.tilesetData.backgroundColors[mapData.value];
         }
+        
+        tile.appendChild(spriteDiv);
+    } else if (typeof mapData === 'object' && mapData.emoji) {
+        tile.textContent = mapData.emoji;
     } else {
-        // Clear background color when no map data (erase tool)
+        // Clear background color when no map data
         tile.style.backgroundColor = '';
     }
     
@@ -1552,36 +1552,55 @@ window.zoomOut = zoomOut;
 window.resetZoom = resetZoom;
 
 // Function to load map data into the editor
-function loadMapFromData(mapData, mapId = null) {
+async function loadMapFromData(mapData, mapId = null) {
+    console.log('📥 loadMapFromData called with:', mapData);
+    console.log('🆔 Map ID:', mapId);
+    
     if (!mapData || !mapData.grid) {
-        console.error('Invalid map data provided');
+        console.error('❌ Invalid map data provided - missing grid');
+        console.log('🔍 mapData keys:', mapData ? Object.keys(mapData) : 'mapData is null');
         return;
     }
     
+    console.log('✅ Valid map data with grid, proceeding...');
+    
     // Store the map ID for editing
     window.currentEditingMapId = mapId;
+    console.log('💾 Stored editing map ID:', mapId);
     
     // Set map size based on grid
     const size = mapData.grid.length;
     currentMap.size = size;
+    console.log('📏 Set map size to:', size);
     
-    // Set tileset
+    // Set tileset and generate CSS like the working viewer does
     if (mapData.tileset && mapData.tileset !== 'default') {
         currentTileset = mapData.tileset;
-        switchTileset(mapData.tileset);
+    } else {
+        currentTileset = 'default';
+    }
+    
+    // Use the WORKING viewer approach for tileset loading
+    if (window.mapsManager && window.mapsManager.generateSpriteCSS) {
+        await window.mapsManager.generateSpriteCSS(currentTileset);
+    } else {
+        await switchTileset(currentTileset);
     }
     
     // Convert grid array back to flat array
     const flatMapData = [];
     for (let row = 0; row < size; row++) {
         for (let col = 0; col < size; col++) {
-            flatMapData.push(mapData.grid[row][col] || 0);
+            flatMapData.push(mapData.grid[row][col] || null);
         }
     }
+    console.log('🔄 Converted grid to flat array, length:', flatMapData.length);
+    console.log('🔍 First few tiles:', flatMapData.slice(0, 5));
     
     // Load the map data
     currentMap.mapData = flatMapData;
-    currentMap.playerLayer = new Array(size * size).fill(0); // Reset player layer
+    currentMap.playerLayer = new Array(size * size).fill(null); // Reset player layer
+    console.log('💾 Set currentMap.mapData and playerLayer');
     
     // Set map name
     if (mapData.name) {
@@ -1589,6 +1608,7 @@ function loadMapFromData(mapData, mapId = null) {
         const nameInput = document.getElementById('modal-map-name');
         if (nameInput) {
             nameInput.value = mapData.name;
+            console.log('📝 Set map name input to:', mapData.name);
         }
     }
     
@@ -1601,26 +1621,36 @@ function loadMapFromData(mapData, mapId = null) {
     else if (size >= 20) sizeType = 'large';
     
     const activeBtn = document.querySelector(`[data-size="${sizeType}"]`);
-    if (activeBtn) activeBtn.classList.add('active');
+    if (activeBtn) {
+        activeBtn.classList.add('active');
+        console.log('🎯 Activated size button:', sizeType);
+    }
     
+    console.log('🔄 About to rebuild map grid...');
     // CRITICAL: Rebuild the map grid and re-render all tiles
     resizeModalMap();
+    console.log('✅ Called resizeModalMap()');
     
     // Re-render all tiles with the loaded data
     const grid = document.getElementById('modal-map-grid');
     if (grid) {
         const tiles = grid.querySelectorAll('.map-tile');
+        console.log('🎨 Found', tiles.length, 'tiles to render');
         tiles.forEach((tile, index) => {
             renderTile(tile, currentMap.mapData[index], currentMap.playerLayer[index]);
         });
+        console.log('✅ Re-rendered all tiles');
+    } else {
+        console.error('❌ Could not find modal-map-grid element');
     }
     
     // Redraw the canvas only if we're in the modal editor
     if (typeof mapCanvas !== 'undefined' && mapCanvas) {
         drawCanvas();
+        console.log('🎨 Called drawCanvas()');
     }
     
-    console.log(`📖 Loaded map: ${mapData.name || 'Unnamed'} (${size}×${size})`);
+    console.log(`📖 ✅ SUCCESSFULLY loaded map: ${mapData.name || 'Unnamed'} (${size}×${size})`);
 }
 
 console.log('🗺️ Map Editor loaded (modal version)');

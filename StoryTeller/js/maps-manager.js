@@ -558,8 +558,9 @@ class MapsManager {
         ];
         
         let cssRules = `
-            /* Base sprite rule for viewer - sprites fill their container */
-            .viewer-tile .sprite {
+            /* Base sprite rule for viewer AND editor - sprites fill their container */
+            .viewer-tile .sprite,
+            .map-tile .sprite {
                 background-image: url('${imageUrl}') !important;
                 width: 100% !important;
                 height: 100% !important;
@@ -1047,7 +1048,12 @@ class MapsManager {
 
     // Edit current map - Handle different map formats and load into editor
     editMap(mapId) {
+        console.log('🎯 editMap called with mapId:', mapId);
+        console.log('🔍 this.currentMapId:', this.currentMapId);
+        
         const map = this.savedMaps.get(mapId);
+        console.log('📋 Found map:', map?.name || 'NOT FOUND');
+        
         if (map) {
             // Store the map data to load after modal initialization
             window.pendingMapToLoad = {
@@ -1062,12 +1068,16 @@ class MapsManager {
             } else if (window.openMapEditor) {
                 window.openMapEditor();
             }
+        } else {
+            console.error('❌ No map found for ID:', mapId);
+            console.log('📚 Available map IDs:', Array.from(this.savedMaps.keys()));
         }
     }
 
     // LoadMapFormat - Convert different map data formats to what the editor expects
-    loadMapFormat(mapData, mapId = null) {
+    async loadMapFormat(mapData, mapId = null) {
         console.log('🗺️ Loading map format:', mapData);
+        console.log('🆔 Map ID:', mapId);
         
         // Normalize the map data to the expected editor format
         let normalizedData = {
@@ -1113,6 +1123,7 @@ class MapsManager {
             normalizedData.tileset = mapData.tileset || normalizedData.tileset;
         } else {
             console.warn('⚠️ Unknown map format, creating empty grid');
+            console.log('🔍 Raw mapData structure:', Object.keys(mapData));
             // Create empty grid as fallback
             const size = mapData.size || 15;
             const grid = Array(size).fill(null).map(() => Array(size).fill(null));
@@ -1121,10 +1132,14 @@ class MapsManager {
         }
 
         console.log('✅ Normalized map data:', normalizedData);
+        console.log('🎯 Grid size:', normalizedData.grid ? normalizedData.grid.length : 'No grid');
+        console.log('🎯 First few grid cells:', normalizedData.grid ? normalizedData.grid[0]?.slice(0, 3) : 'No grid');
 
         // Load into the map editor
         if (window.loadMapFromData) {
-            window.loadMapFromData(normalizedData, mapId);
+            console.log('📤 Calling window.loadMapFromData...');
+            await window.loadMapFromData(normalizedData, mapId);
+            console.log('✅ Called window.loadMapFromData');
         } else {
             console.error('❌ loadMapFromData function not available');
         }
