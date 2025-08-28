@@ -316,6 +316,9 @@ class MapsManager {
                         <button class="map-action-btn" onclick="event.stopPropagation(); window.mapsManager.editMap('${map.id}')" title="Edit">
                             <i class="material-icons" style="font-size: 12px;">edit</i>
                         </button>
+                        <button class="map-action-btn" onclick="event.stopPropagation(); window.mapsManager.shareMap('${map.id}')" title="Share with Players">
+                            <i class="material-icons" style="font-size: 12px;">share</i>
+                        </button>
                         <button class="map-action-btn" onclick="event.stopPropagation(); window.mapsManager.duplicateMap('${map.id}')" title="Duplicate">
                             <i class="material-icons" style="font-size: 12px;">content_copy</i>
                         </button>
@@ -1204,6 +1207,65 @@ class MapsManager {
         if (originalMap) {
             const newMapId = await this.addMap(originalMap.data, `${originalMap.name} (Copy)`);
             return newMapId;
+        }
+    }
+
+    // Share map with players via real-time sync
+    async shareMap(mapId) {
+        console.log('🔗 Attempting to share map:', mapId);
+        const map = this.savedMaps.get(mapId);
+        
+        if (!map) {
+            console.error('❌ Map not found:', mapId);
+            return;
+        }
+
+        // Check if we have the global map sync adapter
+        if (!window.mapSync || !window.mapSync.getAdapter()) {
+            console.error('❌ Map sync system not initialized. Please connect to Supabase first.');
+            alert('Map sharing requires Supabase connection. Please connect first.');
+            return;
+        }
+
+        try {
+            const adapter = window.mapSync.getAdapter();
+            
+            // Share the map using the adapter directly
+            const result = await adapter.shareMap(map, map.name, {
+                allowPlayerMovement: true,
+                showPlayerPositions: true,
+                gridSize: map.size || 15
+            });
+
+            if (result.success) {
+                console.log('✅ Map shared successfully:', map.name);
+                
+                // Visual feedback - highlight the shared map
+                const mapElement = document.querySelector(`[data-map-id="${mapId}"]`);
+                if (mapElement) {
+                    mapElement.style.border = '2px solid #4CAF50';
+                    mapElement.style.boxShadow = '0 0 10px rgba(76, 175, 80, 0.3)';
+                    
+                    // Remove highlight after 3 seconds
+                    setTimeout(() => {
+                        mapElement.style.border = '';
+                        mapElement.style.boxShadow = '';
+                    }, 3000);
+                }
+                
+                // Show success message
+                if (typeof showNotification === 'function') {
+                    showNotification(`Map "${map.name}" shared with players!`, 'success');
+                } else {
+                    alert(`Map "${map.name}" shared with players!`);
+                }
+            } else {
+                console.error('❌ Failed to share map:', result.error);
+                alert(`Failed to share map: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('❌ Error sharing map:', error);
+            alert(`Error sharing map: ${error.message}`);
         }
     }
 

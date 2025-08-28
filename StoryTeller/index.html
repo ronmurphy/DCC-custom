@@ -2560,6 +2560,13 @@
     <script src="js/map-editor.js"></script>
     <script src="js/unified-storage-db.js"></script>
     <script src="js/maps-manager.js"></script>
+    <!-- Map Synchronization System -->
+    <script src="js/MapSyncManager.js"></script>
+    <script src="js/MapClientManager.js"></script>
+    <script src="js/MapSyncAdapter.js"></script>
+    <script src="js/PlayerPositionTracker.js"></script>
+    <script src="js/StorytellerIntegration.js"></script>
+    <!-- End Map Sync -->
     <script src="js/combat-manager.js"></script>
     <script src="js/supabase-chat.js"></script>
     <script src="js/map-sharing.js"></script>
@@ -5359,6 +5366,21 @@ Notes: ${npc.notes || 'None'}`;
                         mode: 'create',
                         ...result.sessionInfo  // Include any additional info from Supabase
                     };
+                    
+                    // Initialize map synchronization system
+                    if (typeof window.mapSync && typeof window.mapSync.initialize === 'function') {
+                        try {
+                            const mapSyncResult = await window.mapSync.initialize(sessionCode, result.supabaseClient);
+                            if (mapSyncResult) {
+                                addChatMessage('🗺️ Map synchronization system ready!', 'system');
+                                console.log('✅ Map sync initialized successfully');
+                            } else {
+                                console.warn('⚠️ Map sync initialization failed');
+                            }
+                        } catch (error) {
+                            console.error('❌ Failed to initialize map sync:', error);
+                        }
+                    }
                     
                     // Update player URL immediately with Supabase URL + session
                     const savedConfig = loadSupabaseConfig();
