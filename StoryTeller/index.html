@@ -5370,16 +5370,27 @@ Notes: ${npc.notes || 'None'}`;
                     // Initialize map synchronization system
                     if (typeof window.mapSync && typeof window.mapSync.initialize === 'function') {
                         try {
-                            const mapSyncResult = await window.mapSync.initialize(sessionCode, result.supabaseClient);
-                            if (mapSyncResult) {
-                                addChatMessage('🗺️ Map synchronization system ready!', 'system');
-                                console.log('✅ Map sync initialized successfully');
+                            // Use the global Supabase client that should be available
+                            const supabaseClient = window.supabaseClient || result.supabaseClient || result.client;
+                            if (supabaseClient) {
+                                const mapSyncResult = await window.mapSync.initialize(sessionCode, supabaseClient);
+                                if (mapSyncResult) {
+                                    addChatMessage('🗺️ Map synchronization system ready!', 'system');
+                                    console.log('✅ Map sync initialized successfully');
+                                } else {
+                                    console.warn('⚠️ Map sync initialization failed');
+                                    addChatMessage('⚠️ Map sync initialization failed', 'system');
+                                }
                             } else {
-                                console.warn('⚠️ Map sync initialization failed');
+                                console.error('❌ No Supabase client available for map sync');
+                                addChatMessage('❌ No Supabase client available for map sync', 'system');
                             }
                         } catch (error) {
                             console.error('❌ Failed to initialize map sync:', error);
+                            addChatMessage(`❌ Map sync error: ${error.message}`, 'system');
                         }
+                    } else {
+                        console.warn('⚠️ Map sync system not available');
                     }
                     
                     // Update player URL immediately with Supabase URL + session
