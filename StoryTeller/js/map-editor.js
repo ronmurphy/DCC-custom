@@ -228,7 +228,9 @@ async function switchTileset(tilesetName) {
         // Small delay to ensure CSS is applied before recreating elements
         setTimeout(() => {
             createModalTileSelector();
-            resizeModalMap();
+            // PRESERVE MAP DATA: Don't call resizeModalMap() which might clear data
+            // Instead, just re-render the existing map with the new tileset
+            renderCurrentMap();
         }, 100);
     }
     
@@ -952,14 +954,22 @@ function renderTile(tile, mapData, playerData) {
             return;
         }
         
-        // Handle sprite data - SAME AS VIEWER
+        // Handle sprite data - ENHANCED: Multi-version background color support
         if (typeof mapData === 'object' && mapData.type === 'sprite') {
             const spriteDiv = document.createElement('div');
             spriteDiv.className = `sprite ${mapData.value}`;
             
-            // COPY VIEWER'S BACKGROUND COLOR LOGIC
-            if (window.tilesetData && window.tilesetData.backgroundColors && window.tilesetData.backgroundColors[mapData.value]) {
-                tile.style.backgroundColor = window.tilesetData.backgroundColors[mapData.value];
+            // COMPATIBILITY: Check multiple sources for background color
+            let backgroundColor = mapData.background; // v1.1 embedded color (backward compatibility)
+            if (!backgroundColor && window.currentLoadedMap && window.currentLoadedMap.backgroundColors) {
+                backgroundColor = window.currentLoadedMap.backgroundColors[mapData.value]; // v1.2 dictionary
+            }
+            if (!backgroundColor && window.tilesetData && window.tilesetData.backgroundColors) {
+                backgroundColor = window.tilesetData.backgroundColors[mapData.value]; // v1.0 fallback
+            }
+            
+            if (backgroundColor) {
+                tile.style.backgroundColor = backgroundColor;
             }
             
             tile.appendChild(spriteDiv);
@@ -974,6 +984,23 @@ function renderTile(tile, mapData, playerData) {
             player.textContent = playerData.value;
             tile.appendChild(player);
         }
+    }
+}
+
+// Helper function to re-render the current map with the new tileset
+function renderCurrentMap() {
+    console.log('🎨 renderCurrentMap: Re-rendering map with new tileset');
+    
+    const grid = document.getElementById('modal-map-grid');
+    if (grid && currentMap.mapData) {
+        const tiles = grid.querySelectorAll('.map-tile');
+        console.log('🎨 Found', tiles.length, 'tiles to render');
+        tiles.forEach((tile, index) => {
+            renderTile(tile, currentMap.mapData[index], currentMap.playerLayer[index]);
+        });
+        console.log('✅ Re-rendered all tiles with new tileset');
+    } else {
+        console.warn('⚠️ Could not find modal-map-grid element or no map data to render');
     }
 }
 
@@ -1034,7 +1061,7 @@ async function saveMapAsFile() {
     const mapName = document.getElementById('modal-map-name').value || 'untitled-map';
     currentMap.name = mapName;
     
-    // Create map data structure using the SAME FORMAT as saveMapToLibrary (grid format)
+    // Create map data structure using v1.2 format with color dictionary
     const mapData = {
         grid: await gridToArray(currentMap.mapData, currentMap.size),
         tileset: currentTileset || 'default',
@@ -1042,7 +1069,8 @@ async function saveMapAsFile() {
         size: currentMap.size,
         type: currentMap.type,
         created: new Date().toISOString(),
-        version: "1.0"
+        version: "1.2",  // v1.2 format with background color dictionary
+        backgroundColors: window.tilesetData?.backgroundColors || {}  // Include color dictionary
     };
     
     // Create and download file
@@ -1080,7 +1108,8 @@ async function saveMapToLibrary() {
         size: currentMap.size,
         type: currentMap.type,
         created: new Date().toISOString(),
-        version: "1.0"
+        version: "1.2",  // v1.2 format with background color dictionary
+        backgroundColors: window.tilesetData?.backgroundColors || {}  // Include color dictionary
     };
     
     // Save to maps manager if available
@@ -1142,7 +1171,7 @@ async function gridToArray(mapData, size) {
             
             if (cellData && typeof cellData === 'object') {
                 if (cellData.type === 'sprite' && cellData.value) {
-                    // Keep the original object format - don't convert to numbers!
+                    // v1.2 format - NO embedded background colors (use dictionary lookup)
                     tileValue = {
                         type: cellData.type,
                         value: cellData.value,
@@ -1150,6 +1179,7 @@ async function gridToArray(mapData, size) {
                         category: cellData.category || 'terrain',
                         emoji: cellData.emoji || '🎯'
                     };
+                    // Background colors are now in the map's backgroundColors dictionary
                 } else if (cellData.type === 'player') {
                     tileValue = null; // Players are not saved in static maps
                 } else if (cellData.type === 'clear') {
@@ -1158,6 +1188,7 @@ async function gridToArray(mapData, size) {
             } else if (typeof cellData === 'number' && cellData > 0) {
                 // Convert number back to object (for backward compatibility)
                 const spriteValue = getSpriteName(cellData) || 'mountain';
+                
                 tileValue = {
                     type: 'sprite',
                     value: spriteValue,
@@ -1165,6 +1196,7 @@ async function gridToArray(mapData, size) {
                     category: 'terrain',
                     emoji: '🎯'
                 };
+                // v1.2: Background colors are in the dictionary, not embedded
             } else {
                 tileValue = null; // Empty cell
             }
@@ -1664,6 +1696,15 @@ async function loadMapFromData(mapData, mapId = null) {
     const size = mapData.grid.length;
     currentMap.size = size;
     console.log('📏 Set map size to:', size);
+    
+    // Store background colors for v1.2 format support
+    if (mapData.backgroundColors) {
+        window.currentLoadedMap = { backgroundColors: mapData.backgroundColors };
+        console.log('🎨 Stored v1.2 background colors dictionary:', Object.keys(mapData.backgroundColors).length, 'colors');
+    } else {
+        window.currentLoadedMap = null;
+        console.log('🎨 No background colors dictionary found (v1.0/v1.1 format)');
+    }
     
     // Set tileset and generate CSS like the working viewer does
     if (mapData.tileset && mapData.tileset !== 'default') {
