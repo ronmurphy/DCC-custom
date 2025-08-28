@@ -2282,7 +2282,7 @@
             </button>
             
             <div class="quick-connect-section">
-                <button class="tab-selector quick-connect-btn" onclick="quickConnect()" id="quick-connect-btn" title="Quick Connect">
+                <button class="tab-selector quick-connect-btn" onclick="quickConnectToggle()" id="quick-connect-btn" title="Quick Connect">
                     <i class="material-icons">flash_on</i>
                 </button>
             </div>
@@ -4803,6 +4803,27 @@ ALTER TABLE game_sessions ENABLE ROW LEVEL SECURITY;
                     localStorage.setItem('last-session-code', sessionCode);
                     console.log(`💾 Stored session code for Quick Connect: ${sessionCode}`);
                     
+                    // Initialize map synchronization system
+                    if (typeof window.mapSync && typeof window.mapSync.initialize === 'function') {
+                        try {
+                            console.log('🚀 Starting map sync initialization from quickConnect...');
+                            const supabaseClient = window.supabaseClient || result.supabaseClient || result.client;
+                            if (supabaseClient) {
+                                const mapSyncResult = await window.mapSync.initialize(sessionCode, supabaseClient);
+                                if (mapSyncResult) {
+                                    addChatMessage('🗺️ Map synchronization system ready!', 'system');
+                                    console.log('✅ Map sync initialized successfully from quickConnect');
+                                } else {
+                                    console.warn('⚠️ Map sync initialization failed from quickConnect');
+                                }
+                            } else {
+                                console.error('❌ No Supabase client available for map sync from quickConnect');
+                            }
+                        } catch (error) {
+                            console.error('❌ Failed to initialize map sync from quickConnect:', error);
+                        }
+                    }
+                    
                 } else {
                     throw new Error(result.error || 'Connection failed');
                 }
@@ -4819,6 +4840,95 @@ ALTER TABLE game_sessions ENABLE ROW LEVEL SECURITY;
                 
             } finally {
                 button.disabled = false;
+            }
+        }
+
+        // Quick Connect Toggle - Connect/Disconnect functionality
+        async function quickConnectToggle() {
+            const button = document.getElementById('quick-connect-btn');
+            
+            // Check if currently connected by looking at button state
+            if (button.classList.contains('connected')) {
+                // Currently connected - disconnect
+                await disconnectFromSupabase();
+            } else {
+                // Currently disconnected - connect
+                await quickConnect();
+            }
+        }
+
+        // Disconnect from Supabase
+        async function disconnectFromSupabase() {
+            const button = document.getElementById('quick-connect-btn');
+            
+            try {
+                // Reset button state
+                button.classList.remove('connected');
+                button.innerHTML = '<i class="material-icons">flash_on</i>';
+                
+                // Clear global session data
+                window.currentGameSession = null;
+                
+                // Reset connection status
+                updateConnectionStatus('Disconnected', 'error');
+                
+                // Clear session display
+                const sessionNameDisplay = document.getElementById('session-name-display');
+                if (sessionNameDisplay) {
+                    sessionNameDisplay.textContent = '';
+                }
+                
+                // Clear form fields
+                document.getElementById('dm-name-input').value = '';
+                document.getElementById('session-code-input').value = '';
+                
+                // Reset map sync
+                if (window.mapSync && window.mapSync.getAdapter()) {
+                    try {
+                        await window.mapSync.stopSharing();
+                    } catch (error) {
+                        console.warn('Error stopping map sync:', error);
+                    }
+                }
+                
+                addChatMessage('🔌 Disconnected from Supabase', 'system');
+                console.log('✅ Disconnected from Supabase successfully');
+                
+            } catch (error) {
+                console.error('Error during disconnect:', error);
+                addChatMessage(`❌ Disconnect error: ${error.message}`, 'system');
+            }
+        }
+
+        // Manual Map Sync Initialization (for debugging)
+        async function initializeMapSyncManually() {
+            if (!window.currentGameSession) {
+                addChatMessage('❌ Please connect to Supabase first', 'system');
+                return;
+            }
+            
+            const sessionCode = window.currentGameSession.sessionCode;
+            const supabaseClient = window.supabaseClient;
+            
+            console.log('🔍 Manual map sync init - sessionCode:', sessionCode);
+            console.log('🔍 Manual map sync init - supabaseClient:', !!supabaseClient);
+            
+            if (window.mapSync && window.mapSync.initialize) {
+                try {
+                    const result = await window.mapSync.initialize(sessionCode, supabaseClient);
+                    if (result) {
+                        addChatMessage('🗺️ Map synchronization manually initialized!', 'system');
+                        console.log('✅ Manual map sync initialization successful');
+                    } else {
+                        addChatMessage('❌ Manual map sync initialization failed', 'system');
+                        console.log('❌ Manual map sync initialization failed');
+                    }
+                } catch (error) {
+                    addChatMessage(`❌ Map sync error: ${error.message}`, 'system');
+                    console.error('❌ Manual map sync error:', error);
+                }
+            } else {
+                addChatMessage('❌ Map sync system not available', 'system');
             }
         }
         
@@ -5368,12 +5478,23 @@ Notes: ${npc.notes || 'None'}`;
                     };
                     
                     // Initialize map synchronization system
+                    console.log('🔍 About to check map sync system...');
+                    console.log('window.mapSync available:', !!window.mapSync);
+                    console.log('window.mapSync.initialize available:', !!(window.mapSync && window.mapSync.initialize));
+                    
                     if (typeof window.mapSync && typeof window.mapSync.initialize === 'function') {
                         try {
+                            console.log('🚀 Starting map sync initialization...');
                             // Use the global Supabase client that should be available
                             const supabaseClient = window.supabaseClient || result.supabaseClient || result.client;
+                            console.log('Supabase client found:', !!supabaseClient);
+                            console.log('Session code:', sessionCode);
+                            
                             if (supabaseClient) {
+                                console.log('🔄 Calling window.mapSync.initialize...');
                                 const mapSyncResult = await window.mapSync.initialize(sessionCode, supabaseClient);
+                                console.log('Map sync result:', mapSyncResult);
+                                
                                 if (mapSyncResult) {
                                     addChatMessage('🗺️ Map synchronization system ready!', 'system');
                                     console.log('✅ Map sync initialized successfully');
@@ -5391,6 +5512,8 @@ Notes: ${npc.notes || 'None'}`;
                         }
                     } else {
                         console.warn('⚠️ Map sync system not available');
+                        console.log('window.mapSync type:', typeof window.mapSync);
+                        console.log('window.mapSync:', window.mapSync);
                     }
                     
                     // Update player URL immediately with Supabase URL + session
