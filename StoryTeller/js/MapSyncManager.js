@@ -22,7 +22,7 @@ class MapSyncManager {
 
     // Initialize with Supabase client
     initialize(supabaseClient, sessionCode) {
-        if (!supabaseClient || !supabaseClient.isInitialized()) {
+        if (!supabaseClient || typeof supabaseClient.from !== 'function') {
             throw new Error('Valid Supabase client required');
         }
         
