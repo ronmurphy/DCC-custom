@@ -1220,15 +1220,27 @@ class MapsManager {
             return;
         }
 
+        console.log('🔍 Checking map sync system availability...');
+        console.log('window.mapSync exists:', !!window.mapSync);
+        console.log('window.mapSync.getAdapter exists:', !!(window.mapSync && window.mapSync.getAdapter));
+        
+        if (window.mapSync && window.mapSync.getAdapter) {
+            const adapter = window.mapSync.getAdapter();
+            console.log('Adapter available:', !!adapter);
+            console.log('Adapter details:', adapter);
+        }
+
         // Check if we have the global map sync adapter
-        if (!window.mapSync || !window.mapSync.getAdapter()) {
+        if (!window.mapSync || !window.mapSync.getAdapter() || !window.mapSync.getAdapter()) {
             console.error('❌ Map sync system not initialized. Please connect to Supabase first.');
+            console.log('Available window.mapSync:', window.mapSync);
             alert('Map sharing requires Supabase connection. Please connect first.');
             return;
         }
 
         try {
             const adapter = window.mapSync.getAdapter();
+            console.log('🚀 Using adapter to share map:', map.name);
             
             // Share the map using the adapter directly
             const result = await adapter.shareMap(map, map.name, {
