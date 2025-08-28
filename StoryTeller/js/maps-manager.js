@@ -480,63 +480,40 @@ class MapsManager {
         return grid;
     }
 
-    // Load tileset and render tiles for CSS grid viewer (like map editor)
-    loadTilesetForGridViewer(mapGrid, grid, tilesetName, canvasDiv, wrapper) {
-        console.log('🎨 Loading tileset for CSS grid viewer:', tilesetName);
-        
-        // First, let's check if the tileset image exists
-        const testImage = new Image();
-        testImage.onload = () => {
-            console.log('✅ Tileset image loaded successfully:', `assets/${tilesetName}.png`);
-        };
-        testImage.onerror = () => {
-            console.error('❌ Failed to load tileset image:', `assets/${tilesetName}.png`);
-        };
-        testImage.src = `assets/${tilesetName}.png`;
-        
-        // Load tileset configuration and sprite sheet
-        fetch(`assets/${tilesetName}.json`)
-            .then(response => {
-                if (!response.ok) throw new Error('Config not found');
-                return response.json();
-            })
-            .then(tilesetConfig => {
-                console.log('📋 Tileset config loaded:', tilesetConfig);
-                
-                // Add tileset CSS to page if not already present
-                this.addTilesetCSS(tilesetName, tilesetConfig);
-                
-                // Create tiles using the same approach as map editor
-                this.createGridTiles(mapGrid, grid, tilesetConfig, tilesetName);
-                
-                // Add pan/zoom functionality like map editor
-                this.initializeViewerPanZoom(wrapper, canvasDiv);
-                
-                console.log('✅ CSS grid viewer setup complete');
-            })
-            .catch(error => {
-                console.warn(`⚠️ Failed to load tileset config: ${error.message}`);
-                // Fallback rendering without tileset
-                this.createGridTilesFallback(mapGrid, grid);
-                this.initializeViewerPanZoom(wrapper, canvasDiv);
-            });
+    // Load tileset and render tiles for CSS grid viewer (borrow tileset loading from editor)
+    async loadTilesetForGridViewer(mapGrid, grid, tilesetName, canvasDiv, wrapper) {
+        try {
+            // ONLY borrow the tileset loading from map editor (not the map loading)
+            // Set the current tileset like the editor does
+            window.currentTileset = tilesetName;
+            
+            // Use map editor's proven tileset loading functions
+            if (window.loadTilesetData) {
+                await window.loadTilesetData(tilesetName);
+            }
+            
+            if (window.checkSprites) {
+                await window.checkSprites();
+            }
+            
+            // Keep using our WORKING viewer map rendering with editor's tileset data
+            this.createGridTiles(mapGrid, grid, window.tilesetData, tilesetName);
+            
+            // Initialize pan/zoom
+            this.initializeViewerPanZoom(wrapper, canvasDiv);
+            
+        } catch (error) {
+            console.warn(`⚠️ Failed to load tileset: ${error.message}`);
+            this.createGridTilesFallback(mapGrid, grid);
+            this.initializeViewerPanZoom(wrapper, canvasDiv);
+        }
     }
 
-    // Create tiles in the CSS grid (like map editor)
+    // Keep the working tile creation but use editor's tileset data
     createGridTiles(mapGrid, grid, tilesetConfig, tilesetName) {
         mapGrid.innerHTML = '';
         
         const size = grid.length;
-        
-        console.log('🔍 Creating grid tiles:', {
-            size,
-            tilesetName,
-            tilesetConfig,
-            sampleGridData: grid.slice(0, 2).map(row => row.slice(0, 2))
-        });
-        
-        // Store tileset data globally for tile rendering
-        window.currentTilesetData = tilesetConfig;
         
         for (let row = 0; row < size; row++) {
             for (let col = 0; col < size; col++) {
@@ -557,96 +534,93 @@ class MapsManager {
                 // Get the tile data
                 const tileData = grid[row][col];
                 
-                // Render the tile content (like map editor)
+                // Render the tile using editor's sprite system but viewer's logic
                 this.renderViewerTile(tile, tileData, tilesetConfig, tilesetName);
                 
                 mapGrid.appendChild(tile);
             }
         }
-        
-        console.log('✅ Grid tiles created');
     }
 
-    // Render individual tile content (adapted from map editor)
+    // Validate that both .json and .png files exist for the tileset
+    // Render tiles using editor's sprite system but keeping viewer's working logic
     renderViewerTile(tile, tileData, tilesetConfig, tilesetName) {
         tile.innerHTML = '';
         
-        console.log('🎯 Rendering tile:', { tileData, tilesetName });
-        
         if (!tileData) {
-            // Empty tile
             tile.style.backgroundColor = '#f9f9f9';
             return;
         }
         
         // Handle different data formats
         if (typeof tileData === 'object' && tileData.type === 'sprite') {
-            // Sprite object format
-            console.log('🎭 Rendering sprite object:', tileData.value);
+            // Use editor's sprite rendering approach
             const spriteDiv = document.createElement('div');
             spriteDiv.className = `sprite ${tileData.value}`;
             
-            // Apply background color from tileset config
-            if (tilesetConfig && tilesetConfig.backgroundColors && tilesetConfig.backgroundColors[tileData.value]) {
-                tile.style.backgroundColor = tilesetConfig.backgroundColors[tileData.value];
-                console.log('🎨 Applied background color:', tilesetConfig.backgroundColors[tileData.value]);
+            // Use editor's background color system
+            if (window.tilesetData && window.tilesetData.backgroundColors && window.tilesetData.backgroundColors[tileData.value]) {
+                tile.style.backgroundColor = window.tilesetData.backgroundColors[tileData.value];
             }
             
             tile.appendChild(spriteDiv);
         } else if (typeof tileData === 'number' && tileData > 0) {
-            // Tile number format - convert to sprite
-            console.log('🔢 Rendering tile number:', tileData);
-            const spriteInfo = this.getTileNumberSprite(tileData, tilesetConfig);
-            if (spriteInfo) {
-                console.log('🎭 Found sprite for tile number:', spriteInfo);
+            // Convert tile number to sprite using editor's tile mapping
+            const spriteId = this.getTileNumberSpriteId(tileData);
+            if (spriteId) {
                 const spriteDiv = document.createElement('div');
-                spriteDiv.className = `sprite ${spriteInfo.id}`;
+                spriteDiv.className = `sprite ${spriteId}`;
                 
-                if (spriteInfo.backgroundColor) {
-                    tile.style.backgroundColor = spriteInfo.backgroundColor;
+                // Apply background color from editor's system
+                if (window.tilesetData && window.tilesetData.backgroundColors && window.tilesetData.backgroundColors[spriteId]) {
+                    tile.style.backgroundColor = window.tilesetData.backgroundColors[spriteId];
                 }
                 
                 tile.appendChild(spriteDiv);
             } else {
-                console.warn(`⚠️ No sprite found for tile number ${tileData}`);
-                // Fallback display
                 tile.textContent = tileData.toString();
                 tile.style.backgroundColor = '#e3f2fd';
             }
         } else if (typeof tileData === 'object' && tileData.emoji) {
-            // Legacy emoji format
-            console.log('📱 Rendering emoji:', tileData.emoji);
             tile.textContent = tileData.emoji;
-        } else {
-            console.warn('❓ Unknown tile data format:', tileData);
-            // Show raw data for debugging
-            tile.textContent = JSON.stringify(tileData);
-            tile.style.backgroundColor = '#fff3cd';
-            tile.style.fontSize = '12px';
         }
     }
 
-    // Get sprite info from tile number
+    // Convert tile number to sprite ID using the map editor's tile options order
+    getTileNumberSpriteId(tileNumber) {
+        // Use the map editor's tileOptions array for consistent mapping
+        if (window.tileOptions && window.tileOptions[tileNumber - 1]) {
+            const tileOption = window.tileOptions[tileNumber - 1];
+            return tileOption.value;
+        }
+        return null;
+    }
+
+    // Get sprite info from tile number (must match map editor logic exactly)
     getTileNumberSprite(tileNumber, tilesetConfig) {
         if (!tilesetConfig || !tilesetConfig.sprites) return null;
         
+        // This must match the exact logic from map-editor.js line 1000:
+        // tileValue = sprite.position[1] * cols + sprite.position[0] + 1;
+        
         const cols = tilesetConfig.gridSize === '4x4' ? 4 : 10;
-        const spriteIndex = tileNumber - 1;
-        const row = Math.floor(spriteIndex / cols);
-        const col = spriteIndex % cols;
         
-        // Find sprite at this position
-        const sprite = tilesetConfig.sprites.find(s => 
-            s.position && s.position[0] === col && s.position[1] === row
-        );
+        // Find the sprite that would generate this tile number
+        const matchingSprite = tilesetConfig.sprites.find(sprite => {
+            if (!sprite.position) return false;
+            const calculatedTileValue = sprite.position[1] * cols + sprite.position[0] + 1;
+            return calculatedTileValue === tileNumber;
+        });
         
-        if (sprite) {
+        if (matchingSprite) {
+            console.log(`🎯 Found sprite for tile ${tileNumber}:`, matchingSprite.id);
             return {
-                id: sprite.id,
-                backgroundColor: tilesetConfig.backgroundColors?.[sprite.id]
+                id: matchingSprite.id,
+                backgroundColor: tilesetConfig.backgroundColors?.[matchingSprite.id]
             };
         }
         
+        console.warn(`⚠️ No sprite found for tile number ${tileNumber} in tileset config`);
         return null;
     }
 
@@ -687,57 +661,6 @@ class MapsManager {
                 mapGrid.appendChild(tile);
             }
         }
-    }
-
-    // Add tileset CSS dynamically with proper sizing
-    addTilesetCSS(tilesetName, tilesetConfig) {
-        const styleId = `tileset-${tilesetName}`;
-        
-        // Remove existing tileset styles
-        const existingStyle = document.getElementById(styleId);
-        if (existingStyle) {
-            existingStyle.remove();
-        }
-        
-        // Create new stylesheet
-        const styleElement = document.createElement('style');
-        styleElement.id = styleId;
-        
-        let cssRules = '';
-        
-        if (tilesetConfig.sprites) {
-            const spriteSize = tilesetConfig.spriteSize || 64;
-            const imageWidth = tilesetConfig.imageWidth || (spriteSize * 10); // Default 10 cols
-            const imageHeight = tilesetConfig.imageHeight || (spriteSize * 10); // Default 10 rows
-            
-            tilesetConfig.sprites.forEach(sprite => {
-                const [x, y] = sprite.position || [0, 0];
-                
-                cssRules += `
-                    .sprite.${sprite.id} {
-                        width: 100%;
-                        height: 100%;
-                        background-image: url('assets/${tilesetName}.png');
-                        background-position: -${x * spriteSize}px -${y * spriteSize}px;
-                        background-size: ${imageWidth}px ${imageHeight}px;
-                        background-repeat: no-repeat;
-                        /* Fit large sprites into smaller cells */
-                        background-size: ${imageWidth}px ${imageHeight}px;
-                        transform: scale(0.8); /* Slightly scale down to fit better */
-                        transform-origin: center;
-                    }
-                `;
-            });
-            
-            console.log(`🎨 Generated CSS for ${tilesetConfig.sprites.length} sprites from ${tilesetName}`);
-        } else {
-            console.warn(`⚠️ No sprites found in tileset config for ${tilesetName}`);
-        }
-        
-        styleElement.textContent = cssRules;
-        document.head.appendChild(styleElement);
-        
-        console.log('✅ Tileset CSS added to page:', styleId);
     }
 
     // Show error message in viewer
