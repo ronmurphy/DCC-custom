@@ -433,6 +433,15 @@ function openMapModal() {
                             flex: 1 !important;
                             margin-right: 12px !important;
                         ">
+                        <button onclick="saveMapToLibrary().catch(console.error)" style="
+                            padding: 8px 16px !important;
+                            background: var(--accent-color, #007bff) !important;
+                            color: white !important;
+                            border: none !important;
+                            border-radius: 4px !important;
+                            cursor: pointer !important;
+                            margin-right: 8px !important;
+                        ">📚 Save to Library</button>
                         <button onclick="saveMapAsFile()" style="
                             padding: 8px 16px !important;
                             background: #28a745 !important;
@@ -440,7 +449,7 @@ function openMapModal() {
                             border: none !important;
                             border-radius: 4px !important;
                             cursor: pointer !important;
-                        ">💾 Save Map</button>
+                        ">💾 Save as File</button>
                     </div>
                     
                     <!-- Map Display Area with Pan/Zoom -->
@@ -896,6 +905,7 @@ function saveMapAsFile() {
         name: currentMap.name,
         size: currentMap.size,
         type: currentMap.type,
+        tileset: currentTileset || 'default', // Save current tileset
         created: new Date().toISOString(),
         mapData: currentMap.mapData,
         playerLayer: currentMap.playerLayer,
@@ -915,6 +925,128 @@ function saveMapAsFile() {
     
     // Update current map display in panel
     updateCurrentMapDisplay(mapData);
+}
+
+async function saveMapToLibrary() {
+    const mapName = document.getElementById('modal-map-name').value || 'untitled-map';
+    currentMap.name = mapName;
+    
+    // Create map data structure compatible with the maps manager
+    const mapData = {
+        grid: await gridToArray(currentMap.mapData, currentMap.size),
+        tileset: currentTileset || 'default',
+        name: currentMap.name,
+        size: currentMap.size,
+        type: currentMap.type,
+        created: new Date().toISOString(),
+        version: "1.0"
+    };
+    
+    // Save to maps manager if available
+    if (window.mapsManager) {
+        const mapId = window.currentEditingMapId || null;
+        if (mapId) {
+            // Update existing map
+            await window.mapsManager.updateMap(mapId, mapData, mapName);
+            console.log(`📚 Updated map in library: ${mapName}`);
+        } else {
+            // Add new map
+            const newMapId = await window.mapsManager.addMap(mapData, mapName);
+            window.currentEditingMapId = newMapId;
+            console.log(`📚 Added map to library: ${mapName}`);
+        }
+        
+        // Close the modal
+        window.closeMapModal();
+    } else {
+        console.warn('Maps manager not available, falling back to file save');
+        saveMapAsFile();
+    }
+}
+
+// Helper function to convert map data to grid array
+async function gridToArray(mapData, size) {
+    console.log('🔄 Converting editor mapData to grid:', { size, sampleData: mapData.slice(0, 5) });
+    
+    const grid = [];
+    
+    // Load the current tileset configuration for proper sprite mapping
+    const tilesetName = currentTileset || 'default';
+    let tilesetConfig = null;
+    
+    try {
+        const response = await fetch(`assets/${tilesetName}.json`);
+        tilesetConfig = await response.json();
+        console.log('📋 Loaded tileset config for conversion:', tilesetName);
+    } catch (error) {
+        console.warn('⚠️ Failed to load tileset config, using fallback mapping');
+    }
+    
+    for (let row = 0; row < size; row++) {
+        const rowData = [];
+        for (let col = 0; col < size; col++) {
+            const index = row * size + col;
+            const cellData = mapData[index];
+            
+            let tileValue = 0; // Default to empty
+            
+            if (cellData && typeof cellData === 'object') {
+                if (cellData.type === 'sprite' && cellData.value) {
+                    // Convert sprite object to tile number using tileset config
+                    if (tilesetConfig && tilesetConfig.sprites) {
+                        const sprite = tilesetConfig.sprites.find(s => s.id === cellData.value);
+                        if (sprite && sprite.position) {
+                            const cols = tilesetConfig.gridSize === '4x4' ? 4 : 10;
+                            tileValue = sprite.position[1] * cols + sprite.position[0] + 1;
+                        } else {
+                            // Fallback mapping
+                            tileValue = getSpriteNumber(cellData.value);
+                        }
+                    } else {
+                        // Fallback mapping
+                        tileValue = getSpriteNumber(cellData.value);
+                    }
+                } else if (cellData.type === 'player') {
+                    tileValue = 0; // Players are not rendered in the static view
+                } else if (cellData.type === 'clear') {
+                    tileValue = 0;
+                }
+            } else if (typeof cellData === 'number') {
+                tileValue = cellData;
+            } else if (cellData === null || cellData === undefined) {
+                tileValue = 0;
+            }
+            
+            rowData.push(tileValue);
+        }
+        grid.push(rowData);
+    }
+    
+    console.log('✅ Converted grid sample:', grid.slice(0, 3));
+    return grid;
+}
+
+// Helper function for fallback sprite name to number mapping
+function getSpriteNumber(spriteName) {
+    const spriteMap = {
+        'mountain': 1,
+        'water': 2,
+        'grass': 3,
+        'rock': 4,
+        'castle': 5,
+        'house': 6,
+        'shop': 7,
+        'temple': 8,
+        'dragon': 9,
+        'sword': 10,
+        'skull': 11,
+        'danger': 12,
+        'tower': 13,
+        'road': 14,
+        'door': 15,
+        'fire': 16
+    };
+    return spriteMap[spriteName] || 1;
 }
 
 function updateCurrentMapDisplay(mapData) {
@@ -1315,11 +1447,73 @@ window.closeMapModal = closeMapModal;
 window.setMapSize = setMapSize;
 window.clearMap = clearMap;
 window.saveMapAsFile = saveMapAsFile;
+window.saveMapToLibrary = saveMapToLibrary;
+window.loadMapFromData = loadMapFromData;
 window.initializeMapEditor = initializeMapEditor;
 window.importCustomTileset = importCustomTileset;
 window.handleTilesetFiles = handleTilesetFiles;
 window.zoomIn = zoomIn;
 window.zoomOut = zoomOut;
 window.resetZoom = resetZoom;
+
+// Function to load map data into the editor
+function loadMapFromData(mapData, mapId = null) {
+    if (!mapData || !mapData.grid) {
+        console.error('Invalid map data provided');
+        return;
+    }
+    
+    // Store the map ID for editing
+    window.currentEditingMapId = mapId;
+    
+    // Set map size based on grid
+    const size = mapData.grid.length;
+    currentMap.size = size;
+    
+    // Set tileset
+    if (mapData.tileset && mapData.tileset !== 'default') {
+        currentTileset = mapData.tileset;
+        switchTileset(mapData.tileset);
+    }
+    
+    // Convert grid array back to flat array
+    const flatMapData = [];
+    for (let row = 0; row < size; row++) {
+        for (let col = 0; col < size; col++) {
+            flatMapData.push(mapData.grid[row][col] || 0);
+        }
+    }
+    
+    // Load the map data
+    currentMap.mapData = flatMapData;
+    currentMap.playerLayer = new Array(size * size).fill(0); // Reset player layer
+    
+    // Set map name
+    if (mapData.name) {
+        currentMap.name = mapData.name;
+        const nameInput = document.getElementById('modal-map-name');
+        if (nameInput) {
+            nameInput.value = mapData.name;
+        }
+    }
+    
+    // Update size buttons
+    const sizeButtons = document.querySelectorAll('.size-btn');
+    sizeButtons.forEach(btn => btn.classList.remove('active'));
+    
+    let sizeType = 'medium'; // default
+    if (size <= 10) sizeType = 'small';
+    else if (size >= 20) sizeType = 'large';
+    
+    const activeBtn = document.querySelector(`[data-size="${sizeType}"]`);
+    if (activeBtn) activeBtn.classList.add('active');
+    
+    // Redraw the canvas only if we're in the modal editor
+    if (typeof mapCanvas !== 'undefined' && mapCanvas) {
+        drawCanvas();
+    }
+    
+    console.log(`📖 Loaded map: ${mapData.name || 'Unnamed'} (${size}×${size})`);
+}
 
 console.log('🗺️ Map Editor loaded (modal version)');

@@ -13,6 +13,7 @@
     <!-- ported StoryTeller.mobile.old css goes here -->
     <link rel="stylesheet" href="css/npc-enhanced.css">
     <link rel="stylesheet" href="css/notes-panel.css">
+    <link rel="stylesheet" href="css/maps-panel.css">
     <link rel="stylesheet" href="css/dice-panel.css">
     <link rel="stylesheet" href="css/chat-effects.css">
     <link rel="stylesheet" href="css/map.css">
@@ -2556,6 +2557,8 @@
     <script src="js/quest-generator.js"></script>
     <script src="js/item-generator.js"></script>
     <script src="js/map-editor.js"></script>
+    <script src="js/unified-storage-db.js"></script>
+    <script src="js/maps-manager.js"></script>
     <script src="js/combat-manager.js"></script>
     <script src="js/supabase-chat.js"></script>
     <script src="js/map-sharing.js"></script>
@@ -2826,11 +2829,14 @@
                 }, 100); // Small delay to ensure DOM is ready
             }
             
-            // Initialize map editor if map panel is loaded
+            // Initialize map editor and maps panel if map panel is loaded
             if (content === 'map') {
                 setTimeout(() => {
                     if (typeof initializeMapEditor === 'function') {
                         initializeMapEditor();
+                    }
+                    if (typeof initializeMapsPanel === 'function') {
+                        initializeMapsPanel();
                     }
                 }, 100); // Small delay to ensure DOM is ready
             }
@@ -3177,30 +3183,78 @@
                 
                 case 'map':
                     return `
-                        <div class="map-panel-simple">
-                            <div style="text-align: center; padding: 20px;">
-                                <h3>Map Editor</h3>
-                                <p>Create and edit battle maps with enhanced sprite tiles</p>
-                                <button id="open-map-modal" class="btn primary" style="
-                                    padding: 12px 24px;
-                                    font-size: 1.1rem;
-                                    background: var(--accent-color);
-                                    color: white;
-                                    border: none;
-                                    border-radius: var(--radius-md);
-                                    cursor: pointer;
-                                    margin: 16px 0;
-                                ">
-                                    🗺️ Open Map Editor
-                                </button>
-                                <div id="current-map-display" style="
-                                    margin-top: 20px;
-                                    padding: 16px;
-                                    background: var(--bg-secondary);
-                                    border-radius: var(--radius-md);
-                                    border: 1px solid var(--border-color);
-                                ">
-                                    <p style="color: var(--text-secondary); margin: 0;">No map loaded</p>
+                        <div class="maps-panel">
+                            <div class="maps-header">
+                                <h4>
+                                    <i class="material-icons">map</i>
+                                    Battle Maps
+                                </h4>
+                                <div class="maps-controls">
+                                    <button class="maps-btn new" onclick="openMapEditor()" title="Create New Map">
+                                        <i class="material-icons">add</i>New Map
+                                    </button>
+                                    <button class="maps-btn" onclick="importMapFromFile()" title="Import Map File">
+                                        <i class="material-icons">upload</i>Import
+                                    </button>
+                                    <button class="maps-btn" onclick="exportAllMaps()" title="Export All Maps">
+                                        <i class="material-icons">download</i>Export All
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="maps-container">
+                                <div class="maps-list-container">
+                                    <div class="maps-list-header">
+                                        <h5>Saved Maps</h5>
+                                        <div class="maps-list-controls">
+                                            <button class="maps-btn" onclick="refreshMapsList()" title="Refresh Maps List" style="padding: 4px; min-height: 24px;">
+                                                <i class="material-icons" style="font-size: 16px;">refresh</i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="maps-list" id="maps-list">
+                                        <!-- Maps will be populated by JavaScript -->
+                                    </div>
+                                </div>
+                                
+                                <div class="maps-viewer-container">
+                                    <div class="maps-viewer-header">
+                                        <div class="map-title-display" id="map-title-display">No map selected</div>
+                                        <div class="map-viewer-controls">
+                                            <button class="maps-btn" onclick="editCurrentMap()" title="Edit Current Map" id="edit-map-btn" style="display: none;">
+                                                <i class="material-icons">edit</i>Edit
+                                            </button>
+                                            <button class="maps-btn" onclick="duplicateCurrentMap()" title="Duplicate Map" id="duplicate-map-btn" style="display: none;">
+                                                <i class="material-icons">content_copy</i>Duplicate
+                                            </button>
+                                            <button class="maps-btn" onclick="exportCurrentMap()" title="Export Map" id="export-map-btn" style="display: none;">
+                                                <i class="material-icons">download</i>Export
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="map-viewer-content" id="map-viewer-content">
+                                        <div class="map-viewer-placeholder">
+                                            <i class="material-icons">map</i>
+                                            <h3>Select a Map</h3>
+                                            <p>Choose a map from the list to view it here, or create a new one to get started.</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="map-stats" id="map-stats" style="display: none;">
+                                        <div class="map-stats-item">
+                                            <i class="material-icons">grid_on</i>
+                                            <span id="map-size-display">Size: -</span>
+                                        </div>
+                                        <div class="map-stats-item">
+                                            <i class="material-icons">palette</i>
+                                            <span id="map-tileset-display">Tileset: -</span>
+                                        </div>
+                                        <div class="map-stats-item">
+                                            <i class="material-icons">schedule</i>
+                                            <span id="map-modified-display">Modified: -</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
