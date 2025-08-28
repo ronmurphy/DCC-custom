@@ -310,6 +310,9 @@ class MapsManager {
                         <button class="map-action-btn" onclick="event.stopPropagation(); window.mapsManager.duplicateMap('${map.id}')" title="Duplicate">
                             <i class="material-icons" style="font-size: 12px;">content_copy</i>
                         </button>
+                        <button class="map-action-btn" onclick="event.stopPropagation(); window.mapsManager.exportMapById('${map.id}')" title="Export">
+                            <i class="material-icons" style="font-size: 12px;">download</i>
+                        </button>
                                                 <button class="map-action-btn" onclick="event.stopPropagation(); window.mapsManager.confirmDeleteMap('${map.id}').catch(console.error)" title="Delete">
                             🗑️
                         </button>
@@ -555,45 +558,47 @@ class MapsManager {
         ];
         
         let cssRules = `
-            /* Base sprite rule for viewer */
+            /* Base sprite rule for viewer - sprites fill their container */
             .viewer-tile .sprite {
                 background-image: url('${imageUrl}') !important;
-                width: 64px;
-                height: 64px;
-                background-size: 256px 256px; /* 4x4 grid of 64px sprites */
-                background-repeat: no-repeat;
+                width: 100% !important;
+                height: 100% !important;
+                background-size: 400% 400% !important;
+                background-repeat: no-repeat !important;
+                display: block !important;
             }
-            /* Specific sprite rules to ensure override */
+            /* Specific sprite rules with percentage positions for 4x4 grid */
         `;
         
-        // Add background positions for each sprite based on the 4x4 grid
+        // Use percentage positioning for responsive sizing
         const spritePositions = {
-            'mountain': '0px 0px',
-            'water': '-64px 0px', 
-            'grass': '-128px 0px',
-            'rock': '-192px 0px',
-            'castle': '0px -64px',
-            'house': '-64px -64px',
-            'shop': '-128px -64px',
-            'temple': '-192px -64px',
-            'dragon': '0px -128px',
-            'sword': '-64px -128px',
-            'skull': '-128px -128px',
-            'danger': '-192px -128px',
-            'tower': '0px -192px',
-            'road': '-64px -192px',
-            'door': '-128px -192px',
-            'fire': '-192px -192px'
+            'mountain': '0% 0%',           // Row 1, Col 1
+            'water': '33.333% 0%',         // Row 1, Col 2  
+            'grass': '66.666% 0%',         // Row 1, Col 3
+            'rock': '100% 0%',             // Row 1, Col 4
+            'castle': '0% 33.333%',        // Row 2, Col 1
+            'house': '33.333% 33.333%',    // Row 2, Col 2
+            'shop': '66.666% 33.333%',     // Row 2, Col 3
+            'temple': '100% 33.333%',      // Row 2, Col 4
+            'dragon': '0% 66.666%',        // Row 3, Col 1
+            'sword': '33.333% 66.666%',    // Row 3, Col 2
+            'skull': '66.666% 66.666%',    // Row 3, Col 3
+            'danger': '100% 66.666%',      // Row 3, Col 4
+            'tower': '0% 100%',            // Row 4, Col 1
+            'road': '33.333% 100%',        // Row 4, Col 2
+            'door': '66.666% 100%',        // Row 4, Col 3
+            'fire': '100% 100%'            // Row 4, Col 4
         };
         
         spriteClasses.forEach(sprite => {
-            const position = spritePositions[sprite] || '0px 0px';
+            const position = spritePositions[sprite] || '0% 0%';
             cssRules += `
             .viewer-tile .sprite.${sprite},
             .map-tile .sprite.${sprite},
             .sprite.${sprite} {
                 background-image: url('${imageUrl}') !important;
-                background-position: ${position};
+                background-position: ${position} !important;
+                background-size: 400% 400% !important;
             }`;
         });
         
@@ -1040,12 +1045,88 @@ class MapsManager {
         }
     }
 
-    // Edit current map
+    // Edit current map - Handle different map formats and load into editor
     editMap(mapId) {
         const map = this.savedMaps.get(mapId);
-        if (map && window.loadMapFromData) {
-            window.loadMapFromData(map.data, mapId);
-            window.openMapEditor();
+        if (map) {
+            // Store the map data to load after modal initialization
+            window.pendingMapToLoad = {
+                mapData: map.data,
+                mapId: mapId
+            };
+            
+            console.log('🗺️ Set pending map to load:', map.name || 'Unnamed Map');
+            
+            if (window.openMapModal) {
+                window.openMapModal();
+            } else if (window.openMapEditor) {
+                window.openMapEditor();
+            }
+        }
+    }
+
+    // LoadMapFormat - Convert different map data formats to what the editor expects
+    loadMapFormat(mapData, mapId = null) {
+        console.log('🗺️ Loading map format:', mapData);
+        
+        // Normalize the map data to the expected editor format
+        let normalizedData = {
+            grid: null,
+            name: mapData.name || "Untitled Map",
+            size: 15,
+            tileset: "default",
+            type: mapData.type || "dungeon"
+        };
+
+        // Handle different format types
+        if (mapData.data && mapData.data.grid) {
+            // New format with nested data (like Smile map)
+            console.log('📋 Detected new nested grid format');
+            normalizedData.grid = mapData.data.grid;
+            normalizedData.size = mapData.data.size || mapData.data.grid.length;
+            normalizedData.tileset = mapData.data.tileset || normalizedData.tileset;
+            normalizedData.name = mapData.data.name || mapData.name || normalizedData.name;
+            normalizedData.type = mapData.data.type || mapData.type || normalizedData.type;
+        } else if (mapData.grid) {
+            // Direct grid format
+            console.log('📋 Detected direct grid format');
+            normalizedData.grid = mapData.grid;
+            normalizedData.size = mapData.size || mapData.grid.length;
+            normalizedData.tileset = mapData.tileset || normalizedData.tileset;
+        } else if (mapData.mapData && Array.isArray(mapData.mapData)) {
+            // Flat array format (like Untitled map) - convert to grid
+            console.log('📋 Detected flat array format, converting to grid');
+            const size = mapData.size || 15;
+            const grid = [];
+            
+            for (let row = 0; row < size; row++) {
+                const gridRow = [];
+                for (let col = 0; col < size; col++) {
+                    const index = row * size + col;
+                    gridRow.push(mapData.mapData[index] || null);
+                }
+                grid.push(gridRow);
+            }
+            
+            normalizedData.grid = grid;
+            normalizedData.size = size;
+            normalizedData.tileset = mapData.tileset || normalizedData.tileset;
+        } else {
+            console.warn('⚠️ Unknown map format, creating empty grid');
+            // Create empty grid as fallback
+            const size = mapData.size || 15;
+            const grid = Array(size).fill(null).map(() => Array(size).fill(null));
+            normalizedData.grid = grid;
+            normalizedData.size = size;
+        }
+
+        console.log('✅ Normalized map data:', normalizedData);
+
+        // Load into the map editor
+        if (window.loadMapFromData) {
+            window.loadMapFromData(normalizedData, mapId);
+        } else {
+            console.error('❌ loadMapFromData function not available');
         }
     }
 
@@ -1093,6 +1174,14 @@ class MapsManager {
         link.click();
         
         URL.revokeObjectURL(link.href);
+    }
+
+    // Export map by ID
+    exportMapById(mapId) {
+        const map = this.savedMaps.get(mapId);
+        if (map) {
+            this.exportMap(map);
+        }
     }
 
     // Export all maps

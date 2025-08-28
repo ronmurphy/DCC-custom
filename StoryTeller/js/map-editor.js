@@ -158,19 +158,47 @@ async function switchTileset(tilesetName) {
     ];
     
     let cssRules = `
-        /* Base sprite rule */
+        /* Base sprite rule - sprites fill their container */
         .sprite {
             background-image: url('${imageUrl}') !important;
+            width: 100% !important;
+            height: 100% !important;
+            background-size: 400% 400% !important;
+            background-repeat: no-repeat !important;
+            display: block !important;
         }
-        /* Specific sprite rules to ensure override */
+        /* Specific sprite rules with exact positions for 4x4 grid */
     `;
     
+    // Position each sprite in the 4x4 grid (each sprite is 25% of the sheet)
+    const spritePositions = {
+        'mountain': '0% 0%',           // Row 1, Col 1
+        'water': '33.333% 0%',         // Row 1, Col 2  
+        'grass': '66.666% 0%',         // Row 1, Col 3
+        'rock': '100% 0%',             // Row 1, Col 4
+        'castle': '0% 33.333%',        // Row 2, Col 1
+        'house': '33.333% 33.333%',    // Row 2, Col 2
+        'shop': '66.666% 33.333%',     // Row 2, Col 3
+        'temple': '100% 33.333%',      // Row 2, Col 4
+        'dragon': '0% 66.666%',        // Row 3, Col 1
+        'sword': '33.333% 66.666%',    // Row 3, Col 2
+        'skull': '66.666% 66.666%',    // Row 3, Col 3
+        'danger': '100% 66.666%',      // Row 3, Col 4
+        'tower': '0% 100%',            // Row 4, Col 1
+        'road': '33.333% 100%',        // Row 4, Col 2
+        'door': '66.666% 100%',        // Row 4, Col 3
+        'fire': '100% 100%'            // Row 4, Col 4
+    };
+    
     spriteClasses.forEach(sprite => {
+        const position = spritePositions[sprite] || '0% 0%';
         cssRules += `
         .selector-tile .sprite.${sprite},
         .map-tile .sprite.${sprite},
         .sprite.${sprite} {
             background-image: url('${imageUrl}') !important;
+            background-position: ${position} !important;
+            background-size: 400% 400% !important;
         }`;
     });
     
@@ -623,6 +651,73 @@ async function initializeModalMapEditor() {
     initializePanZoom();
     
     console.log('✅ Modal Map editor initialized successfully!');
+    
+    // Check if there's a pending map to load from the Maps Manager
+    if (window.pendingMapToLoad) {
+        console.log('📋 Found pending map to load, loading now...');
+        
+        // Use the Maps Manager's LoadMapFormat function
+        if (window.mapsManager && window.mapsManager.loadMapFormat) {
+            window.mapsManager.loadMapFormat(window.pendingMapToLoad.mapData, window.pendingMapToLoad.mapId);
+        } else {
+            // Fallback - call loadMapFromData directly
+            console.log('⚠️ Maps Manager not available, using direct load');
+            loadMapFromData(window.pendingMapToLoad.mapData, window.pendingMapToLoad.mapId);
+        }
+        
+        // Clear the pending flag
+        window.pendingMapToLoad = null;
+        console.log('✅ Pending map loaded and cleared');
+    } else {
+        // No pending map - this is a new map, ensure sprites are properly initialized
+        console.log('🆕 No pending map - initializing for new map creation');
+        
+        // Force sprite CSS regeneration for new maps
+        const styleElement = document.createElement('style');
+        styleElement.setAttribute('data-modal-tileset-style', 'true');
+        const imageUrl = `assets/${currentTileset}.png?v=${Date.now()}`;
+        
+        const spriteClasses = [
+            'mountain', 'water', 'grass', 'rock', 'castle', 'house', 'shop', 'temple',
+            'dragon', 'sword', 'skull', 'danger', 'tower', 'road', 'door', 'fire'
+        ];
+        
+        let cssRules = `
+            .sprite {
+                background-image: url('${imageUrl}') !important;
+                width: 100% !important;
+                height: 100% !important;
+                background-size: 400% 400% !important;
+                background-repeat: no-repeat !important;
+                display: block !important;
+            }
+        `;
+        
+        const spritePositions = {
+            'mountain': '0% 0%', 'water': '33.333% 0%', 'grass': '66.666% 0%', 'rock': '100% 0%',
+            'castle': '0% 33.333%', 'house': '33.333% 33.333%', 'shop': '66.666% 33.333%', 'temple': '100% 33.333%',
+            'dragon': '0% 66.666%', 'sword': '33.333% 66.666%', 'skull': '66.666% 66.666%', 'danger': '100% 66.666%',
+            'tower': '0% 100%', 'road': '33.333% 100%', 'door': '66.666% 100%', 'fire': '100% 100%'
+        };
+        
+        spriteClasses.forEach(sprite => {
+            const position = spritePositions[sprite] || '0% 0%';
+            cssRules += `
+            .sprite.${sprite} {
+                background-image: url('${imageUrl}') !important;
+                background-position: ${position} !important;
+                background-size: 400% 400% !important;
+            }`;
+        });
+        
+        styleElement.textContent = cssRules;
+        document.head.appendChild(styleElement);
+        
+        console.log('🎨 Regenerated sprite CSS for new map');
+        
+        // Refresh the tile selector to show correct sprites
+        createModalTileSelector();
+    }
 }
 
 function populateTilesetDropdown() {
@@ -1507,6 +1602,18 @@ function loadMapFromData(mapData, mapId = null) {
     
     const activeBtn = document.querySelector(`[data-size="${sizeType}"]`);
     if (activeBtn) activeBtn.classList.add('active');
+    
+    // CRITICAL: Rebuild the map grid and re-render all tiles
+    resizeModalMap();
+    
+    // Re-render all tiles with the loaded data
+    const grid = document.getElementById('modal-map-grid');
+    if (grid) {
+        const tiles = grid.querySelectorAll('.map-tile');
+        tiles.forEach((tile, index) => {
+            renderTile(tile, currentMap.mapData[index], currentMap.playerLayer[index]);
+        });
+    }
     
     // Redraw the canvas only if we're in the modal editor
     if (typeof mapCanvas !== 'undefined' && mapCanvas) {
