@@ -36,6 +36,33 @@ function initializeApp() {
     // Initialize file input for import
     initializeImportHandler();
     
+    // Initialize the unified map renderer
+    setTimeout(() => {
+        if (typeof UnifiedMapRenderer !== 'undefined') {
+            window.unifiedMapRenderer = new UnifiedMapRenderer();
+            // Load default tileset
+            window.unifiedMapRenderer.loadTileset('default').then(() => {
+                if (window.showDebug) {
+                    console.log('✅ Unified Map Renderer initialized with default tileset');
+                }
+            }).catch(error => {
+                console.warn('⚠️ Unified Map Renderer tileset load failed:', error);
+            });
+        } else {
+            console.warn('⚠️ UnifiedMapRenderer not found, retrying...');
+            setTimeout(() => {
+                if (typeof UnifiedMapRenderer !== 'undefined') {
+                    window.unifiedMapRenderer = new UnifiedMapRenderer();
+                    window.unifiedMapRenderer.loadTileset('default').then(() => {
+                        if (window.showDebug) {
+                            console.log('✅ Unified Map Renderer initialized (delayed) with default tileset');
+                        }
+                    });
+                }
+            }, 1000);
+        }
+    }, 100);
+    
     // Initialize DCC Game Mechanics (if modules are loaded)
     setTimeout(() => {
         if (typeof DCCChatIntegration !== 'undefined') {
