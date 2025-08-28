@@ -364,7 +364,9 @@ class MapsManager {
 
     // Display map in the viewer
     displayMapInViewer(map) {
-        console.log('🖼️ displayMapInViewer called with map:', map);
+        if (window.showDebug) {
+            console.log('🖼️ displayMapInViewer called with map:', map);
+        }
         
         const viewerContent = document.getElementById('map-viewer-content');
         if (!viewerContent) {
@@ -372,15 +374,19 @@ class MapsManager {
             return;
         }
 
-        console.log('📊 Map data structure:', {
+        // CRITICAL: Debug the actual map data structure
+        console.log('📊 Map data analysis:', {
             hasData: !!map.data,
             hasGrid: !!map.data?.grid,
             gridSize: map.data?.grid?.length,
-            tileset: map.data?.tileset
+            tileset: map.data?.tileset,
+            sampleGridData: map.data?.grid ? map.data.grid.slice(0, 3) : 'N/A'
         });
 
         // Use the same rendering approach as the map editor
-        console.log('🎨 Using CSS Grid rendering (like map editor)...');
+        if (window.showDebug) {
+            console.log('🎨 Using CSS Grid rendering (like map editor)...');
+        }
         this.renderMapWithCSSGrid(viewerContent, map.data);
         this.updateMapStats(map);
     }
@@ -486,6 +492,14 @@ class MapsManager {
     // Load tileset and render tiles for CSS grid viewer (borrow tileset loading from editor)
     async loadTilesetForGridViewer(mapGrid, grid, tilesetName, canvasDiv, wrapper) {
         try {
+            // FIRST: Try to load tileset with unified renderer if available
+            if (window.unifiedMapRenderer) {
+                if (window.showDebug) {
+                    console.log(`🎨 Loading tileset ${tilesetName} with unified renderer...`);
+                }
+                await window.unifiedMapRenderer.loadTileset(tilesetName);
+            }
+            
             // ONLY borrow the tileset loading from map editor (not the map loading)
             // Set the current tileset like the editor does
             window.currentTileset = tilesetName;
@@ -614,9 +628,15 @@ class MapsManager {
 
     // Keep the working tile creation but use editor's tileset data
     createGridTiles(mapGrid, grid, tilesetConfig, tilesetName) {
+        if (window.showDebug) {
+            console.log(`🎨 MapsManager: createGridTiles called with grid size: ${grid.length}`);
+            console.log(`🎨 MapsManager: Unified renderer available:`, !!window.unifiedMapRenderer);
+        }
+        
         mapGrid.innerHTML = '';
         
         const size = grid.length;
+        let nonEmptyTiles = 0;
         
         for (let row = 0; row < size; row++) {
             for (let col = 0; col < size; col++) {
@@ -636,6 +656,12 @@ class MapsManager {
                 
                 // Get the tile data
                 const tileData = grid[row][col];
+                if (tileData && tileData !== 0) {
+                    nonEmptyTiles++;
+                    if (window.showDebug) {
+                        console.log(`🎨 Non-empty tile [${row},${col}]:`, tileData);
+                    }
+                }
                 
                 // Render the tile using editor's sprite system but viewer's logic
                 this.renderViewerTile(tile, tileData, tilesetConfig, tilesetName);
@@ -643,49 +669,62 @@ class MapsManager {
                 mapGrid.appendChild(tile);
             }
         }
+        
+        console.log(`✅ MapsManager: Created ${size * size} tiles (${nonEmptyTiles} non-empty)`);
+        if (nonEmptyTiles === 0) {
+            console.warn('⚠️ Map appears to be empty - all tiles are 0 or null');
+        }
     }
 
     // Validate that both .json and .png files exist for the tileset
     // Render tiles using editor's sprite system but keeping viewer's working logic
     renderViewerTile(tile, tileData, tilesetConfig, tilesetName) {
-        tile.innerHTML = '';
-        
-        if (!tileData) {
-            tile.style.backgroundColor = '#f9f9f9';
-            return;
-        }
-        
-        // Handle different data formats
-        if (typeof tileData === 'object' && tileData.type === 'sprite') {
-            // Use editor's sprite rendering approach
-            const spriteDiv = document.createElement('div');
-            spriteDiv.className = `sprite ${tileData.value}`;
+        // Use the unified renderer for consistent sprite handling
+        if (window.UnifiedMapRenderer && window.unifiedMapRenderer) {
+            window.unifiedMapRenderer.renderTile(tile, tileData, null, 'viewer'); // Pass 'viewer' context
+        } else {
+            // Fallback to original viewer rendering
+            tile.innerHTML = '';
             
-            // Use editor's background color system
-            if (window.tilesetData && window.tilesetData.backgroundColors && window.tilesetData.backgroundColors[tileData.value]) {
-                tile.style.backgroundColor = window.tilesetData.backgroundColors[tileData.value];
+            if (!tileData) {
+                tile.style.backgroundColor = '#f9f9f9';
+                return;
             }
             
-            tile.appendChild(spriteDiv);
-        } else if (typeof tileData === 'number' && tileData > 0) {
-            // Convert tile number to sprite using editor's tile mapping
-            const spriteId = this.getTileNumberSpriteId(tileData);
-            if (spriteId) {
+            // Handle different data formats
+            if (typeof tileData === 'object' && tileData.type === 'sprite') {
+                // Use editor's sprite rendering approach
                 const spriteDiv = document.createElement('div');
-                spriteDiv.className = `sprite ${spriteId}`;
+                spriteDiv.className = `sprite ${tileData.value}`;
                 
-                // Apply background color from editor's system
-                if (window.tilesetData && window.tilesetData.backgroundColors && window.tilesetData.backgroundColors[spriteId]) {
-                    tile.style.backgroundColor = window.tilesetData.backgroundColors[spriteId];
+                // Use editor's background color system
+                if (window.tilesetData && window.tilesetData.backgroundColors && window.tilesetData.backgroundColors[tileData.value]) {
+                    tile.style.backgroundColor = window.tilesetData.backgroundColors[tileData.value];
                 }
                 
                 tile.appendChild(spriteDiv);
-            } else {
-                tile.textContent = tileData.toString();
-                tile.style.backgroundColor = '#e3f2fd';
+            } else if (typeof tileData === 'number' && tileData > 0) {
+                // Convert tile number to sprite using editor's tile mapping
+                const spriteId = this.getTileNumberSpriteId(tileData);
+                if (spriteId) {
+                    const spriteDiv = document.createElement('div');
+                    spriteDiv.className = `sprite ${spriteId}`;
+                    
+                    // Apply background color from editor's system
+                    if (window.tilesetData && window.tilesetData.backgroundColors && window.tilesetData.backgroundColors[spriteId]) {
+                        tile.style.backgroundColor = window.tilesetData.backgroundColors[spriteId];
+                    }
+                    
+                    tile.appendChild(spriteDiv);
+                } else {
+                    // Fallback to number display
+                    tile.textContent = tileData;
+                }
+            } else if (typeof tileData === 'object' && tileData.emoji) {
+                tile.textContent = tileData.emoji;
+            } else if (typeof tileData === 'string') {
+                tile.textContent = tileData;
             }
-        } else if (typeof tileData === 'object' && tileData.emoji) {
-            tile.textContent = tileData.emoji;
         }
     }
 

@@ -902,39 +902,35 @@ function placeTile(index) {
 }
 
 function renderTile(tile, mapData, playerData) {
-    tile.innerHTML = '';
-    tile.className = 'map-tile';
-    
-    // Use the EXACT same approach as the working viewer
-    if (!mapData) {
-        tile.style.backgroundColor = '#f9f9f9';
-        return;
-    }
-    
-    // Handle sprite data exactly like the working viewer does
-    if (typeof mapData === 'object' && mapData.type === 'sprite') {
-        const spriteDiv = document.createElement('div');
-        spriteDiv.className = `sprite ${mapData.value}`;
+    // Use the unified renderer for consistent sprite handling
+    if (window.UnifiedMapRenderer && window.unifiedMapRenderer) {
+        window.unifiedMapRenderer.renderTile(tile, mapData, playerData);
+    } else {
+        // Fallback to basic rendering
+        tile.innerHTML = '';
+        tile.className = 'map-tile';
         
-        // Apply background color exactly like viewer
-        if (window.tilesetData && window.tilesetData.backgroundColors && window.tilesetData.backgroundColors[mapData.value]) {
-            tile.style.backgroundColor = window.tilesetData.backgroundColors[mapData.value];
+        if (!mapData) {
+            tile.style.backgroundColor = '#f9f9f9';
+            return;
         }
         
-        tile.appendChild(spriteDiv);
-    } else if (typeof mapData === 'object' && mapData.emoji) {
-        tile.textContent = mapData.emoji;
-    } else {
-        // Clear background color when no map data
-        tile.style.backgroundColor = '';
-    }
-    
-    // Render player data (overlay)
-    if (playerData) {
-        const player = document.createElement('div');
-        player.classList.add('player-overlay');
-        player.textContent = playerData.value;
-        tile.appendChild(player);
+        // Handle sprite data
+        if (typeof mapData === 'object' && mapData.type === 'sprite') {
+            const spriteDiv = document.createElement('div');
+            spriteDiv.className = `sprite ${mapData.value}`;
+            tile.appendChild(spriteDiv);
+        } else if (typeof mapData === 'object' && mapData.emoji) {
+            tile.textContent = mapData.emoji;
+        }
+        
+        // Render player data (overlay)
+        if (playerData) {
+            const player = document.createElement('div');
+            player.classList.add('player-overlay');
+            player.textContent = playerData.value;
+            tile.appendChild(player);
+        }
     }
 }
 
@@ -1175,7 +1171,7 @@ function initializeMapEditor() {
             openButton.onclick = openMapModal;
             console.log('✅ Map editor panel button initialized');
         } else {
-            console.error('❌ open-map-modal button not found!');
+            console.log('✅ Map editor uses direct onclick handlers - no button setup needed');
         }
         
         // Set up modal close button
@@ -1553,20 +1549,32 @@ window.resetZoom = resetZoom;
 
 // Function to load map data into the editor
 async function loadMapFromData(mapData, mapId = null) {
-    console.log('📥 loadMapFromData called with:', mapData);
-    console.log('🆔 Map ID:', mapId);
+    if (window.showDebug) {
+        console.log('📥 loadMapFromData called with:', mapData);
+        console.log('🆔 Map ID:', mapId);
+    }
     
     if (!mapData || !mapData.grid) {
         console.error('❌ Invalid map data provided - missing grid');
         console.log('🔍 mapData keys:', mapData ? Object.keys(mapData) : 'mapData is null');
+        if (mapData) {
+            console.log('🔍 Full mapData structure:', mapData);
+        }
         return;
     }
     
     console.log('✅ Valid map data with grid, proceeding...');
+    console.log('📊 Grid analysis:', {
+        gridLength: mapData.grid.length,
+        firstRow: mapData.grid[0],
+        hasNonZero: mapData.grid.some(row => row.some(cell => cell && cell !== 0))
+    });
     
     // Store the map ID for editing
     window.currentEditingMapId = mapId;
-    console.log('💾 Stored editing map ID:', mapId);
+    if (window.showDebug) {
+        console.log('💾 Stored editing map ID:', mapId);
+    }
     
     // Set map size based on grid
     const size = mapData.grid.length;
@@ -1589,13 +1597,22 @@ async function loadMapFromData(mapData, mapId = null) {
     
     // Convert grid array back to flat array
     const flatMapData = [];
+    let nonEmptyCount = 0;
     for (let row = 0; row < size; row++) {
         for (let col = 0; col < size; col++) {
-            flatMapData.push(mapData.grid[row][col] || null);
+            const cellData = mapData.grid[row][col] || null;
+            flatMapData.push(cellData);
+            if (cellData && cellData !== 0) {
+                nonEmptyCount++;
+            }
         }
     }
-    console.log('🔄 Converted grid to flat array, length:', flatMapData.length);
-    console.log('🔍 First few tiles:', flatMapData.slice(0, 5));
+    console.log('🔄 Converted grid to flat array:', {
+        totalTiles: flatMapData.length,
+        nonEmptyTiles: nonEmptyCount,
+        firstFewTiles: flatMapData.slice(0, 10),
+        sampleNonEmpty: flatMapData.filter(tile => tile && tile !== 0).slice(0, 5)
+    });
     
     // Load the map data
     currentMap.mapData = flatMapData;
