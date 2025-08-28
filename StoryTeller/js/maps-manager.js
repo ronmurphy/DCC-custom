@@ -492,6 +492,9 @@ class MapsManager {
                 await window.loadTilesetData(tilesetName);
             }
             
+            // CRITICAL: Generate sprite CSS like the map editor does
+            await this.generateSpriteCSS(tilesetName);
+            
             if (window.checkSprites) {
                 await window.checkSprites();
             }
@@ -506,6 +509,100 @@ class MapsManager {
             console.warn(`⚠️ Failed to load tileset: ${error.message}`);
             this.createGridTilesFallback(mapGrid, grid);
             this.initializeViewerPanZoom(wrapper, canvasDiv);
+        }
+    }
+
+    // Generate sprite CSS like the map editor does (ESSENTIAL for sprite display)
+    async generateSpriteCSS(tilesetName) {
+        // Remove any existing tileset styles to prevent conflicts
+        const existingStyles = document.querySelectorAll('style[data-viewer-tileset-style]');
+        existingStyles.forEach(style => style.remove());
+        
+        // Load tileset config for background colors (handle case sensitivity)
+        let tilesetConfig = null;
+        try {
+            // Try lowercase first (like default.json)
+            let response = await fetch(`assets/${tilesetName.toLowerCase()}.json`);
+            if (!response.ok) {
+                // Try original case (like Default.json)
+                response = await fetch(`assets/${tilesetName}.json`);
+            }
+            if (response.ok) {
+                tilesetConfig = await response.json();
+                console.log(`📋 Loaded tileset config: ${tilesetName}`, tilesetConfig);
+                
+                // Store background colors in window.tilesetData for renderViewerTile
+                if (!window.tilesetData) {
+                    window.tilesetData = {};
+                }
+                window.tilesetData.backgroundColors = tilesetConfig.backgroundColors;
+            }
+        } catch (error) {
+            console.warn(`⚠️ Could not load tileset config for ${tilesetName}:`, error);
+        }
+        
+        // Create the same CSS rules as the map editor
+        const styleElement = document.createElement('style');
+        styleElement.setAttribute('data-viewer-tileset-style', 'true'); // Mark for easy removal
+        const imageUrl = (window.tilesetData && window.tilesetData.imageUrl) ? 
+            window.tilesetData.imageUrl : 
+            `assets/${tilesetName.toLowerCase()}.png?v=${Date.now()}`; // Add cache buster, use lowercase
+        
+        // Create specific CSS rules for each sprite type to ensure override
+        const spriteClasses = [
+            'mountain', 'water', 'grass', 'rock', 'castle', 'house', 'shop', 'temple',
+            'dragon', 'sword', 'skull', 'danger', 'tower', 'road', 'door', 'fire'
+        ];
+        
+        let cssRules = `
+            /* Base sprite rule for viewer */
+            .viewer-tile .sprite {
+                background-image: url('${imageUrl}') !important;
+                width: 64px;
+                height: 64px;
+                background-size: 256px 256px; /* 4x4 grid of 64px sprites */
+                background-repeat: no-repeat;
+            }
+            /* Specific sprite rules to ensure override */
+        `;
+        
+        // Add background positions for each sprite based on the 4x4 grid
+        const spritePositions = {
+            'mountain': '0px 0px',
+            'water': '-64px 0px', 
+            'grass': '-128px 0px',
+            'rock': '-192px 0px',
+            'castle': '0px -64px',
+            'house': '-64px -64px',
+            'shop': '-128px -64px',
+            'temple': '-192px -64px',
+            'dragon': '0px -128px',
+            'sword': '-64px -128px',
+            'skull': '-128px -128px',
+            'danger': '-192px -128px',
+            'tower': '0px -192px',
+            'road': '-64px -192px',
+            'door': '-128px -192px',
+            'fire': '-192px -192px'
+        };
+        
+        spriteClasses.forEach(sprite => {
+            const position = spritePositions[sprite] || '0px 0px';
+            cssRules += `
+            .viewer-tile .sprite.${sprite},
+            .map-tile .sprite.${sprite},
+            .sprite.${sprite} {
+                background-image: url('${imageUrl}') !important;
+                background-position: ${position};
+            }`;
+        });
+        
+        styleElement.textContent = cssRules;
+        document.head.appendChild(styleElement);
+        
+        console.log(`🎨 Generated viewer sprite CSS for: ${imageUrl}`);
+        if (tilesetConfig && tilesetConfig.backgroundColors) {
+            console.log(`🎨 Loaded background colors:`, tilesetConfig.backgroundColors);
         }
     }
 
