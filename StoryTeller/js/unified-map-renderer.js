@@ -126,6 +126,16 @@ class UnifiedMapRenderer {
     // ========================================
 
     renderTile(tileElement, tileData, playerData = null, context = 'editor') {
+        // Update tileset data if available globally (for tileset switching)
+        if (window.tilesetData && window.tilesetData.backgroundColors) {
+            this.tilesetData = window.tilesetData;
+        }
+        
+        // Set this.mapData if available from global context for v1.2 support
+        if (!this.mapData && window.currentLoadedMap) {
+            this.mapData = window.currentLoadedMap;
+        }
+        
         // Clear and set up tile
         tileElement.innerHTML = '';
         tileElement.className = context === 'editor' ? 'map-tile' : 'viewer-tile';
@@ -187,17 +197,28 @@ class UnifiedMapRenderer {
             const spriteDiv = document.createElement('div');
             spriteDiv.className = `sprite ${spriteType}`;
             
-            // Apply background color if available - check both local and global sources like viewer
-            if (this.tilesetData && this.tilesetData.backgroundColors) {
+            // ENHANCED: Multi-version background color support
+            if (typeof tileData === 'object' && tileData.background) {
+                // v1.1 format with embedded background color (backward compatibility)
+                backgroundColor = tileData.background;
+            } else if (this.mapData && this.mapData.backgroundColors && this.mapData.backgroundColors[spriteType]) {
+                // v1.2 format - lookup from map's color dictionary
+                backgroundColor = this.mapData.backgroundColors[spriteType];
+            } else if (this.tilesetData && this.tilesetData.backgroundColors) {
+                // v1.0 format - lookup from tileset
                 backgroundColor = this.tilesetData.backgroundColors[spriteType];
             } else if (window.tilesetData && window.tilesetData.backgroundColors) {
+                // v1.0 format - fallback to global tileset data
                 backgroundColor = window.tilesetData.backgroundColors[spriteType];
             }
             
             if (backgroundColor) {
                 tileElement.style.backgroundColor = backgroundColor;
                 if (window.showDebug && (context === 'editor' || context === 'viewer')) {
-                    console.log(`🎨 Applied background color for ${spriteType}: ${backgroundColor} in ${context}`);
+                    let source = 'tileset';
+                    if (typeof tileData === 'object' && tileData.background) source = 'embedded';
+                    else if (this.mapData && this.mapData.backgroundColors) source = 'dictionary';
+                    console.log(`🎨 Applied ${source} background color for ${spriteType}: ${backgroundColor} in ${context}`);
                 }
             }
 
