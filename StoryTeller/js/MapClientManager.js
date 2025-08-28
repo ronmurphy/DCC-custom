@@ -25,12 +25,32 @@ class MapClientManager {
 
     // Initialize with Supabase client
     initialize(supabaseClient, sessionCode, mapContainerId) {
-        if (!supabaseClient || !supabaseClient.isInitialized()) {
-            throw new Error('Valid Supabase client required');
+        // Flexible client validation - check for common Supabase methods
+        const hasFromMethod = supabaseClient && typeof supabaseClient.from === 'function';
+        const hasAuthProperty = supabaseClient && supabaseClient.auth;
+        const hasOldIsInitialized = supabaseClient && typeof supabaseClient.isInitialized === 'function';
+        
+        if (!hasFromMethod && !hasAuthProperty && !hasOldIsInitialized) {
+            throw new Error('Valid Supabase client required - must have .from() method or .auth property');
         }
+        
+        console.log('🔍 Client validation:', {
+            hasFromMethod,
+            hasAuthProperty, 
+            hasOldIsInitialized,
+            clientType: typeof supabaseClient
+        });
         
         this.supabaseClient = supabaseClient;
         this.currentSession = sessionCode;
+        
+        // Helper method to get the actual client for database operations
+        this.getDBClient = () => {
+            if (this.supabaseClient.getClient && typeof this.supabaseClient.getClient === 'function') {
+                return this.supabaseClient.getClient(); // Old wrapper style
+            }
+            return this.supabaseClient; // Direct client
+        };
         
         // Get map container element
         if (mapContainerId) {
@@ -72,20 +92,36 @@ class MapClientManager {
                 };
             }
 
-            // Subscribe to shared maps table changes
-            this.mapSubscription = this.supabaseClient.getClient()
-                .from('shared_maps')
-                .on('*', (payload) => {
-                    this.handleMapUpdate(payload);
-                })
+            // Subscribe to shared maps table changes using new Supabase API
+            this.mapSubscription = this.getDBClient()
+                .channel(`map-sync-${this.currentSession}`)
+                .on('postgres_changes', 
+                    { 
+                        event: '*', 
+                        schema: 'public', 
+                        table: 'shared_maps',
+                        filter: `session_code=eq.${this.currentSession}`
+                    }, 
+                    (payload) => {
+                        this.handleMapUpdate(payload);
+                    }
+                )
                 .subscribe();
 
-            // Subscribe to player positions
-            this.positionSubscription = this.supabaseClient.getClient()
-                .from('player_positions')
-                .on('*', (payload) => {
-                    this.handlePlayerPositionUpdate(payload);
-                })
+            // Subscribe to player positions using new Supabase API
+            this.positionSubscription = this.getDBClient()
+                .channel(`positions-${this.currentSession}`)
+                .on('postgres_changes', 
+                    { 
+                        event: '*', 
+                        schema: 'public', 
+                        table: 'player_positions',
+                        filter: `session_code=eq.${this.currentSession}`
+                    }, 
+                    (payload) => {
+                        this.handlePlayerPositionUpdate(payload);
+                    }
+                )
                 .subscribe();
 
             // Check for existing shared map
@@ -150,7 +186,7 @@ class MapClientManager {
     // Check for existing shared map
     async checkForExistingMap() {
         try {
-            const { data, error } = await this.supabaseClient.getClient()
+            const { data, error } = await this.getDBClient()
                 .from('shared_maps')
                 .select('*')
                 .eq('session_code', this.currentSession)
@@ -274,7 +310,7 @@ class MapClientManager {
                 ">
                     <div class="map-client-grid" style="
                         display: grid;
-                        grid-template-columns: repeat(${size}, ${mapData.settings?.gridSize || 20}px);
+                        grid-template-columns: repeat(${size}, 1fr);
                         gap: 1px;
                         background: #ddd;
                         padding: 1px;
@@ -296,14 +332,32 @@ class MapClientManager {
                 
                 const tileData = grid[row][col];
                 
-                tile.style.cssText = `
-                    width: ${mapData.settings?.gridSize || 20}px;
-                    height: ${mapData.settings?.gridSize || 20}px;
-                    background: ${this.getTileColor(tileData)};
-                    border: 1px solid rgba(0, 0, 0, 0.1);
-                    position: relative;
-                    cursor: ${mapData.settings?.allowPlayerMovement ? 'pointer' : 'default'};
-                `;
+                // Handle different tile data formats
+                if (typeof tileData === 'object' && tileData.value) {
+                    // Sprite-based tile (v1_2map.json format)
+                    tile.innerHTML = `<div class="sprite ${tileData.value}" title="${tileData.name || tileData.value}"></div>`;
+                    tile.style.cssText = `
+                        width: 100%;
+                        height: 64px;
+                        aspect-ratio: 1;
+                        position: relative;
+                        cursor: ${mapData.settings?.allowPlayerMovement ? 'pointer' : 'default'};
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    `;
+                } else {
+                    // Simple numeric tile (legacy format)
+                    tile.style.cssText = `
+                        width: 100%;
+                        height: 64px;
+                        aspect-ratio: 1;
+                        background: ${this.getTileColor(tileData)};
+                        border: 1px solid rgba(0, 0, 0, 0.1);
+                        position: relative;
+                        cursor: ${mapData.settings?.allowPlayerMovement ? 'pointer' : 'default'};
+                    `;
+                }
                 
                 // Add click handler for player movement
                 if (mapData.settings?.allowPlayerMovement) {
@@ -351,7 +405,7 @@ class MapClientManager {
             this.updatePlayerPositionVisual(window.playerName || 'Player', x, y, true);
             
             // Send to server
-            await this.supabaseClient.getClient()
+            await this.getDBClient()
                 .from('player_positions')
                 .upsert({
                     session_code: this.currentSession,
@@ -452,7 +506,7 @@ class MapClientManager {
     // Load existing player positions
     async loadPlayerPositions() {
         try {
-            const { data, error } = await this.supabaseClient.getClient()
+            const { data, error } = await this.getDBClient()
                 .from('player_positions')
                 .select('*')
                 .eq('session_code', this.currentSession);

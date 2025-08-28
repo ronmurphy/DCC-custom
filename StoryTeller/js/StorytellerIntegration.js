@@ -1,6 +1,5 @@
 // ========================================
 // MAP SYNC INTEGRATION EXAMPLE
-// Simple integration with existing Storyteller app
 // ========================================
 
 // Global map sync adapter instance
@@ -78,6 +77,14 @@ function enhancedShareMapWithPlayers() {
         ).then(result => {
             if (result.success) {
                 console.log('✅ Map also shared via sync system');
+                
+                // Send silent refresh command to players after 2 seconds
+                setTimeout(() => {
+                    if (typeof sendChatMessageAsync === 'function') {
+                        sendChatMessageAsync('/refreshmap');
+                        console.log('📡 Sent silent map refresh command to players');
+                    }
+                }, 2000);
             } else {
                 console.warn('⚠️ Failed to share via sync system:', result.error);
             }

@@ -83,8 +83,10 @@ async function interceptChatMessage(message) {
         // Process the command and get the appropriate display version
         const processedMessage = await processCommandMessage(message);
         
-        // Display the processed version
-        originalDisplayChatMessage(processedMessage);
+        // Only display if processedMessage is not null (silent commands return null)
+        if (processedMessage !== null) {
+            originalDisplayChatMessage(processedMessage);
+        }
     } else {
         // Not a command - display normally
         originalDisplayChatMessage(message);
@@ -97,7 +99,9 @@ async function interceptChatMessage(message) {
 function isCommandMessage(messageText) {
     // Look for patterns like: COMMAND:PlayerName or COMMAND:PlayerName:parameters
     const commandPattern = /^(LOOT|ACHIEVEMENT|LEVELUP|ITEM|SKILL|EXP|GOLD|HEALTH|STAT|CLEAN):[^:]+/;
-    return commandPattern.test(messageText);
+    // Also check for special silent commands like /refreshmap
+    const silentCommandPattern = /^\/refreshmap$/;
+    return commandPattern.test(messageText) || silentCommandPattern.test(messageText);
 }
 
 /**
@@ -109,7 +113,21 @@ async function processCommandMessage(message) {
     const currentPlayer = window.playerName;
     const isStoryteller = window.isStoryteller || window.isStoryTeller;
     
-    // Parse the command
+    // Handle special silent commands
+    if (messageText === '/refreshmap') {
+        console.log('📡 Processing silent map refresh command');
+        
+        // Trigger map refresh if MapSyncAdapter is available
+        if (window.mapSyncAdapter && window.mapSyncAdapter.mapClientManager) {
+            window.mapSyncAdapter.mapClientManager.checkForExistingMap();
+            console.log('🗺️ Map refresh triggered');
+        }
+        
+        // Return a null message to suppress display
+        return null;
+    }
+    
+    // Parse regular commands
     const commandParts = messageText.split(':');
     if (commandParts.length < 2) {
         // Malformed command - display as-is
