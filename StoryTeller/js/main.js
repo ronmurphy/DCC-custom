@@ -4,6 +4,29 @@
 // ========================================
 
 // ========================================
+// DEBUG MODE CONTROLS
+// ========================================
+// Debug mode controls
+window.showDebug = false; // Set to true to see map debugging info
+
+// Debug toggle function - type toggleMapDebug() in console
+window.toggleMapDebug = function() {
+    window.showDebug = !window.showDebug;
+    console.log(`🐛 Map debug mode ${window.showDebug ? 'ENABLED' : 'DISABLED'}`);
+    console.log('Use toggleMapDebug() to switch debug mode on/off');
+    return window.showDebug;
+};
+
+// Auto-enable debug mode when map panels are opened
+function enableDebugForMaps() {
+    if (!window.showDebug) {
+        window.showDebug = true;
+        console.log('🗺️ Auto-enabled debug mode for map operations');
+        console.log('Type toggleMapDebug() to disable debug mode');
+    }
+}
+
+// ========================================
 // GLOBAL STATE
 // ========================================
 let currentSession = {

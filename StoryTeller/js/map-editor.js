@@ -228,6 +228,11 @@ async function switchTileset(tilesetName) {
 // MODAL MANAGEMENT
 // ========================================
 function openMapModal() {
+    // Auto-enable debug mode for map operations
+    if (typeof enableDebugForMaps === 'function') {
+        enableDebugForMaps();
+    }
+    
     console.log('🗺️ openMapModal called!');
     
     const modal = document.getElementById('map-editor-modal');
@@ -804,9 +809,30 @@ function resizeModalMap() {
     const size = currentMap.size;
     const totalTiles = size * size;
     
-    // Resize data arrays
+    // PRESERVE existing data when resizing
+    const oldMapData = currentMap.mapData || [];
+    const oldPlayerLayer = currentMap.playerLayer || [];
+    
+    // Create new arrays with preserved data
     currentMap.mapData = Array(totalTiles).fill(null);
     currentMap.playerLayer = Array(totalTiles).fill(null);
+    
+    // Copy existing data to new arrays (up to the smaller size)
+    const copyLimit = Math.min(oldMapData.length, totalTiles);
+    for (let i = 0; i < copyLimit; i++) {
+        if (oldMapData[i] !== undefined) {
+            currentMap.mapData[i] = oldMapData[i];
+        }
+        if (oldPlayerLayer[i] !== undefined) {
+            currentMap.playerLayer[i] = oldPlayerLayer[i];
+        }
+    }
+    
+    console.log('🔄 Resized map arrays:', {
+        newSize: totalTiles,
+        preservedData: copyLimit,
+        nonNullTiles: currentMap.mapData.filter(tile => tile !== null).length
+    });
     
     // Update grid
     const grid = document.getElementById('modal-map-grid');
@@ -1022,6 +1048,14 @@ async function saveMapToLibrary() {
     const mapName = document.getElementById('modal-map-name').value || 'untitled-map';
     currentMap.name = mapName;
     
+    // CRITICAL DEBUG: Check what we're actually saving
+    console.log('🔍 SAVE DEBUG - currentMap.mapData sample:', {
+        totalLength: currentMap.mapData.length,
+        sample: currentMap.mapData.slice(0, 10),
+        nonNullCount: currentMap.mapData.filter(cell => cell !== null && cell !== undefined).length,
+        sampleNonNull: currentMap.mapData.filter(cell => cell !== null && cell !== undefined).slice(0, 3)
+    });
+    
     // Create map data structure compatible with the maps manager
     const mapData = {
         grid: await gridToArray(currentMap.mapData, currentMap.size),
@@ -1057,7 +1091,12 @@ async function saveMapToLibrary() {
 
 // Helper function to convert map data to grid array
 async function gridToArray(mapData, size) {
-    console.log('🔄 Converting editor mapData to grid:', { size, sampleData: mapData.slice(0, 5) });
+    console.log('🔄 GRID CONVERSION DEBUG:', { 
+        inputSize: size, 
+        mapDataLength: mapData.length,
+        sampleData: mapData.slice(0, 5),
+        nonNullCount: mapData.filter(cell => cell !== null && cell !== undefined).length
+    });
     
     const grid = [];
     
@@ -1079,33 +1118,35 @@ async function gridToArray(mapData, size) {
             const index = row * size + col;
             const cellData = mapData[index];
             
-            let tileValue = 0; // Default to empty
+            let tileValue = null; // Use null for empty instead of 0
             
             if (cellData && typeof cellData === 'object') {
                 if (cellData.type === 'sprite' && cellData.value) {
-                    // Convert sprite object to tile number using tileset config
-                    if (tilesetConfig && tilesetConfig.sprites) {
-                        const sprite = tilesetConfig.sprites.find(s => s.id === cellData.value);
-                        if (sprite && sprite.position) {
-                            const cols = tilesetConfig.gridSize === '4x4' ? 4 : 10;
-                            tileValue = sprite.position[1] * cols + sprite.position[0] + 1;
-                        } else {
-                            // Fallback mapping
-                            tileValue = getSpriteNumber(cellData.value);
-                        }
-                    } else {
-                        // Fallback mapping
-                        tileValue = getSpriteNumber(cellData.value);
-                    }
+                    // Keep the original object format - don't convert to numbers!
+                    tileValue = {
+                        type: cellData.type,
+                        value: cellData.value,
+                        name: cellData.name || cellData.value,
+                        category: cellData.category || 'terrain',
+                        emoji: cellData.emoji || '🎯'
+                    };
                 } else if (cellData.type === 'player') {
-                    tileValue = 0; // Players are not rendered in the static view
+                    tileValue = null; // Players are not saved in static maps
                 } else if (cellData.type === 'clear') {
-                    tileValue = 0;
+                    tileValue = null;
                 }
-            } else if (typeof cellData === 'number') {
-                tileValue = cellData;
-            } else if (cellData === null || cellData === undefined) {
-                tileValue = 0;
+            } else if (typeof cellData === 'number' && cellData > 0) {
+                // Convert number back to object (for backward compatibility)
+                const spriteValue = getSpriteName(cellData) || 'mountain';
+                tileValue = {
+                    type: 'sprite',
+                    value: spriteValue,
+                    name: spriteValue.charAt(0).toUpperCase() + spriteValue.slice(1),
+                    category: 'terrain',
+                    emoji: '🎯'
+                };
+            } else {
+                tileValue = null; // Empty cell
             }
             
             rowData.push(tileValue);
@@ -1138,6 +1179,29 @@ function getSpriteNumber(spriteName) {
         'fire': 16
     };
     return spriteMap[spriteName] || 1;
+}
+
+// Helper function for reverse mapping (number to sprite name)
+function getSpriteName(spriteNumber) {
+    const numberMap = {
+        1: 'mountain',
+        2: 'water', 
+        3: 'grass',
+        4: 'rock',
+        5: 'castle',
+        6: 'house',
+        7: 'shop',
+        8: 'temple',
+        9: 'dragon',
+        10: 'sword',
+        11: 'skull',
+        12: 'danger',
+        13: 'tower',
+        14: 'road',
+        15: 'door',
+        16: 'fire'
+    };
+    return numberMap[spriteNumber] || 'mountain';
 }
 
 function updateCurrentMapDisplay(mapData) {
