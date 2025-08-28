@@ -132,17 +132,26 @@ class MapsManager {
     // Load saved maps from IndexedDB
     async loadSavedMaps() {
         try {
+            console.log('🔍 DIAGNOSTIC: Attempting to load maps from IndexedDB...');
             const maps = await this.storageDB.getAllMaps();
-            console.log('💾 Loading maps from Unified IndexedDB:', maps);
+            console.log('💾 DIAGNOSTIC: Raw maps from IndexedDB:', maps);
+            console.log('💾 DIAGNOSTIC: Maps count:', maps?.length || 0);
             
             this.savedMaps.clear();
-            maps.forEach(map => {
-                this.savedMaps.set(map.id, map);
-            });
+            if (maps && Array.isArray(maps)) {
+                maps.forEach(map => {
+                    console.log('📝 DIAGNOSTIC: Processing map:', { id: map.id, name: map.name, hasData: !!map.data });
+                    this.savedMaps.set(map.id, map);
+                });
+            } else {
+                console.warn('⚠️ DIAGNOSTIC: Maps is not an array:', typeof maps);
+            }
             
-            console.log('✅ Loaded maps:', Array.from(this.savedMaps.keys()));
+            console.log('✅ DIAGNOSTIC: Final loaded maps:', Array.from(this.savedMaps.keys()));
+            console.log('🔢 DIAGNOSTIC: Total maps in memory:', this.savedMaps.size);
         } catch (error) {
-            console.error('❌ Failed to load saved maps from IndexedDB:', error);
+            console.error('❌ DIAGNOSTIC: Failed to load saved maps from IndexedDB:', error);
+            console.error('❌ DIAGNOSTIC: Error details:', error.message, error.stack);
             this.savedMaps = new Map();
         }
     }
@@ -364,6 +373,11 @@ class MapsManager {
 
     // Display map in the viewer
     displayMapInViewer(map) {
+        // Auto-enable debug mode for map operations
+        if (typeof enableDebugForMaps === 'function') {
+            enableDebugForMaps();
+        }
+        
         if (window.showDebug) {
             console.log('🖼️ displayMapInViewer called with map:', map);
         }
