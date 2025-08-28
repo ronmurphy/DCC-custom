@@ -187,11 +187,17 @@ class UnifiedMapRenderer {
             const spriteDiv = document.createElement('div');
             spriteDiv.className = `sprite ${spriteType}`;
             
-            // Apply background color if available
+            // Apply background color if available - check both local and global sources like viewer
             if (this.tilesetData && this.tilesetData.backgroundColors) {
                 backgroundColor = this.tilesetData.backgroundColors[spriteType];
-                if (backgroundColor) {
-                    tileElement.style.backgroundColor = backgroundColor;
+            } else if (window.tilesetData && window.tilesetData.backgroundColors) {
+                backgroundColor = window.tilesetData.backgroundColors[spriteType];
+            }
+            
+            if (backgroundColor) {
+                tileElement.style.backgroundColor = backgroundColor;
+                if (window.showDebug && (context === 'editor' || context === 'viewer')) {
+                    console.log(`🎨 Applied background color for ${spriteType}: ${backgroundColor} in ${context}`);
                 }
             }
 
