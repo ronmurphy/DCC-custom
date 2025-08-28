@@ -64,7 +64,7 @@ class MapSyncManager {
             const sharedMapData = this.prepareMapForSharing(mapData, mapName, options);
             
             // Store in database
-            const { data, error } = await this.supabaseClient.getClient()
+            const { data, error } = await this.supabaseClient
                 .from('shared_maps')
                 .upsert({
                     session_code: this.currentSession,
@@ -99,43 +99,27 @@ class MapSyncManager {
         }
     }
 
-    // Prepare map data in standardized format
+    // Prepare map data in standardized format using the formatter module
     prepareMapForSharing(mapData, mapName, options) {
-        let standardizedMap = {
-            name: mapName,
-            timestamp: new Date().toISOString(),
-            version: '1.0',
-            type: 'shared_map',
-            settings: {
-                allowPlayerMovement: options.allowPlayerMovement !== false,
-                showPlayerPositions: options.showPlayerPositions !== false,
-                gridSize: options.gridSize || 20,
-                ...options
-            }
-        };
-
-        // Handle different map data formats
-        if (mapData.grid && mapData.tileset) {
-            // New format from maps manager
-            standardizedMap.grid = mapData.grid;
-            standardizedMap.tileset = mapData.tileset || 'default';
-            standardizedMap.size = mapData.size || mapData.grid.length;
-        } else if (mapData.mapData && mapData.size) {
-            // Legacy format from map-sharing.js
-            standardizedMap.mapData = mapData.mapData;
-            standardizedMap.size = mapData.size;
-            standardizedMap.type = mapData.type || 'legacy';
-            standardizedMap.playerLayer = mapData.playerLayer || [];
-        } else if (Array.isArray(mapData)) {
-            // Raw grid array
-            standardizedMap.grid = mapData;
-            standardizedMap.size = mapData.length;
-            standardizedMap.tileset = 'default';
-        } else {
-            throw new Error('Unsupported map data format');
+        // Check if formatter is available
+        if (!window.MapDataFormatter) {
+            console.error('❌ MapDataFormatter module not loaded');
+            throw new Error('MapDataFormatter module is required but not loaded');
         }
 
-        return standardizedMap;
+        try {
+            const formatter = new window.MapDataFormatter();
+            const standardizedMap = formatter.formatForSharing(mapData, mapName, options);
+            
+            console.log('✅ Map formatted successfully:', standardizedMap.name);
+            return standardizedMap;
+            
+        } catch (error) {
+            console.error('❌ Failed to format map data:', error);
+            console.log('📋 Map format info:', window.MapDataFormatter ? 
+                new window.MapDataFormatter().getFormatInfo(mapData) : 'Formatter not available');
+            throw error;
+        }
     }
 
     // Send real-time notification to players about map update
@@ -166,11 +150,19 @@ class MapSyncManager {
                 throw new Error('MapSyncManager not initialized');
             }
 
-            this.positionSubscription = this.supabaseClient.getClient()
-                .from('player_positions')
-                .on('*', (payload) => {
-                    this.handlePlayerPositionUpdate(payload);
-                })
+            this.positionSubscription = this.supabaseClient
+                .channel(`storyteller-positions-${this.currentSession}`)
+                .on('postgres_changes', 
+                    { 
+                        event: '*', 
+                        schema: 'public', 
+                        table: 'player_positions',
+                        filter: `session_code=eq.${this.currentSession}`
+                    }, 
+                    (payload) => {
+                        this.handlePlayerPositionUpdate(payload);
+                    }
+                )
                 .subscribe();
 
             console.log('👥 Subscribed to player position updates');
@@ -234,7 +226,7 @@ class MapSyncManager {
             };
 
             // Update in database
-            await this.supabaseClient.getClient()
+            await this.supabaseClient
                 .from('shared_maps')
                 .update({ 
                     map_settings: this.currentSharedMap.settings,
@@ -261,7 +253,7 @@ class MapSyncManager {
             }
 
             // Remove from database
-            await this.supabaseClient.getClient()
+            await this.supabaseClient
                 .from('shared_maps')
                 .delete()
                 .eq('session_code', this.currentSession);
@@ -335,7 +327,7 @@ class MapSyncManager {
             CREATE INDEX IF NOT EXISTS idx_player_positions_updated ON player_positions(updated_at);
             `;
 
-            const { error } = await this.supabaseClient.getClient().rpc('execute_sql', { sql: createTablesSQL });
+            const { error } = await this.supabaseClient.rpc('execute_sql', { sql: createTablesSQL });
             if (error) {
                 console.warn('⚠️ Could not auto-create map tables (may need manual setup):', error);
             } else {

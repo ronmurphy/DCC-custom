@@ -2565,6 +2565,8 @@
     <script src="js/unified-storage-db.js"></script>
     <script src="js/maps-manager.js"></script>
     <!-- Map Synchronization System -->
+    <!-- Map Sync System Scripts -->
+    <script src="js/MapDataFormatter.js"></script>
     <script src="js/MapSyncManager.js"></script>
     <script src="js/MapClientManager.js"></script>
     <script src="js/MapSyncAdapter.js"></script>
@@ -4913,15 +4915,19 @@ ALTER TABLE game_sessions ENABLE ROW LEVEL SECURITY;
             }
             
             const sessionCode = window.currentGameSession.sessionCode;
-            // Try multiple sources for the Supabase client
-            const supabaseClient = window.supabaseClient || window.supabase || supabase;
+            // The correct Supabase client is in the global supabase variable (not window.supabase)
+            // But it might be scoped to supabase-chat.js, so let's try multiple approaches
+            const supabaseClient = window.supabaseClient || 
+                                  (typeof supabase !== 'undefined' && supabase?.from ? supabase : null) ||
+                                  (window.supabase?.createClient ? null : window.supabase);
             
             console.log('🔍 Manual map sync init - sessionCode:', sessionCode);
             console.log('🔍 Manual map sync init - supabaseClient available:', !!supabaseClient);
             console.log('🔍 Available Supabase objects:', {
                 'window.supabaseClient': !!window.supabaseClient,
                 'window.supabase': !!window.supabase,
-                'global supabase': typeof supabase !== 'undefined'
+                'global supabase': typeof supabase !== 'undefined',
+                'global supabase has from': typeof supabase !== 'undefined' && typeof supabase?.from === 'function'
             });
             
             // Debug the actual Supabase client object

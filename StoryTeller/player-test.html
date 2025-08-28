@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="css/chat-effects.css">
+    <link rel="stylesheet" href="css/map.css">
     
     <style>
         * {
@@ -384,12 +385,12 @@
     <script src="js/modules/chatEffectsManager.js"></script>
     <script src="js/modules/emojiProcessor.js"></script>
 
-    <!-- Map Synchronization System -->
+    <!-- Map Sync System Scripts -->
+    <script src="js/MapDataFormatter.js"></script>
+    <script src="js/SimpleMapRenderer.js"></script>
     <script src="js/MapClientManager.js"></script>
     <script src="js/PlayerPositionTracker.js"></script>
-    <script src="js/MapSyncAdapter.js"></script>
-
-    <script src="js/supabase-chat.js"></script>
+    <script src="js/MapSyncAdapter.js"></script>    <script src="js/supabase-chat.js"></script>
     <script src="js/command-interceptor.js"></script>
     <script>
         let isConnected = false;
@@ -625,19 +626,18 @@
         // Initialize map synchronization system
         async function initializeMapSync() {
             try {
-                // Create a simple Supabase client wrapper for the map system
-                const supabaseClientWrapper = {
-                    getClient: () => window.supabase,
-                    isInitialized: () => window.supabaseInitialized,
-                    sendMessage: async (sessionCode, playerName, messageText, messageType, isStoryteller) => {
-                        return await window.sendChatMessageAsync(`MAP_SYNC:${messageText}`);
-                    }
-                };
+                // Use the window.supabaseClient directly
+                const supabaseClient = window.supabaseClient;
+                
+                if (!supabaseClient) {
+                    console.error('❌ Supabase client not available for map sync');
+                    return;
+                }
                 
                 // Initialize map sync adapter
                 mapSyncAdapter = new MapSyncAdapter();
                 await mapSyncAdapter.initialize({
-                    supabaseClient: supabaseClientWrapper,
+                    supabaseClient: supabaseClient,
                     sessionCode: sessionCode,
                     playerName: window.playerName,
                     isStoryteller: false,
@@ -649,6 +649,34 @@
                     (mapData, record) => {
                         addChatMessage(`📍 Map received: ${mapData.name}`, 'system');
                         console.log('🗺️ Map received:', mapData);
+                        
+                        // Use the WORKING map rendering system from StoryTeller!
+                        if (window.MapDataFormatter) {
+                            console.log('🎨 Using StoryTeller map rendering system...');
+                            
+                            const formatter = new window.MapDataFormatter();
+                            const renderableMap = formatter.convertFromStandardFormat(mapData, 'v1_2map-sprite-objects');
+                            console.log('🔄 Converted map for rendering:', renderableMap);
+                            
+                            // Get the map display container
+                            const mapDisplay = document.getElementById('map-display');
+                            if (mapDisplay && window.SimpleMapRenderer) {
+                                // Create a SimpleMapRenderer instance with proven rendering logic
+                                const simpleRenderer = new window.SimpleMapRenderer();
+                                
+                                // Use the simplified rendering function based on working StoryTeller code
+                                simpleRenderer.renderMapWithCSSGrid(mapDisplay, renderableMap);
+                                console.log('✅ Map rendered using SimpleMapRenderer');
+                            } else {
+                                console.warn('⚠️ Map display container or SimpleMapRenderer not available');
+                                // Fallback: try the broken MapClientManager
+                                if (mapSyncAdapter.mapClientManager) {
+                                    mapSyncAdapter.mapClientManager.renderMap(renderableMap);
+                                }
+                            }
+                        } else {
+                            console.warn('⚠️ MapDataFormatter not available for rendering');
+                        }
                     },
                     (mapName, mapData) => {
                         // Not applicable for players

@@ -73,6 +73,9 @@ function initializeSupabase(customUrl = null, customKey = null) {
     try {
         supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
         
+        // Make the client globally accessible for map sync and other modules
+        window.supabaseClient = supabase;
+        
         // Store configuration for later use
         if (!currentConfig) {
             currentConfig = { supabaseUrl, supabaseKey };
@@ -1246,9 +1249,9 @@ async function leaveGameSession() {
 // ========================================
 function subscribeToSession(sessionCode) {
     if (window.showDebug) {
-        console.log('🔍 DEBUG - Setting up real-time subscription for session:', sessionCode);
-        console.log('🔍 DEBUG - Current player name:', window.playerName);
-        console.log('🔍 DEBUG - Is storyteller:', window.isStoryTeller);
+        if (window.showDebug) console.log('🔍 DEBUG - Setting up real-time subscription for session:', sessionCode);
+        if (window.showDebug) console.log('🔍 DEBUG - Current player name:', window.playerName);
+        if (window.showDebug) console.log('🔍 DEBUG - Is storyteller:', window.isStoryTeller);
     }
     
     if (messagesSubscription) {
@@ -1267,9 +1270,9 @@ function subscribeToSession(sessionCode) {
             }, 
             (payload) => {
                 if (window.showDebug) {
-                    console.log('🔍 DEBUG - Real-time message received:', payload);
-                    console.log('🔍 DEBUG - Message session_code:', payload.new.session_code);
-                    console.log('🔍 DEBUG - Expected session_code:', sessionCode);
+                    if (window.showDebug) console.log('🔍 DEBUG - Real-time message received:', payload);
+                    if (window.showDebug) console.log('🔍 DEBUG - Message session_code:', payload.new.session_code);
+                    if (window.showDebug) console.log('🔍 DEBUG - Expected session_code:', sessionCode);
                 }
                 
                 // Update heartbeat timestamp on any message received
@@ -1367,7 +1370,7 @@ async function updateConnectedPlayersList() {
             }
         });
         
-        console.log('🔍 DEBUG - Connected players found:', uniquePlayers);
+        if (window.showDebug) console.log('🔍 DEBUG - Connected players found:', uniquePlayers);
         
         // Update the UI if the function exists
         if (typeof window.updateConnectedPlayers === 'function') {
@@ -1381,13 +1384,13 @@ async function updateConnectedPlayersList() {
 
 async function sendChatMessageAsync(messageText = null) {
     if (window.showDebug) {
-        console.log('🔍 DEBUG - Sending message:', messageText);
-        console.log('🔍 DEBUG - Supabase available:', !!supabase);
-        console.log('🔍 DEBUG - Current session:', currentGameSession);
-        console.log('🔍 DEBUG - window.playerName:', window.playerName);
-        console.log('🔍 DEBUG - local playerName:', playerName);
-        console.log('🔍 DEBUG - window.isStoryTeller:', window.isStoryTeller);
-        console.log('🔍 DEBUG - local isStoryTeller:', isStoryTeller);
+        if (window.showDebug) console.log('🔍 DEBUG - Sending message:', messageText);
+        if (window.showDebug) console.log('🔍 DEBUG - Supabase available:', !!supabase);
+        if (window.showDebug) console.log('🔍 DEBUG - Current session:', currentGameSession);
+        if (window.showDebug) console.log('🔍 DEBUG - window.playerName:', window.playerName);
+        if (window.showDebug) console.log('🔍 DEBUG - local playerName:', playerName);
+        if (window.showDebug) console.log('🔍 DEBUG - window.isStoryTeller:', window.isStoryTeller);
+        if (window.showDebug) console.log('🔍 DEBUG - local isStoryTeller:', isStoryTeller);
     }
     
     if (!supabase) {
@@ -1485,10 +1488,10 @@ async function sendGameResponse(responseText) {
 // ========================================
 function handleIncomingMessage(message) {
     if (window.showDebug) {
-        console.log('🔍 DEBUG - Handling incoming message:', message);
-        console.log('🔍 DEBUG - Message is_storyteller:', message.is_storyteller);
-        console.log('🔍 DEBUG - Message player_name:', message.player_name);
-        console.log('🔍 DEBUG - Current window.playerName:', window.playerName);
+        if (window.showDebug) console.log('🔍 DEBUG - Handling incoming message:', message);
+        if (window.showDebug) console.log('🔍 DEBUG - Message is_storyteller:', message.is_storyteller);
+        if (window.showDebug) console.log('🔍 DEBUG - Message player_name:', message.player_name);
+        if (window.showDebug) console.log('🔍 DEBUG - Current window.playerName:', window.playerName);
     }
     
     // Filter out heartbeat messages (don't display them)
