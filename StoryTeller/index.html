@@ -4924,6 +4924,15 @@ ALTER TABLE game_sessions ENABLE ROW LEVEL SECURITY;
                 'global supabase': typeof supabase !== 'undefined'
             });
             
+            // Debug the actual Supabase client object
+            console.log('🔍 Supabase client details:', {
+                'type': typeof supabaseClient,
+                'has from method': typeof supabaseClient?.from === 'function',
+                'has auth property': !!supabaseClient?.auth,
+                'constructor name': supabaseClient?.constructor?.name,
+                'methods': supabaseClient ? Object.getOwnPropertyNames(supabaseClient).slice(0, 10) : 'none'
+            });
+            
             if (window.mapSync && window.mapSync.initialize) {
                 try {
                     const result = await window.mapSync.initialize(sessionCode, supabaseClient);
