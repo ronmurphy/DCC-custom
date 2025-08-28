@@ -120,14 +120,25 @@ async function loadTilesetData(tilesetName) {
             // Custom tileset from IndexedDB
             tilesetData = availableTilesets[tilesetName];
             console.log(`✅ Loaded custom tileset data: ${tilesetData.name}`);
-            return tilesetData;
         } else {
             // Regular tileset from assets folder
             const response = await fetch(`assets/${tilesetName}.json`);
             tilesetData = await response.json();
             console.log(`✅ Loaded tileset data: ${tilesetData.name}`);
-            return tilesetData;
         }
+        
+        // COPY VIEWER'S APPROACH: Store background colors globally like the viewer does
+        if (!window.tilesetData) {
+            window.tilesetData = {};
+        }
+        window.tilesetData.backgroundColors = tilesetData.backgroundColors;
+        
+        if (window.showDebug) {
+            console.log(`🎨 Map Editor: Set global background colors like viewer:`, window.tilesetData.backgroundColors);
+        }
+        
+        return tilesetData;
+        
     } catch (error) {
         console.error(`❌ Failed to load tileset data for ${tilesetName}:`, error);
         return null;
@@ -475,7 +486,7 @@ function openMapModal() {
                             cursor: pointer !important;
                             margin-right: 8px !important;
                         ">📚 Save to Library</button>
-                        <button onclick="saveMapAsFile()" style="
+                        <button onclick="saveMapAsFile().catch(console.error)" style="
                             padding: 8px 16px !important;
                             background: #28a745 !important;
                             color: white !important;
@@ -930,9 +941,9 @@ function placeTile(index) {
 function renderTile(tile, mapData, playerData) {
     // Use the unified renderer for consistent sprite handling
     if (window.UnifiedMapRenderer && window.unifiedMapRenderer) {
-        window.unifiedMapRenderer.renderTile(tile, mapData, playerData);
+        window.unifiedMapRenderer.renderTile(tile, mapData, playerData, 'editor'); // Pass 'editor' context like viewer passes 'viewer'
     } else {
-        // Fallback to basic rendering
+        // Fallback to basic rendering - COPY VIEWER'S BACKGROUND COLOR APPROACH
         tile.innerHTML = '';
         tile.className = 'map-tile';
         
@@ -941,10 +952,16 @@ function renderTile(tile, mapData, playerData) {
             return;
         }
         
-        // Handle sprite data
+        // Handle sprite data - SAME AS VIEWER
         if (typeof mapData === 'object' && mapData.type === 'sprite') {
             const spriteDiv = document.createElement('div');
             spriteDiv.className = `sprite ${mapData.value}`;
+            
+            // COPY VIEWER'S BACKGROUND COLOR LOGIC
+            if (window.tilesetData && window.tilesetData.backgroundColors && window.tilesetData.backgroundColors[mapData.value]) {
+                tile.style.backgroundColor = window.tilesetData.backgroundColors[mapData.value];
+            }
+            
             tile.appendChild(spriteDiv);
         } else if (typeof mapData === 'object' && mapData.emoji) {
             tile.textContent = mapData.emoji;
@@ -1013,19 +1030,18 @@ function clearMap() {
 // ========================================
 // FILE OPERATIONS
 // ========================================
-function saveMapAsFile() {
+async function saveMapAsFile() {
     const mapName = document.getElementById('modal-map-name').value || 'untitled-map';
     currentMap.name = mapName;
     
-    // Create map data structure
+    // Create map data structure using the SAME FORMAT as saveMapToLibrary (grid format)
     const mapData = {
+        grid: await gridToArray(currentMap.mapData, currentMap.size),
+        tileset: currentTileset || 'default',
         name: currentMap.name,
         size: currentMap.size,
         type: currentMap.type,
-        tileset: currentTileset || 'default', // Save current tileset
         created: new Date().toISOString(),
-        mapData: currentMap.mapData,
-        playerLayer: currentMap.playerLayer,
         version: "1.0"
     };
     
@@ -1070,22 +1086,26 @@ async function saveMapToLibrary() {
     // Save to maps manager if available
     if (window.mapsManager) {
         const mapId = window.currentEditingMapId || null;
-        if (mapId) {
-            // Update existing map
+        const originalMapName = window.originalMapName || null;
+        
+        // Check if user changed the map name - if so, create NEW map instead of updating
+        if (mapId && originalMapName && mapName === originalMapName) {
+            // Same name - update existing map
             await window.mapsManager.updateMap(mapId, mapData, mapName);
-            console.log(`📚 Updated map in library: ${mapName}`);
+            console.log(`📚 Updated existing map: ${mapName}`);
         } else {
-            // Add new map
+            // Different name or no original - create NEW map
             const newMapId = await window.mapsManager.addMap(mapData, mapName);
             window.currentEditingMapId = newMapId;
-            console.log(`📚 Added map to library: ${mapName}`);
+            window.originalMapName = mapName; // Store for future reference
+            console.log(`📚 Created new map: ${mapName}`);
         }
         
         // Close the modal
         window.closeMapModal();
     } else {
         console.warn('Maps manager not available, falling back to file save');
-        saveMapAsFile();
+        await saveMapAsFile();
     }
 }
 
@@ -1686,6 +1706,7 @@ async function loadMapFromData(mapData, mapId = null) {
     // Set map name
     if (mapData.name) {
         currentMap.name = mapData.name;
+        window.originalMapName = mapData.name; // Store original name for comparison
         const nameInput = document.getElementById('modal-map-name');
         if (nameInput) {
             nameInput.value = mapData.name;
