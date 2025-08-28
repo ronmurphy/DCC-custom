@@ -2285,6 +2285,10 @@
                 <button class="tab-selector quick-connect-btn" onclick="quickConnectToggle()" id="quick-connect-btn" title="Quick Connect">
                     <i class="material-icons">flash_on</i>
                 </button>
+                <!-- Temporary Map Sync Test Button -->
+                <button class="tab-selector" onclick="initializeMapSyncManually()" title="Test Map Sync" style="margin-left: 5px; background: #FF9800;">
+                    <i class="material-icons">map</i>
+                </button>
             </div>
         </div>
 
@@ -4807,7 +4811,8 @@ ALTER TABLE game_sessions ENABLE ROW LEVEL SECURITY;
                     if (typeof window.mapSync && typeof window.mapSync.initialize === 'function') {
                         try {
                             console.log('🚀 Starting map sync initialization from quickConnect...');
-                            const supabaseClient = window.supabaseClient || result.supabaseClient || result.client;
+                            const supabaseClient = window.supabaseClient || window.supabase || supabase;
+                            console.log('🔍 Supabase client found:', !!supabaseClient);
                             if (supabaseClient) {
                                 const mapSyncResult = await window.mapSync.initialize(sessionCode, supabaseClient);
                                 if (mapSyncResult) {
@@ -4883,11 +4888,11 @@ ALTER TABLE game_sessions ENABLE ROW LEVEL SECURITY;
                 document.getElementById('session-code-input').value = '';
                 
                 // Reset map sync
-                if (window.mapSync && window.mapSync.getAdapter()) {
+                if (window.mapSync && window.mapSync.getAdapter && window.mapSync.getAdapter()) {
                     try {
                         await window.mapSync.stopSharing();
                     } catch (error) {
-                        console.warn('Error stopping map sync:', error);
+                        console.warn('Error stopping map sync (this is normal if not sharing):', error.message);
                     }
                 }
                 
@@ -4908,10 +4913,16 @@ ALTER TABLE game_sessions ENABLE ROW LEVEL SECURITY;
             }
             
             const sessionCode = window.currentGameSession.sessionCode;
-            const supabaseClient = window.supabaseClient;
+            // Try multiple sources for the Supabase client
+            const supabaseClient = window.supabaseClient || window.supabase || supabase;
             
             console.log('🔍 Manual map sync init - sessionCode:', sessionCode);
-            console.log('🔍 Manual map sync init - supabaseClient:', !!supabaseClient);
+            console.log('🔍 Manual map sync init - supabaseClient available:', !!supabaseClient);
+            console.log('🔍 Available Supabase objects:', {
+                'window.supabaseClient': !!window.supabaseClient,
+                'window.supabase': !!window.supabase,
+                'global supabase': typeof supabase !== 'undefined'
+            });
             
             if (window.mapSync && window.mapSync.initialize) {
                 try {
@@ -5486,7 +5497,7 @@ Notes: ${npc.notes || 'None'}`;
                         try {
                             console.log('🚀 Starting map sync initialization...');
                             // Use the global Supabase client that should be available
-                            const supabaseClient = window.supabaseClient || result.supabaseClient || result.client;
+                            const supabaseClient = window.supabaseClient || window.supabase || supabase;
                             console.log('Supabase client found:', !!supabaseClient);
                             console.log('Session code:', sessionCode);
                             
