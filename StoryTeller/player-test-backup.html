@@ -317,23 +317,6 @@
                 </div>
             </div>
 
-            <!-- Map Display -->
-            <div class="map-display" id="map-display" style="
-                background: #f8f9fa;
-                border: 1px solid #e9ecef;
-                border-radius: 8px;
-                padding: 15px;
-                margin-bottom: 15px;
-                min-height: 200px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: #666;
-            ">
-                🗺️ No map currently shared
-                <br><small>Waiting for storyteller to share a map...</small>
-            </div>
-
             <!-- Chat Messages -->
             <div class="chat-messages" id="chat-messages">
                 <div class="chat-message system">
@@ -384,11 +367,6 @@
     <script src="js/modules/chatEffectsManager.js"></script>
     <script src="js/modules/emojiProcessor.js"></script>
 
-    <!-- Map Synchronization System -->
-    <script src="/Connect/MapClientManager.js"></script>
-    <script src="/Connect/PlayerPositionTracker.js"></script>
-    <script src="/Connect/MapSyncAdapter.js"></script>
-
     <script src="js/supabase-chat.js"></script>
     <script src="js/command-interceptor.js"></script>
     <script>
@@ -398,9 +376,6 @@
         let supabaseUrl = '';
         // supabase is declared in supabase-chat.js - don't redeclare
         let subscription = null;
-        
-        // Map synchronization system
-        let mapSyncAdapter = null;
         
         // Player stats
         let playerStats = {
@@ -506,9 +481,6 @@
                         
                         addChatMessage(`${window.playerName} joined the session!`, 'system');
                         showMessage('Successfully connected to session!', 'success');
-                        
-                        // Initialize map synchronization system
-                        await initializeMapSync();
                     } else {
                         throw new Error(result.error || 'Failed to join session');
                     }
@@ -619,61 +591,6 @@
                     console.error('❌ Failed to send message:', error);
                     addChatMessage(`❌ Failed to send: ${error.message}`, 'system');
                 }
-            }
-        }
-
-        // Initialize map synchronization system
-        async function initializeMapSync() {
-            try {
-                // Create a simple Supabase client wrapper for the map system
-                const supabaseClientWrapper = {
-                    getClient: () => window.supabase,
-                    isInitialized: () => window.supabaseInitialized,
-                    sendMessage: async (sessionCode, playerName, messageText, messageType, isStoryteller) => {
-                        return await window.sendChatMessageAsync(`MAP_SYNC:${messageText}`);
-                    }
-                };
-                
-                // Initialize map sync adapter
-                mapSyncAdapter = new MapSyncAdapter();
-                await mapSyncAdapter.initialize({
-                    supabaseClient: supabaseClientWrapper,
-                    sessionCode: sessionCode,
-                    playerName: window.playerName,
-                    isStoryteller: false,
-                    mapContainerId: 'map-display'
-                });
-                
-                // Set up event handlers
-                mapSyncAdapter.setEventHandlers(
-                    (mapData, record) => {
-                        addChatMessage(`📍 Map received: ${mapData.name}`, 'system');
-                        console.log('🗺️ Map received:', mapData);
-                    },
-                    (mapName, mapData) => {
-                        // Not applicable for players
-                    },
-                    (playerName, x, y) => {
-                        if (playerName !== window.playerName) {
-                            addChatMessage(`👤 ${playerName} moved to (${x}, ${y})`, 'system');
-                        }
-                    },
-                    (category, type, error) => {
-                        console.error('❌ Map sync error:', category, type, error);
-                        addChatMessage(`❌ Map sync error: ${error.message}`, 'system');
-                    }
-                );
-                
-                // Enable keyboard movement (WASD/Arrow keys)
-                mapSyncAdapter.setupKeyboardMovement(true);
-                
-                console.log('✅ Map synchronization system initialized');
-                addChatMessage('🗺️ Map synchronization ready - you can receive maps from the storyteller', 'system');
-                addChatMessage('🎮 Use WASD or arrow keys to move when maps allow movement', 'system');
-                
-            } catch (error) {
-                console.error('❌ Failed to initialize map sync:', error);
-                addChatMessage(`❌ Map sync initialization failed: ${error.message}`, 'system');
             }
         }
 
