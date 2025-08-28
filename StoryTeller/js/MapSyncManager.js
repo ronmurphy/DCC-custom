@@ -22,8 +22,21 @@ class MapSyncManager {
 
     // Initialize with Supabase client
     initialize(supabaseClient, sessionCode) {
-        if (!supabaseClient || typeof supabaseClient.from !== 'function') {
-            throw new Error('Valid Supabase client required');
+        console.log('🔍 MapSyncManager.initialize called with:', {
+            'supabaseClient type': typeof supabaseClient,
+            'has from method': typeof supabaseClient?.from === 'function',
+            'has auth property': !!supabaseClient?.auth,
+            'sessionCode': sessionCode
+        });
+        
+        if (!supabaseClient) {
+            throw new Error('Supabase client is required');
+        }
+        
+        // More flexible validation - check for either from() method or auth property
+        if (typeof supabaseClient.from !== 'function' && !supabaseClient.auth) {
+            console.error('❌ Invalid Supabase client - missing from() method and auth property');
+            throw new Error('Valid Supabase client required - must have from() method or auth property');
         }
         
         this.supabaseClient = supabaseClient;
