@@ -52,14 +52,27 @@ class SupabaseClient {
         `;
 
         try {
-            const { error } = await this.client.rpc('execute_sql', { sql: createTablesSQL });
-            if (error) {
-                console.warn('Tables may already exist or need manual creation:', error);
+            // Test if tables exist by querying them instead of using execute_sql RPC
+            console.log('🔍 Checking for required chat tables...');
+            
+            const { error: sessionsError } = await this.client
+                .from('game_sessions')
+                .select('id')
+                .limit(1);
+                
+            const { error: messagesError } = await this.client
+                .from('game_messages') 
+                .select('id')
+                .limit(1);
+            
+            if (sessionsError || messagesError) {
+                console.warn('⚠️ Chat tables not found. Please create them manually in Supabase SQL Editor:');
+                console.warn(createTablesSQL);
             } else {
-                console.log('✅ Database tables verified/created');
+                console.log('✅ Database tables verified');
             }
         } catch (error) {
-            console.warn('Could not auto-create tables:', error.message);
+            console.warn('Could not verify tables:', error.message);
         }
     }
 

@@ -2719,6 +2719,18 @@
             updateConnectionStatus('Offline', 'offline');
             updateSettingsConnectionStatus('Not tested', 'offline');
             
+            // Initialize command interceptor for chat message processing
+            if (typeof initializeCommandInterceptor === 'function') {
+                const interceptorInitialized = initializeCommandInterceptor();
+                if (interceptorInitialized) {
+                    console.log('✅ Command Interceptor initialized for StoryTeller');
+                } else {
+                    console.warn('⚠️ Command Interceptor failed to initialize');
+                }
+            } else {
+                console.warn('⚠️ Command Interceptor not available');
+            }
+            
             // Load Supabase configuration from browser storage
             const supabaseConfig = loadSupabaseConfig();
             
