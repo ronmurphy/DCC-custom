@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <!-- iOS specific -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="DCC Player">
+
+    <!-- Disable unwanted auto-formatting -->
+    <meta name="format-detection" content="telephone=no">
+    <meta name="msapplication-tap-highlight" content="no">
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#667eea">
+
+    <title>DCC Player Interface</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Uncial+Antiqua&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/rpg-awesome/0.2.0/css/rpg-awesome.min.css">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:400,500,700&display=swap" rel="stylesheet">
+    
+    <!-- Map and Chat CSS -->
+    <link rel="stylesheet" href="map.css">
+    <link rel="stylesheet" href="chat.css">
+    
+    <!-- Map and Chat specific styles -->
+    <style>
+        /* CSS Variables for theming */
+        :root {
+            /* Light theme colors */
+            --primary: #667eea;
+            --primary-dark: #5a67d8;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f7fafc;
+            --bg-tertiary: #edf2f7;
+            --text-primary: #2d3748;
+            --text-secondary: #718096;
+            --border-color: #e2e8f0;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            
+            /* Spacing */
+            --spacing-xs: 0.25rem;
+            --spacing-sm: 0.5rem;
+            --spacing-md: 1rem;
+            --spacing-lg: 1.5rem;
+            --spacing-xl: 2rem;
+            
+            /* Border Radius */
+            --radius-sm: 0.375rem;
+            --radius-md: 0.5rem;
+            --radius-lg: 0.75rem;
+            --radius-xl: 1rem;
+            
+            /* Transitions */
+            --transition-base: 300ms ease;
+        }
+
+        /* Dark theme */
+        .dark-theme {
+            --primary: #667eea;
+            --primary-dark: #5a67d8;
+            --bg-primary: #1a202c;
+            --bg-secondary: #2d3748;
+            --bg-tertiary: #4a5568;
+            --text-primary: #f7fafc;
+            --text-secondary: #a0aec0;
+            --border-color: #4a5568;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+        }
+
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cinzel', 'Times New Roman', 'Georgia', serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            transition: all var(--transition-base);
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Montserrat', 'Merriweather', 'Cinzel', serif;
+        }
+
+        /* App container */
+        .app-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-primary);
+        }
+
+        /* App header */
+        .app-header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: var(--spacing-md);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px var(--shadow-color);
+        }
+
+        .header-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: var(--radius-md);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all var(--transition-base);
+            color: white;
+        }
+
+        .header-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        /* Player-specific layout */
+        .player-sidebar {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            width: 100%;
+            max-width: 350px;
+            padding: var(--spacing-md);
+        }
+
+        .sidebar-tab {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: none;
+            margin-bottom: var(--spacing-sm);
+            padding: var(--spacing-md);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-base);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .sidebar-tab.active {
+            background: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar-tab:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .tab-icon {
+            font-size: 1.2rem;
+        }
+
+        .tab-label {
+            font-weight: 500;
+        }
+
+        /* Connection status in header */
+        .connection-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ff6b6b;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.connected {
+            background: #51cf66;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* Login section styling */
+        .login-section {
+            padding: var(--spacing-xl);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            margin: var(--spacing-lg);
+            box-shadow: 0 4px 12px var(--shadow-color);
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            margin-top: 2rem;
+        }
+
+        .login-section h2 {
+            text-align: center;
+            margin-bottom: var(--spacing-lg);
+            color: var(--text-primary);
+        }
+
+        .login-section.hidden {
+            display: none;
+        }
+
+        .demo-note {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+            text-align: center;
+            color: #1976d2;
+        }
+
+        .dark-theme .demo-note {
+            background: #1e3a8a;
+            border-color: #3b82f6;
+            color: #93c5fd;
+        }
+
+        /* App content and layout */
+        .app-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .app-content.hidden {
+            display: none;
+        }
+
+        .app-sidebar {
+            display: none; /* Hidden on mobile by default */
+            flex-shrink: 0;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: var(--spacing-md);
+            overflow-y: auto;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Map container */
+        .map-container {
+            height: 60vh;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            position: relative;
+            margin-bottom: var(--spacing-md);
+            box-shadow: inset 0 2px 8px var(--shadow-color);
+        }
+
+        #map-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            background: var(--bg-tertiary);
+        }
+
+        #map-canvas {
+            width: 100%;
+            height: 100%;
+            display: none;
+        }
+
+        /* Chat container */
+        .chat-container {
+            height: 35vh;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 4px 12px var(--shadow-color);
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--spacing-md);
+            background: var(--bg-tertiary);
+        }
+
+        .chat-input-container {
+            padding: var(--spacing-md);
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: inherit;
+        }
+
+        .chat-send-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            padding: var(--spacing-sm) var(--spacing-md);
+            cursor: pointer;
+            transition: background-color var(--transition-base);
+        }
+
+        .chat-send-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        /* Mobile-first responsive design */
+        @media (max-width: 768px) {
+            .app-container {
+                margin: 0;
+                border-radius: 0;
+                min-height: 100vh;
+            }
+            
+            .map-container {
+                height: 45vh;
+                margin: var(--spacing-sm);
+                border-radius: var(--radius-md);
+            }
+            
+            .chat-container {
+                height: 40vh;
+                margin: 0 var(--spacing-sm) var(--spacing-sm);
+                border-radius: var(--radius-md);
+            }
+        }
+
+        /* Tablet and desktop layout */
+        @media (min-width: 1024px) {
+            .main-content {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: var(--spacing-lg);
+                padding: var(--spacing-lg);
+            }
+            
+            .map-container {
+                height: 70vh;
+                margin: 0;
+            }
+            
+            .chat-container {
+                height: 70vh;
+                margin: 0;
+            }
+        }
+
+        /* Tab content specific styling */
+        .tab-content {
+            padding: var(--spacing-lg);
+        }
+
+        .form-group {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: var(--spacing-sm);
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: var(--spacing-md);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: inherit;
+            transition: border-color var(--transition-base);
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md) var(--spacing-lg);
+            font-family: inherit;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-base);
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- App Header -->
+        <div class="app-header">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <i class="ra ra-player" style="font-size: 24px;"></i>
+                <h1 style="font-size: 1.25rem; margin: 0;">DCC Player</h1>
+            </div>
+            <div class="connection-status">
+                <div class="status-dot" id="status-dot"></div>
+                <span id="connection-text">Disconnected</span>
+            </div>
+            <button class="theme-btn header-btn" onclick="toggleTheme()">
+                <i class="material-icons">brightness_6</i>
+            </button>
+        </div>
+
+        <!-- Login Section (shown initially) -->
+        <div class="login-section" id="login-section">
+            <h2>🎲 Join DCC Session</h2>
+            
+                        <div class="info-message">
+                Enter the connection URL from StoryTeller (e.g., https://xxx.supabase.co?session=ABC123) and your player name to join a session.
+            </div>
+            
+            <div class="form-group">
+                <label for="supabase-url">Connection URL</label>
+                <input type="text" id="supabase-url" placeholder="Paste connection from storyteller (full or shortened format)" value="">
+            </div>
+            <div class="form-group">
+                <label for="player-name">Player Name</label>
+                <input type="text" id="player-name" placeholder="Enter your character name..." value="Testificate">
+            </div>
+            <button class="btn-primary" onclick="connectToPlayerSession()">
+                <i class="material-icons" style="vertical-align: middle; margin-right: 8px;">login</i>
+                Connect to Session
+            </button>
+        </div>
+
+        <!-- Main App Content (hidden initially) -->
+        <div class="app-content hidden" id="app-content">
+            <!-- Sidebar Navigation (Mobile: Hidden, Tablet+: Visible) -->
+            <div class="app-sidebar player-sidebar" id="app-sidebar">
+                <nav class="sidebar-nav">
+                    <button class="sidebar-tab active" data-tab="map">
+                        <span class="tab-icon"><i class="ra ra-map"></i></span>
+                        <span class="tab-label">Map View</span>
+                    </button>
+                    <button class="sidebar-tab" data-tab="chat">
+                        <span class="tab-icon"><i class="material-icons">chat</i></span>
+                        <span class="tab-label">Party Chat</span>
+                    </button>
+                    <button class="sidebar-tab" data-tab="character">
+                        <span class="tab-icon"><i class="ra ra-player"></i></span>
+                        <span class="tab-label">Character</span>
+                    </button>
+                    <button class="sidebar-tab" data-tab="dice">
+                        <span class="tab-icon"><i class="ra ra-dice-five"></i></span>
+                        <span class="tab-label">Dice Roller</span>
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Main Content Area -->
+            <div class="main-content">
+                <!-- Map Tab -->
+                <div class="tab-content active" data-content="map">
+                    <div class="map-container">
+                        <div id="map-placeholder">
+                            <div style="text-align: center;">
+                                <i class="ra ra-map" style="font-size: 3rem; opacity: 0.5; margin-bottom: 1rem; display: block;"></i>
+                                Waiting for map from Storyteller...
+                            </div>
+                        </div>
+                        <canvas id="map-canvas"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chat Tab -->
+                <div class="tab-content" data-content="chat">
+                    <div class="chat-container">
+                        <div class="chat-messages" id="chat-messages">
+                            <div style="text-align: center; color: var(--text-secondary); margin-top: 2rem;">
+                                <i class="material-icons" style="font-size: 3rem; opacity: 0.5; margin-bottom: 1rem; display: block;">chat_bubble_outline</i>
+                                Chat will appear here...
+                            </div>
+                        </div>
+                        <div class="chat-input-container">
+                            <input type="text" class="chat-input" id="chat-input" placeholder="Type your message..." maxlength="500">
+                            <button class="chat-send-btn" onclick="sendChatMessage()">
+                                <i class="material-icons">send</i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Character Tab -->
+                <div class="tab-content" data-content="character">
+                    <h2 style="margin-bottom: var(--spacing-lg);">Character Sheet</h2>
+                    <div style="text-align: center; color: var(--text-secondary); margin-top: 2rem;">
+                        <i class="ra ra-player" style="font-size: 3rem; opacity: 0.5; margin-bottom: 1rem; display: block;"></i>
+                        Character sheet coming soon...
+                    </div>
+                </div>
+
+                <!-- Dice Tab -->
+                <div class="tab-content" data-content="dice">
+                    <h2 style="margin-bottom: var(--spacing-lg);">Dice Roller</h2>
+                    <div style="text-align: center; color: var(--text-secondary); margin-top: 2rem;">
+                        <i class="ra ra-dice-five" style="font-size: 3rem; opacity: 0.5; margin-bottom: 1rem; display: block;"></i>
+                        Dice roller coming soon...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile: Combined Map + Chat View -->
+            <div class="mobile-combined-view" style="display: none;">
+                <div class="map-container">
+                    <div id="map-placeholder-mobile">
+                        <div style="text-align: center;">
+                            <i class="ra ra-map" style="font-size: 2rem; opacity: 0.5; margin-bottom: 1rem; display: block;"></i>
+                            Waiting for map...
+                        </div>
+                    </div>
+                    <canvas id="map-canvas-mobile"></canvas>
+                </div>
+                <div class="chat-container">
+                    <div class="chat-messages" id="chat-messages-mobile">
+                        <div style="text-align: center; color: var(--text-secondary); padding: 2rem 1rem;">
+                            <i class="material-icons" style="font-size: 2rem; opacity: 0.5; margin-bottom: 1rem; display: block;">chat_bubble_outline</i>
+                            Chat will appear here...
+                        </div>
+                    </div>
+                    <div class="chat-input-container">
+                        <input type="text" class="chat-input" id="chat-input-mobile" placeholder="Type your message..." maxlength="500">
+                        <button class="chat-send-btn" onclick="sendChatMessage()">
+                            <i class="material-icons">send</i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
+    <!-- Add the actual map and chat integration scripts here -->
+    <script src="js/supabaseUrlEncoder.js"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/supabase-chat.js"></script>
+    <script src="js/MapSyncManager.js"></script>
+    <script src="js/MapClientManager.js"></script> 
+    <script src="js/MapSyncAdapter.js"></script>
+    <script src="js/PlayerMapViewer.js"></script>
+    <script src="js/realtime-chat.js"></script>
+    
+    <script>
+        // Theme management (from V4)
+        window.toggleTheme = function toggleTheme() {
+            const body = document.body;
+            const isDark = body.classList.contains('dark-theme');
+            
+            if (isDark) {
+                body.classList.remove('dark-theme');
+                localStorage.setItem('theme', 'light');
+            } else {
+                body.classList.add('dark-theme');
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        // Load saved theme
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-theme');
+            }
+            
+            // Initialize responsive behavior
+            handleResponsiveLayout();
+        });
+
+        // Handle responsive layout
+        function handleResponsiveLayout() {
+            const sidebar = document.getElementById('app-sidebar');
+            const isMobile = window.innerWidth <= 1024;
+            
+            if (isMobile) {
+                if (sidebar) sidebar.style.display = 'none';
+            } else {
+                if (sidebar) sidebar.style.display = 'block';
+            }
+        }
+
+        // Tab switching (adapted from V4)
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabButtons = document.querySelectorAll('.sidebar-tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetTab = button.getAttribute('data-tab');
+
+                    // Update active tab button
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+
+                    // Update active tab content
+                    tabContents.forEach(content => {
+                        content.classList.remove('active');
+                        if (content.getAttribute('data-content') === targetTab) {
+                            content.classList.add('active');
+                        }
+                    });
+
+                    // Handle mobile responsive behavior
+                    if (window.innerWidth <= 768) {
+                        handleMobileTabSwitch(targetTab);
+                    }
+                });
+            });
+        });
+
+        // Mobile responsive tab handling
+        function handleMobileTabSwitch(tab) {
+            const mobileView = document.querySelector('.mobile-combined-view');
+            const mainContent = document.querySelector('.main-content');
+            
+            if (tab === 'map' || tab === 'chat') {
+                // Show combined view for mobile
+                mobileView.style.display = 'block';
+                mainContent.style.display = 'none';
+            } else {
+                // Show regular tab content
+                mobileView.style.display = 'none';
+                mainContent.style.display = 'block';
+            }
+        }
+
+        // Connection management
+        let isConnected = false;
+        let sessionCode = '';
+        let supabaseUrl = '';
+        let mapSyncAdapter = null;
+
+        // Add missing showNotification function
+        function showNotification(message, type = 'info') {
+            console.log(`[${type.toUpperCase()}] ${message}`);
+            
+            // Create a simple toast notification
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'error' ? '#f44336' : type === 'success' ? '#4caf50' : '#2196f3'};
+                color: white;
+                padding: 12px 24px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                z-index: 10000;
+                font-family: inherit;
+                font-size: 14px;
+                max-width: 300px;
+                word-wrap: break-word;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            // Remove toast after 3 seconds
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 3000);
+        }
+
+        function updatePlayerConnectionStatus(connected) {
+            isConnected = connected;
+            const statusDot = document.getElementById('status-dot');
+            const statusText = document.getElementById('connection-text');
+            
+            // Defensive programming - check if elements exist
+            if (statusDot && statusText) {
+                if (connected) {
+                    statusDot.classList.add('connected');
+                    statusText.textContent = 'Connected';
+                } else {
+                    statusDot.classList.remove('connected');
+                    statusText.textContent = 'Disconnected';
+                }
+            } else {
+                console.warn('Connection status elements not found');
+            }
+        }
+
+        // Modified to use real Supabase connection like StoryTeller version
+        window.connectToPlayerSession = async function connectToPlayerSession() {
+            const connectionUrl = document.getElementById('supabase-url').value.trim();
+            playerName = document.getElementById('player-name').value.trim();
+
+            if (!connectionUrl || !playerName) {
+                showNotification('Please enter both connection URL and player name', 'error');
+                return;
+            }
+
+            // Set window.playerName for compatibility
+            window.playerName = playerName;
+
+            try {
+                // Decode URL if it's in shortened format
+                if (window.supabaseUrlEncoder) {
+                    const processedUrl = window.supabaseUrlEncoder.ensureFullUrl(connectionUrl);
+                    console.log('Processed connection URL:', processedUrl);
+                    
+                    // Parse the Supabase URL: https://xxx.supabase.co?session=1234
+                    const urlParts = processedUrl.split('?');
+                    supabaseUrl = urlParts[0];
+                    
+                    if (urlParts.length < 2) {
+                        throw new Error('Invalid URL format. Expected: https://xxx.supabase.co?session=1234 or shortened format');
+                    }
+                    
+                    // Extract session code from URL parameters
+                    const params = new URLSearchParams(urlParts[1]);
+                    sessionCode = params.get('session');
+                    
+                    if (!sessionCode) {
+                        throw new Error('No session code found in URL. Make sure the URL includes ?session=YOUR_SESSION_CODE');
+                    }
+                    
+                    console.log(`🔗 Extracted: Supabase URL=${supabaseUrl}, Session=${sessionCode}`);
+                } else {
+                    throw new Error('Supabase URL encoder not available');
+                }
+                
+                updatePlayerConnectionStatus(false);
+                showNotification('Connecting to Supabase...', 'info');
+                
+                // Initialize Supabase connection with default API key
+                const defaultApiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrZGR2Ym14emVwcnZ4ZnNsaGxrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU5NTMxMjEsImV4cCI6MjA3MTUyOTEyMX0.b3mv50bCw5Yq5SrY8-Sagdl4WoC592nQNdfTQciuf0M';
+                
+                if (typeof window.initializeSupabase === 'function') {
+                    const initResult = window.initializeSupabase(supabaseUrl, defaultApiKey);
+                    if (!initResult) {
+                        throw new Error('Failed to initialize Supabase connection');
+                    }
+                } else {
+                    throw new Error('Supabase initialization function not available');
+                }
+                
+                // Join the session using the real Supabase system
+                if (typeof window.fullSupabaseConnect === 'function') {
+                    const result = await window.fullSupabaseConnect(playerName, sessionCode, false, 'join');
+                    
+                    if (result.success) {
+                        updatePlayerConnectionStatus(true);
+                        document.getElementById('login-section').classList.add('hidden');
+                        document.getElementById('app-content').classList.remove('hidden');
+                        
+                        showNotification(`Connected as ${playerName} to session ${sessionCode}`, 'success');
+                        
+                        // Send auto-join message to register with StoryTeller
+                        setTimeout(() => {
+                            sendAutoJoinMessage();
+                        }, 1500); // Wait 1.5 seconds for full initialization
+                        
+                        // Initialize map synchronization system
+                        await initializeMapSync();
+                    } else {
+                        throw new Error(result.error || 'Failed to join session');
+                    }
+                } else {
+                    throw new Error('Supabase chat system not available');
+                }
+                
+            } catch (error) {
+                console.error('Connection error:', error);
+                updatePlayerConnectionStatus(false);
+                showNotification(`Failed to connect: ${error.message}`, 'error');
+            }
+        }
+
+        // Initialize basic systems without full Supabase
+        async function initializeBasicSystems() {
+            console.log('Initializing basic player systems...');
+            
+            // Try to initialize map sync if available
+            if (typeof initializeMapSync === 'function') {
+                await initializeMapSync();
+            } else {
+                console.warn('Map sync not available');
+            }
+            
+            showNotification('Basic systems initialized', 'info');
+        }
+
+        // Initialize map synchronization system
+        async function initializeMapSync() {
+            try {
+                // Use the window.supabaseClient directly
+                const supabaseClient = window.supabaseClient;
+                
+                if (!supabaseClient) {
+                    console.error('❌ Supabase client not available for map sync');
+                    return;
+                }
+                
+                // Initialize map sync adapter
+                if (typeof MapSyncAdapter !== 'undefined') {
+                    mapSyncAdapter = new MapSyncAdapter();
+                    await mapSyncAdapter.initialize({
+                        supabaseClient: supabaseClient,
+                        sessionCode: sessionCode,
+                        playerName: window.playerName,
+                        isStoryteller: false,
+                        mapContainerId: 'map-viewer-container'
+                    });
+                    
+                    // Add global test function for debugging
+                    window.testMapNotification = async () => {
+                        if (mapSyncAdapter?.mapClientManager) {
+                            return await mapSyncAdapter.mapClientManager.testMapNotification();
+                        } else {
+                            console.error('❌ MapClientManager not available');
+                        }
+                    };
+                    console.log('🧪 Global test function added: window.testMapNotification()');
+                    
+                    // Set up event handlers
+                    mapSyncAdapter.setEventHandlers(
+                        (mapData, record) => {
+                            if (typeof addChatMessage === 'function') {
+                                addChatMessage(`📍 Map received: ${mapData.name}`, 'system');
+                            } else {
+                                console.log(`📍 Map received: ${mapData.name}`);
+                            }
+                            console.log('🗺️ Map received:', mapData);
+                            
+                            // Use the WORKING map rendering system from StoryTeller!
+                            if (window.MapDataFormatter) {
+                                console.log('🎨 Using StoryTeller map rendering system...');
+                                
+                                const formatter = new window.MapDataFormatter();
+                                // Convert to v1_2map format (not sprite-objects format)
+                                const renderableMap = formatter.convertFromStandardFormat(mapData, 'v1_2map');
+                                
+                                // Ensure tileset is set to something that exists in /assets
+                                if (renderableMap) {
+                                    const originalTileset = renderableMap.tileset;
+                                    
+                                    // List of available tilesets from tileset.list
+                                    const availableTilesets = ['default', 'forest', 'GreenTest', 'Gothic', 'Transparent'];
+                                    
+                                    if (!availableTilesets.includes(renderableMap.tileset)) {
+                                        renderableMap.tileset = 'default';
+                                        console.log(`🔧 Changed tileset from '${originalTileset}' to 'default' (available: ${availableTilesets.join(', ')})`);
+                                    } else {
+                                        console.log(`✅ Using valid tileset: '${renderableMap.tileset}'`);
+                                    }
+                                }
+                                
+                                console.log('🔄 Converted map for rendering:', renderableMap);
+                                
+                                // Get the map display container
+                                const mapDisplay = document.getElementById('map-display');
+                                if (mapDisplay && window.SimpleMapRenderer) {
+                                    // Create a SimpleMapRenderer instance with proven rendering logic
+                                    const simpleRenderer = new window.SimpleMapRenderer();
+                                    
+                                    // Use the simplified rendering function based on working StoryTeller code
+                                    simpleRenderer.renderMapWithCSSGrid(mapDisplay, renderableMap);
+                                    console.log('✅ Map rendered using SimpleMapRenderer');
+                                } else {
+                                    console.warn('⚠️ Map display container or SimpleMapRenderer not available');
+                                    // Fallback: try the MapClientManager
+                                    if (mapSyncAdapter.mapClientManager) {
+                                        mapSyncAdapter.mapClientManager.renderMap(renderableMap);
+                                        console.log('📍 Map rendered using MapClientManager fallback');
+                                    }
+                                }
+                            } else {
+                                console.warn('⚠️ MapDataFormatter not available');
+                            }
+                        },
+                        (error) => {
+                            console.error('❌ Map sync error:', error);
+                            showNotification(`Map sync error: ${error.message}`, 'error');
+                        }
+                    );
+                    
+                    console.log('✅ Map sync initialized successfully');
+                    showNotification('Map synchronization enabled', 'success');
+                } else {
+                    console.warn('⚠️ MapSyncAdapter not available');
+                    showNotification('Map sync not available (MapSyncAdapter missing)', 'warning');
+                }
+            } catch (error) {
+                console.error('❌ Error initializing map sync:', error);
+                showNotification(`Map sync error: ${error.message}`, 'error');
+            }
+        }
+
+        // Send automatic join message to register with StoryTeller
+        function sendAutoJoinMessage() {
+            const joinMessage = `${playerName} has joined the chat!`;
+            
+            try {
+                console.log('Sending auto-join message to register with StoryTeller:', joinMessage);
+                
+                // Try to send message via the chat input
+                const messageInput = document.getElementById('chat-input');
+                if (messageInput && typeof sendMessage === 'function') {
+                    messageInput.value = joinMessage;
+                    sendMessage();
+                    console.log('✅ Auto-join message sent via chat input');
+                } else if (window.supabaseChat && typeof window.supabaseChat.sendMessage === 'function') {
+                    // Try direct Supabase chat
+                    window.supabaseChat.sendMessage(joinMessage);
+                    console.log('✅ Auto-join message sent via supabaseChat');
+                } else {
+                    console.warn('⚠️ Could not send auto-join message - chat system not ready');
+                    showNotification('Connected, but may need manual chat registration', 'warning');
+                }
+            } catch (error) {
+                console.error('❌ Error sending auto-join message:', error);
+                showNotification('Connected, but chat registration failed', 'warning');
+            }
+        }
+
+        // Chat functionality
+        function addChatMessage(message, type = 'player', sender = '') {
+            // Filter out heartbeat messages
+            if (type === 'heartbeat' || sender === 'Heartbeat' || 
+                (typeof message === 'object' && (message.message_type === 'heartbeat' || message.player_name === 'Heartbeat'))) {
+                console.log('📡 Heartbeat filtered from display');
+                return;
+            }
+            
+            // Try to find chat container in both desktop and mobile
+            let chatMessages = document.getElementById('chat-messages');
+            if (!chatMessages) {
+                chatMessages = document.getElementById('chat-messages-mobile');
+            }
+            
+            if (!chatMessages) {
+                console.warn('⚠️ Chat messages container not found');
+                return;
+            }
+            
+            const messageEl = document.createElement('div');
+            messageEl.className = `chat-message ${type}`;
+            
+            // Extract message text
+            const messageText = typeof message === 'object' ? message.message_text : message;
+            
+            // Process message for emojis first
+            let processedMessage = messageText;
+            if (window.emojiProcessor) {
+                processedMessage = window.emojiProcessor.processMessage(processedMessage);
+                if (processedMessage !== messageText) {
+                    console.log(`🎭 Emoji converted: "${messageText}" → "${processedMessage}"`);
+                }
+            }
+            
+            // Then process message for chat effects
+            if (window.chatEffectsManager) {
+                const effectResult = window.chatEffectsManager.processMessage(processedMessage);
+                if (effectResult.hasEffects) {
+                    processedMessage = effectResult.html;
+                    console.log('🎨 Applied chat effects to message:', effectResult.effects);
+                }
+            }
+            
+            let prefix = '';
+            if (type === 'system') {
+                prefix = '<strong>System:</strong> ';
+            } else if (type === 'storyteller') {
+                prefix = '<strong>Storyteller:</strong> ';
+            } else if (type === 'player') {
+                prefix = `<strong>${sender || window.playerName}:</strong> `;
+            }
+            
+            messageEl.innerHTML = prefix + processedMessage;
+            chatMessages.appendChild(messageEl);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Debounced reset for rapid message additions
+            clearTimeout(window.chatResetTimeout);
+            window.chatResetTimeout = setTimeout(() => {
+                if (typeof resetChatContainer === 'function') {
+                    resetChatContainer();
+                }
+            }, 500); // Reset after 500ms of no new messages
+        }
+
+        window.sendChatMessage = function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const inputMobile = document.getElementById('chat-input-mobile');
+            const message = input.value.trim() || inputMobile.value.trim();
+
+            if (!message) return;
+
+            // Clear input
+            if (input) input.value = '';
+            if (inputMobile) inputMobile.value = '';
+
+            // Try to send via available chat systems
+            try {
+                if (window.supabaseChat && typeof window.supabaseChat.sendMessage === 'function') {
+                    window.supabaseChat.sendMessage(message);
+                    console.log('Message sent via supabaseChat:', message);
+                } else if (typeof sendMessage === 'function') {
+                    // Use global sendMessage if available
+                    const messageInput = document.getElementById('message-input');
+                    if (messageInput) {
+                        messageInput.value = message;
+                        sendMessage();
+                    }
+                } else {
+                    console.log('Chat system not available, message:', message);
+                    showNotification('Message sent locally (chat system not connected)', 'warning');
+                }
+            } catch (error) {
+                console.error('Error sending chat message:', error);
+                showNotification('Failed to send message', 'error');
+            }
+        }
+
+        // Enter key support for chat
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatInputs = document.querySelectorAll('.chat-input');
+            chatInputs.forEach(input => {
+                input.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        sendChatMessage();
+                    }
+                });
+            });
+        });
+
+        // Responsive behavior
+        window.addEventListener('resize', handleResponsiveLayout);
+
+        // Initialize everything when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            handleResponsiveLayout();
+        });
+    </script>
+</body>
+
+</html>
