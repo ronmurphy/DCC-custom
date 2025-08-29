@@ -47,12 +47,25 @@ if (typeof window.showDebug === 'undefined') {
 function initializeCommandInterceptor() {
     console.log('🎯 Initializing Command Interceptor...');
     
+    // Prevent double initialization
+    if (window.commandInterceptorInitialized) {
+        console.log('🎯 Command Interceptor already initialized');
+        return true;
+    }
+    
     // Store reference to original display function
     if (typeof displayChatMessage === 'function') {
+        // Make sure we're not storing a reference to ourselves
+        if (displayChatMessage.name === 'interceptChatMessage') {
+            console.warn('⚠️ displayChatMessage already intercepted - skipping');
+            return false;
+        }
+        
         originalDisplayChatMessage = displayChatMessage;
         
         // Override the display function with our interceptor
         window.displayChatMessage = interceptChatMessage;
+        window.commandInterceptorInitialized = true;
         
         console.log('✅ Command Interceptor hooked into displayChatMessage');
     } else {
@@ -76,6 +89,15 @@ function initializeCommandInterceptor() {
  * This is the main hook that processes commands without modifying supabase
  */
 async function interceptChatMessage(message) {
+    // Recursion protection
+    if (message._intercepted) {
+        console.warn('⚠️ Message already intercepted, avoiding recursion');
+        return;
+    }
+    
+    // Mark message as intercepted
+    message._intercepted = true;
+    
     // Check if this looks like a command
     if (message.message_text && isCommandMessage(message.message_text)) {
         if (window.showDebug) console.log('🎯 Command detected:', message.message_text);
@@ -85,11 +107,20 @@ async function interceptChatMessage(message) {
         
         // Only display if processedMessage is not null (silent commands return null)
         if (processedMessage !== null) {
-            originalDisplayChatMessage(processedMessage);
+            // Make sure we have the original function
+            if (originalDisplayChatMessage && typeof originalDisplayChatMessage === 'function') {
+                originalDisplayChatMessage(processedMessage);
+            } else {
+                console.error('❌ Original display function not available');
+            }
         }
     } else {
         // Not a command - display normally
-        originalDisplayChatMessage(message);
+        if (originalDisplayChatMessage && typeof originalDisplayChatMessage === 'function') {
+            originalDisplayChatMessage(message);
+        } else {
+            console.error('❌ Original display function not available');
+        }
     }
 }
 
@@ -127,7 +158,12 @@ async function processCommandMessage(message) {
         return null;
     }
     
-    // Parse regular commands
+    // If this is the StoryTeller interface, don't process commands - let them display normally
+    if (isStoryteller) {
+        return message; // Pass through unchanged
+    }
+    
+    // Parse regular commands (only for player interfaces)
     const commandParts = messageText.split(':');
     if (commandParts.length < 2) {
         // Malformed command - display as-is

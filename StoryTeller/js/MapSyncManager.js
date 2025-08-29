@@ -125,19 +125,18 @@ class MapSyncManager {
     // Send real-time notification to players about map update
     async notifyPlayersMapUpdate(mapData, mapName) {
         try {
-            await this.supabaseClient.sendMessage(
-                this.currentSession,
-                'Storyteller',
-                `MAP_SYNC:${JSON.stringify({
+            // Use the global chat system instead of supabaseClient.sendMessage
+            if (typeof sendChatMessageAsync === 'function') {
+                await sendChatMessageAsync(`MAP_SYNC:${JSON.stringify({
                     action: 'map_shared',
                     mapName: mapName,
                     timestamp: new Date().toISOString()
-                })}`,
-                'map_sync',
-                true
-            );
-            
-            console.log('📡 Map update notification sent to players');
+                })}`);
+                
+                console.log('📡 Map update notification sent to players');
+            } else {
+                console.warn('⚠️ Chat system not available for map notifications');
+            }
         } catch (error) {
             console.warn('⚠️ Failed to send map notification:', error);
         }
@@ -297,44 +296,63 @@ class MapSyncManager {
     // Setup database tables (call once during initialization)
     async setupTables() {
         try {
-            const createTablesSQL = `
-            -- Shared Maps Table
-            CREATE TABLE IF NOT EXISTS shared_maps (
-                id SERIAL PRIMARY KEY,
-                session_code VARCHAR(10) NOT NULL,
-                map_name VARCHAR(200) NOT NULL,
-                map_data JSONB NOT NULL,
-                map_settings JSONB DEFAULT '{}',
-                shared_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                UNIQUE(session_code)
-            );
+            // Instead of using execute_sql RPC, check if tables exist by querying them
+            console.log('🔍 Checking for required map sync tables...');
+            
+            // Test if shared_maps table exists
+            const { error: mapsTableError } = await this.supabaseClient
+                .from('shared_maps')
+                .select('id')
+                .limit(1);
+            
+            // Test if player_positions table exists
+            const { error: positionsTableError } = await this.supabaseClient
+                .from('player_positions')
+                .select('id')
+                .limit(1);
+            
+            if (mapsTableError || positionsTableError) {
+                console.warn('⚠️ Map sync tables not found. Please create them manually:');
+                console.warn(`
+                -- Run this SQL in your Supabase SQL Editor:
+                
+                -- Shared Maps Table
+                CREATE TABLE IF NOT EXISTS shared_maps (
+                    id SERIAL PRIMARY KEY,
+                    session_code VARCHAR(10) NOT NULL,
+                    map_name VARCHAR(200) NOT NULL,
+                    map_data JSONB NOT NULL,
+                    map_settings JSONB DEFAULT '{}',
+                    shared_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                    UNIQUE(session_code)
+                );
 
-            -- Player Positions Table
-            CREATE TABLE IF NOT EXISTS player_positions (
-                id SERIAL PRIMARY KEY,
-                session_code VARCHAR(10) NOT NULL,
-                player_name VARCHAR(100) NOT NULL,
-                x INTEGER NOT NULL,
-                y INTEGER NOT NULL,
-                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                UNIQUE(session_code, player_name)
-            );
+                -- Player Positions Table
+                CREATE TABLE IF NOT EXISTS player_positions (
+                    id SERIAL PRIMARY KEY,
+                    session_code VARCHAR(10) NOT NULL,
+                    player_name VARCHAR(100) NOT NULL,
+                    x INTEGER NOT NULL,
+                    y INTEGER NOT NULL,
+                    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                    UNIQUE(session_code, player_name)
+                );
 
-            -- Create indexes for performance
-            CREATE INDEX IF NOT EXISTS idx_shared_maps_session ON shared_maps(session_code);
-            CREATE INDEX IF NOT EXISTS idx_player_positions_session ON player_positions(session_code);
-            CREATE INDEX IF NOT EXISTS idx_player_positions_updated ON player_positions(updated_at);
-            `;
-
-            const { error } = await this.supabaseClient.rpc('execute_sql', { sql: createTablesSQL });
-            if (error) {
-                console.warn('⚠️ Could not auto-create map tables (may need manual setup):', error);
+                -- Create indexes for performance
+                CREATE INDEX IF NOT EXISTS idx_shared_maps_session ON shared_maps(session_code);
+                CREATE INDEX IF NOT EXISTS idx_player_positions_session ON player_positions(session_code);
+                CREATE INDEX IF NOT EXISTS idx_player_positions_updated ON player_positions(updated_at);
+                `);
+                
+                // Continue anyway - the system may still work for basic functionality
+                console.log('📋 Continuing with table setup incomplete - some features may not work');
             } else {
-                console.log('✅ Map synchronization tables verified/created');
+                console.log('✅ Map synchronization tables verified');
             }
         } catch (error) {
-            console.warn('⚠️ Could not setup map tables:', error.message);
+            console.warn('⚠️ Could not verify map tables:', error.message);
+            console.log('🔧 Manual table creation may be required');
         }
     }
 }
