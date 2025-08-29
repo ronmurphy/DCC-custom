@@ -2712,6 +2712,10 @@
 
         // Initialize mode selector and DCC systems
         document.addEventListener('DOMContentLoaded', function() {
+            // Set storyteller flag immediately - this is the StoryTeller interface
+            window.isStoryteller = true;
+            window.isStoryTeller = true;
+            
             // Detect device on load
             detectDevice();
             

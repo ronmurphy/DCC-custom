@@ -59,16 +59,32 @@ async function initializeStorytellerMapSync(sessionCode, supabaseClient) {
 
 // Enhanced map sharing function that uses both old and new systems
 function enhancedShareMapWithPlayers() {
-    // Call original map sharing if available
-    if (typeof shareMapWithPlayers === 'function') {
-        shareMapWithPlayers();
+    // Skip the original modal-based sharing function - we only want the new sync system
+    console.log('🗺️ Sharing map via new sync system only (no modal)');
+
+    // Get the current map from maps manager
+    const currentMap = window.mapsManager && window.mapsManager.currentMapId 
+        ? window.mapsManager.savedMaps.get(window.mapsManager.currentMapId)
+        : null;
+
+    if (!currentMap) {
+        console.error('❌ No current map to share');
+        return;
     }
 
-    // Also share via new sync system
-    if (globalMapSyncAdapter && window.currentMap) {
+    console.log('📋 Current map data:', currentMap);
+    console.log('🔍 RAW MAP DATA BEING SENT:', JSON.stringify(currentMap.data, null, 2));
+    if (currentMap.data && currentMap.data.backgroundColors) {
+        console.log('🎨 Background colors being sent:', currentMap.data.backgroundColors);
+    } else {
+        console.warn('❌ NO BACKGROUND COLORS in map data being sent!');
+    }
+
+    // Share via new sync system only
+    if (globalMapSyncAdapter) {
         globalMapSyncAdapter.shareMap(
-            window.currentMap, 
-            window.currentMap.name || 'Shared Map',
+            currentMap.data, 
+            currentMap.name || 'Shared Map',
             {
                 allowPlayerMovement: true,
                 showPlayerPositions: true,
@@ -76,7 +92,7 @@ function enhancedShareMapWithPlayers() {
             }
         ).then(result => {
             if (result.success) {
-                console.log('✅ Map also shared via sync system');
+                console.log('✅ Map shared via sync system (no modal popup)');
                 
                 // The MAP_SYNC notification will trigger refresh on players
                 // No need for additional /refreshmap command
@@ -86,6 +102,8 @@ function enhancedShareMapWithPlayers() {
         }).catch(error => {
             console.error('❌ Sync system share error:', error);
         });
+    } else {
+        console.warn('⚠️ Map sync adapter or current map not available');
     }
 }
 

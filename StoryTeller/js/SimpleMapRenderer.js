@@ -49,8 +49,8 @@ class SimpleMapRenderer {
         container.innerHTML = `
             <div class="map-viewer-wrapper" style="
                 width: 100%;
-                height: 100%;
-                overflow: hidden;
+                height: 600px;
+                overflow: auto;
                 position: relative;
                 background: var(--bg-primary, white);
                 border: 2px solid var(--border-color, #ccc);
@@ -64,10 +64,13 @@ class SimpleMapRenderer {
                     transform: translate(-50%, -50%) scale(1);
                     transform-origin: center;
                     transition: transform 0.1s ease;
+                    min-width: ${size * 65}px;
+                    min-height: ${size * 65}px;
                 ">
                     <div class="map-viewer-grid" style="
                         display: grid;
-                        grid-template-columns: repeat(${size}, 1fr);
+                        grid-template-columns: repeat(${size}, 64px);
+                        grid-template-rows: repeat(${size}, 64px);
                         gap: 1px;
                         background: #ddd;
                         padding: 1px;
