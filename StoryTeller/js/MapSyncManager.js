@@ -125,17 +125,23 @@ class MapSyncManager {
     // Send real-time notification to players about map update
     async notifyPlayersMapUpdate(mapData, mapName) {
         try {
-            // Use the global chat system instead of supabaseClient.sendMessage
-            if (typeof sendChatMessageAsync === 'function') {
-                await sendChatMessageAsync(`MAP_SYNC:${JSON.stringify({
+            // Use the new map_updates table instead of chat
+            const { error } = await this.supabaseClient
+                .from('map_updates')
+                .insert([{
+                    session_code: this.currentSession,
                     action: 'map_shared',
-                    mapName: mapName,
-                    timestamp: new Date().toISOString()
-                })}`);
-                
-                console.log('📡 Map update notification sent to players');
+                    map_name: mapName,
+                    map_data: {
+                        name: mapName,
+                        timestamp: new Date().toISOString()
+                    }
+                }]);
+            
+            if (error) {
+                console.warn('⚠️ Failed to send map update notification:', error);
             } else {
-                console.warn('⚠️ Chat system not available for map notifications');
+                console.log('📡 Map update notification sent via database');
             }
         } catch (error) {
             console.warn('⚠️ Failed to send map notification:', error);

@@ -30,31 +30,40 @@ class MapDataFormatter {
             throw new Error('Map data is null or undefined');
         }
 
+        console.log('🔍 MapDataFormatter: Detecting format for:', mapData);
+        console.log('🔍 MapData keys:', Object.keys(mapData));
+        console.log('🔍 Has backgroundColors?', !!mapData.backgroundColors);
+
         // Check for v1_2map.json format (actual working format)
         if (mapData.grid && Array.isArray(mapData.grid) && 
             mapData.grid[0] && Array.isArray(mapData.grid[0]) &&
             mapData.grid[0][0] && typeof mapData.grid[0][0] === 'object' &&
             mapData.grid[0][0].type === 'sprite' && mapData.grid[0][0].value) {
+            console.log('✅ Detected as v1_2map-sprite-objects format');
             return 'v1_2map-sprite-objects';
         }
 
         // StoryTeller IndexedDB format (id + name + data object)
         if (mapData.id && mapData.name && mapData.data) {
+            console.log('✅ Detected as storyteller-indexeddb format');
             return 'storyteller-indexeddb';
         }
 
         // StoryTeller native format (grid + tileset)
         if (mapData.grid && mapData.tileset) {
+            console.log('✅ Detected as grid-tileset format');
             return 'grid-tileset';
         }
 
         // Legacy format from map-sharing.js (mapData + size)
         if (mapData.mapData && mapData.size) {
+            console.log('✅ Detected as legacy-mapdata format');
             return 'legacy-mapdata';
         }
 
         // Raw grid array
         if (Array.isArray(mapData)) {
+            console.log('✅ Detected as raw-grid format');
             return 'raw-grid';
         }
 
@@ -113,6 +122,7 @@ class MapDataFormatter {
         return {
             ...standardized,
             grid: mapData.grid, // Keep the full sprite objects
+            backgroundColors: mapData.backgroundColors, // Include background colors from v1.2 format!
             tileset: 'sprite-objects', // Special marker for sprite object format
             size: mapData.grid.length,
             metadata: {
@@ -126,6 +136,7 @@ class MapDataFormatter {
     // Convert StoryTeller IndexedDB format (id + name + data object)
     convertIndexedDBFormat(mapData, standardized) {
         console.log('🔧 Converting IndexedDB format, data contents:', mapData.data);
+        console.log('🔍 Checking for background colors in IndexedDB format...');
         
         // Parse size if it's a string like "15×15"
         let mapSize = mapData.size;
@@ -134,9 +145,19 @@ class MapDataFormatter {
             mapSize = parseInt(sizeParts[0]) || 15;
         }
         
+        // Extract background colors from the data
+        let backgroundColors = null;
+        if (mapData.data && mapData.data.backgroundColors) {
+            backgroundColors = mapData.data.backgroundColors;
+            console.log('🎨 Found background colors in IndexedDB data:', backgroundColors);
+        } else {
+            console.warn('❌ No background colors found in IndexedDB data');
+        }
+        
         return {
             ...standardized,
             grid: mapData.data.grid || mapData.data, // Handle both grid property and direct data
+            backgroundColors: backgroundColors, // Include background colors from v1.2 format!
             tileset: mapData.tileset || mapData.data.tileset || 'default',
             size: mapSize,
             metadata: {
@@ -153,6 +174,7 @@ class MapDataFormatter {
         return {
             ...standardized,
             grid: mapData.grid,
+            backgroundColors: mapData.backgroundColors, // Include background colors if present
             tileset: mapData.tileset || 'default',
             size: mapData.size || mapData.grid.length,
             type: mapData.type || standardized.type,

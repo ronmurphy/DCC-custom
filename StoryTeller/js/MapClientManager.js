@@ -11,6 +11,7 @@ class MapClientManager {
         this.mapSubscription = null;
         this.positionSubscription = null;
         this.mapContainer = null;
+        this.mapViewer = null; // PlayerMapViewer instance
         this.playerPositions = new Map(); // playerId -> {x, y, element}
         this.currentPlayerPosition = { x: 0, y: 0 };
         
@@ -57,11 +58,74 @@ class MapClientManager {
             this.mapContainer = document.getElementById(mapContainerId);
             if (!this.mapContainer) {
                 console.warn(`⚠️ Map container '${mapContainerId}' not found`);
+            } else {
+                // Initialize PlayerMapViewer with proven pan/zoom functionality
+                // Wait for DOM to be ready before initializing viewer
+                this.initializeViewer();
+                console.log('✅ Map container found, initializing viewer...');
             }
         }
         
         console.log('✅ MapClientManager connected to session:', sessionCode);
+        
+        // Add a test function to the window for debugging
+        this.testMapNotification = async () => {
+            console.log('🧪 Testing map notification...');
+            try {
+                const { error } = await this.getDBClient()
+                    .from('map_updates')
+                    .insert([{
+                        session_code: this.currentSession,
+                        action: 'refresh',
+                        map_name: 'Test Map',
+                        map_data: { test: true }
+                    }]);
+                
+                if (error) {
+                    console.error('❌ Test notification failed:', error);
+                } else {
+                    console.log('✅ Test notification sent');
+                }
+            } catch (error) {
+                console.error('❌ Test error:', error);
+            }
+        };
+        
+        console.log('🧪 Test function added to MapClientManager instance');
+        
         return this;
+    }
+
+    // Initialize PlayerMapViewer once DOM elements are available
+    initializeViewer() {
+        console.log('🔧 Attempting to initialize PlayerMapViewer...');
+        try {
+            // Check if required elements exist
+            const container = document.getElementById('map-viewer-container');
+            const canvas = document.getElementById('map-canvas');
+            
+            console.log('Elements check - container:', !!container, 'canvas:', !!canvas);
+            
+            if (!container || !canvas) {
+                console.warn('⚠️ Map viewer elements not found, retrying in 100ms...');
+                setTimeout(() => this.initializeViewer(), 100);
+                return;
+            }
+            
+            // Check if PlayerMapViewer class is available
+            if (typeof PlayerMapViewer === 'undefined') {
+                console.error('❌ PlayerMapViewer class not loaded!');
+                return;
+            }
+            
+            this.mapViewer = new PlayerMapViewer('map-viewer-container', 'map-canvas');
+            console.log('✅ PlayerMapViewer initialized successfully');
+        } catch (error) {
+            console.error('❌ Failed to initialize PlayerMapViewer:', error);
+            console.error('Error details:', error.message, error.stack);
+            // Fallback - try again in a moment
+            setTimeout(() => this.initializeViewer(), 500);
+        }
     }
 
     // Set event handlers
@@ -79,7 +143,28 @@ class MapClientManager {
                 throw new Error('MapClientManager not properly initialized');
             }
 
-            // Subscribe to map sync messages in chat
+            console.log(`🔔 Setting up map subscription for session: ${this.currentSession}`);
+
+            // Subscribe to map_updates table for instant notifications
+            this.mapUpdateSubscription = this.getDBClient()
+                .channel(`map-updates-${this.currentSession}`)
+                .on('postgres_changes', 
+                    { 
+                        event: 'INSERT', 
+                        schema: 'public', 
+                        table: 'map_updates',
+                        filter: `session_code=eq.${this.currentSession}`
+                    }, 
+                    (payload) => {
+                        console.log('📡 Database notification received:', payload);
+                        this.handleMapUpdateNotification(payload);
+                    }
+                )
+                .subscribe((status) => {
+                    console.log('📡 Map updates subscription status:', status);
+                });
+
+            // Subscribe to map sync messages in chat (backup method)
             const chatManager = this.supabaseClient.getChatManager?.() || window.globalChatManager;
             if (chatManager) {
                 // Add our map sync handler to the message processing
@@ -164,6 +249,49 @@ class MapClientManager {
         }
     }
 
+    // Handle map_updates table notifications (new method)
+    handleMapUpdateNotification(payload) {
+        try {
+            const updateRecord = payload.new;
+            console.log('📡 Processing map update notification:', updateRecord);
+            
+            if (updateRecord.session_code === this.currentSession) {
+                console.log('✅ Notification matches current session');
+                if (updateRecord.action === 'map_shared') {
+                    console.log('📨 Map shared via database notification:', updateRecord.map_name);
+                    console.log('🔄 Calling checkForExistingMap...');
+                    this.checkForExistingMap(); // Refresh map data
+                } else if (updateRecord.action === 'map_removed') {
+                    console.log('📨 Map removed via database notification');
+                    this.handleMapRemoved();
+                } else if (updateRecord.action === 'refresh') {
+                    console.log('📨 Map refresh requested via database notification');
+                    console.log('🔄 Calling checkForExistingMap...');
+                    this.checkForExistingMap();
+                }
+                
+                // Mark the notification as processed
+                this.markNotificationProcessed(updateRecord.id);
+            } else {
+                console.log('❌ Notification for different session:', updateRecord.session_code, 'vs', this.currentSession);
+            }
+        } catch (error) {
+            console.error('❌ Error processing map update notification:', error);
+        }
+    }
+
+    // Mark notification as processed (optional cleanup)
+    async markNotificationProcessed(notificationId) {
+        try {
+            await this.getDBClient()
+                .from('map_updates')
+                .update({ processed: true })
+                .eq('id', notificationId);
+        } catch (error) {
+            console.warn('⚠️ Could not mark notification as processed:', error);
+        }
+    }
+
     // Handle map table updates
     handleMapUpdate(payload) {
         try {
@@ -186,6 +314,8 @@ class MapClientManager {
     // Check for existing shared map
     async checkForExistingMap() {
         try {
+            console.log('🔍 Checking for existing map in session:', this.currentSession);
+            
             const { data, error } = await this.getDBClient()
                 .from('shared_maps')
                 .select('*')
@@ -194,13 +324,15 @@ class MapClientManager {
 
             if (error) {
                 if (error.code !== 'PGRST116') { // Not found is OK
+                    console.error('❌ Database error checking for map:', error);
                     throw error;
                 }
-                console.log('📭 No shared map found');
+                console.log('📭 No shared map found in session:', this.currentSession);
                 return null;
             }
 
             if (data) {
+                console.log('📊 Found existing map:', data.map_name);
                 this.loadMap(data);
                 return data;
             }
@@ -218,6 +350,15 @@ class MapClientManager {
         try {
             this.currentMap = mapRecord.map_data;
             this.currentMap.settings = mapRecord.map_settings || {};
+            
+            // DEBUG: Show exactly what was received from StoryTeller
+            console.log('🔍 RAW MAP DATA RECEIVED FROM STORYTELLER:', JSON.stringify(mapRecord.map_data, null, 2));
+            console.log('🔍 Map data keys:', Object.keys(mapRecord.map_data || {}));
+            if (mapRecord.map_data && mapRecord.map_data.backgroundColors) {
+                console.log('🎨 Background colors in received data:', mapRecord.map_data.backgroundColors);
+            } else {
+                console.warn('❌ NO BACKGROUND COLORS in received map data!');
+            }
             
             console.log('🗺️ Loading map:', this.currentMap.name);
             
@@ -240,137 +381,108 @@ class MapClientManager {
         }
     }
 
-    // Render map using CSS Grid (similar to maps-manager.js)
+    // Render map using PlayerMapViewer (proven pan/zoom functionality)
     renderMap(mapData) {
-        if (!this.mapContainer) {
-            console.warn('⚠️ No map container available for rendering');
-            return;
-        }
-
-        let grid = null;
-        let tileset = 'default';
-        let size = 0;
-
-        // Handle different map data formats
-        if (mapData.grid) {
-            // New grid format
-            grid = mapData.grid;
-            tileset = mapData.tileset || 'default';
-            size = mapData.size || grid.length;
-        } else if (mapData.mapData && mapData.size) {
-            // Legacy format - convert to grid
-            const legacyData = mapData.mapData;
-            size = mapData.size;
-            grid = [];
-            
-            for (let i = 0; i < size; i++) {
-                grid[i] = [];
-                for (let j = 0; j < size; j++) {
-                    const index = i * size + j;
-                    grid[i][j] = legacyData[index] || 0;
-                }
-            }
-        } else {
-            console.error('❌ Unsupported map data format');
-            return;
-        }
-
-        // Create map display
-        this.mapContainer.innerHTML = `
-            <div class="map-client-wrapper" style="
-                position: relative;
-                width: 100%;
-                height: 400px;
-                background: var(--bg-primary, white);
-                border: 2px solid var(--border-color, #ccc);
-                border-radius: 8px;
-                overflow: hidden;
-            ">
-                <div class="map-client-header" style="
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    background: rgba(0, 0, 0, 0.8);
-                    color: white;
-                    padding: 8px 12px;
-                    font-size: 0.9em;
-                    z-index: 10;
-                ">
-                    📍 ${mapData.name || 'Shared Map'} 
-                    ${mapData.settings?.allowPlayerMovement ? '(Click to move)' : '(View only)'}
-                </div>
-                <div class="map-client-canvas" style="
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%) scale(1);
-                    transform-origin: center;
-                    padding-top: 35px;
-                ">
-                    <div class="map-client-grid" style="
-                        display: grid;
-                        grid-template-columns: repeat(${size}, 1fr);
-                        gap: 1px;
-                        background: #ddd;
-                        padding: 1px;
-                        border-radius: 4px;
-                    "></div>
-                </div>
-            </div>
-        `;
-
-        const mapGrid = this.mapContainer.querySelector('.map-client-grid');
+        console.log('🎨 renderMap called with:', mapData);
         
-        // Create tiles
-        for (let row = 0; row < size; row++) {
-            for (let col = 0; col < size; col++) {
-                const tile = document.createElement('div');
-                tile.className = 'map-tile';
-                tile.dataset.x = col;
-                tile.dataset.y = row;
-                
-                const tileData = grid[row][col];
-                
-                // Handle different tile data formats
-                if (typeof tileData === 'object' && tileData.value) {
-                    // Sprite-based tile (v1_2map.json format)
-                    tile.innerHTML = `<div class="sprite ${tileData.value}" title="${tileData.name || tileData.value}"></div>`;
-                    tile.style.cssText = `
-                        width: 100%;
-                        height: 64px;
-                        aspect-ratio: 1;
-                        position: relative;
-                        cursor: ${mapData.settings?.allowPlayerMovement ? 'pointer' : 'default'};
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                    `;
-                } else {
-                    // Simple numeric tile (legacy format)
-                    tile.style.cssText = `
-                        width: 100%;
-                        height: 64px;
-                        aspect-ratio: 1;
-                        background: ${this.getTileColor(tileData)};
-                        border: 1px solid rgba(0, 0, 0, 0.1);
-                        position: relative;
-                        cursor: ${mapData.settings?.allowPlayerMovement ? 'pointer' : 'default'};
-                    `;
-                }
-                
-                // Add click handler for player movement
-                if (mapData.settings?.allowPlayerMovement) {
-                    tile.addEventListener('click', () => {
-                        this.movePlayerTo(col, row);
-                    });
-                }
-                
-                mapGrid.appendChild(tile);
+        if (!this.mapViewer) {
+            console.warn('⚠️ Map viewer not ready, trying to initialize...');
+            this.initializeViewer();
+            
+            // If still no viewer after initialization, try again later
+            if (!this.mapViewer) {
+                console.warn('⚠️ Map viewer initialization failed, retrying in 200ms...');
+                setTimeout(() => this.renderMap(mapData), 200);
+                return;
             }
         }
 
-        console.log('🎨 Map rendered successfully');
+        // Hide placeholder and show canvas
+        const placeholder = document.getElementById('map-placeholder');
+        const canvas = document.getElementById('map-canvas');
+        
+        if (placeholder) placeholder.style.display = 'none';
+        if (canvas) canvas.style.display = 'block';
+
+        // Convert different map data formats to PlayerMapViewer format
+        let standardMapData = null;
+
+        console.log('🔍 Converting map data format...');
+        console.log('Input mapData:', mapData);
+        console.log('Input mapData keys:', Object.keys(mapData));
+        console.log('Has backgroundColors?', 'backgroundColors' in mapData, mapData.backgroundColors);
+
+        if (mapData.grid) {
+            // New grid format - extract sprite names directly
+            const grid = mapData.grid;
+            const size = mapData.size || grid.length;
+            const spriteNames = [];
+            
+            console.log('📊 Grid format detected, size:', size, 'grid sample:', grid[0]?.slice(0, 3));
+            
+            for (let row = 0; row < size; row++) {
+                for (let col = 0; col < size; col++) {
+                    const cellData = grid[row][col];
+                    
+                    // Extract sprite name directly (no conversion to numbers!)
+                    let spriteName = null;
+                    
+                    if (cellData && typeof cellData === 'object' && cellData.type === 'sprite' && cellData.value) {
+                        spriteName = cellData.value; // Keep the sprite name as-is
+                    } else if (typeof cellData === 'number' && cellData > 0) {
+                        // If it's already a number, convert to sprite name
+                        spriteName = this.numberToSprite(cellData);
+                    }
+                    
+                    spriteNames.push(spriteName);
+                }
+            }
+            
+            console.log('📊 Extracted sprite names sample:', spriteNames.slice(0, 10));
+            console.log('🎨 Background colors found:', Object.keys(mapData.backgroundColors || {}).length > 0 ? mapData.backgroundColors : 'None');
+            
+            standardMapData = {
+                width: size,
+                height: size,
+                spriteNames: spriteNames, // Use sprite names, not numeric tiles
+                tileset: mapData.tileset,
+                backgroundColors: mapData.backgroundColors || {}, // Include background colors!
+                name: mapData.name || 'Shared Map'
+            };
+            
+            console.log('✅ Converted grid to standard format:', standardMapData);
+            
+        } else if (mapData.mapData && mapData.size) {
+            // Legacy format
+            const size = mapData.size;
+            console.log('📊 Legacy format detected, size:', size, 'mapData length:', mapData.mapData.length);
+            
+            standardMapData = {
+                width: size,
+                height: size,
+                tiles: mapData.mapData,
+                tileset: mapData.tileset,
+                name: mapData.name || 'Shared Map'
+            };
+            
+            console.log('✅ Legacy format converted:', standardMapData);
+            
+        } else if (mapData.width && mapData.height && mapData.tiles) {
+            // Already in standard format
+            console.log('📊 Already in standard format');
+            standardMapData = mapData;
+            
+        } else {
+            console.error('❌ Unsupported map data format:', mapData);
+            console.error('Available keys:', Object.keys(mapData));
+            return;
+        }
+
+        // Use PlayerMapViewer to render the map
+        console.log('🎯 Calling PlayerMapViewer.renderMap with:', standardMapData);
+        this.mapViewer.renderMap(standardMapData);
+
+        console.log('🎨 Map rendered successfully with PlayerMapViewer');
     }
 
     // Get tile color based on tile value
@@ -568,6 +680,64 @@ class MapClientManager {
         return Object.fromEntries(this.playerPositions);
     }
 
+    // Helper method to convert sprite names to numeric IDs for PlayerMapViewer
+    spriteToNumber(spriteName) {
+        // Simple sprite-to-number mapping for rendering
+        const spriteMap = {
+            'mountain': 1,
+            'forest': 2,
+            'water': 3,
+            'grass': 4,
+            'stone': 5,
+            'desert': 6,
+            'snow': 7,
+            'lava': 8,
+            'swamp': 9,
+            'city': 10,
+            'village': 11,
+            'road': 12,
+            'bridge': 13,
+            'door': 14,
+            'chest': 15,
+            'treasure': 16,
+            'monster': 17,
+            'npc': 18,
+            'player': 19,
+            'stairs': 20
+        };
+        
+        return spriteMap[spriteName] || 1; // Default to 1 (mountain) if not found
+    }
+
+    // Helper method to convert numeric IDs back to sprite names
+    numberToSprite(number) {
+        // Reverse mapping
+        const numberMap = {
+            1: 'mountain',
+            2: 'forest',
+            3: 'water',
+            4: 'grass',
+            5: 'stone',
+            6: 'desert',
+            7: 'snow',
+            8: 'lava',
+            9: 'swamp',
+            10: 'city',
+            11: 'village',
+            12: 'road',
+            13: 'bridge',
+            14: 'door',
+            15: 'chest',
+            16: 'treasure',
+            17: 'monster',
+            18: 'npc',
+            19: 'player',
+            20: 'stairs'
+        };
+        
+        return numberMap[number] || 'mountain'; // Default to mountain if not found
+    }
+
     // Cleanup subscriptions
     cleanup() {
         if (this.mapSubscription) {
@@ -578,6 +748,11 @@ class MapClientManager {
         if (this.positionSubscription) {
             this.positionSubscription.unsubscribe();
             this.positionSubscription = null;
+        }
+        
+        if (this.mapUpdateSubscription) {
+            this.mapUpdateSubscription.unsubscribe();
+            this.mapUpdateSubscription = null;
         }
 
         this.playerPositions.clear();

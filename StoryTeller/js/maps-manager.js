@@ -340,6 +340,20 @@ class MapsManager {
         const map = this.savedMaps.get(mapId);
         console.log('📋 Found map data:', map);
         
+        // DEBUG: Show complete map structure when loading
+        if (map && map.data) {
+            console.log('🔍 COMPLETE MAP DATA STRUCTURE:', JSON.stringify(map.data, null, 2));
+            console.log('🗺️ Map data keys:', Object.keys(map.data));
+            if (map.data.backgroundColors) {
+                console.log('🎨 Background colors found in map:', map.data.backgroundColors);
+            } else {
+                console.warn('❌ NO backgroundColors property in map data!');
+            }
+            if (map.data.version) {
+                console.log('📊 Map version:', map.data.version);
+            }
+        }
+        
         if (!map) {
             console.error('❌ Map not found in savedMaps:', mapId);
             console.log('📚 Available maps:', Array.from(this.savedMaps.keys()));

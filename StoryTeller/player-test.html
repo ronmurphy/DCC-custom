@@ -319,20 +319,34 @@
             </div>
 
             <!-- Map Display -->
-            <div class="map-display" id="map-display" style="
+            <div class="map-viewer-container" id="map-viewer-container" style="
                 background: #f8f9fa;
                 border: 1px solid #e9ecef;
                 border-radius: 8px;
-                padding: 15px;
                 margin-bottom: 15px;
-                min-height: 200px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
+                min-height: 400px;
+                width: 100%;
+                position: relative;
+                overflow: hidden;
                 color: #666;
             ">
-                🗺️ No map currently shared
-                <br><small>Waiting for storyteller to share a map...</small>
+                <div id="map-placeholder" style="
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    text-align: center;
+                ">
+                    🗺️ No map currently shared
+                    <br><small>Waiting for storyteller to share a map...</small>
+                </div>
+                <canvas id="map-canvas" style="
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    transform-origin: 0 0;
+                    display: none;
+                "></canvas>
             </div>
 
             <!-- Chat Messages -->
@@ -387,7 +401,7 @@
 
     <!-- Map Sync System Scripts -->
     <script src="js/MapDataFormatter.js"></script>
-    <script src="js/SimpleMapRenderer.js"></script>
+    <script src="js/PlayerMapViewer.js"></script>
     <script src="js/MapClientManager.js"></script>
     <script src="js/PlayerPositionTracker.js"></script>
     <script src="js/MapSyncAdapter.js"></script>    <script src="js/supabase-chat.js"></script>
@@ -641,8 +655,18 @@
                     sessionCode: sessionCode,
                     playerName: window.playerName,
                     isStoryteller: false,
-                    mapContainerId: 'map-display'
+                    mapContainerId: 'map-viewer-container'
                 });
+                
+                // Add global test function for debugging
+                window.testMapNotification = async () => {
+                    if (mapSyncAdapter?.mapClientManager) {
+                        return await mapSyncAdapter.mapClientManager.testMapNotification();
+                    } else {
+                        console.error('❌ MapClientManager not available');
+                    }
+                };
+                console.log('🧪 Global test function added: window.testMapNotification()');
                 
                 // Set up event handlers
                 mapSyncAdapter.setEventHandlers(
@@ -655,7 +679,24 @@
                             console.log('🎨 Using StoryTeller map rendering system...');
                             
                             const formatter = new window.MapDataFormatter();
-                            const renderableMap = formatter.convertFromStandardFormat(mapData, 'v1_2map-sprite-objects');
+                            // Convert to v1_2map format (not sprite-objects format)
+                            const renderableMap = formatter.convertFromStandardFormat(mapData, 'v1_2map');
+                            
+                            // Ensure tileset is set to something that exists in /assets
+                            if (renderableMap) {
+                                const originalTileset = renderableMap.tileset;
+                                
+                                // List of available tilesets from tileset.list
+                                const availableTilesets = ['default', 'forest', 'GreenTest', 'Gothic', 'Transparent'];
+                                
+                                if (!availableTilesets.includes(renderableMap.tileset)) {
+                                    renderableMap.tileset = 'default';
+                                    console.log(`🔧 Changed tileset from '${originalTileset}' to 'default' (available: ${availableTilesets.join(', ')})`);
+                                } else {
+                                    console.log(`✅ Using valid tileset: '${renderableMap.tileset}'`);
+                                }
+                            }
+                            
                             console.log('🔄 Converted map for rendering:', renderableMap);
                             
                             // Get the map display container
@@ -1048,6 +1089,52 @@
         function insertEffect(inputId, effectCommand) {
             insertText(inputId, effectCommand);
         }
+
+        // Debug function to test PlayerMapViewer
+        window.testPlayerMapViewer = function() {
+            console.log('🧪 Testing PlayerMapViewer...');
+            try {
+                // Check if elements exist
+                const container = document.getElementById('map-viewer-container');
+                const canvas = document.getElementById('map-canvas');
+                const placeholder = document.getElementById('map-placeholder');
+                
+                console.log('Container found:', !!container);
+                console.log('Canvas found:', !!canvas);
+                console.log('Placeholder found:', !!placeholder);
+                
+                if (canvas) {
+                    console.log('Canvas dimensions:', canvas.width, 'x', canvas.height);
+                    console.log('Canvas style.display:', canvas.style.display);
+                }
+                
+                // Try to create a simple test map
+                if (mapSyncAdapter && mapSyncAdapter.mapClientManager) {
+                    const testMap = {
+                        width: 5,
+                        height: 5,
+                        tiles: [1,1,1,1,1, 1,0,0,0,1, 1,0,2,0,1, 1,0,0,0,1, 1,1,1,1,1],
+                        name: 'Test Map'
+                    };
+                    console.log('🎯 Rendering test map...');
+                    mapSyncAdapter.mapClientManager.renderMap(testMap);
+                    
+                    // Force show canvas
+                    if (placeholder) {
+                        placeholder.style.display = 'none';
+                        console.log('Placeholder hidden');
+                    }
+                    if (canvas) {
+                        canvas.style.display = 'block';
+                        console.log('Canvas shown');
+                    }
+                } else {
+                    console.log('❌ mapSyncAdapter not available');
+                }
+            } catch (error) {
+                console.error('❌ Test failed:', error);
+            }
+        };
     </script>
 </body>
 </html>

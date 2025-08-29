@@ -177,7 +177,22 @@ async function processCommandMessage(message) {
                 console.warn('⚠️ Map sharing functions not available');
             }
         } else {
-            console.log('🚫 Only storytellers can use /sendmap command');
+            // Players can request a map refresh using the new table
+            if (window.mapSyncAdapter && window.mapSyncAdapter.mapClientManager) {
+                const clientManager = window.mapSyncAdapter.mapClientManager;
+                if (clientManager.getDBClient) {
+                    clientManager.getDBClient()
+                        .from('map_updates')
+                        .insert([{
+                            session_code: clientManager.currentSession,
+                            action: 'refresh',
+                            map_name: 'Player requested refresh'
+                        }])
+                        .then(() => console.log('📡 Refresh request sent via database'))
+                        .catch(err => console.warn('⚠️ Could not send refresh request:', err));
+                }
+            }
+            console.log('🔄 Player requested map refresh via /sendmap');
         }
         
         // Return a null message to suppress display

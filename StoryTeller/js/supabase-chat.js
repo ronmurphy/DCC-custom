@@ -1175,8 +1175,9 @@ async function joinGameSession() {
         
         playerName = name;
         window.playerName = name; // Sync with global
-        isStoryTeller = (role === 'storyteller');
-        window.isStoryTeller = (role === 'storyteller'); // Sync with global
+        // In StoryTeller interface, always set as storyteller, preserve existing setting for others
+        isStoryTeller = window.isStoryTeller || (role === 'storyteller');
+        window.isStoryTeller = window.isStoryTeller || (role === 'storyteller'); // Sync with global
         currentGameSession = sessionCode;
         
         // Send join message
@@ -1409,6 +1410,16 @@ async function sendChatMessageAsync(messageText = null) {
     }
     
     try {
+        // Debug the storyteller flag
+        if (window.showDebug) {
+            console.log('🔍 DEBUG - Storyteller flags:', {
+                'window.isStoryTeller': window.isStoryTeller,
+                'window.isStoryteller': window.isStoryteller,
+                'isStoryTeller param': isStoryTeller,
+                'final value': window.isStoryTeller || isStoryTeller || false
+            });
+        }
+        
         const messageData = {
             session_code: currentGameSession.session_code,
             player_name: window.playerName || playerName || 'Unknown Player',

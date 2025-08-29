@@ -98,6 +98,14 @@ class MapSyncAdapter {
         // Subscribe to maps
         await this.mapClientManager.subscribeToMaps();
         
+        // Check for existing maps when connecting
+        console.log('🔍 Checking for existing maps...');
+        await this.mapClientManager.checkForExistingMap();
+        
+        console.log('🔌 Player initialization complete');
+        console.log('🔌 Current session code:', sessionCode);
+        console.log('🔌 MapClientManager session:', this.mapClientManager.currentSession);
+        
         // Create position tracker
         this.positionTracker = new PlayerPositionTracker();
         this.positionTracker.initialize(
