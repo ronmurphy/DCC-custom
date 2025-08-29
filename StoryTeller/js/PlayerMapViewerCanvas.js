@@ -2,7 +2,7 @@
  * PlayerMapViewerCanvas - High-performance canvas-based map viewer for player-test.html
  * Converts CSS grid rendering to canvas for better performance and advanced effects
  */
-class PlayerMapViewer {
+class PlayerMapViewerCanvas {
     constructor(containerId, canvasId) {
         this.containerId = containerId;
         this.canvasId = canvasId;
