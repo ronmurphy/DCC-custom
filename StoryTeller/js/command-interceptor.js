@@ -130,9 +130,11 @@ async function interceptChatMessage(message) {
 function isCommandMessage(messageText) {
     // Look for patterns like: COMMAND:PlayerName or COMMAND:PlayerName:parameters
     const commandPattern = /^(LOOT|ACHIEVEMENT|LEVELUP|ITEM|SKILL|EXP|GOLD|HEALTH|STAT|CLEAN):[^:]+/;
-    // Also check for special silent commands like /refreshmap
-    const silentCommandPattern = /^\/refreshmap$/;
-    return commandPattern.test(messageText) || silentCommandPattern.test(messageText);
+    // Also check for special silent commands
+    const silentCommandPattern = /^\/refreshmap$|^\/sendmap$/;
+    // Also check for map sync messages that should be hidden
+    const mapSyncPattern = /^MAP_SYNC:/;
+    return commandPattern.test(messageText) || silentCommandPattern.test(messageText) || mapSyncPattern.test(messageText);
 }
 
 /**
@@ -152,6 +154,52 @@ async function processCommandMessage(message) {
         if (window.mapSyncAdapter && window.mapSyncAdapter.mapClientManager) {
             window.mapSyncAdapter.mapClientManager.checkForExistingMap();
             console.log('🗺️ Map refresh triggered');
+        }
+        
+        // Return a null message to suppress display
+        return null;
+    }
+    
+    // Handle /sendmap command - storyteller shares current map
+    if (messageText === '/sendmap') {
+        console.log('📡 Processing sendmap command');
+        
+        // Only storytellers can send maps
+        if (isStoryteller) {
+            // Trigger the enhanced map sharing function
+            if (typeof enhancedShareMapWithPlayers === 'function') {
+                enhancedShareMapWithPlayers();
+                console.log('🗺️ Map sharing triggered by /sendmap command');
+            } else if (typeof shareMapWithPlayers === 'function') {
+                shareMapWithPlayers();
+                console.log('🗺️ Map sharing triggered by /sendmap command (fallback)');
+            } else {
+                console.warn('⚠️ Map sharing functions not available');
+            }
+        } else {
+            console.log('🚫 Only storytellers can use /sendmap command');
+        }
+        
+        // Return a null message to suppress display
+        return null;
+    }
+    
+    // Handle MAP_SYNC messages - these should be processed but not displayed
+    if (messageText.startsWith('MAP_SYNC:')) {
+        console.log('📡 Processing MAP_SYNC notification');
+        
+        try {
+            const syncData = JSON.parse(messageText.substring(9));
+            if (syncData.action === 'map_shared') {
+                console.log('📨 Map shared notification received:', syncData.mapName);
+                // Trigger map refresh if MapSyncAdapter is available
+                if (window.mapSyncAdapter && window.mapSyncAdapter.mapClientManager) {
+                    window.mapSyncAdapter.mapClientManager.checkForExistingMap();
+                    console.log('🗺️ Map refresh triggered by MAP_SYNC');
+                }
+            }
+        } catch (error) {
+            console.warn('⚠️ Error processing MAP_SYNC message:', error);
         }
         
         // Return a null message to suppress display

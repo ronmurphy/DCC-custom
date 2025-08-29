@@ -78,13 +78,8 @@ function enhancedShareMapWithPlayers() {
             if (result.success) {
                 console.log('✅ Map also shared via sync system');
                 
-                // Send silent refresh command to players after 2 seconds
-                setTimeout(() => {
-                    if (typeof sendChatMessageAsync === 'function') {
-                        sendChatMessageAsync('/refreshmap');
-                        console.log('📡 Sent silent map refresh command to players');
-                    }
-                }, 2000);
+                // The MAP_SYNC notification will trigger refresh on players
+                // No need for additional /refreshmap command
             } else {
                 console.warn('⚠️ Failed to share via sync system:', result.error);
             }

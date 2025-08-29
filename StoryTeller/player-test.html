@@ -737,6 +737,18 @@
 
         // Add Enter key support for chat input
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize command interceptor for player interface
+            if (typeof initializeCommandInterceptor === 'function') {
+                const interceptorInitialized = initializeCommandInterceptor();
+                if (interceptorInitialized) {
+                    console.log('✅ Command Interceptor initialized for player-test');
+                } else {
+                    console.warn('⚠️ Command Interceptor failed to initialize');
+                }
+            } else {
+                console.warn('⚠️ Command Interceptor not available');
+            }
+            
             const chatInput = document.getElementById('chat-input');
             if (chatInput) {
                 chatInput.addEventListener('keypress', function(e) {
