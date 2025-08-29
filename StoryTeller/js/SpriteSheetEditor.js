@@ -19,96 +19,169 @@ class SpriteSheetEditor {
         // Create modal HTML
         const modalHTML = `
             <div id="sprite-editor-modal" class="modal" style="display: none; z-index: 10000 !important;">
-                <div class="modal-content" style="max-width: 900px; height: 80vh; z-index: 10001 !important; position: relative;">
-                    <div class="modal-header">
-                        <h2>🎨 Sprite Sheet Editor</h2>
+                <div class="modal-content" style="max-width: 900px; height: 85vh; z-index: 10001 !important; position: relative;">
+                    <div class="modal-header" style="padding: 15px 20px;">
+                        <h2 style="margin: 0; font-size: 18px;">🎨 Sprite Sheet Editor</h2>
                         <span class="close">&times;</span>
                     </div>
-                    <div class="modal-body" style="overflow-y: auto;">
-                        <!-- Top Controls Row -->
-                        <div class="top-controls" style="display: flex; gap: 20px; margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; flex-wrap: wrap;">
-                            <div class="control-group">
-                                <button id="import-full-sheet" class="btn btn-primary">📁 Import Sprite Sheet</button>
+                    <div class="modal-body" style="
+                        overflow-y: auto; 
+                        padding: 15px;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 15px;
+                    ">
+                        
+                        <!-- ROW 1: Top Controls -->
+                        <div class="top-controls" style="
+                            display: flex; 
+                            gap: 15px; 
+                            padding: 15px; 
+                            background: #f8f9fa; 
+                            border-radius: 6px; 
+                            border: 1px solid #dee2e6;
+                            align-items: center;
+                            flex-wrap: wrap;
+                        ">
+                            <div class="import-section">
+                                <button id="import-full-sheet" class="btn btn-primary" style="font-size: 14px; padding: 8px 16px;">
+                                    📁 Import Sprite Sheet
+                                </button>
                                 <input type="file" id="sheet-file-input" accept="image/*" style="display: none;">
                             </div>
                             
-                            <div class="slider-controls" style="display: flex; gap: 20px; flex: 1;">
+                            <div class="grid-controls" style="display: flex; gap: 20px; flex: 1; justify-content: center;">
                                 <div class="control-group">
-                                    <label>Grid Width:</label>
-                                    <input type="range" id="grid-width" value="4" min="2" max="8" step="1">
-                                    <span id="grid-width-value">4</span>
+                                    <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 12px;">Grid Width:</label>
+                                    <input type="range" id="grid-width" value="4" min="2" max="8" step="1" style="width: 120px;">
+                                    <span id="grid-width-value" style="display: block; text-align: center; margin-top: 5px; font-weight: bold; color: #007cba;">4</span>
                                 </div>
                                 
                                 <div class="control-group">
-                                    <label>Grid Height:</label>
-                                    <input type="range" id="grid-height" value="4" min="2" max="8" step="1">
-                                    <span id="grid-height-value">4</span>
+                                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Grid Height:</label>
+                                    <input type="range" id="grid-height" value="4" min="2" max="8" step="1" style="width: 120px;">
+                                                                        <span id="grid-width-value" style="display: block; text-align: center; margin-top: 3px; font-weight: bold; color: #0c5460; font-size: 11px;">4</span>
                                 </div>
                                 
                                 <div class="control-group">
-                                    <label>Sprite Size:</label>
-                                    <input type="range" id="sprite-size" value="64" min="32" max="128" step="8">
-                                    <span id="sprite-size-value">64px</span>
+                                    <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 12px;">Grid Height:</label>
+                                    <input type="range" id="grid-height" value="4" min="3" max="8" step="1" style="width: 100px;">
+                                    <span id="grid-height-value" style="display: block; text-align: center; margin-top: 3px; font-weight: bold; color: #0c5460; font-size: 11px;">4</span>
+                                </div>
+                                
+                                <div class="control-group">
+                                    <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 12px;">Horizontal Shift:</label>
+                                    <input type="range" id="offset-x" value="0" min="-50" max="50" step="1" style="width: 100px;">
+                                    <span id="offset-x-value" style="display: block; text-align: center; margin-top: 3px; font-weight: bold; color: #0c5460; font-size: 11px;">0px</span>
+                                </div>
+                                
+                                <div class="control-group">
+                                    <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 12px;">Vertical Shift:</label>
+                                    <input type="range" id="offset-y" value="0" min="-50" max="50" step="1" style="width: 100px;">
+                                    <span id="offset-y-value" style="display: block; text-align: center; margin-top: 3px; font-weight: bold; color: #0c5460; font-size: 11px;">0px</span>
+                                </div>
+                                
+                                <div class="control-group">
+                                    <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 12px;">Cell Size:</label>
+                                    <input type="range" id="actual-sprite-size" value="64" min="48" max="80" step="1" style="width: 100px;">
+                                    <span id="sprite-size-value" style="display: block; text-align: center; margin-top: 3px; font-weight: bold; color: #0c5460; font-size: 11px;">64px</span>
+                                </div>
+                                
+                                <button id="reset-alignment" class="btn" title="Reset to center" style="align-self: flex-end; margin-bottom: 8px; padding: 6px 10px; font-size: 12px;">↺ Reset</button>
+                                </div>
+                                
+                                <div class="control-group">
+                                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Sprite Size:</label>
+                                    <input type="range" id="sprite-size" value="64" min="32" max="128" step="8" style="width: 120px;">
+                                    <span id="sprite-size-value" style="display: block; text-align: center; margin-top: 5px; font-weight: bold; color: #007cba;">64px</span>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Alignment Controls (shown when image loaded) -->
-                        <div class="alignment-controls" id="alignment-controls" style="display: none; margin-bottom: 20px; padding: 15px; background: #e8f4fd; border: 1px solid #bee5eb; border-radius: 8px;">
-                            <h4>🎯 Fine-Tune Alignment</h4>
-                            <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+                        <div class="alignment-controls" id="alignment-controls" style="
+                            display: none; 
+                            margin-bottom: 25px; 
+                            padding: 15px; 
+                            background: #e8f4fd; 
+                            border: 1px solid #bee5eb; 
+                            border-radius: 8px;
+                        ">
+                            <h4 style="margin: 0 0 15px 0; color: #0c5460;">🎯 Fine-Tune Alignment</h4>
+                            <div style="display: flex; gap: 25px; align-items: center; justify-content: center; flex-wrap: wrap;">
                                 <div class="control-group">
-                                    <label>Horizontal Shift:</label>
-                                    <input type="range" id="offset-x" value="0" min="-50" max="50" step="1">
-                                    <span id="offset-x-value">0px</span>
+                                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Horizontal Shift:</label>
+                                    <input type="range" id="offset-x" value="0" min="-50" max="50" step="1" style="width: 120px;">
+                                    <span id="offset-x-value" style="display: block; text-align: center; margin-top: 5px; font-weight: bold; color: #0c5460;">0px</span>
                                 </div>
                                 
                                 <div class="control-group">
-                                    <label>Vertical Shift:</label>
-                                    <input type="range" id="offset-y" value="0" min="-50" max="50" step="1">
-                                    <span id="offset-y-value">0px</span>
+                                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Vertical Shift:</label>
+                                    <input type="range" id="offset-y" value="0" min="-50" max="50" step="1" style="width: 120px;">
+                                    <span id="offset-y-value" style="display: block; text-align: center; margin-top: 5px; font-weight: bold; color: #0c5460;">0px</span>
                                 </div>
                                 
                                 <div class="control-group">
-                                    <label>Cell Size:</label>
-                                    <input type="range" id="actual-sprite-size" value="64" min="48" max="80" step="1">
-                                    <span id="sprite-size-value">64px</span>
+                                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Cell Size:</label>
+                                    <input type="range" id="actual-sprite-size" value="64" min="48" max="80" step="1" style="width: 120px;">
+                                    <span id="sprite-size-value" style="display: block; text-align: center; margin-top: 5px; font-weight: bold; color: #0c5460;">64px</span>
                                 </div>
                                 
-                                <button id="reset-alignment" class="btn" title="Reset to center">↺ Reset</button>
+                                <button id="reset-alignment" class="btn" title="Reset to center" style="align-self: flex-end; margin-bottom: 10px;">↺ Reset</button>
                             </div>
                         </div>
 
-                        <!-- Main Workspace -->
-                        <div class="main-workspace" style="display: flex; gap: 20px; min-height: 400px;">
+                        <!-- ROW 2: Main Workspace -->
+                        <div class="main-workspace" style="
+                            display: flex; 
+                            gap: 20px; 
+                            min-height: 350px;
+                        ">
                             <!-- Sprite Grid (Left Side) -->
-                            <div class="sprite-grid-container" style="flex: 1; max-width: 500px;">
-                                <h3>Sprite Grid</h3>
+                            <div class="sprite-grid-container" style="
+                                flex: 1; 
+                                max-width: 500px;
+                                background: white;
+                                padding: 15px;
+                                border-radius: 6px;
+                                border: 1px solid #dee2e6;
+                            ">
+                                <h3 style="margin: 0 0 10px 0; color: #495057; font-size: 16px;">🖼️ Sprite Grid</h3>
                                 <div id="sprite-grid" class="sprite-grid"></div>
                             </div>
                             
                             <!-- Cell Editor (Right Side) -->
-                            <div class="cell-editor-panel" style="width: 320px; background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #dee2e6;">
-                                <h3>Cell Editor</h3>
+                                                        <!-- Cell Editor (Right Side) -->
+                            <div class="cell-editor-container" style="
+                                width: 280px;
+                                background: white;
+                                padding: 15px;
+                                border-radius: 6px;
+                                border: 1px solid #dee2e6;
+                                height: fit-content;
+                            ">
+                                <h3 style="margin: 0 0 10px 0; color: #495057; font-size: 16px;">⚙️ Cell Editor</h3>
                                 
                                 <div id="cell-info">
-                                    <p style="color: #6c757d; font-style: italic;">👆 Click a cell to edit its properties</p>
+                                    <p style="color: #6c757d; font-style: italic; text-align: center; margin-top: 50px;">
+                                        👆 Click a cell in the grid to edit its properties
+                                    </p>
                                 </div>
                                 
                                 <div id="cell-editor" style="display: none;">
-                                    <div class="form-group">
-                                        <label>Sprite Name:</label>
-                                        <input type="text" id="sprite-name" placeholder="e.g., mountain, water">
+                                    <div class="form-group" style="margin-bottom: 15px;">
+                                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">Sprite Name:</label>
+                                        <input type="text" id="sprite-name" placeholder="e.g., mountain, water" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
                                     </div>
                                     
-                                    <div class="form-group">
-                                        <label>Display Name:</label>
-                                        <input type="text" id="sprite-display-name" placeholder="e.g., Mountain, Water">
+                                    <div class="form-group" style="margin-bottom: 15px;">
+                                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">Display Name:</label>
+                                        <input type="text" id="sprite-display-name" placeholder="e.g., Mountain, Water" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
                                     </div>
                                     
-                                    <div class="form-group">
-                                        <label>Category:</label>
-                                        <select id="sprite-category">
+                                    <div class="form-group" style="margin-bottom: 15px;">
+                                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">Category:</label>
+                                        <select id="sprite-category" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
                                             <option value="terrain">Terrain</option>
                                             <option value="buildings">Buildings</option>
                                             <option value="monsters">Monsters</option>
@@ -119,39 +192,71 @@ class SpriteSheetEditor {
                                         </select>
                                     </div>
                                     
-                                    <div class="form-group">
-                                        <label>Background Color:</label>
+                                    <div class="form-group" style="margin-bottom: 20px;">
+                                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">Background Color:</label>
                                         <div style="display: flex; gap: 8px; align-items: center;">
-                                            <input type="color" id="sprite-color" value="#8B7355" style="width: 50px; height: 35px;">
-                                            <input type="text" id="sprite-color-hex" placeholder="#8B7355" style="flex: 1;">
+                                            <input type="color" id="sprite-color" value="#8B7355" style="width: 50px; height: 35px; border: 1px solid #ced4da; border-radius: 4px;">
+                                            <input type="text" id="sprite-color-hex" placeholder="#8B7355" style="flex: 1; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
                                         </div>
                                     </div>
                                     
-                                    <div class="button-group" style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
-                                        <button id="toggle-cell-lock" class="btn" style="background: #28a745; color: white;">
+                                    <div class="button-group" style="display: flex; flex-direction: column; gap: 12px;">
+                                        <button id="toggle-cell-lock" class="btn" style="background: #28a745; color: white; padding: 10px; border-radius: 4px; border: none; font-weight: 600;">
                                             🔒 Lock Position
                                         </button>
                                         
-                                        <button id="import-cell-image" class="btn">📁 Import Cell Image</button>
+                                        <button id="import-cell-image" class="btn" style="background: #6c757d; color: white; padding: 10px; border-radius: 4px; border: none;">
+                                            📁 Import Cell Image
+                                        </button>
                                         <input type="file" id="cell-file-input" accept="image/*" style="display: none;">
                                         
-                                        <button id="save-cell" class="btn btn-primary">💾 Save Cell</button>
+                                        <button id="save-cell" class="btn btn-primary" style="background: #007cba; color: white; padding: 12px; border-radius: 4px; border: none; font-weight: 600; font-size: 14px;">
+                                            💾 Save Cell
+                                        </button>
                                     </div>
                                     
-                                    <p style="font-size: 11px; color: #6c757d; margin-top: 10px;">
+                                    <p style="font-size: 11px; color: #6c757d; margin-top: 15px; text-align: center; line-height: 1.4;">
                                         💡 Locked cells won't move when adjusting alignment sliders
                                     </p>
                                 </div>
                             </div>
                         </div>
                         
-                        <!-- Export Section -->
-                        <div class="export-section" style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;">
-                            <h3>📤 Export Tileset</h3>
-                            <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
-                                <input type="text" id="tileset-name" placeholder="Tileset name" value="Custom Tileset" style="flex: 1; min-width: 200px;">
-                                <button id="export-json" class="btn btn-success">📤 Export JSON</button>
-                                <button id="export-png" class="btn btn-info" disabled>🖼️ Export PNG (Coming Soon)</button>
+                        <!-- ROW 3: Export Section -->
+                        <div class="export-section" style="
+                            padding: 15px; 
+                            background: #f8f9fa; 
+                            border-radius: 6px; 
+                            border: 1px solid #dee2e6;
+                        ">
+                            <h3 style="margin: 0 0 10px 0; color: #495057; font-size: 16px;">📤 Export Tileset</h3>
+                            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                                <input type="text" id="tileset-name" placeholder="Enter tileset name" value="Custom Tileset" style="
+                                    flex: 1; 
+                                    min-width: 200px; 
+                                    padding: 8px 12px; 
+                                    border: 1px solid #ced4da; 
+                                    border-radius: 4px;
+                                    font-size: 13px;
+                                ">
+                                <button id="export-json" class="btn btn-success" style="
+                                    background: #28a745; 
+                                    color: white; 
+                                    padding: 8px 16px; 
+                                    border-radius: 4px; 
+                                    border: none; 
+                                    font-weight: 600;
+                                    font-size: 13px;
+                                ">📤 Export JSON</button>
+                                <button id="export-png" class="btn btn-info" disabled style="
+                                    background: #6c757d; 
+                                    color: white; 
+                                    padding: 8px 16px; 
+                                    border-radius: 4px; 
+                                    border: none;
+                                    opacity: 0.6;
+                                    font-size: 13px;
+                                ">🖼️ Export PNG (Soon)</button>
                             </div>
                         </div>
 
