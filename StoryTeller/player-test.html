@@ -522,6 +522,11 @@
                         addChatMessage(`${window.playerName} joined the session!`, 'system');
                         showMessage('Successfully connected to session!', 'success');
                         
+                        // Send auto-join message to register with StoryTeller
+                        setTimeout(() => {
+                            sendAutoJoinMessage();
+                        }, 1500); // Wait 1.5 seconds for full initialization
+                        
                         // Initialize map synchronization system
                         await initializeMapSync();
                     } else {
@@ -1135,6 +1140,31 @@
                 console.error('❌ Test failed:', error);
             }
         };
+
+        // Send automatic join message to register with StoryTeller
+        function sendAutoJoinMessage() {
+            const joinMessage = `${window.playerName} has joined the chat!`;
+            
+            try {
+                console.log('Sending auto-join message to register with StoryTeller:', joinMessage);
+                
+                // Try to send message via the chat input
+                const messageInput = document.getElementById('message-input');
+                if (messageInput && typeof sendMessage === 'function') {
+                    messageInput.value = joinMessage;
+                    sendMessage();
+                    console.log('✅ Auto-join message sent via chat input');
+                } else if (window.supabaseChat && typeof window.supabaseChat.sendMessage === 'function') {
+                    // Try direct Supabase chat
+                    window.supabaseChat.sendMessage(joinMessage);
+                    console.log('✅ Auto-join message sent via supabaseChat');
+                } else {
+                    console.warn('⚠️ Could not send auto-join message - chat system not ready');
+                }
+            } catch (error) {
+                console.error('❌ Error sending auto-join message:', error);
+            }
+        }
     </script>
 </body>
 </html>
