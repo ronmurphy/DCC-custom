@@ -416,13 +416,113 @@ class MapsManager {
 
         // Use the same rendering approach as the map editor
         if (window.showDebug) {
-            console.log('🎨 Using CSS Grid rendering (like map editor)...');
+            console.log('🎨 Using Canvas rendering with PlayerMapViewerLocal...');
         }
-        this.renderMapWithCSSGrid(viewerContent, map.data);
+        // OLD CSS Grid rendering (commented out for Canvas experiment)
+        // this.renderMapWithCSSGrid(viewerContent, map.data);
+        
+        // NEW Canvas rendering
+        this.renderMapWithCanvas(viewerContent, map.data);
         this.updateMapStats(map);
     }
 
-    // New CSS Grid rendering method (like map editor)
+    // NEW Canvas rendering method using PlayerMapViewerLocal
+    renderMapWithCanvas(container, mapData) {
+        console.log('🎨 renderMapWithCanvas called with:', mapData);
+        
+        if (!mapData) {
+            console.error('❌ No mapData provided');
+            this.renderErrorMessage(container, 'No map data');
+            return;
+        }
+
+        // Create canvas container structure
+        container.innerHTML = `
+            <div id="map-viewer-container" style="
+                width: 100%;
+                height: 400px;
+                position: relative;
+                background: var(--bg-primary, white);
+                border: 2px solid var(--border-color, #ccc);
+                border-radius: 8px;
+                overflow: hidden;
+            ">
+                <canvas id="map-viewer-canvas" style="
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    cursor: grab;
+                "></canvas>
+            </div>
+        `;
+
+        // Convert local map data to PlayerMapViewerLocal format
+        const standardMapData = this.convertToStandardFormat(mapData);
+        
+        // Initialize PlayerMapViewerLocal
+        try {
+            if (typeof PlayerMapViewerLocal === 'undefined') {
+                console.error('❌ PlayerMapViewerLocal class not loaded!');
+                this.renderErrorMessage(container, 'Canvas renderer not available');
+                return;
+            }
+
+            const viewer = new PlayerMapViewerLocal('map-viewer-container', 'map-viewer-canvas');
+            viewer.renderMap(standardMapData);
+            console.log('✅ Map rendered with Canvas successfully');
+            
+        } catch (error) {
+            console.error('❌ Failed to render with Canvas:', error);
+            this.renderErrorMessage(container, 'Canvas rendering failed: ' + error.message);
+        }
+    }
+
+    // Convert local IndexedDB map format to PlayerMapViewerLocal standard format
+    convertToStandardFormat(mapData) {
+        console.log('🔄 Converting map data format:', mapData);
+        
+        let grid = null;
+        let tileset = 'default';
+
+        // Handle different map data formats
+        if (mapData.grid) {
+            // New format from maps manager
+            grid = mapData.grid;
+            tileset = mapData.tileset || 'default';
+        } else if (mapData.mapData && mapData.size) {
+            // Legacy format - convert to grid
+            const size = mapData.size;
+            grid = [];
+            for (let row = 0; row < size; row++) {
+                const rowData = [];
+                for (let col = 0; col < size; col++) {
+                    const index = row * size + col;
+                    rowData.push(mapData.mapData[index] || 0);
+                }
+                grid.push(rowData);
+            }
+        }
+
+        // Convert to standard format that PlayerMapViewerLocal expects
+        const standardFormat = {
+            version: '1.2',
+            format: 'local-indexeddb',
+            metadata: {
+                title: 'Local Map',
+                tileset: tileset,
+                size: grid ? grid.length : 0
+            },
+            mapData: {
+                grid: grid,
+                tileset: tileset
+            }
+        };
+
+        console.log('✅ Converted to standard format:', standardFormat);
+        return standardFormat;
+    }
+
+    // NEW CSS Grid rendering method (like map editor) - COMMENTED OUT FOR CANVAS EXPERIMENT
     renderMapWithCSSGrid(container, mapData) {
         console.log('🎨 renderMapWithCSSGrid called with:', mapData);
         
