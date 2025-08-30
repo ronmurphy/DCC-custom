@@ -353,13 +353,6 @@ class SpriteSheetEditor {
                                 </button>
                                 <input type="file" id="sheet-file-input" accept="image/*" style="display: none;">
                                 
-                                <div class="import-options" style="margin-top: 8px;">
-                                    <label style="display: flex; align-items: center; font-size: 12px;">
-                                        <input type="checkbox" id="auto-resize-sheet" checked style="margin-right: 5px;">
-                                        🔄 Auto-resize sprite sheet to fit grid
-                                    </label>
-                                </div>>
-                                
                                 <div class="grid-size-controls">
                                     <label>Grid Size:</label>
                                     <select id="grid-width" style="padding: 4px 6px; font-size: 12px; margin-left: 5px;">
@@ -421,16 +414,14 @@ class SpriteSheetEditor {
                                     <label>Category:</label>
                                     <select id="sprite-category" style="width: 100%;">
                                         <option value="terrain">Terrain</option>
-                                        <option value="buildings">Buildings</option>
-                                        <option value="monsters">Monsters</option>
-                                        <option value="items">Items</option>
-                                        <option value="hazards">Hazards</option>
-                                        <option value="paths">Paths</option>
-                                        <option value="features">Features</option>
                                         <option value="walls">Walls</option>
                                         <option value="floors">Floors</option>
                                         <option value="doors">Doors</option>
+                                        <option value="items">Items</option>
                                         <option value="creatures">Creatures</option>
+                                        <option value="hazards">Hazards</option>
+                                        <option value="paths">Paths</option>
+                                        <option value="features">Features</option>
                                     </select>
                                 </div>
                                 
@@ -444,7 +435,6 @@ class SpriteSheetEditor {
                                         <div class="auto-color-buttons">
                                             <button id="auto-detect-color" class="btn-auto-color" title="Auto-detect dominant color for selected cell">🎯 Auto</button>
                                             <button id="auto-detect-all" class="btn-auto-color-all" title="Auto-detect colors for all cells with sprites">✨ Auto All</button>
-                                            <button id="clear-background" class="btn-clear-bg" title="Remove background color from selected cell">🗑️ Clear</button>
                                         </div>
                                     </div>
                                     
@@ -518,15 +508,12 @@ class SpriteSheetEditor {
         const closeBtn = modal.querySelector('.close');
         
         closeBtn.onclick = () => {
-            // Remove the modal from DOM completely
-            modal.remove();
-            console.log('🎨 Sprite Sheet Editor modal removed from DOM');
+            modal.style.display = 'none';
         };
         
         window.onclick = (event) => {
             if (event.target === modal) {
-                modal.remove();
-                console.log('🎨 Sprite Sheet Editor modal removed from DOM');
+                modal.style.display = 'none';
             }
         };
         
@@ -677,15 +664,6 @@ class SpriteSheetEditor {
             }
         });
         
-        // Clear background color button
-        document.getElementById('clear-background').addEventListener('click', () => {
-            if (this.selectedCell !== null) {
-                delete this.backgroundColors[this.selectedCell];
-                this.updateGrid();
-                console.log(`🗑️ Cleared background color for cell ${this.selectedCell + 1}`);
-            }
-        });
-        
         // Export functionality
         document.getElementById('export-json').addEventListener('click', () => {
             this.exportTileset();
@@ -734,120 +712,23 @@ class SpriteSheetEditor {
                         categorySelect.value = spriteData.category;
                     }
                     
-                    // DO NOT auto-set background color - let user choose
-                    // Update color pickers to show current background color (if any)
-                    const currentBgColor = this.backgroundColors[i];
-                    if (currentBgColor) {
-                        document.getElementById('sprite-color').value = currentBgColor;
-                        document.getElementById('sprite-color-hex').value = currentBgColor;
-                    } else {
-                        // Reset color pickers to default but don't apply to cell
-                        document.getElementById('sprite-color').value = '#8B7355';
-                        document.getElementById('sprite-color-hex').value = '#8B7355';
+                    // Set background color from default.json
+                    const defaultColor = this.defaultTileset.backgroundColors[spriteData.id];
+                    if (defaultColor) {
+                        this.backgroundColors[i] = defaultColor;
+                        document.getElementById('sprite-color').value = defaultColor;
+                        document.getElementById('sprite-color-hex').value = defaultColor;
+                        this.updateGrid();
                     }
                 }
                 
                 console.log(`🎯 Selected cell ${i + 1}: "${spriteName}" (${spriteData ? spriteData.category : 'unknown'})`);
             });
             
-            // Add double-click handler for individual PNG loading
-            cell.addEventListener('dblclick', () => {
-                this.loadIndividualPNG(i);
-            });
-            
-            // Add touch support for double-tap (tablet optimized)
-            let touchTime = 0;
-            cell.addEventListener('touchend', (e) => {
-                const currentTime = new Date().getTime();
-                const tapLength = currentTime - touchTime;
-                if (tapLength < 500 && tapLength > 0) {
-                    // Double tap detected
-                    e.preventDefault();
-                    this.loadIndividualPNG(i);
-                }
-                touchTime = currentTime;
-            });
-            
             gridContainer.appendChild(cell);
         }
         
         this.updateGrid();
-    }
-    
-    loadIndividualPNG(cellIndex) {
-        // Create a temporary file input
-        const fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.accept = 'image/png,image/jpg,image/jpeg,image/gif';
-        fileInput.style.display = 'none';
-        
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const imageSrc = e.target.result;
-                    
-                    // Create image to get dimensions
-                    const img = new Image();
-                    img.onload = () => {
-                        // Check if auto-resize is enabled
-                        const autoResizeElement = document.getElementById('auto-resize-sheet');
-                        const autoResize = autoResizeElement ? autoResizeElement.checked : false;
-                        
-                        if (autoResize && (img.width !== this.spriteSize || img.height !== this.spriteSize)) {
-                            // Resize the image to fit the sprite size
-                            console.log(`🔄 Auto-resizing individual PNG from ${img.width}×${img.height} to ${this.spriteSize}×${this.spriteSize}`);
-                            
-                            const resizeCanvas = document.createElement('canvas');
-                            const resizeCtx = resizeCanvas.getContext('2d');
-                            resizeCanvas.width = this.spriteSize;
-                            resizeCanvas.height = this.spriteSize;
-                            
-                            // Draw resized image
-                            resizeCtx.drawImage(img, 0, 0, this.spriteSize, this.spriteSize);
-                            
-                            // Store the resized image
-                            this.sprites[cellIndex] = resizeCanvas.toDataURL();
-                        } else {
-                            // Store the original image
-                            this.sprites[cellIndex] = imageSrc;
-                        }
-                        
-                        // Auto-detect background color if enabled
-                        const autoDetectElement = document.getElementById('auto-detect-color');
-                        const autoDetect = autoDetectElement ? autoDetectElement.checked : false;
-                        
-                        if (autoDetect) {
-                            this.autoDetectSingleSpriteColor(imageSrc, cellIndex);
-                        }
-                        
-                        // Update the grid display
-                        this.updateGrid();
-                        
-                        // Select this cell
-                        document.querySelectorAll('.sprite-cell').forEach(c => c.classList.remove('selected'));
-                        const cell = document.querySelector(`.sprite-cell[data-index="${cellIndex}"]`);
-                        if (cell) {
-                            cell.classList.add('selected');
-                            this.selectedCell = cellIndex;
-                            this.updateCellEditor();
-                        }
-                        
-                        console.log(`📁 Loaded individual PNG into cell ${cellIndex + 1}`);
-                    };
-                    img.src = imageSrc;
-                };
-                reader.readAsDataURL(file);
-            }
-            
-            // Clean up
-            document.body.removeChild(fileInput);
-        });
-        
-        // Add to DOM temporarily and trigger click
-        document.body.appendChild(fileInput);
-        fileInput.click();
     }
     
     updateGrid() {
@@ -857,8 +738,7 @@ class SpriteSheetEditor {
             // Clear previous content
             cell.innerHTML = '';
             cell.style.backgroundImage = '';
-            // Set background color - transparent if none set, light gray as default grid color
-            cell.style.backgroundColor = this.backgroundColors[index] || 'transparent';
+            cell.style.backgroundColor = this.backgroundColors[index] || '#f9f9f9';
             
             // Add locked indicator
             if (this.lockedCells.has(index)) {
@@ -898,40 +778,7 @@ class SpriteSheetEditor {
     loadSpriteSheet(imageSrc) {
         this.previewImage = new Image();
         this.previewImage.onload = () => {
-            const autoResizeElement = document.getElementById('auto-resize-sheet');
-            const autoResize = autoResizeElement ? autoResizeElement.checked : false;
-            
-            if (autoResize) {
-                // Calculate expected dimensions based on grid
-                const expectedWidth = this.gridWidth * this.spriteSize;
-                const expectedHeight = this.gridHeight * this.spriteSize;
-                
-                // Check if resize is needed
-                if (this.previewImage.width !== expectedWidth || this.previewImage.height !== expectedHeight) {
-                    console.log(`🔄 Auto-resizing sprite sheet from ${this.previewImage.width}×${this.previewImage.height} to ${expectedWidth}×${expectedHeight}`);
-                    
-                    // Create a canvas to resize the image
-                    const resizeCanvas = document.createElement('canvas');
-                    const resizeCtx = resizeCanvas.getContext('2d');
-                    resizeCanvas.width = expectedWidth;
-                    resizeCanvas.height = expectedHeight;
-                    
-                    // Draw resized image
-                    resizeCtx.drawImage(this.previewImage, 0, 0, expectedWidth, expectedHeight);
-                    
-                    // Create new image from resized canvas
-                    const resizedImage = new Image();
-                    resizedImage.onload = () => {
-                        this.previewImage = resizedImage;
-                        this.updatePreview();
-                    };
-                    resizedImage.src = resizeCanvas.toDataURL();
-                } else {
-                    this.updatePreview();
-                }
-            } else {
-                this.updatePreview();
-            }
+            this.updatePreview();
         };
         this.previewImage.src = imageSrc;
     }
@@ -1006,78 +853,31 @@ class SpriteSheetEditor {
     exportTileset() {
         const tilesetName = document.getElementById('tileset-name').value || 'Custom Tileset';
         
-        // Create sprites array and backgroundColors object to match default.json exactly
-        const spritesArray = [];
-        const backgroundColors = {};
+        const tileset = {
+            name: tilesetName,
+            gridWidth: this.gridWidth,
+            gridHeight: this.gridHeight,
+            spriteSize: this.spriteSize,
+            sprites: {},
+            backgroundColors: this.backgroundColors,
+            lockedCells: Array.from(this.lockedCells),
+            createdAt: new Date().toISOString()
+        };
         
-        // Convert sprites to proper format with position coordinates
+        // Add sprite data
         this.sprites.forEach((sprite, index) => {
             if (sprite) {
-                // Calculate position in grid
-                const x = index % this.gridWidth;
-                const y = Math.floor(index / this.gridWidth);
-                
-                // Create more meaningful sprite names with better defaults
-                const spriteId = `sprite_${x}_${y}`;  // Position-based ID like sprite_0_0, sprite_1_0
-                const spriteName = `Sprite ${x},${y}`;  // Position-based name
-                
-                // Better category assignment based on position (you can customize this logic)
-                let category = 'custom';
-                if (y === 0) category = 'terrain';
-                else if (y === 1) category = 'buildings';  
-                else if (y === 2) category = 'items';
-                else if (y === 3) category = 'features';
-                
-                spritesArray.push({
-                    id: spriteId,
-                    name: spriteName, 
-                    category: category,
-                    position: [x, y]
-                });
-                
-                // Include background color for all sprites - use "transparent" if none set
-                backgroundColors[spriteId] = this.backgroundColors[index] || 'transparent';
+                const name = `sprite_${index + 1}`;
+                tileset.sprites[name] = {
+                    index: index,
+                    data: sprite,
+                    backgroundColor: this.backgroundColors[index] || '#8B7355'
+                };
             }
         });
         
-        // Create tileset object in EXACT same format as default.json
-        // Field order: name, description, spriteSize, gridSize, backgroundColors, sprites
-        const tileset = {
-            name: tilesetName,
-            description: `Custom tileset created with SpriteSheetEditor`,
-            spriteSize: this.spriteSize,
-            gridSize: `${this.gridWidth}x${this.gridHeight}`,
-            backgroundColors: backgroundColors,
-            sprites: spritesArray
-        };
-        
-        // Download as .json (same extension as default.json)
-        // Create custom JSON formatting to match default.json EXACTLY (compact sprite objects)
-        let jsonString = '{\n';
-        jsonString += `  "name": "${tileset.name}",\n`;
-        jsonString += `  "description": "${tileset.description}",\n`;
-        jsonString += `  "spriteSize": ${tileset.spriteSize},\n`;
-        jsonString += `  "gridSize": "${tileset.gridSize}",\n`;
-        
-        // Format backgroundColors
-        jsonString += '  "backgroundColors": {\n';
-        const bgColorEntries = Object.entries(tileset.backgroundColors);
-        bgColorEntries.forEach((entry, index) => {
-            const isLast = index === bgColorEntries.length - 1;
-            jsonString += `    "${entry[0]}": "${entry[1]}"${isLast ? '' : ','}\n`;
-        });
-        jsonString += '  },\n';
-        
-        // Format sprites array with compact single-line objects
-        jsonString += '  "sprites": [\n';
-        tileset.sprites.forEach((sprite, index) => {
-            const isLast = index === tileset.sprites.length - 1;
-            jsonString += `    { "id": "${sprite.id}", "name": "${sprite.name}", "category": "${sprite.category}", "position": [${sprite.position[0]}, ${sprite.position[1]}] }${isLast ? '' : ','}\n`;
-        });
-        jsonString += '  ]\n';
-        jsonString += '}';
-        
-        const blob = new Blob([jsonString], { type: 'application/json' });
+        // Download as JSON
+        const blob = new Blob([JSON.stringify(tileset, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -1087,7 +887,6 @@ class SpriteSheetEditor {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         
-        console.log('✅ Tileset exported in default.json compatible format:', tileset);
         alert(`Tileset "${tilesetName}" exported successfully!`);
     }
     
@@ -1114,8 +913,10 @@ class SpriteSheetEditor {
                 const x = col * this.spriteSize;
                 const y = row * this.spriteSize;
                 
-                // Skip background colors in PNG export - keep sprites transparent
-                // Background colors are only for JSON metadata, not baked into PNG
+                // Fill background color first
+                const bgColor = this.backgroundColors[index] || '#8B7355';
+                ctx.fillStyle = bgColor;
+                ctx.fillRect(x, y, this.spriteSize, this.spriteSize);
                 
                 // Draw sprite if exists
                 if (this.sprites[index]) {

@@ -338,13 +338,13 @@ class PlayerMapViewer {
         const { width, height, spriteNames, tileset, backgroundColors } = mapData;
         console.log(`Canvas: Rendering ${width}x${height} sprites with tileset: ${tileset}`);
         
-        const normalizedTilesetName = (tileset || 'default').toLowerCase();
+        const tilesetName = tileset || 'default'; // Respect user's naming convention
         
         try {
             // Load both sprite sheet and config
             const [spriteSheet, tilesetConfig] = await Promise.all([
-                this.loadSpriteSheet(normalizedTilesetName),
-                this.loadTilesetConfig(normalizedTilesetName)
+                this.loadSpriteSheet(tilesetName),
+                this.loadTilesetConfig(tilesetName)
             ]);
             
             // Render each tile
@@ -377,12 +377,12 @@ class PlayerMapViewer {
         const { width, height, tiles, tileset } = mapData;
         console.log(`Canvas: Rendering ${width}x${height} tiles with tileset: ${tileset}`);
         
-        const normalizedTilesetName = (tileset || 'default').toLowerCase();
+        const tilesetName = tileset || 'default'; // Respect user's naming convention
         
         try {
             const [spriteSheet, tilesetConfig] = await Promise.all([
-                this.loadSpriteSheet(normalizedTilesetName),
-                this.loadTilesetConfig(normalizedTilesetName)
+                this.loadSpriteSheet(tilesetName),
+                this.loadTilesetConfig(tilesetName)
             ]);
             
             for (let y = 0; y < height; y++) {

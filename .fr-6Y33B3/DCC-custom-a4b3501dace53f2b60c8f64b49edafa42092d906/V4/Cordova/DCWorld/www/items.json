@@ -1,0 +1,181 @@
+{
+  "weapons": [
+    {
+      "name": "Demon-Forged Axe",
+      "type": "Weapon",
+      "damage": "1d12",
+      "properties": [
+        "two-handed",
+        "cursed"
+      ],
+      "value": 120
+    },
+    {
+      "name": "Rusted Meat Cleaver",
+      "type": "Weapon",
+      "damage": "1d6",
+      "properties": [
+        "close",
+        "messy"
+      ],
+      "value": 5
+    },
+    {
+      "name": "Blunderbuss of the Mule God",
+      "type": "Weapon",
+      "damage": "1d10",
+      "properties": [
+        "scatter",
+        "reload"
+      ],
+      "value": 80
+    },
+    {
+      "name": "Star-Metal Sword",
+      "type": "Weapon",
+      "damage": "1d8+1",
+      "properties": [
+        "versatile"
+      ],
+      "value": 150
+    },
+    {
+      "name": "Bone Club of the Ancients",
+      "type": "Weapon",
+      "damage": "1d6",
+      "properties": [
+        "crushing"
+      ],
+      "value": 25
+    }
+  ],
+  "armor": [
+    {
+      "name": "Helm of the Slug",
+      "type": "Armor",
+      "ac_bonus": 1,
+      "properties": [
+        "slimy",
+        "drips constantly"
+      ],
+      "value": 40
+    },
+    {
+      "name": "Spiked Hide",
+      "type": "Armor",
+      "ac_bonus": 2,
+      "properties": [
+        "intimidating"
+      ],
+      "value": 60
+    },
+    {
+      "name": "Chain of Eternal Hunger",
+      "type": "Armor",
+      "ac_bonus": 3,
+      "properties": [
+        "cursed",
+        "hungers for blood"
+      ],
+      "value": 200
+    },
+    {
+      "name": "Golden Breastplate",
+      "type": "Armor",
+      "ac_bonus": 4,
+      "properties": [
+        "shiny",
+        "heavy"
+      ],
+      "value": 250
+    }
+  ],
+  "consumables": [
+    {
+      "name": "Potion of Weird Dreams",
+      "type": "Consumable",
+      "effect": "visions of far realms",
+      "uses": 1,
+      "value": 50
+    },
+    {
+      "name": "Mushroom of Many Colors",
+      "type": "Consumable",
+      "effect": "roll d6: 1-poison, 2-invisibility, 3-strength, 4-shrink, 5-grow, 6-laughter",
+      "uses": 1,
+      "value": 20
+    },
+    {
+      "name": "Ale of the Cyclops",
+      "type": "Consumable",
+      "effect": "+2 strength, -2 intelligence for 1 hour",
+      "uses": 1,
+      "value": 15
+    },
+    {
+      "name": "Rotgrub in a Jar",
+      "type": "Consumable",
+      "effect": "throw as weapon: 1d6 ongoing damage unless burned",
+      "uses": 1,
+      "value": 5
+    }
+  ],
+  "accessories": [
+    {
+      "name": "Ring of Frog Speech",
+      "type": "Accessory",
+      "effect": "speak with amphibians",
+      "value": 100
+    },
+    {
+      "name": "Necklace of Teeth",
+      "type": "Accessory",
+      "effect": "gain +1 intimidation",
+      "value": 50
+    },
+    {
+      "name": "Cloak of Questionable Shadows",
+      "type": "Accessory",
+      "effect": "advantage on hiding in candlelight",
+      "value": 120
+    },
+    {
+      "name": "Bracelet of Rust",
+      "type": "Accessory",
+      "effect": "corrodes metal nearby",
+      "value": 60
+    }
+  ],
+  "miscellaneous": [
+    {
+      "name": "Idol of the Crawling Chaos",
+      "type": "Misc",
+      "effect": "whispers secrets at night, DC 12 Will save or go mad",
+      "value": 500
+    },
+    {
+      "name": "Goblin Dice",
+      "type": "Misc",
+      "effect": "roll to gamble, 50% chance they bite",
+      "value": 10
+    },
+    {
+      "name": "Lantern of Red Smoke",
+      "type": "Misc",
+      "effect": "illuminates but fills room with choking fumes",
+      "value": 25
+    },
+    {
+      "name": "Book of Infinite Margins",
+      "type": "Misc",
+      "effect": "blank, but new scribbles appear daily",
+      "value": 40
+    },
+    {
+      "name": "Portable Hole (Leaky)",
+      "type": "Misc",
+      "effect": "stores up to 50 lbs before it seeps out",
+      "value": 300
+    }
+  ]
+}
