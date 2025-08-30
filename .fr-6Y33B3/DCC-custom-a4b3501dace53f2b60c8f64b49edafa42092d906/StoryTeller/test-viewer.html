@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PlayerMapViewer Test</title>
+</head>
+<body>
+    <h1>PlayerMapViewer Test</h1>
+    
+    <div id="map-viewer-container" style="
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        min-height: 400px;
+        width: 600px;
+        position: relative;
+        overflow: hidden;
+        color: #666;
+    ">
+        <div id="map-placeholder" style="
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        ">
+            🗺️ Testing PlayerMapViewer
+        </div>
+        <canvas id="map-canvas" style="
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: 0 0;
+            display: none;
+        "></canvas>
+    </div>
+    
+    <button onclick="testViewer()">Test Viewer</button>
+    
+    <script src="js/PlayerMapViewer.js"></script>
+    <script>
+        let viewer = null;
+        
+        function testViewer() {
+            try {
+                console.log('Creating PlayerMapViewer...');
+                viewer = new PlayerMapViewer('map-viewer-container', 'map-canvas');
+                
+                // Test with a simple map
+                const testMap = {
+                    width: 5,
+                    height: 5,
+                    tiles: [1,1,1,1,1, 1,0,0,0,1, 1,0,2,0,1, 1,0,0,0,1, 1,1,1,1,1],
+                    name: 'Test Map'
+                };
+                
+                viewer.renderMap(testMap);
+                
+                // Hide placeholder, show canvas
+                document.getElementById('map-placeholder').style.display = 'none';
+                document.getElementById('map-canvas').style.display = 'block';
+                
+                console.log('✅ Test successful!');
+            } catch (error) {
+                console.error('❌ Test failed:', error);
+            }
+        }
+    </script>
+</body>
+</html>

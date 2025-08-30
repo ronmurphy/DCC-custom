@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skills System Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 4px; }
+        button { margin: 5px; padding: 8px 16px; }
+        .skills-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+        .skill-item { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        .skill-category { font-weight: bold; color: #666; }
+    </style>
+</head>
+<body>
+    <h1>🎲 DCC Skills System Test</h1>
+    
+    <div class="test-section">
+        <h2>Loading Status</h2>
+        <div id="loading-status">Loading...</div>
+        <button onclick="checkLoadingStatus()">Refresh Status</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Skills Data</h2>
+        <div id="skills-data">Loading skills...</div>
+        <button onclick="loadSkillsData()">Load Skills</button>
+        <button onclick="showSkillCategories()">Show Categories</button>
+        <button onclick="searchSkills()">Search Combat Skills</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Character Skills Test</h2>
+        <div id="character-test">Setting up test character...</div>
+        <button onclick="setupTestCharacter()">Setup Character</button>
+        <button onclick="trainSkill()">Train Skill</button>
+        <button onclick="addProficiency()">Add Proficiency</button>
+        <button onclick="showCharacterSummary()">Show Summary</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Skills Browser</h2>
+        <div id="skills-browser">
+            <div class="skills-grid" id="skills-grid"></div>
+        </div>
+        <button onclick="showAllSkills()">Show All Skills</button>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/modules/jsonDataLoader.js"></script>
+    <script src="js/modules/characterData.js"></script>
+    <script src="js/modules/skillsManager.js"></script>
+    
+    <script>
+        let skillsManager;
+        let testCharacter;
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 Initializing skills system test...');
+            
+            try {
+                skillsManager = new SkillsManager();
+                
+                // Wait a moment for initialization
+                setTimeout(checkLoadingStatus, 1000);
+                setTimeout(loadSkillsData, 2000);
+                setTimeout(setupTestCharacter, 3000);
+                
+            } catch (error) {
+                document.getElementById('loading-status').innerHTML = 
+                    `<div class="error">❌ Failed to initialize: ${error.message}</div>`;
+            }
+        });
+        
+        async function checkLoadingStatus() {
+            try {
+                const status = skillsManager.getLoadingStatus();
+                document.getElementById('loading-status').innerHTML = `
+                    <div class="info">
+                        <strong>Skills System Status:</strong><br>
+                        Data Loaded: ${status.dataLoaded ? '✅' : '❌'}<br>
+                        Skill Count: ${status.skillCount}<br>
+                        Skills File: ${status.skillsLoaded ? '✅' : '❌'}<br>
+                        All Data: ${status.allLoaded ? '✅' : '❌'}
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('loading-status').innerHTML = 
+                    `<div class="error">❌ Error checking status: ${error.message}</div>`;
+            }
+        }
+        
+        async function loadSkillsData() {
+            try {
+                const allSkills = await skillsManager.getAllSkills();
+                const skillsFlat = await skillsManager.getAllSkillsFlat();
+                
+                document.getElementById('skills-data').innerHTML = `
+                    <div class="success">
+                        ✅ Skills loaded successfully!<br>
+                        Total Skills: ${allSkills.length}<br>
+                        Flat Skills Object: ${Object.keys(skillsFlat).length} entries
+                    </div>
+                    <details>
+                        <summary>First 5 Skills</summary>
+                        <pre>${JSON.stringify(allSkills.slice(0, 5), null, 2)}</pre>
+                    </details>
+                `;
+            } catch (error) {
+                document.getElementById('skills-data').innerHTML = 
+                    `<div class="error">❌ Failed to load skills: ${error.message}</div>`;
+            }
+        }
+        
+        async function showSkillCategories() {
+            try {
+                const categories = await skillsManager.getSkillCategories();
+                
+                let html = '<div class="success">✅ Skill Categories:</div><ul>';
+                categories.forEach(cat => {
+                    html += `<li><strong>${cat.name}</strong> (${cat.key})</li>`;
+                });
+                html += '</ul>';
+                
+                // Show skills in each category
+                for (const cat of categories) {
+                    const categorySkills = await skillsManager.getSkillsByCategory(cat.key);
+                    if (categorySkills) {
+                        html += `<h4>${cat.name} Skills (${Object.keys(categorySkills).length}):</h4>`;
+                        html += '<ul>';
+                        Object.keys(categorySkills).slice(0, 3).forEach(skillName => {
+                            html += `<li>${skillName}</li>`;
+                        });
+                        if (Object.keys(categorySkills).length > 3) {
+                            html += `<li>... and ${Object.keys(categorySkills).length - 3} more</li>`;
+                        }
+                        html += '</ul>';
+                    }
+                }
+                
+                document.getElementById('skills-data').innerHTML = html;
+            } catch (error) {
+                document.getElementById('skills-data').innerHTML = 
+                    `<div class="error">❌ Failed to load categories: ${error.message}</div>`;
+            }
+        }
+        
+        async function searchSkills() {
+            try {
+                const combatSkills = await skillsManager.getSkillsByCategory('combat');
+                
+                document.getElementById('skills-data').innerHTML = `
+                    <div class="success">✅ Combat Skills Found:</div>
+                    <pre>${JSON.stringify(combatSkills, null, 2)}</pre>
+                `;
+            } catch (error) {
+                document.getElementById('skills-data').innerHTML = 
+                    `<div class="error">❌ Search failed: ${error.message}</div>`;
+            }
+        }
+        
+        function setupTestCharacter() {
+            try {
+                testCharacter = {
+                    name: "Test Hero",
+                    level: 3,
+                    race: "human",
+                    class: "fighter",
+                    stats: {
+                        strength: 16,
+                        dexterity: 14,
+                        constitution: 15,
+                        intelligence: 12,
+                        wisdom: 13,
+                        charisma: 10
+                    }
+                };
+                
+                skillsManager.initializeCharacterSkills(testCharacter);
+                
+                document.getElementById('character-test').innerHTML = `
+                    <div class="success">✅ Test character created!</div>
+                    <pre>${JSON.stringify(testCharacter, null, 2)}</pre>
+                `;
+            } catch (error) {
+                document.getElementById('character-test').innerHTML = 
+                    `<div class="error">❌ Failed to setup character: ${error.message}</div>`;
+            }
+        }
+        
+        function trainSkill() {
+            try {
+                const skillName = "Powerful Strike";
+                const experienceGained = 150;
+                
+                const leveledUp = skillsManager.trainSkill(testCharacter, skillName, experienceGained);
+                const modifier = skillsManager.getSkillModifier(testCharacter, skillName);
+                
+                document.getElementById('character-test').innerHTML = `
+                    <div class="success">
+                        ✅ Trained ${skillName}!<br>
+                        Leveled Up: ${leveledUp ? 'Yes! 🎉' : 'No'}<br>
+                        Current Modifier: ${skillsManager.formatModifier(modifier)}<br>
+                        Skill Level: ${skillsManager.getSkillLevel(testCharacter, skillName)}
+                    </div>
+                    <pre>${JSON.stringify(testCharacter.skillLevels, null, 2)}</pre>
+                `;
+            } catch (error) {
+                document.getElementById('character-test').innerHTML = 
+                    `<div class="error">❌ Training failed: ${error.message}</div>`;
+            }
+        }
+        
+        function addProficiency() {
+            try {
+                const skillName = "Aiming";
+                const success = skillsManager.addProficiency(testCharacter, skillName);
+                
+                document.getElementById('character-test').innerHTML = `
+                    <div class="success">
+                        ✅ Proficiency ${success ? 'added' : 'failed'}!<br>
+                        Proficient Skills: ${testCharacter.proficientSkills.join(', ')}<br>
+                        Available Proficiencies: ${testCharacter.availableProficiencies}
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('character-test').innerHTML = 
+                    `<div class="error">❌ Proficiency failed: ${error.message}</div>`;
+            }
+        }
+        
+        function showCharacterSummary() {
+            try {
+                const summary = skillsManager.getCharacterSkillSummary(testCharacter);
+                
+                document.getElementById('character-test').innerHTML = `
+                    <div class="success">✅ Character Skill Summary:</div>
+                    <pre>${JSON.stringify(summary, null, 2)}</pre>
+                `;
+            } catch (error) {
+                document.getElementById('character-test').innerHTML = 
+                    `<div class="error">❌ Summary failed: ${error.message}</div>`;
+            }
+        }
+        
+        async function showAllSkills() {
+            try {
+                const categories = await skillsManager.getSkillCategories();
+                let html = '';
+                
+                for (const cat of categories) {
+                    const categorySkills = await skillsManager.getSkillsByCategory(cat.key);
+                    if (categorySkills) {
+                        Object.entries(categorySkills).forEach(([skillName, skillData]) => {
+                            html += `
+                                <div class="skill-item">
+                                    <div class="skill-category">${cat.name}</div>
+                                    <strong>${skillName}</strong><br>
+                                    <small>Stat: ${skillData.stat.toUpperCase()}</small><br>
+                                    <small>${skillData.description}</small><br>
+                                    <small>Source: ${skillData.source}</small>
+                                </div>
+                            `;
+                        });
+                    }
+                }
+                
+                document.getElementById('skills-grid').innerHTML = html;
+            } catch (error) {
+                document.getElementById('skills-browser').innerHTML = 
+                    `<div class="error">❌ Failed to load skills browser: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

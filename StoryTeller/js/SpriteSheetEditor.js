@@ -239,7 +239,6 @@ class SpriteSheetEditor {
                                     border-radius: 4px;
                                     font-size: 13px;
                                 ">
-                                <!-- Old Export JSON button commented out - broken format
                                 <button id="export-json" class="btn btn-success" style="
                                     background: #28a745; 
                                     color: white; 
@@ -249,25 +248,15 @@ class SpriteSheetEditor {
                                     font-weight: 600;
                                     font-size: 13px;
                                 ">📤 Export JSON</button>
-                                -->
-                                <button id="export-sprites-json" class="btn btn-success" style="
-                                    background: #28a745; 
+                                <button id="export-png" class="btn btn-info" disabled style="
+                                    background: #6c757d; 
                                     color: white; 
                                     padding: 8px 16px; 
                                     border-radius: 4px; 
                                     border: none;
-                                    font-weight: 600;
+                                    opacity: 0.6;
                                     font-size: 13px;
-                                ">📤 Export Sprites JSON</button>
-                                <button id="export-png" class="btn btn-info" style="
-                                    background: #17a2b8; 
-                                    color: white; 
-                                    padding: 8px 16px; 
-                                    border-radius: 4px; 
-                                    border: none;
-                                    font-weight: 600;
-                                    font-size: 13px;
-                                ">🖼️ Export PNG</button>
+                                ">🖼️ Export PNG (Soon)</button>
                             </div>
                         </div>
 
@@ -519,9 +508,7 @@ class SpriteSheetEditor {
         document.getElementById('toggle-cell-lock').onclick = () => this.toggleCellLock();
         
         // Export
-        // document.getElementById('export-json').onclick = () => this.exportJSON(); // Old broken format
-        document.getElementById('export-sprites-json').onclick = () => this.exportSpritesJSON();
-        document.getElementById('export-png').onclick = () => this.exportPNG();
+        document.getElementById('export-json').onclick = () => this.exportJSON();
         
         // Initialize grid
         this.updateGridControls();
@@ -799,21 +786,13 @@ class SpriteSheetEditor {
     exportJSON() {
         const tilesetName = document.getElementById('tileset-name').value.trim() || 'Custom Tileset';
         
-        // Format sprites for library compatibility (matches default.json, Gothic.json, etc.)
-        const formattedSprites = this.sprites.map(sprite => ({
-            id: sprite.id,
-            name: sprite.name,
-            category: sprite.category,
-            position: sprite.position  // [x, y] format
-        }));
-        
         const tilesetData = {
             name: tilesetName,
             description: `Custom tileset created with SpriteSheetEditor`,
             spriteSize: this.spriteSize,
             gridSize: `${this.gridSize.width}x${this.gridSize.height}`,
             backgroundColors: this.backgroundColors,
-            sprites: formattedSprites
+            sprites: this.sprites
         };
         
         // Download JSON file
@@ -830,112 +809,6 @@ class SpriteSheetEditor {
         URL.revokeObjectURL(url);
         
         console.log('✅ Tileset JSON exported:', tilesetData);
-    }
-    
-    exportSpritesJSON() {
-        const tilesetName = document.getElementById('tileset-name').value.trim() || 'Custom Tileset';
-        
-        // Create the properly formatted sprites array for Canvas renderer compatibility
-        const formattedSprites = this.sprites.map(sprite => ({
-            id: sprite.id,
-            name: sprite.name,
-            category: sprite.category || 'custom',
-            position: sprite.position  // [x, y] format - this is the key difference from the broken format
-        }));
-        
-        const spritesData = {
-            name: tilesetName,
-            description: `Sprite configuration for ${tilesetName} - Canvas renderer compatible`,
-            spriteSize: this.spriteSize,
-            gridSize: `${this.gridSize.width}x${this.gridSize.height}`,
-            backgroundColors: this.backgroundColors,
-            sprites: formattedSprites,
-            // Add metadata to indicate this is the correct format
-            format: "canvas-compatible",
-            version: "1.0",
-            created: new Date().toISOString()
-        };
-        
-        // Download as .sprites.json file
-        const blob = new Blob([JSON.stringify(spritesData, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${tilesetName.toLowerCase().replace(/\s+/g, '-')}.sprites.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        
-        URL.revokeObjectURL(url);
-        
-        console.log('✅ Sprites JSON exported with .sprites.json extension:', spritesData);
-        console.log('🎨 Format: Canvas renderer compatible with position-based sprite mapping');
-    }
-    
-    exportPNG() {
-        const tilesetName = document.getElementById('tileset-name').value.trim() || 'Custom Tileset';
-        const canvas = document.getElementById('sprite-grid');
-        
-        if (!canvas) {
-            alert('No sprite grid found to export');
-            return;
-        }
-        
-        // Create a new canvas to export just the sprite content without grid lines
-        const exportCanvas = document.createElement('canvas');
-        const exportCtx = exportCanvas.getContext('2d');
-        
-        const totalWidth = this.gridSize.width * this.spriteSize;
-        const totalHeight = this.gridSize.height * this.spriteSize;
-        
-        exportCanvas.width = totalWidth;
-        exportCanvas.height = totalHeight;
-        
-        // Fill with transparent background
-        exportCtx.fillStyle = 'transparent';
-        exportCtx.fillRect(0, 0, totalWidth, totalHeight);
-        
-        // Draw each sprite to its position in the export canvas
-        this.sprites.forEach(sprite => {
-            const x = sprite.position[0];
-            const y = sprite.position[1];
-            
-            // Find the sprite image data from the main canvas
-            const gridCtx = canvas.getContext('2d');
-            const spriteData = gridCtx.getImageData(
-                x * this.spriteSize, 
-                y * this.spriteSize, 
-                this.spriteSize, 
-                this.spriteSize
-            );
-            
-            // Create a temporary canvas for this sprite
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = this.spriteSize;
-            tempCanvas.height = this.spriteSize;
-            const tempCtx = tempCanvas.getContext('2d');
-            tempCtx.putImageData(spriteData, 0, 0);
-            
-            // Draw to export canvas
-            exportCtx.drawImage(tempCanvas, x * this.spriteSize, y * this.spriteSize);
-        });
-        
-        // Convert to blob and download
-        exportCanvas.toBlob(blob => {
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${tilesetName.toLowerCase().replace(/\s+/g, '-')}.png`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            
-            URL.revokeObjectURL(url);
-            
-            console.log('✅ Tileset PNG exported');
-        }, 'image/png');
     }
     
     show() {
