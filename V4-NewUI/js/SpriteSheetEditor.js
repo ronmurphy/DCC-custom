@@ -239,7 +239,6 @@ class SpriteSheetEditor {
                                     border-radius: 4px;
                                     font-size: 13px;
                                 ">
-                                <!-- Old Export JSON button commented out - broken format
                                 <button id="export-json" class="btn btn-success" style="
                                     background: #28a745; 
                                     color: white; 
@@ -249,16 +248,6 @@ class SpriteSheetEditor {
                                     font-weight: 600;
                                     font-size: 13px;
                                 ">📤 Export JSON</button>
-                                -->
-                                <button id="export-sprites-json" class="btn btn-success" style="
-                                    background: #28a745; 
-                                    color: white; 
-                                    padding: 8px 16px; 
-                                    border-radius: 4px; 
-                                    border: none;
-                                    font-weight: 600;
-                                    font-size: 13px;
-                                ">📤 Export Sprites JSON</button>
                                 <button id="export-png" class="btn btn-info" style="
                                     background: #17a2b8; 
                                     color: white; 
@@ -519,8 +508,7 @@ class SpriteSheetEditor {
         document.getElementById('toggle-cell-lock').onclick = () => this.toggleCellLock();
         
         // Export
-        // document.getElementById('export-json').onclick = () => this.exportJSON(); // Old broken format
-        document.getElementById('export-sprites-json').onclick = () => this.exportSpritesJSON();
+        document.getElementById('export-json').onclick = () => this.exportJSON();
         document.getElementById('export-png').onclick = () => this.exportPNG();
         
         // Initialize grid
@@ -830,47 +818,6 @@ class SpriteSheetEditor {
         URL.revokeObjectURL(url);
         
         console.log('✅ Tileset JSON exported:', tilesetData);
-    }
-    
-    exportSpritesJSON() {
-        const tilesetName = document.getElementById('tileset-name').value.trim() || 'Custom Tileset';
-        
-        // Create the properly formatted sprites array for Canvas renderer compatibility
-        const formattedSprites = this.sprites.map(sprite => ({
-            id: sprite.id,
-            name: sprite.name,
-            category: sprite.category || 'custom',
-            position: sprite.position  // [x, y] format - this is the key difference from the broken format
-        }));
-        
-        const spritesData = {
-            name: tilesetName,
-            description: `Sprite configuration for ${tilesetName} - Canvas renderer compatible`,
-            spriteSize: this.spriteSize,
-            gridSize: `${this.gridSize.width}x${this.gridSize.height}`,
-            backgroundColors: this.backgroundColors,
-            sprites: formattedSprites,
-            // Add metadata to indicate this is the correct format
-            format: "canvas-compatible",
-            version: "1.0",
-            created: new Date().toISOString()
-        };
-        
-        // Download as .sprites.json file
-        const blob = new Blob([JSON.stringify(spritesData, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${tilesetName.toLowerCase().replace(/\s+/g, '-')}.sprites.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        
-        URL.revokeObjectURL(url);
-        
-        console.log('✅ Sprites JSON exported with .sprites.json extension:', spritesData);
-        console.log('🎨 Format: Canvas renderer compatible with position-based sprite mapping');
     }
     
     exportPNG() {

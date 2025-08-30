@@ -353,6 +353,13 @@ class SpriteSheetEditor {
                                 </button>
                                 <input type="file" id="sheet-file-input" accept="image/*" style="display: none;">
                                 
+                                <div class="import-options" style="margin-top: 8px;">
+                                    <label style="display: flex; align-items: center; font-size: 12px;">
+                                        <input type="checkbox" id="auto-resize-sheet" checked style="margin-right: 5px;">
+                                        🔄 Auto-resize sprite sheet to fit grid
+                                    </label>
+                                </div>>
+                                
                                 <div class="grid-size-controls">
                                     <label>Grid Size:</label>
                                     <select id="grid-width" style="padding: 4px 6px; font-size: 12px; margin-left: 5px;">
@@ -414,14 +421,16 @@ class SpriteSheetEditor {
                                     <label>Category:</label>
                                     <select id="sprite-category" style="width: 100%;">
                                         <option value="terrain">Terrain</option>
-                                        <option value="walls">Walls</option>
-                                        <option value="floors">Floors</option>
-                                        <option value="doors">Doors</option>
+                                        <option value="buildings">Buildings</option>
+                                        <option value="monsters">Monsters</option>
                                         <option value="items">Items</option>
-                                        <option value="creatures">Creatures</option>
                                         <option value="hazards">Hazards</option>
                                         <option value="paths">Paths</option>
                                         <option value="features">Features</option>
+                                        <option value="walls">Walls</option>
+                                        <option value="floors">Floors</option>
+                                        <option value="doors">Doors</option>
+                                        <option value="creatures">Creatures</option>
                                     </select>
                                 </div>
                                 
@@ -435,6 +444,7 @@ class SpriteSheetEditor {
                                         <div class="auto-color-buttons">
                                             <button id="auto-detect-color" class="btn-auto-color" title="Auto-detect dominant color for selected cell">🎯 Auto</button>
                                             <button id="auto-detect-all" class="btn-auto-color-all" title="Auto-detect colors for all cells with sprites">✨ Auto All</button>
+                                            <button id="clear-background" class="btn-clear-bg" title="Remove background color from selected cell">🗑️ Clear</button>
                                         </div>
                                     </div>
                                     
@@ -664,6 +674,15 @@ class SpriteSheetEditor {
             }
         });
         
+        // Clear background color button
+        document.getElementById('clear-background').addEventListener('click', () => {
+            if (this.selectedCell !== null) {
+                delete this.backgroundColors[this.selectedCell];
+                this.updateGrid();
+                console.log(`🗑️ Cleared background color for cell ${this.selectedCell + 1}`);
+            }
+        });
+        
         // Export functionality
         document.getElementById('export-json').addEventListener('click', () => {
             this.exportTileset();
@@ -712,13 +731,16 @@ class SpriteSheetEditor {
                         categorySelect.value = spriteData.category;
                     }
                     
-                    // Set background color from default.json
-                    const defaultColor = this.defaultTileset.backgroundColors[spriteData.id];
-                    if (defaultColor) {
-                        this.backgroundColors[i] = defaultColor;
-                        document.getElementById('sprite-color').value = defaultColor;
-                        document.getElementById('sprite-color-hex').value = defaultColor;
-                        this.updateGrid();
+                    // DO NOT auto-set background color - let user choose
+                    // Update color pickers to show current background color (if any)
+                    const currentBgColor = this.backgroundColors[i];
+                    if (currentBgColor) {
+                        document.getElementById('sprite-color').value = currentBgColor;
+                        document.getElementById('sprite-color-hex').value = currentBgColor;
+                    } else {
+                        // Reset color pickers to default but don't apply to cell
+                        document.getElementById('sprite-color').value = '#8B7355';
+                        document.getElementById('sprite-color-hex').value = '#8B7355';
                     }
                 }
                 
@@ -738,7 +760,8 @@ class SpriteSheetEditor {
             // Clear previous content
             cell.innerHTML = '';
             cell.style.backgroundImage = '';
-            cell.style.backgroundColor = this.backgroundColors[index] || '#f9f9f9';
+            // Set background color - transparent if none set, light gray as default grid color
+            cell.style.backgroundColor = this.backgroundColors[index] || 'transparent';
             
             // Add locked indicator
             if (this.lockedCells.has(index)) {
@@ -853,31 +876,78 @@ class SpriteSheetEditor {
     exportTileset() {
         const tilesetName = document.getElementById('tileset-name').value || 'Custom Tileset';
         
-        const tileset = {
-            name: tilesetName,
-            gridWidth: this.gridWidth,
-            gridHeight: this.gridHeight,
-            spriteSize: this.spriteSize,
-            sprites: {},
-            backgroundColors: this.backgroundColors,
-            lockedCells: Array.from(this.lockedCells),
-            createdAt: new Date().toISOString()
-        };
+        // Create sprites array and backgroundColors object to match default.json exactly
+        const spritesArray = [];
+        const backgroundColors = {};
         
-        // Add sprite data
+        // Convert sprites to proper format with position coordinates
         this.sprites.forEach((sprite, index) => {
             if (sprite) {
-                const name = `sprite_${index + 1}`;
-                tileset.sprites[name] = {
-                    index: index,
-                    data: sprite,
-                    backgroundColor: this.backgroundColors[index] || '#8B7355'
-                };
+                // Calculate position in grid
+                const x = index % this.gridWidth;
+                const y = Math.floor(index / this.gridWidth);
+                
+                // Create more meaningful sprite names with better defaults
+                const spriteId = `sprite_${x}_${y}`;  // Position-based ID like sprite_0_0, sprite_1_0
+                const spriteName = `Sprite ${x},${y}`;  // Position-based name
+                
+                // Better category assignment based on position (you can customize this logic)
+                let category = 'custom';
+                if (y === 0) category = 'terrain';
+                else if (y === 1) category = 'buildings';  
+                else if (y === 2) category = 'items';
+                else if (y === 3) category = 'features';
+                
+                spritesArray.push({
+                    id: spriteId,
+                    name: spriteName, 
+                    category: category,
+                    position: [x, y]
+                });
+                
+                // Include background color for all sprites - use "transparent" if none set
+                backgroundColors[spriteId] = this.backgroundColors[index] || 'transparent';
             }
         });
         
-        // Download as JSON
-        const blob = new Blob([JSON.stringify(tileset, null, 2)], { type: 'application/json' });
+        // Create tileset object in EXACT same format as default.json
+        // Field order: name, description, spriteSize, gridSize, backgroundColors, sprites
+        const tileset = {
+            name: tilesetName,
+            description: `Custom tileset created with SpriteSheetEditor`,
+            spriteSize: this.spriteSize,
+            gridSize: `${this.gridWidth}x${this.gridHeight}`,
+            backgroundColors: backgroundColors,
+            sprites: spritesArray
+        };
+        
+        // Download as .json (same extension as default.json)
+        // Create custom JSON formatting to match default.json EXACTLY (compact sprite objects)
+        let jsonString = '{\n';
+        jsonString += `  "name": "${tileset.name}",\n`;
+        jsonString += `  "description": "${tileset.description}",\n`;
+        jsonString += `  "spriteSize": ${tileset.spriteSize},\n`;
+        jsonString += `  "gridSize": "${tileset.gridSize}",\n`;
+        
+        // Format backgroundColors
+        jsonString += '  "backgroundColors": {\n';
+        const bgColorEntries = Object.entries(tileset.backgroundColors);
+        bgColorEntries.forEach((entry, index) => {
+            const isLast = index === bgColorEntries.length - 1;
+            jsonString += `    "${entry[0]}": "${entry[1]}"${isLast ? '' : ','}\n`;
+        });
+        jsonString += '  },\n';
+        
+        // Format sprites array with compact single-line objects
+        jsonString += '  "sprites": [\n';
+        tileset.sprites.forEach((sprite, index) => {
+            const isLast = index === tileset.sprites.length - 1;
+            jsonString += `    { "id": "${sprite.id}", "name": "${sprite.name}", "category": "${sprite.category}", "position": [${sprite.position[0]}, ${sprite.position[1]}] }${isLast ? '' : ','}\n`;
+        });
+        jsonString += '  ]\n';
+        jsonString += '}';
+        
+        const blob = new Blob([jsonString], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -887,6 +957,7 @@ class SpriteSheetEditor {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         
+        console.log('✅ Tileset exported in default.json compatible format:', tileset);
         alert(`Tileset "${tilesetName}" exported successfully!`);
     }
     
@@ -913,10 +984,13 @@ class SpriteSheetEditor {
                 const x = col * this.spriteSize;
                 const y = row * this.spriteSize;
                 
-                // Fill background color first
-                const bgColor = this.backgroundColors[index] || '#8B7355';
-                ctx.fillStyle = bgColor;
-                ctx.fillRect(x, y, this.spriteSize, this.spriteSize);
+                // Fill background color first - only if one is set
+                const bgColor = this.backgroundColors[index];
+                if (bgColor) {
+                    ctx.fillStyle = bgColor;
+                    ctx.fillRect(x, y, this.spriteSize, this.spriteSize);
+                }
+                // If no background color, leave transparent
                 
                 // Draw sprite if exists
                 if (this.sprites[index]) {
