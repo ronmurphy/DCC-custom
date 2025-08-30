@@ -60,8 +60,8 @@ class MapSyncManager {
                 throw new Error('MapSyncManager not properly initialized');
             }
 
-            // Prepare map data for sharing
-            const sharedMapData = this.prepareMapForSharing(mapData, mapName, options);
+            // Prepare map data for sharing (now async with tileset config)
+            const sharedMapData = await this.prepareMapForSharing(mapData, mapName, options);
             
             // Store in database
             const { data, error } = await this.supabaseClient
@@ -87,7 +87,7 @@ class MapSyncManager {
                 this.onMapShareSuccess(mapName, sharedMapData);
             }
             
-            console.log('✅ Map shared successfully:', mapName);
+            console.log('✅ Map shared successfully with tileset config:', mapName);
             return { success: true, data: sharedMapData };
             
         } catch (error) {
@@ -100,7 +100,7 @@ class MapSyncManager {
     }
 
     // Prepare map data in standardized format using the formatter module
-    prepareMapForSharing(mapData, mapName, options) {
+    async prepareMapForSharing(mapData, mapName, options) {
         // Check if formatter is available
         if (!window.MapDataFormatter) {
             console.error('❌ MapDataFormatter module not loaded');
@@ -109,9 +109,10 @@ class MapSyncManager {
 
         try {
             const formatter = new window.MapDataFormatter();
-            const standardizedMap = formatter.formatForSharing(mapData, mapName, options);
+            const standardizedMap = await formatter.formatForSharing(mapData, mapName, options);
             
-            console.log('✅ Map formatted successfully:', standardizedMap.name);
+            console.log('✅ Map formatted successfully with network config:', standardizedMap.name);
+            console.log('📡 Network transmission info:', standardizedMap.networkTransmission);
             return standardizedMap;
             
         } catch (error) {

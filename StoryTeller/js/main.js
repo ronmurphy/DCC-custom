@@ -17,6 +17,45 @@ window.toggleMapDebug = function() {
     return window.showDebug;
 };
 
+// Test network tileset transmission - type testNetworkTileset() in console
+window.testNetworkTileset = function() {
+    console.log('🧪 Testing network tileset transmission...');
+    window.showDebug = true;
+    
+    // Test if MapDataFormatter is available
+    if (!window.MapDataFormatter) {
+        console.error('❌ MapDataFormatter not available');
+        return false;
+    }
+    
+    // Create a simple test map data
+    const testMapData = {
+        name: 'Network Test Map',
+        tileset: 'default',
+        width: 3,
+        height: 3,
+        spriteNames: ['mountain', 'water', 'grass', 'mountain', 'water', 'grass', 'mountain', 'water', 'grass'],
+        backgroundColors: {}
+    };
+    
+    console.log('📤 Test map data:', testMapData);
+    
+    // Test the formatter with network config
+    const formatter = new window.MapDataFormatter();
+    formatter.formatForSharing(testMapData, 'Network Test Map', {})
+        .then(result => {
+            console.log('✅ Network transmission test successful!');
+            console.log('📦 Enriched data:', result);
+            console.log('🎨 Tileset config included:', !!result.tilesetConfig);
+            console.log('📡 Network transmission info:', result.networkTransmission);
+        })
+        .catch(error => {
+            console.error('❌ Network transmission test failed:', error);
+        });
+    
+    return true;
+};
+
 // Auto-enable debug mode when map panels are opened
 function enableDebugForMaps() {
     if (!window.showDebug) {

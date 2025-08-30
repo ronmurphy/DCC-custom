@@ -297,26 +297,57 @@ class PlayerMapViewerCanvas {
                 resolve(img);
             };
             img.onerror = () => {
-                console.error(`Canvas: Failed to load sprite sheet ${tilesetName}`);
-                reject(new Error(`Failed to load ${tilesetName}.png`));
+                // Try original case if lowercase failed
+                const imgFallback = new Image();
+                imgFallback.onload = () => {
+                    this.spriteSheets.set(tilesetName, imgFallback);
+                    console.log(`Canvas: Loaded sprite sheet ${tilesetName} (fallback)`);
+                    resolve(imgFallback);
+                };
+                imgFallback.onerror = () => {
+                    console.error(`Canvas: Failed to load sprite sheet ${tilesetName}`);
+                    reject(new Error(`Failed to load ${tilesetName}.png`));
+                };
+                imgFallback.src = `assets/${tilesetName}.png`;
             };
-            img.src = `assets/${tilesetName}.png`;
+            // Try lowercase first
+            img.src = `assets/${tilesetName.toLowerCase()}.png`;
         });
     }
     
     // Load and cache tileset configuration
-    async loadTilesetConfig(tilesetName) {
+    async loadTilesetConfig(tilesetName, networkTilesetConfig = null) {
         if (this.tilesetConfigs.has(tilesetName)) {
             return this.tilesetConfigs.get(tilesetName);
         }
         
+        // If network config is provided, use it first
+        if (networkTilesetConfig) {
+            console.log(`Canvas: Using network-transmitted tileset config for ${tilesetName}`);
+            
+            if (window.showDebug) {
+                console.log('🔍 DEBUG - Network config received for tileset:', tilesetName);
+                console.log('🔍 DEBUG - Network config keys:', Object.keys(networkTilesetConfig));
+                console.log('🔍 DEBUG - Network config has backgroundColors:', !!networkTilesetConfig.backgroundColors);
+            }
+            
+            this.tilesetConfigs.set(tilesetName, networkTilesetConfig);
+            return networkTilesetConfig;
+        }
+        
+        // Fallback to local loading (smart fallback for case sensitivity)
         try {
-            const response = await fetch(`assets/${tilesetName}.json`);
+            // Try lowercase first (like default.json)
+            let response = await fetch(`assets/${tilesetName.toLowerCase()}.json`);
+            if (!response.ok) {
+                // Try original case (like Gothic.json)
+                response = await fetch(`assets/${tilesetName}.json`);
+            }
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             
             const config = await response.json();
             this.tilesetConfigs.set(tilesetName, config);
-            console.log(`Canvas: Loaded tileset config ${tilesetName}`);
+            console.log(`Canvas: Loaded tileset config ${tilesetName} (local fallback)`);
             return config;
         } catch (error) {
             console.error(`Canvas: Failed to load tileset config ${tilesetName}:`, error);
@@ -335,16 +366,24 @@ class PlayerMapViewerCanvas {
     
     // Canvas-based sprite rendering for new format (v1.2)
     async renderSpritesCanvas(mapData) {
-        const { width, height, spriteNames, tileset, backgroundColors } = mapData;
+        const { width, height, spriteNames, tileset, backgroundColors, tilesetConfig } = mapData;
         console.log(`Canvas: Rendering ${width}x${height} sprites with tileset: ${tileset}`);
         
-        const normalizedTilesetName = (tileset || 'default').toLowerCase();
+        if (window.showDebug) {
+            console.log('🔍 DEBUG - renderSpritesCanvas called with tilesetConfig:', !!tilesetConfig);
+            console.log('🔍 DEBUG - Map data includes networkTransmission info:', !!mapData.networkTransmission);
+            if (mapData.networkTransmission) {
+                console.log('🔍 DEBUG - Network transmission info:', mapData.networkTransmission);
+            }
+        }
         
+        const normalizedTilesetName = (tileset || 'default');
+
         try {
-            // Load both sprite sheet and config
-            const [spriteSheet, tilesetConfig] = await Promise.all([
+            // Load both sprite sheet and config (use network config if available)
+            const [spriteSheet, tilesetConfigData] = await Promise.all([
                 this.loadSpriteSheet(normalizedTilesetName),
-                this.loadTilesetConfig(normalizedTilesetName)
+                this.loadTilesetConfig(normalizedTilesetName, tilesetConfig)
             ]);
             
             // Render each tile
@@ -354,7 +393,7 @@ class PlayerMapViewerCanvas {
                     const spriteName = spriteNames[tileIndex];
                     
                     if (spriteName) {
-                        this.renderTileCanvas(x, y, spriteName, spriteSheet, tilesetConfig, backgroundColors);
+                        this.renderTileCanvas(x, y, spriteName, spriteSheet, tilesetConfigData, backgroundColors);
                     } else {
                         // Empty tile - just background color
                         this.ctx.fillStyle = '#f9f9f9';
@@ -364,7 +403,7 @@ class PlayerMapViewerCanvas {
             }
             
             this.ctx.restore(); // Restore transform
-            console.log('Canvas: Finished rendering sprites');
+            console.log('Canvas: Finished rendering sprites with network config');
             
         } catch (error) {
             console.error('Canvas: Error rendering sprites:', error);
@@ -374,15 +413,15 @@ class PlayerMapViewerCanvas {
     
     // Canvas-based tile rendering for legacy format
     async renderTilesCanvas(mapData) {
-        const { width, height, tiles, tileset } = mapData;
+        const { width, height, tiles, tileset, tilesetConfig } = mapData;
         console.log(`Canvas: Rendering ${width}x${height} tiles with tileset: ${tileset}`);
         
-        const normalizedTilesetName = (tileset || 'default').toLowerCase();
+        const normalizedTilesetName = (tileset || 'default');
         
         try {
-            const [spriteSheet, tilesetConfig] = await Promise.all([
+            const [spriteSheet, tilesetConfigData] = await Promise.all([
                 this.loadSpriteSheet(normalizedTilesetName),
-                this.loadTilesetConfig(normalizedTilesetName)
+                this.loadTilesetConfig(normalizedTilesetName, tilesetConfig)
             ]);
             
             for (let y = 0; y < height; y++) {
@@ -393,7 +432,7 @@ class PlayerMapViewerCanvas {
                     if (gid > 0) {
                         const spriteName = this.numberToSprite(gid);
                         if (spriteName) {
-                            this.renderTileCanvas(x, y, spriteName, spriteSheet, tilesetConfig);
+                            this.renderTileCanvas(x, y, spriteName, spriteSheet, tilesetConfigData);
                         }
                     } else {
                         // Empty tile
@@ -404,7 +443,7 @@ class PlayerMapViewerCanvas {
             }
             
             this.ctx.restore();
-            console.log('Canvas: Finished rendering tiles');
+            console.log('Canvas: Finished rendering tiles with network config');
             
         } catch (error) {
             console.error('Canvas: Error rendering tiles:', error);
