@@ -79,7 +79,7 @@
     display: flex;
     gap: var(--grid-gap);
     min-height: 0; /* Important for flex child */
-    overflow: hidden;
+    height: 100%; /* Ensure full height is available */
 }
 
 /* Maps List Sidebar */
@@ -89,7 +89,7 @@
     flex-direction: column;
     border-right: 1px solid var(--border-color);
     padding-right: var(--grid-gap);
-    overflow: hidden;
+    min-height: 0; /* Important for flex child to allow scrolling */
 }
 
 .maps-list-header {
@@ -120,6 +120,8 @@
     overflow-x: hidden;
     scrollbar-width: thin;
     scrollbar-color: var(--border-color) transparent;
+    max-height: 100%; /* Ensure height constraint for scrolling */
+    min-height: 0; /* Allow flex child to shrink */
 }
 
 .maps-list::-webkit-scrollbar {
