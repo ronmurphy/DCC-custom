@@ -801,7 +801,40 @@ class SpriteSheetEditor {
     loadSpriteSheet(imageSrc) {
         this.previewImage = new Image();
         this.previewImage.onload = () => {
-            this.updatePreview();
+            const autoResizeElement = document.getElementById('auto-resize-sheet');
+            const autoResize = autoResizeElement ? autoResizeElement.checked : false;
+            
+            if (autoResize) {
+                // Calculate expected dimensions based on grid
+                const expectedWidth = this.gridWidth * this.spriteSize;
+                const expectedHeight = this.gridHeight * this.spriteSize;
+                
+                // Check if resize is needed
+                if (this.previewImage.width !== expectedWidth || this.previewImage.height !== expectedHeight) {
+                    console.log(`🔄 Auto-resizing sprite sheet from ${this.previewImage.width}×${this.previewImage.height} to ${expectedWidth}×${expectedHeight}`);
+                    
+                    // Create a canvas to resize the image
+                    const resizeCanvas = document.createElement('canvas');
+                    const resizeCtx = resizeCanvas.getContext('2d');
+                    resizeCanvas.width = expectedWidth;
+                    resizeCanvas.height = expectedHeight;
+                    
+                    // Draw resized image
+                    resizeCtx.drawImage(this.previewImage, 0, 0, expectedWidth, expectedHeight);
+                    
+                    // Create new image from resized canvas
+                    const resizedImage = new Image();
+                    resizedImage.onload = () => {
+                        this.previewImage = resizedImage;
+                        this.updatePreview();
+                    };
+                    resizedImage.src = resizeCanvas.toDataURL();
+                } else {
+                    this.updatePreview();
+                }
+            } else {
+                this.updatePreview();
+            }
         };
         this.previewImage.src = imageSrc;
     }
@@ -984,13 +1017,8 @@ class SpriteSheetEditor {
                 const x = col * this.spriteSize;
                 const y = row * this.spriteSize;
                 
-                // Fill background color first - only if one is set
-                const bgColor = this.backgroundColors[index];
-                if (bgColor) {
-                    ctx.fillStyle = bgColor;
-                    ctx.fillRect(x, y, this.spriteSize, this.spriteSize);
-                }
-                // If no background color, leave transparent
+                // Skip background colors in PNG export - keep sprites transparent
+                // Background colors are only for JSON metadata, not baked into PNG
                 
                 // Draw sprite if exists
                 if (this.sprites[index]) {
