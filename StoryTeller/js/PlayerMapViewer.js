@@ -469,11 +469,11 @@ class PlayerMapViewer {
         }
         
         // Optional: Draw border for debugging
-        if (window.showDebug) {
-            this.ctx.strokeStyle = '#ddd';
-            this.ctx.lineWidth = 1;
-            this.ctx.strokeRect(tileX, tileY, this.tileSize, this.tileSize);
-        }
+        // if (window.showDebug) {
+        //     this.ctx.strokeStyle = '#ddd';
+        //     this.ctx.lineWidth = 1;
+        //     this.ctx.strokeRect(tileX, tileY, this.tileSize, this.tileSize);
+        // }
     }
     
     // Get sprite position in 4x4 grid (same as CSS positioning)
