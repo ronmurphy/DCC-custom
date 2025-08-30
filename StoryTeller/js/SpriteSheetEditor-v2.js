@@ -518,12 +518,15 @@ class SpriteSheetEditor {
         const closeBtn = modal.querySelector('.close');
         
         closeBtn.onclick = () => {
-            modal.style.display = 'none';
+            // Remove the modal from DOM completely
+            modal.remove();
+            console.log('🎨 Sprite Sheet Editor modal removed from DOM');
         };
         
         window.onclick = (event) => {
             if (event.target === modal) {
-                modal.style.display = 'none';
+                modal.remove();
+                console.log('🎨 Sprite Sheet Editor modal removed from DOM');
             }
         };
         
@@ -747,10 +750,104 @@ class SpriteSheetEditor {
                 console.log(`🎯 Selected cell ${i + 1}: "${spriteName}" (${spriteData ? spriteData.category : 'unknown'})`);
             });
             
+            // Add double-click handler for individual PNG loading
+            cell.addEventListener('dblclick', () => {
+                this.loadIndividualPNG(i);
+            });
+            
+            // Add touch support for double-tap (tablet optimized)
+            let touchTime = 0;
+            cell.addEventListener('touchend', (e) => {
+                const currentTime = new Date().getTime();
+                const tapLength = currentTime - touchTime;
+                if (tapLength < 500 && tapLength > 0) {
+                    // Double tap detected
+                    e.preventDefault();
+                    this.loadIndividualPNG(i);
+                }
+                touchTime = currentTime;
+            });
+            
             gridContainer.appendChild(cell);
         }
         
         this.updateGrid();
+    }
+    
+    loadIndividualPNG(cellIndex) {
+        // Create a temporary file input
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/png,image/jpg,image/jpeg,image/gif';
+        fileInput.style.display = 'none';
+        
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const imageSrc = e.target.result;
+                    
+                    // Create image to get dimensions
+                    const img = new Image();
+                    img.onload = () => {
+                        // Check if auto-resize is enabled
+                        const autoResizeElement = document.getElementById('auto-resize-sheet');
+                        const autoResize = autoResizeElement ? autoResizeElement.checked : false;
+                        
+                        if (autoResize && (img.width !== this.spriteSize || img.height !== this.spriteSize)) {
+                            // Resize the image to fit the sprite size
+                            console.log(`🔄 Auto-resizing individual PNG from ${img.width}×${img.height} to ${this.spriteSize}×${this.spriteSize}`);
+                            
+                            const resizeCanvas = document.createElement('canvas');
+                            const resizeCtx = resizeCanvas.getContext('2d');
+                            resizeCanvas.width = this.spriteSize;
+                            resizeCanvas.height = this.spriteSize;
+                            
+                            // Draw resized image
+                            resizeCtx.drawImage(img, 0, 0, this.spriteSize, this.spriteSize);
+                            
+                            // Store the resized image
+                            this.sprites[cellIndex] = resizeCanvas.toDataURL();
+                        } else {
+                            // Store the original image
+                            this.sprites[cellIndex] = imageSrc;
+                        }
+                        
+                        // Auto-detect background color if enabled
+                        const autoDetectElement = document.getElementById('auto-detect-color');
+                        const autoDetect = autoDetectElement ? autoDetectElement.checked : false;
+                        
+                        if (autoDetect) {
+                            this.autoDetectSingleSpriteColor(imageSrc, cellIndex);
+                        }
+                        
+                        // Update the grid display
+                        this.updateGrid();
+                        
+                        // Select this cell
+                        document.querySelectorAll('.sprite-cell').forEach(c => c.classList.remove('selected'));
+                        const cell = document.querySelector(`.sprite-cell[data-index="${cellIndex}"]`);
+                        if (cell) {
+                            cell.classList.add('selected');
+                            this.selectedCell = cellIndex;
+                            this.updateCellEditor();
+                        }
+                        
+                        console.log(`📁 Loaded individual PNG into cell ${cellIndex + 1}`);
+                    };
+                    img.src = imageSrc;
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            // Clean up
+            document.body.removeChild(fileInput);
+        });
+        
+        // Add to DOM temporarily and trigger click
+        document.body.appendChild(fileInput);
+        fileInput.click();
     }
     
     updateGrid() {

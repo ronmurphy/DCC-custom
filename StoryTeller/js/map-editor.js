@@ -810,9 +810,25 @@ function createModalTileSelector() {
 function selectTile(option, element) {
     document.querySelectorAll('.selector-tile').forEach(t => t.classList.remove('selected'));
     element.classList.add('selected');
-    currentSelection = option;
     
-    console.log(`Selected tile: ${option.name}`);
+    // ENHANCED: Include background color in selection for sprites
+    if (option.type === "sprite" && window.tilesetData && window.tilesetData.backgroundColors) {
+        const backgroundColor = window.tilesetData.backgroundColors[option.value];
+        if (backgroundColor && backgroundColor !== 'transparent') {
+            // Create enhanced selection with background color
+            currentSelection = {
+                ...option,
+                background: backgroundColor
+            };
+            console.log(`Selected sprite tile: ${option.name} with background color: ${backgroundColor}`);
+        } else {
+            currentSelection = option;
+            console.log(`Selected sprite tile: ${option.name} (no background color)`);
+        }
+    } else {
+        currentSelection = option;
+        console.log(`Selected tile: ${option.name}`);
+    }
 }
 
 // ========================================

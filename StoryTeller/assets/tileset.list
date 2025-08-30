@@ -17,6 +17,7 @@ Transparent
 NewSet
 SpriteSheetTestFile
 btest2
+modern_stretch
 
 # To add new tilesets:
 # 1. Copy your PNG sprite sheet to this assets folder
