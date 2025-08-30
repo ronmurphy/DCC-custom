@@ -411,6 +411,8 @@ class MapClientManager {
         console.log('Input mapData:', mapData);
         console.log('Input mapData keys:', Object.keys(mapData));
         console.log('Has backgroundColors?', 'backgroundColors' in mapData, mapData.backgroundColors);
+        console.log('📡 Network transmission info:', mapData.networkTransmission);
+        console.log('🎨 Network tilesetConfig available:', !!mapData.tilesetConfig);
 
         if (mapData.grid) {
             // New grid format - extract sprite names directly
@@ -447,6 +449,7 @@ class MapClientManager {
                 spriteNames: spriteNames, // Use sprite names, not numeric tiles
                 tileset: mapData.tileset,
                 backgroundColors: mapData.backgroundColors || {}, // Include background colors!
+                tilesetConfig: mapData.tilesetConfig, // Pass through network tileset config!
                 name: mapData.name || 'Shared Map'
             };
             
@@ -462,6 +465,7 @@ class MapClientManager {
                 height: size,
                 tiles: mapData.mapData,
                 tileset: mapData.tileset,
+                tilesetConfig: mapData.tilesetConfig, // Pass through network tileset config!
                 name: mapData.name || 'Shared Map'
             };
             
@@ -470,7 +474,10 @@ class MapClientManager {
         } else if (mapData.width && mapData.height && mapData.tiles) {
             // Already in standard format
             console.log('📊 Already in standard format');
-            standardMapData = mapData;
+            standardMapData = {
+                ...mapData,
+                tilesetConfig: mapData.tilesetConfig // Ensure network tileset config is preserved
+            };
             
         } else {
             console.error('❌ Unsupported map data format:', mapData);

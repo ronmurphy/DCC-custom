@@ -21,7 +21,78 @@ class MapDataFormatter {
         const standardized = this.convertToStandardFormat(mapData, mapName, detectedFormat, options);
         console.log('✅ Standardized map:', standardized);
 
-        return standardized;
+        // Include tileset configuration in the payload
+        return this.enrichWithTilesetConfig(standardized);
+    }
+
+    // Enrich map data with tileset configuration for network transmission
+    async enrichWithTilesetConfig(mapData) {
+        try {
+            const tilesetName = mapData.tileset || 'default';
+            console.log('📡 Loading tileset config for network transmission:', tilesetName);
+            
+            if (window.showDebug) {
+                console.log('🔍 DEBUG - Network transmission: enrichWithTilesetConfig called for:', tilesetName);
+                console.log('🔍 DEBUG - Original map data keys:', Object.keys(mapData));
+            }
+
+            // Try to load the tileset configuration
+            const tilesetConfig = await this.loadTilesetConfig(tilesetName);
+            
+            const enrichedData = {
+                ...mapData,
+                tilesetConfig: tilesetConfig,
+                networkTransmission: {
+                    includesTilesetConfig: true,
+                    tilesetName: tilesetName,
+                    timestamp: new Date().toISOString()
+                }
+            };
+            
+            if (window.showDebug) {
+                console.log('🔍 DEBUG - Network transmission: tileset config loaded successfully');
+                console.log('🔍 DEBUG - Tileset config keys:', Object.keys(tilesetConfig));
+                console.log('🔍 DEBUG - Enriched data includes tilesetConfig:', !!enrichedData.tilesetConfig);
+            }
+            
+            return enrichedData;
+        } catch (error) {
+            console.warn('⚠️ Failed to load tileset config for network transmission:', error);
+            
+            if (window.showDebug) {
+                console.log('🔍 DEBUG - Network transmission: failed to load tileset config:', error.message);
+            }
+            
+            // Return without tileset config if loading fails
+            return {
+                ...mapData,
+                networkTransmission: {
+                    includesTilesetConfig: false,
+                    error: error.message,
+                    timestamp: new Date().toISOString()
+                }
+            };
+        }
+    }
+
+    // Load tileset configuration (similar to PlayerMapViewer but for server-side)
+    async loadTilesetConfig(tilesetName) {
+        try {
+            // Try lowercase first (like default.json)
+            let response = await fetch(`assets/${tilesetName.toLowerCase()}.json`);
+            if (!response.ok) {
+                // Try original case (like Gothic.json)
+                response = await fetch(`assets/${tilesetName}.json`);
+            }
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            
+            const config = await response.json();
+            console.log(`📡 MapDataFormatter: Loaded tileset config ${tilesetName} for transmission`);
+            return config;
+        } catch (error) {
+            console.error(`📡 MapDataFormatter: Failed to load tileset config ${tilesetName}:`, error);
+            throw error;
+        }
     }
 
     // Detect what format the incoming map data is in
