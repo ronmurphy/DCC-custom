@@ -1230,16 +1230,114 @@
                     <div class="chat-messages-area">
                         <!-- Connection toggle button (shown when connected) -->
                         <div class="connection-toggle" id="connection-toggle" style="display: none;">
-                            <button class="toggle-connection-btn" onclick="toggleConnectionArea()" title="Show connection settings">
-                                <span class="material-icons">settings</span>
-                                Connection
-                            </button>
+                            <div class="toggle-controls">
+                                <button class="toggle-connection-btn" onclick="toggleConnectionArea()" title="Show connection settings">
+                                    <span class="material-icons">settings</span>
+                                    Connection
+                                </button>
+                                
+                                <!-- Notification icons (future features) -->
+                                <div class="notification-icons">
+                                    <button class="notification-btn" id="notes-notification" style="display: none;" title="New direct message/note">
+                                        <span class="material-icons">mail</span>
+                                        <span class="notification-dot"></span>
+                                    </button>
+                                    <button class="notification-btn" id="dice-notification" style="display: none;" title="Dice roll request">
+                                        <span class="material-icons">casino</span>
+                                        <span class="notification-dot"></span>
+                                    </button>
+                                    <button class="notification-btn" id="map-notification" style="display: none;" title="Map update">
+                                        <span class="material-icons">map</span>
+                                        <span class="notification-dot"></span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                         
-                        <div id="chat-messages">
-                            <div class="chat-message system">
-                                <span class="message-author">System:</span>
-                                Welcome to DCC! Enter a session code above to join your game.
+                        <!-- Chat Layout: Messages + Command Center -->
+                        <div class="chat-layout">
+                            <div id="chat-messages">
+                                <div class="chat-message system">
+                                    <span class="message-author">System:</span>
+                                    Welcome to DCC! Enter a session code above to join your game.
+                                </div>
+                            </div>
+                            
+                            <!-- Command Center Panel -->
+                            <div class="command-center" id="command-center">
+                                <div class="command-center-header">
+                                    <h4>Command Center</h4>
+                                    <button class="minimize-btn" onclick="toggleCommandCenter()" title="Toggle Command Center">
+                                        <span class="material-icons">keyboard_arrow_right</span>
+                                    </button>
+                                </div>
+                                
+                                <div class="command-center-content">
+                                    <!-- Connected Players -->
+                                    <div class="player-selector">
+                                        <h5>Connected Players</h5>
+                                        <div class="player-list" id="connected-players">
+                                            <div class="player-item self">
+                                                <div class="player-avatar">
+                                                    <div class="avatar-placeholder">👤</div>
+                                                </div>
+                                                <div class="player-info">
+                                                    <div class="player-name" id="self-player-name">You</div>
+                                                    <div class="player-details">Lvl: 1<br>Unknown - Unknown</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Collapsible Quick Tools -->
+                                    <div class="quick-tools">
+                                        <div class="tools-header" onclick="toggleQuickTools()">
+                                            <h5>Quick Tools</h5>
+                                            <span class="chevron" id="tools-chevron">▼</span>
+                                        </div>
+                                        <div class="tools-content" id="tools-content">
+                                            <!-- Quick Actions -->
+                                            <div class="quick-actions">
+                                                <h6>Actions</h6>
+                                                <div class="action-buttons">
+                                                    <button class="action-btn" onclick="quickDiceRoll()" title="Roll d20">
+                                                        <span class="material-icons">casino</span>
+                                                        <span>d20</span>
+                                                    </button>
+                                                    <button class="action-btn" onclick="showChatEffects()" title="Chat Effects">
+                                                        <span>✨</span>
+                                                        <span>Effects</span>
+                                                    </button>
+                                                    <button class="action-btn" onclick="sendEmoji('👍')" title="Thumbs Up">
+                                                        <span>👍</span>
+                                                    </button>
+                                                    <button class="action-btn" onclick="sendEmoji('❤️')" title="Heart">
+                                                        <span>❤️</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Chat Effects Quick Access -->
+                                            <div class="effects-quick">
+                                                <h6>Quick Effects</h6>
+                                                <div class="effects-buttons">
+                                                    <button class="effect-btn" onclick="insertChatEffect(':crit:')" title="Critical Hit">
+                                                        ⚔️ Crit
+                                                    </button>
+                                                    <button class="effect-btn" onclick="insertChatEffect(':magic:')" title="Magic Sparkle">
+                                                        ✨ Magic
+                                                    </button>
+                                                    <button class="effect-btn" onclick="insertChatEffect(':doom:')" title="Doom">
+                                                        💀 Doom
+                                                    </button>
+                                                    <button class="effect-btn" onclick="insertChatEffect(':dice:')" title="Dice Roll">
+                                                        🎲 Dice
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
@@ -2030,6 +2128,7 @@
     <script src="js/modules/jsonDataLoader.js"></script>
     <script src="js/modules/dccUtilities.js"></script>
     <script src="js/modules/chatCommandParser.js"></script>
+    <script src="js/command-interceptor.js"></script>
     <script src="js/modules/chatEffectsManager.js"></script>
     <script src="js/modules/emojiProcessor.js"></script>
     
@@ -2085,6 +2184,40 @@
             
             // Hide connection toggle button on load
             document.getElementById('connection-toggle').style.display = 'none';
+            
+            // Set up player click handlers for NOTE functionality
+            setupPlayerClickHandlers();
+            
+            // Set up notification button click handler
+            const notesBtn = document.getElementById('notes-notification');
+            if (notesBtn) {
+                notesBtn.addEventListener('click', showNotesDropdown);
+            }
+            
+            // Test notification system
+            console.log('🧪 Testing notification system...');
+            const testContainer = document.getElementById('notification-container');
+            console.log('🧪 Notification container found:', !!testContainer);
+            if (typeof showNotification === 'function') {
+                console.log('🧪 showNotification function available');
+                // Test attribute roll notification
+                setTimeout(() => {
+                    console.log('🧪 Testing notification display...');
+                    showNotification('roll', 'Test Notification', 'This is a test', 'Testing notification system');
+                }, 2000);
+            } else {
+                console.error('🧪 showNotification function not found');
+            }
+            
+            // Test click handlers after a delay to ensure player list is populated
+            setTimeout(() => {
+                console.log('🧪 Testing clickable player names...');
+                const clickableNames = document.querySelectorAll('.clickable-player-name');
+                console.log('🧪 Found clickable names:', clickableNames.length);
+                clickableNames.forEach((name, index) => {
+                    console.log(`🧪 Clickable name ${index}:`, name.textContent, 'data-player-name:', name.getAttribute('data-player-name'));
+                });
+            }, 5000);
         });
 
         // Toggle connection area visibility
@@ -2100,6 +2233,437 @@
                 if (isNetworkConnected) {
                     toggleBtn.style.display = 'block';
                 }
+            }
+        }
+
+        // Notification system helpers (for future features)
+        function showNotification(type) {
+            const notificationBtn = document.getElementById(`${type}-notification`);
+            if (notificationBtn) {
+                notificationBtn.style.display = 'flex';
+                console.log(`📢 ${type} notification shown`);
+            }
+        }
+
+        function hideNotification(type) {
+            const notificationBtn = document.getElementById(`${type}-notification`);
+            if (notificationBtn) {
+                notificationBtn.style.display = 'none';
+                console.log(`📢 ${type} notification hidden`);
+            }
+        }
+
+        // Example usage for testing notifications (can be called from console)
+        function testNotifications() {
+            setTimeout(() => showNotification('notes'), 2000);
+            setTimeout(() => showNotification('dice'), 4000);
+            setTimeout(() => showNotification('map'), 6000);
+            console.log('🧪 Test notifications will appear in 2, 4, and 6 seconds');
+        }
+
+        // Make test function globally available
+        window.testNotifications = testNotifications;
+
+        // Command Center functions
+        function toggleCommandCenter() {
+            const commandCenter = document.getElementById('command-center');
+            const minimizeBtn = commandCenter.querySelector('.minimize-btn .material-icons');
+            
+            commandCenter.classList.toggle('minimized');
+            
+            if (commandCenter.classList.contains('minimized')) {
+                minimizeBtn.textContent = 'keyboard_arrow_left';
+            } else {
+                minimizeBtn.textContent = 'keyboard_arrow_right';
+            }
+        }
+
+        function quickDiceRoll() {
+            const roll = Math.floor(Math.random() * 20) + 1;
+            const message = `🎲 Quick d20 roll: **${roll}** :dice:`;
+            
+            if (isNetworkConnected) {
+                sendChatMessageDirect(message);
+            } else {
+                addChatMessage(message, 'system', 'Dice');
+            }
+        }
+
+        function showChatEffects() {
+            // This will be implemented when we add the effects picker
+            console.log('Chat effects picker would open here');
+            alert('Chat effects picker coming soon! For now, try typing :crit:, :magic:, :doom:, or :dice: in your messages.');
+        }
+
+        function sendEmoji(emoji) {
+            if (isNetworkConnected) {
+                sendChatMessageDirect(emoji);
+            } else {
+                addChatMessage(emoji, 'player', networkPlayerName || 'You');
+            }
+        }
+
+        function insertChatEffect(effect) {
+            const chatInput = document.getElementById('chat-input');
+            const currentText = chatInput.value;
+            
+            // Insert effect at cursor position or append to end
+            const cursorPos = chatInput.selectionStart;
+            const before = currentText.substring(0, cursorPos);
+            const after = currentText.substring(cursorPos);
+            
+            // Add space before effect if needed
+            const prefix = (before && !before.endsWith(' ')) ? ' ' : '';
+            const suffix = (after && !after.startsWith(' ')) ? ' ' : '';
+            
+            chatInput.value = before + prefix + effect + suffix + after;
+            chatInput.focus();
+            
+            // Position cursor after the inserted effect
+            const newPos = cursorPos + prefix.length + effect.length + suffix.length;
+            chatInput.setSelectionRange(newPos, newPos);
+        }
+
+        // Helper function to send chat messages directly
+        async function sendChatMessageDirect(message) {
+            try {
+                if (typeof window.sendChatMessageAsync === 'function') {
+                    await window.sendChatMessageAsync(message);
+                } else if (typeof window.sendChatMessage === 'function') {
+                    await window.sendChatMessage(message);
+                } else {
+                    console.warn('Chat functions not available');
+                }
+            } catch (error) {
+                console.error('Failed to send message:', error);
+            }
+        }
+
+        // Update player name in command center when network player name changes
+        function updateCommandCenterPlayerName() {
+            const selfPlayerName = document.getElementById('self-player-name');
+            const selfPlayerDetails = document.querySelector('.player-item.self .player-details');
+            const selfPlayerAvatar = document.querySelector('.player-item.self .avatar-placeholder');
+            
+            if (selfPlayerName && networkPlayerName) {
+                selfPlayerName.textContent = networkPlayerName;
+            }
+            
+            // Get real character data
+            const characterData = getCurrentCharacterData();
+            
+            // Update self player details with real data
+            if (selfPlayerDetails) {
+                selfPlayerDetails.innerHTML = `Lvl: ${characterData.level}<br>${characterData.heritage} - ${characterData.class}`;
+            }
+            
+            // Update avatar if available
+            if (selfPlayerAvatar && characterData.avatar) {
+                const avatarImg = document.createElement('img');
+                avatarImg.src = characterData.avatar;
+                avatarImg.style.width = '100%';
+                avatarImg.style.height = '100%';
+                avatarImg.style.objectFit = 'cover';
+                selfPlayerAvatar.parentNode.innerHTML = '';
+                selfPlayerAvatar.parentNode.appendChild(avatarImg);
+            }
+        }
+
+        // Extract current character data from V4 character tab
+        function getCurrentCharacterData() {
+            const levelElement = document.getElementById('char-level-display');
+            const summaryElement = document.getElementById('char-summary');
+            const portraitElement = document.getElementById('overview-portrait');
+            
+            // Extract level (e.g., "Level 1" -> "1")
+            let level = '1';
+            if (levelElement && levelElement.textContent) {
+                const levelMatch = levelElement.textContent.match(/Level (\d+)/);
+                if (levelMatch) {
+                    level = levelMatch[1];
+                }
+            }
+            
+            // Extract heritage, background, and class from character summary
+            let heritage = 'Unknown';
+            let background = 'Unknown'; 
+            let characterClass = 'Unknown';
+            
+            if (summaryElement && summaryElement.textContent) {
+                const summaryText = summaryElement.textContent;
+                // The summary typically contains: "Heritage Background Class" format
+                const parts = summaryText.trim().split(' ');
+                if (parts.length >= 3) {
+                    heritage = parts[0];
+                    background = parts[1];
+                    characterClass = parts[2];
+                } else if (parts.length === 2) {
+                    heritage = parts[0];
+                    characterClass = parts[1];
+                } else if (parts.length === 1) {
+                    characterClass = parts[0];
+                }
+            }
+            
+            // Extract avatar from overview-portrait
+            let avatar = null;
+            if (portraitElement) {
+                const imgElement = portraitElement.querySelector('img');
+                if (imgElement && imgElement.src && imgElement.src.startsWith('data:')) {
+                    avatar = imgElement.src;
+                }
+            }
+            
+            return {
+                level,
+                heritage,
+                background,
+                class: characterClass,
+                avatar
+            };
+        }
+
+        // Function to update connected players list (called by supabase-chat.js)
+        function updateConnectedPlayers(players = []) {
+            const playerList = document.getElementById('connected-players');
+            if (!playerList) return;
+            
+            console.log('🔍 Updating connected players:', players);
+            
+            // Clear existing players except self
+            const selfPlayer = playerList.querySelector('.player-item.self');
+            playerList.innerHTML = '';
+            
+            // Add self back
+            if (selfPlayer) {
+                playerList.appendChild(selfPlayer);
+            }
+            
+            // Add connected players
+            players.forEach(player => {
+                if (player.name && player.name !== networkPlayerName && player.name !== 'System' && player.name !== 'Heartbeat') {
+                    const playerDiv = document.createElement('div');
+                    playerDiv.className = 'player-item';
+                    
+                    // Add storyteller class if they are the storyteller
+                    if (player.is_storyteller) {
+                        playerDiv.classList.add('storyteller');
+                    }
+                    
+                    // For now, use placeholder data - this can be enhanced later with real character data
+                    const level = 'Unknown';
+                    const heritage = player.is_storyteller ? 'Storyteller' : 'Player';
+                    const playerClass = player.is_storyteller ? 'Master' : 'Adventurer';
+                    
+                    playerDiv.innerHTML = `
+                        <div class="player-avatar">
+                            <div class="avatar-placeholder">${player.is_storyteller ? '👑' : '⚔️'}</div>
+                        </div>
+                        <div class="player-info">
+                            <div class="player-name clickable-player-name" data-player-name="${player.name}">${player.name}</div>
+                            <div class="player-details">Level: ${level}<br>${heritage} - ${playerClass}</div>
+                        </div>
+                    `;
+                    
+                    playerList.appendChild(playerDiv);
+                }
+            });
+            
+            console.log(`✅ Player list updated: ${players.length} players found`);
+        }
+
+        // Make updateConnectedPlayers globally available for supabase-chat.js
+        window.updateConnectedPlayers = updateConnectedPlayers;
+
+        // Handle player name clicks for sending notes
+        function setupPlayerClickHandlers() {
+            const playerList = document.getElementById('connected-players');
+            if (!playerList) {
+                console.error('🐛 Player list not found for click handlers');
+                return;
+            }
+            
+            console.log('🐛 Setting up player click handlers on:', playerList);
+            
+            // Use event delegation to handle clicks on dynamically added player names
+            playerList.addEventListener('click', function(event) {
+                console.log('🐛 Player list clicked:', event.target);
+                const clickedName = event.target.closest('.clickable-player-name');
+                console.log('🐛 Closest clickable name:', clickedName);
+                if (!clickedName) return;
+                
+                const targetPlayerName = clickedName.getAttribute('data-player-name');
+                console.log('🐛 Target player name:', targetPlayerName);
+                if (targetPlayerName) {
+                    promptForNote(targetPlayerName);
+                }
+            });
+        }
+
+        // Prompt user for note content and send NOTE command
+        function promptForNote(targetPlayerName) {
+            console.log('🐛 promptForNote called for:', targetPlayerName);
+            const noteText = prompt(`Send a note to ${targetPlayerName}:`);
+            console.log('🐛 User entered note text:', noteText);
+            if (noteText && noteText.trim()) {
+                sendNoteCommand(targetPlayerName, noteText.trim());
+            } else {
+                console.log('🐛 Note cancelled or empty');
+            }
+        }
+
+        // Send NOTE command through chat
+        function sendNoteCommand(targetPlayerName, noteText) {
+            console.log('🐛 sendNoteCommand called with:', targetPlayerName, noteText);
+            
+            const noteCommand = `NOTE:${targetPlayerName}:${noteText}`;
+            console.log('🐛 Sending command:', noteCommand);
+            
+            // Method 1: Use chat input and sendMessage()
+            const chatInput = document.getElementById('chat-input');
+            if (chatInput && typeof sendMessage === 'function') {
+                chatInput.value = noteCommand;
+                sendMessage();
+                console.log(`📝 Sent note to ${targetPlayerName}: ${noteText}`);
+            }
+            // Method 2: Try Supabase functions directly
+            else if (typeof window.sendChatMessageAsync === 'function') {
+                window.sendChatMessageAsync(noteCommand);
+                console.log(`📝 Sent note via sendChatMessageAsync to ${targetPlayerName}: ${noteText}`);
+            }
+            else if (typeof window.sendChatMessage === 'function') {
+                window.sendChatMessage(noteCommand);
+                console.log(`📝 Sent note via sendChatMessage to ${targetPlayerName}: ${noteText}`);
+            }
+            else {
+                console.error('❌ Chat send functions not available');
+            }
+        }
+
+        // Note notification management
+        let receivedNotes = [];
+        
+        function addReceivedNote(fromPlayer, noteText, timestamp) {
+            console.log('🐛 addReceivedNote called:', fromPlayer, noteText, timestamp);
+            const note = {
+                from: fromPlayer,
+                message: noteText,
+                timestamp: timestamp || new Date().toISOString(),
+                id: Date.now() + Math.random().toString(36).substr(2, 9)
+            };
+            
+            receivedNotes.push(note);
+            console.log('🐛 Note added to receivedNotes array. Total notes:', receivedNotes.length);
+            updateNotificationIcon();
+            console.log(`📝 Received note from ${fromPlayer}: ${noteText}`);
+        }
+
+        function updateNotificationIcon() {
+            const notificationBtn = document.getElementById('notes-notification');
+            if (!notificationBtn) return;
+            
+            if (receivedNotes.length > 0) {
+                notificationBtn.style.display = 'block';
+                notificationBtn.title = `${receivedNotes.length} new note(s)`;
+            } else {
+                notificationBtn.style.display = 'none';
+            }
+        }
+
+        function showNotesDropdown() {
+            if (receivedNotes.length === 0) {
+                alert('No notes received this session.');
+                return;
+            }
+            
+            let notesText = "📝 Notes received this session:\n\n";
+            receivedNotes.forEach(note => {
+                const time = new Date(note.timestamp).toLocaleTimeString();
+                notesText += `From ${note.from} (${time}):\n${note.message}\n\n`;
+            });
+            
+            alert(notesText);
+        }
+
+        // Make note functions globally available
+        window.addReceivedNote = addReceivedNote;
+        window.showNotesDropdown = showNotesDropdown;
+
+        // Set up periodic player list updates
+        function startPlayerListUpdates() {
+            if (window.playerListInterval) {
+                clearInterval(window.playerListInterval);
+            }
+            
+            // Update player list every 30 seconds when connected
+            window.playerListInterval = setInterval(() => {
+                if (isNetworkConnected && typeof window.updateConnectedPlayersList === 'function') {
+                    window.updateConnectedPlayersList();
+                }
+            }, 30000);
+        }
+
+        function stopPlayerListUpdates() {
+            if (window.playerListInterval) {
+                clearInterval(window.playerListInterval);
+                window.playerListInterval = null;
+            }
+        }
+
+        // Toggle Quick Tools section
+        function toggleQuickTools() {
+            const toolsContent = document.getElementById('tools-content');
+            const chevron = document.getElementById('tools-chevron');
+            
+            toolsContent.classList.toggle('collapsed');
+            chevron.classList.toggle('collapsed');
+            
+            if (toolsContent.classList.contains('collapsed')) {
+                chevron.textContent = '▶';
+            } else {
+                chevron.textContent = '▼';
+            }
+        }
+
+        // Send "user has joined" announcement with random effect and emoji
+        async function sendJoinAnnouncement(playerName) {
+            const joinEmojis = ['🎉', '✨', '🌟', '🎊', '🔥', '⚡', '💫', '🌈', '🎯', '🚀'];
+            const joinEffects = ['sparkle', 'flame', 'ice', 'pulse', 'glow'];
+            const joinMessages = [
+                'has joined the adventure!',
+                'enters the realm!',
+                'has arrived!',
+                'joins the party!',
+                'steps into the world!',
+                'has connected!',
+                'is ready for adventure!'
+            ];
+            
+            // Pick random elements
+            const randomEmoji = joinEmojis[Math.floor(Math.random() * joinEmojis.length)];
+            const randomEffect = joinEffects[Math.floor(Math.random() * joinEffects.length)];
+            const randomMessage = joinMessages[Math.floor(Math.random() * joinMessages.length)];
+            
+            // Create the announcement message with effect syntax
+            const announcement = `${randomEmoji} ${playerName} ${randomMessage} [effect:${randomEffect}]`;
+            
+            try {
+                // Send via Supabase real-time system (like regular messages)
+                if (typeof window.sendChatMessageAsync === 'function') {
+                    await window.sendChatMessageAsync(announcement);
+                    console.log('🎉 Join announcement sent:', announcement);
+                } else if (typeof window.sendChatMessage === 'function') {
+                    await window.sendChatMessage(announcement);
+                    console.log('🎉 Join announcement sent:', announcement);
+                } else {
+                    console.warn('⚠️ Chat functions not available for join announcement');
+                    // Fallback to local display
+                    addChatMessage(announcement, 'system', 'System');
+                }
+            } catch (error) {
+                console.error('❌ Failed to send join announcement:', error);
+                // Fallback to local display
+                addChatMessage(announcement, 'system', 'System');
             }
         }
 
@@ -2185,6 +2749,23 @@
                         updateConnectionStatus('connected', `Connected as ${playerName}`);
                         
                         addChatMessage('system', 'Successfully connected to game session!');
+                        
+                        // Send "user has joined" message with random effect and emoji
+                        sendJoinAnnouncement(playerName);
+                        
+                        // Update command center with player name
+                        updateCommandCenterPlayerName();
+                        
+                        // Update connected players list
+                        if (typeof window.updateConnectedPlayersList === 'function') {
+                            setTimeout(() => {
+                                window.updateConnectedPlayersList();
+                            }, 2000); // Wait a bit for our join message to register
+                        }
+                        
+                        // Start periodic player list updates
+                        startPlayerListUpdates();
+                        
                         document.getElementById('send-chat-btn').disabled = false;
                         
                         console.log('✅ Successfully connected to session');
@@ -2205,6 +2786,9 @@
                 
                 // Hide connection toggle button when disconnected
                 document.getElementById('connection-toggle').style.display = 'none';
+                
+                // Stop player list updates
+                stopPlayerListUpdates();
             }
         }
 

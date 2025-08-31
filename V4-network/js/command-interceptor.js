@@ -129,12 +129,19 @@ async function interceptChatMessage(message) {
  */
 function isCommandMessage(messageText) {
     // Look for patterns like: COMMAND:PlayerName or COMMAND:PlayerName:parameters
-    const commandPattern = /^(LOOT|ACHIEVEMENT|LEVELUP|ITEM|SKILL|EXP|GOLD|HEALTH|STAT|CLEAN):[^:]+/;
+    const commandPattern = /^(LOOT|ACHIEVEMENT|LEVELUP|ITEM|SKILL|EXP|GOLD|HEALTH|STAT|NOTE|CLEAN):[^:]+/;
     // Also check for special silent commands
     const silentCommandPattern = /^\/refreshmap$|^\/sendmap$/;
     // Also check for map sync messages that should be hidden
     const mapSyncPattern = /^MAP_SYNC:/;
-    return commandPattern.test(messageText) || silentCommandPattern.test(messageText) || mapSyncPattern.test(messageText);
+    const isCommand = commandPattern.test(messageText) || silentCommandPattern.test(messageText) || mapSyncPattern.test(messageText);
+    
+    // Debug logging for NOTE commands
+    if (messageText.startsWith('NOTE:')) {
+        console.log('🐛 NOTE command detected:', messageText, 'isCommand:', isCommand);
+    }
+    
+    return isCommand;
 }
 
 /**
@@ -243,7 +250,7 @@ async function processCommandMessage(message) {
     
     if (targetPlayer === currentPlayer) {
         // This command is for the current player - show personal results
-        displayText = await generatePersonalResult(command, parameters);
+        displayText = await generatePersonalResult(command, parameters, message);
         messageType = 'personal-result';
     } else if (isStoryteller) {
         // Storyteller sees detailed results
@@ -267,7 +274,7 @@ async function processCommandMessage(message) {
 /**
  * Generate personal result for the target player
  */
-async function generatePersonalResult(command, parameters) {
+async function generatePersonalResult(command, parameters, message) {
     if (!commandParser) {
         return `You received a ${command} command${parameters ? ': ' + parameters : ''}`;
     }
@@ -301,6 +308,18 @@ async function generatePersonalResult(command, parameters) {
         case 'GOLD':
             const goldAmount = parseInt(parameters) || 0;
             return `💰 You ${goldAmount > 0 ? 'gained' : 'lost'} ${Math.abs(goldAmount)} gold!`;
+        case 'NOTE':
+            console.log('🐛 Processing NOTE command for current player');
+            // Add to notification system if available
+            if (typeof window.addReceivedNote === 'function') {
+                // Extract sender name from the message context
+                const senderName = (message && message.author_name) || 'Unknown';
+                console.log('🐛 Adding note to notification system:', senderName, parameters);
+                window.addReceivedNote(senderName, parameters, new Date().toISOString());
+            } else {
+                console.warn('🐛 window.addReceivedNote function not available');
+            }
+            return `📝 You received a note: ${parameters}`;
         case 'CLEAN':
             // For players, just show a generic cleanup message
             return `🧹 The storyteller performed database maintenance`;
@@ -333,6 +352,8 @@ function generateStorytelleroResult(command, targetPlayer, parameters) {
             return `📋 ${targetPlayer}'s ${statParts[0] || 'stat'} changed by ${statParts[1] || '1'}`;
         case 'GOLD':
             return `📋 ${targetPlayer} ${parseInt(parameters) > 0 ? 'gained' : 'lost'} ${Math.abs(parseInt(parameters))} gold`;
+        case 'NOTE':
+            return `📋 Note sent to ${targetPlayer}`;
         default:
             return `📋 ${targetPlayer} received ${command}: ${parameters}`;
     }
@@ -349,6 +370,8 @@ function generateGenericResult(command, targetPlayer, parameters) {
             return `${targetPlayer} accomplished something noteworthy`;
         case 'LEVELUP':
             return `${targetPlayer} has grown stronger`;
+        case 'NOTE':
+            return `📝 Notes are being passed`;
         case 'CLEAN':
             return `🧹 Database maintenance performed`;
         default:
