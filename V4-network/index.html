@@ -109,6 +109,9 @@
     <link rel="stylesheet" href="light.css">
     <link rel="stylesheet" href="dark.css">
     <link rel="stylesheet" href="themes.css">
+    <!-- Network Integration CSS -->
+    <link rel="stylesheet" href="css/network-chat.css">
+    <link rel="stylesheet" href="css/chat-effects.css">
 </head>
 
 <body>
@@ -154,11 +157,11 @@
                 </button>
             </div>
             <div class="sidebar-content">
-                <button class="sidebar-tab active" data-tab="creation">
+                <button class="sidebar-tab" data-tab="creation" style="display: none;">
                     <span class="tab-icon"><i class="ra ra-quill-ink"></i></span>
                     <span class="tab-label">Create Character</span>
                 </button>
-                <button class="sidebar-tab" data-tab="character">
+                <button class="sidebar-tab active" data-tab="character">
                     <span class="tab-icon"><i class="ra ra-player"></i></span>
                     <span class="tab-label">Character Stats</span>
                 </button>
@@ -169,6 +172,10 @@
                 <button class="sidebar-tab" data-tab="magic">
                     <span class="tab-icon"><i class="ra ra-fairy-wand"></i></span>
                     <span class="tab-label">Magic & Spells</span>
+                </button>
+                <button class="sidebar-tab" data-tab="chat">
+                    <span class="tab-icon"><i class="ra ra-conversation"></i></span>
+                    <span class="tab-label">Game Chat</span>
                 </button>
                 <!-- <button class="sidebar-tab" data-tab="combat">
                     <span class="tab-icon"><i class="ra ra-crossed-swords"></i></span>
@@ -1204,6 +1211,55 @@
                 </div>
             </section>
 
+            <!-- Chat Tab -->
+            <section class="tab-content" id="chat">
+                <div class="content-wrapper">
+                    <!-- Session Connection -->
+                    <div class="session-connection">
+                        <div class="session-controls">
+                            <input type="text" id="session-code-input" placeholder="Paste connection URL from storyteller">
+                            <button class="join-session-btn" onclick="joinGameSession()">Join Game</button>
+                        </div>
+                        <div class="connection-status">
+                            <span class="status-dot" id="connection-status-dot"></span>
+                            <span class="status-text" id="connection-status-text">Not connected</span>
+                        </div>
+                    </div>
+
+                    <!-- Chat Messages Area -->
+                    <div class="chat-messages-area">
+                        <!-- Connection toggle button (shown when connected) -->
+                        <div class="connection-toggle" id="connection-toggle" style="display: none;">
+                            <button class="toggle-connection-btn" onclick="toggleConnectionArea()" title="Show connection settings">
+                                <span class="material-icons">settings</span>
+                                Connection
+                            </button>
+                        </div>
+                        
+                        <div id="chat-messages">
+                            <div class="chat-message system">
+                                <span class="message-author">System:</span>
+                                Welcome to DCC! Enter a session code above to join your game.
+                            </div>
+                        </div>
+                        
+                        <!-- Chat Input -->
+                        <div class="chat-input-container">
+                            <div class="chat-tools">
+                                <button class="chat-tool-btn" onclick="showChatPicker()" title="Chat Effects & Emojis">
+                                    <span>💬</span>
+                                    <span>Effects</span>
+                                </button>
+                            </div>
+                            <div class="chat-input-area">
+                                <input type="text" id="chat-input" placeholder="Type your message..." onkeypress="handleChatKeyPress(event)">
+                            </div>
+                            <button class="send-chat-btn" onclick="sendMessage()" id="send-chat-btn" disabled>Send</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Notes Tab -->
             <section class="tab-content" id="notes">
                 <div class="content-wrapper">
@@ -1961,6 +2017,331 @@
             };
             document.body.appendChild(installBtn);
         });
+    </script>
+
+    <!-- Network Integration Scripts -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="supabaseUrlEncoder.js"></script>
+    <script src="supabase-config.js"></script>
+    
+    <!-- Essential modules for chat system -->
+    <script src="js/modules/dccMechanics.js"></script>
+    <script src="js/modules/rollCalculator.js"></script>
+    <script src="js/modules/jsonDataLoader.js"></script>
+    <script src="js/modules/dccUtilities.js"></script>
+    <script src="js/modules/chatCommandParser.js"></script>
+    <script src="js/modules/chatEffectsManager.js"></script>
+    <script src="js/modules/emojiProcessor.js"></script>
+    
+    <script src="supabase-chat.js"></script>
+    
+    <!-- Network Integration Functions -->
+    <script>
+        // Network integration variables
+        let isNetworkConnected = false;
+        let currentSessionCode = '';
+        let networkPlayerName = '';
+
+        // Set network player name (called by character manager)
+        function setNetworkPlayerName(playerName) {
+            networkPlayerName = playerName;
+            console.log('🎭 Network player name set to:', playerName);
+        }
+        window.setNetworkPlayerName = setNetworkPlayerName;
+
+        // Show creation tab (called by New Character button)
+        function showCreationTab() {
+            const creationTab = document.querySelector('[data-tab="creation"]');
+            if (creationTab) {
+                creationTab.style.display = 'flex';
+                // Switch to creation tab
+                switchTab('creation');
+            }
+        }
+        window.showCreationTab = showCreationTab;
+
+        // Initialize network integration when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🌐 V4-Network: Initializing network features...');
+            
+            // Check for session code in URL first
+            const urlParams = new URLSearchParams(window.location.search);
+            const sessionFromUrl = urlParams.get('session');
+            
+            if (sessionFromUrl) {
+                document.getElementById('session-code-input').value = sessionFromUrl;
+                console.log('📎 Session code found in URL:', sessionFromUrl);
+            } else {
+                // Load last saved connection URL
+                const lastUrl = localStorage.getItem('lastConnectionUrl');
+                if (lastUrl) {
+                    document.getElementById('session-code-input').value = lastUrl;
+                    console.log('📎 Loaded saved connection URL:', lastUrl);
+                }
+            }
+            
+            // Show session connection area by default (not connected on load)
+            document.querySelector('.session-connection').style.display = 'block';
+            
+            // Hide connection toggle button on load
+            document.getElementById('connection-toggle').style.display = 'none';
+        });
+
+        // Toggle connection area visibility
+        function toggleConnectionArea() {
+            const connectionArea = document.querySelector('.session-connection');
+            const toggleBtn = document.getElementById('connection-toggle');
+            
+            if (connectionArea.style.display === 'none') {
+                connectionArea.style.display = 'block';
+                toggleBtn.style.display = 'none';
+            } else {
+                connectionArea.style.display = 'none';
+                if (isNetworkConnected) {
+                    toggleBtn.style.display = 'block';
+                }
+            }
+        }
+
+        // Join game session - works exactly like player-test.html
+        async function joinGameSession() {
+            const connectionUrl = document.getElementById('session-code-input').value.trim();
+            if (!connectionUrl) {
+                alert('Please paste the connection URL from the storyteller');
+                return;
+            }
+
+            // Use network player name if set, otherwise prompt
+            let playerName = networkPlayerName;
+            if (!playerName) {
+                playerName = prompt('Enter your player name:');
+                if (!playerName) return;
+            }
+
+            updateConnectionStatus('connecting', 'Connecting...');
+            
+            try {
+                let processedUrl = connectionUrl;
+                
+                // Decode URL if it's in shortened format (exactly like player-test.html)
+                if (window.supabaseUrlEncoder) {
+                    processedUrl = window.supabaseUrlEncoder.ensureFullUrl(connectionUrl);
+                    console.log('Processed connection URL:', processedUrl);
+                }
+                
+                // Parse the Supabase URL: https://xxx.supabase.co?session=1234
+                const urlParts = processedUrl.split('?');
+                const supabaseUrl = urlParts[0];
+                
+                if (urlParts.length < 2) {
+                    throw new Error('Invalid URL format. Expected: https://xxx.supabase.co?session=1234 or shortened format');
+                }
+                
+                // Extract session code from URL parameters
+                const params = new URLSearchParams(urlParts[1]);
+                const sessionCode = params.get('session');
+                
+                if (!sessionCode) {
+                    throw new Error('No session code found in URL. Make sure the URL includes ?session=YOUR_SESSION_CODE');
+                }
+                
+                console.log(`🔗 Extracted: Supabase URL=${supabaseUrl}, Session=${sessionCode}`);
+                
+                // Initialize Supabase with extracted URL and default API key
+                const defaultApiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrZGR2Ym14emVwcnZ4ZnNsaGxrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU5NTMxMjEsImV4cCI6MjA3MTUyOTEyMX0.b3mv50bCw5Yq5SrY8-Sagdl4WoC592nQNdfTQciuf0M';
+                
+                // Initialize Supabase connection
+                if (typeof window.initializeSupabase === 'function') {
+                    const initResult = window.initializeSupabase(supabaseUrl, defaultApiKey);
+                    if (!initResult) {
+                        throw new Error('Failed to initialize Supabase connection');
+                    }
+                } else {
+                    throw new Error('Supabase initialization function not available');
+                }
+                
+                console.log('🔌 Attempting to join session:', sessionCode, 'as', playerName);
+                
+                // Join the session using the real Supabase system (exactly like player-test.html)
+                if (typeof window.fullSupabaseConnect === 'function') {
+                    const result = await window.fullSupabaseConnect(playerName, sessionCode, false, 'join');
+                    
+                    if (result.success) {
+                        isNetworkConnected = true;
+                        currentSessionCode = sessionCode;
+                        
+                        // Store the original connection URL for future reference
+                        localStorage.setItem('lastConnectionUrl', connectionUrl);
+                        
+                        // Keep the original URL in the input field for easy reconnection
+                        document.getElementById('session-code-input').value = connectionUrl;
+                        
+                        // Hide session connection area to give more room for chat
+                        document.querySelector('.session-connection').style.display = 'none';
+                        
+                        // Show connection toggle button when connected
+                        document.getElementById('connection-toggle').style.display = 'block';
+                        
+                        updateConnectionStatus('connected', `Connected as ${playerName}`);
+                        
+                        addChatMessage('system', 'Successfully connected to game session!');
+                        document.getElementById('send-chat-btn').disabled = false;
+                        
+                        console.log('✅ Successfully connected to session');
+                    } else {
+                        throw new Error(result.error || 'Failed to connect');
+                    }
+                } else {
+                    throw new Error('fullSupabaseConnect function not available');
+                }
+                
+            } catch (error) {
+                console.error('❌ Connection failed:', error);
+                updateConnectionStatus('disconnected', 'Connection failed');
+                addChatMessage('system', `Connection failed: ${error.message}`);
+                
+                // Show session connection area again on connection failure
+                document.querySelector('.session-connection').style.display = 'block';
+                
+                // Hide connection toggle button when disconnected
+                document.getElementById('connection-toggle').style.display = 'none';
+            }
+        }
+
+        // Send chat message - copied from player-test.html
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            
+            if (message && isNetworkConnected) {
+                try {
+                    // Send via Supabase real-time system - don't add locally (copied from player-test.html)
+                    if (typeof window.sendChatMessageAsync === 'function') {
+                        await window.sendChatMessageAsync(message);
+                        console.log('✅ Message sent via Supabase - waiting for echo');
+                        input.value = '';
+                    } else if (typeof window.sendChatMessage === 'function') {
+                        await window.sendChatMessage(message);
+                        console.log('✅ Message sent via Supabase sync - waiting for echo');
+                        input.value = '';
+                    } else {
+                        throw new Error('Supabase chat functions not available');
+                    }
+                } catch (error) {
+                    console.error('❌ Failed to send message:', error);
+                    addChatMessage('system', `❌ Failed to send: ${error.message}`);
+                }
+            }
+        }
+
+        // Handle enter key in chat input
+        function handleChatKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        // Update connection status UI
+        function updateConnectionStatus(status, text) {
+            const dot = document.getElementById('connection-status-dot');
+            const statusText = document.getElementById('connection-status-text');
+            
+            dot.className = `status-dot ${status}`;
+            statusText.textContent = text;
+        }
+
+        // Add message to chat - copied exactly from player-test.html
+        function addChatMessage(message, type = 'player', sender = '') {
+            // Filter out heartbeat messages
+            if (type === 'heartbeat' || sender === 'Heartbeat' || 
+                (typeof message === 'object' && (message.message_type === 'heartbeat' || message.player_name === 'Heartbeat'))) {
+                console.log('📡 Heartbeat filtered from display');
+                return;
+            }
+            
+            const chatMessages = document.getElementById('chat-messages');
+            const messageEl = document.createElement('div');
+            messageEl.className = `chat-message ${type}`;
+            
+            // Extract message text
+            const messageText = typeof message === 'object' ? message.message_text : message;
+            
+            // Process message for emojis first
+            let processedMessage = messageText;
+            if (window.emojiProcessor) {
+                processedMessage = window.emojiProcessor.processMessage(processedMessage);
+                if (processedMessage !== messageText) {
+                    console.log(`🎭 Emoji converted: "${messageText}" → "${processedMessage}"`);
+                }
+            }
+            
+            // Then process message for chat effects
+            if (window.chatEffectsManager) {
+                const effectResult = window.chatEffectsManager.processMessage(processedMessage);
+                if (effectResult.hasEffects) {
+                    processedMessage = effectResult.html;
+                    console.log('🎨 Applied chat effects to message:', effectResult.effects);
+                }
+            }
+            
+            let prefix = '';
+            if (type === 'system') {
+                prefix = '<strong>System:</strong> ';
+            } else if (type === 'storyteller') {
+                prefix = '<strong>Storyteller:</strong> ';
+            } else if (type === 'player') {
+                prefix = `<strong>${sender || networkPlayerName}:</strong> `;
+            }
+            
+            messageEl.innerHTML = prefix + processedMessage;
+            chatMessages.appendChild(messageEl);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Debounced reset for rapid message additions
+            clearTimeout(window.chatResetTimeout);
+            window.chatResetTimeout = setTimeout(() => {
+                resetChatContainer();
+            }, 500); // Reset after 500ms of no new messages
+        }
+
+        // Reset chat container dimensions after dynamic content changes
+        function resetChatContainer() {
+            const chatMessages = document.getElementById('chat-messages');
+            if (chatMessages) {
+                // Force recalculation of container dimensions
+                chatMessages.style.height = '';
+                chatMessages.style.minHeight = '';
+                
+                // Use requestAnimationFrame to ensure DOM updates are complete
+                requestAnimationFrame(() => {
+                    chatMessages.style.height = '100%';
+                    chatMessages.style.minHeight = '0';
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                });
+            }
+        }
+
+        // Placeholder for chat picker (can be enhanced later)
+        function showChatPicker() {
+            alert('Chat effects coming soon! For now, just type your message normally.');
+        }
+
+        // Hook into existing character save to potentially sync to network
+        // This will be expanded in Phase 2 for character synchronization
+        const originalSaveCharacter = window.saveCurrentCharacterToStorage;
+        if (originalSaveCharacter) {
+            window.saveCurrentCharacterToStorage = function() {
+                const result = originalSaveCharacter.apply(this, arguments);
+                
+                // Future: Add character sync to network here
+                if (isNetworkConnected && character) {
+                    console.log('🔄 Character saved locally, network sync pending...');
+                    // TODO: Implement character sync in Phase 2
+                }
+                
+                return result;
+            };
+        }
     </script>
 </body>
 
