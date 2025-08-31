@@ -1219,6 +1219,10 @@
                         <div class="session-controls">
                             <input type="text" id="session-code-input" placeholder="Paste connection URL from storyteller">
                             <button class="join-session-btn" onclick="joinGameSession()">Join Game</button>
+                            <!-- Command Center Toggle Button - Always Visible -->
+                            <button class="notification-btn command-center-toggle" id="command-center-toggle-main" onclick="toggleCommandCenterModal()" title="Open Command Center" style="margin-left: 10px;">
+                                <span class="material-icons">people</span>
+                            </button>
                         </div>
                         <div class="connection-status">
                             <span class="status-dot" id="connection-status-dot"></span>
@@ -1250,105 +1254,20 @@
                                         <span class="material-icons">map</span>
                                         <span class="notification-dot"></span>
                                     </button>
+                                    <!-- Command Center Toggle Button -->
+                                    <button class="notification-btn command-center-toggle" id="command-center-toggle" onclick="toggleCommandCenterModal()" title="Open Command Center">
+                                        <span class="material-icons">people</span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
                         
-                        <!-- Chat Layout: Messages + Command Center -->
+                        <!-- Chat Layout: Full-width Messages -->
                         <div class="chat-layout">
                             <div id="chat-messages">
                                 <div class="chat-message system">
                                     <span class="message-author">System:</span>
                                     Welcome to DCC! Enter a session code above to join your game.
-                                </div>
-                            </div>
-                            
-                            <!-- Command Center Panel -->
-                            <div class="command-center" id="command-center">
-                                <div class="command-center-header">
-                                    <h4>Command Center</h4>
-                                    <button class="minimize-btn" onclick="toggleCommandCenter()" title="Toggle Command Center">
-                                        <span class="material-icons">keyboard_arrow_right</span>
-                                    </button>
-                                </div>
-                                
-                                <div class="command-center-content">
-                                    <!-- Connected Players -->
-                                    <div class="player-selector">
-                                        <h5>Connected Players</h5>
-                                        <div class="player-list" id="connected-players">
-                                            <div class="player-item self">
-                                                <div class="player-avatar">
-                                                    <div class="avatar-placeholder">👤</div>
-                                                </div>
-                                                <div class="player-info">
-                                                    <div class="player-name" id="self-player-name">You</div>
-                                                    <div class="player-details">Lvl: 1<br>Unknown - Unknown</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Collapsible Quick Tools -->
-                                    <div class="quick-tools">
-                                        <div class="tools-header" onclick="toggleQuickTools()">
-                                            <h5>Quick Tools</h5>
-                                            <span class="chevron" id="tools-chevron">▼</span>
-                                        </div>
-                                        <div class="tools-content" id="tools-content">
-                                            <!-- Image Upload Tool -->
-                                            <div class="quick-actions">
-                                                <h6>Image Upload</h6>
-                                                <div class="action-buttons">
-                                                    <button id="v4-image-upload-btn" class="action-btn" title="Upload Image">
-                                                        <span>📷</span>
-                                                        <span>Upload Image</span>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            
-                                            <!-- Temporarily commented out - Quick Actions
-                                            <div class="quick-actions">
-                                                <h6>Actions</h6>
-                                                <div class="action-buttons">
-                                                    <button class="action-btn" onclick="quickDiceRoll()" title="Roll d20">
-                                                        <span class="material-icons">casino</span>
-                                                        <span>d20</span>
-                                                    </button>
-                                                    <button class="action-btn" onclick="showChatEffects()" title="Chat Effects">
-                                                        <span>✨</span>
-                                                        <span>Effects</span>
-                                                    </button>
-                                                    <button class="action-btn" onclick="sendEmoji('👍')" title="Thumbs Up">
-                                                        <span>👍</span>
-                                                    </button>
-                                                    <button class="action-btn" onclick="sendEmoji('❤️')" title="Heart">
-                                                        <span>❤️</span>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            -->
-                                            
-                                            <!-- Chat Effects Quick Access -->
-                                            <div class="effects-quick">
-                                                <h6>Quick Effects</h6>
-                                                <div class="effects-buttons">
-                                                    <button class="effect-btn" onclick="insertChatEffect(':crit:')" title="Critical Hit">
-                                                        ⚔️ Crit
-                                                    </button>
-                                                    <button class="effect-btn" onclick="insertChatEffect(':magic:')" title="Magic Sparkle">
-                                                        ✨ Magic
-                                                    </button>
-                                                    <button class="effect-btn" onclick="insertChatEffect(':doom:')" title="Doom">
-                                                        💀 Doom
-                                                    </button>
-                                                    <button class="effect-btn" onclick="insertChatEffect(':dice:')" title="Dice Roll">
-                                                        🎲 Dice
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1800,6 +1719,73 @@
                             <i class="ra ra-flask" style="margin-right: 8px;"></i>
                             Apply Effect
                         </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Command Center Modal -->
+    <div id="command-center-modal" class="modal level-up-modal-overlay" style="display: none;">
+        <div class="modal-content level-up-modal-content" style="max-width: 600px; width: 90vw;">
+            <div class="modal-header">
+                <h3><i class="material-icons">people</i> Command Center</h3>
+                <button class="close-modal" onclick="closeCommandCenterModal()" style="background: transparent; border: none; color: white; font-size: 24px; cursor: pointer;">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="command-center-modal-content">
+                    <!-- Connected Players -->
+                    <div class="player-selector">
+                        <h5>Connected Players</h5>
+                        <div class="player-list" id="modal-connected-players">
+                            <div class="player-item self">
+                                <div class="player-avatar">
+                                    <div class="avatar-placeholder">👤</div>
+                                </div>
+                                <div class="player-info">
+                                    <div class="player-name" id="modal-self-player-name">You</div>
+                                    <div class="player-details">Lvl: 1<br>Unknown - Unknown</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Tools -->
+                    <div class="quick-tools" style="margin-top: 20px;">
+                        <h5>Quick Tools</h5>
+                        <div class="tools-content">
+                            <!-- Image Upload Tool -->
+                            <div class="quick-actions">
+                                <h6>Image Upload</h6>
+                                <div class="action-buttons">
+                                    <button id="modal-v4-image-upload-btn" class="action-btn" title="Upload Image" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                                        <span>📷</span>
+                                        <span>Upload Image</span>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Chat Effects Quick Access -->
+                            <div class="effects-quick" style="margin-top: 15px;">
+                                <h6>Quick Effects</h6>
+                                <div class="effects-buttons" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                    <button class="effect-btn" onclick="insertChatEffect(':crit:')" title="Critical Hit" style="background: rgba(255, 0, 0, 0.2); color: white; border: 1px solid rgba(255, 0, 0, 0.5); padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                        ⚔️ Crit
+                                    </button>
+                                    <button class="effect-btn" onclick="insertChatEffect(':magic:')" title="Magic Sparkle" style="background: rgba(138, 43, 226, 0.2); color: white; border: 1px solid rgba(138, 43, 226, 0.5); padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                        ✨ Magic
+                                    </button>
+                                    <button class="effect-btn" onclick="insertChatEffect(':doom:')" title="Doom" style="background: rgba(0, 0, 0, 0.4); color: white; border: 1px solid rgba(128, 128, 128, 0.5); padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                        💀 Doom
+                                    </button>
+                                    <button class="effect-btn" onclick="insertChatEffect(':dice:')" title="Dice Roll" style="background: rgba(0, 128, 0, 0.2); color: white; border: 1px solid rgba(0, 128, 0, 0.5); padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                        🎲 Dice
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2289,17 +2275,81 @@
 
         // Command Center functions
         function toggleCommandCenter() {
-            const commandCenter = document.getElementById('command-center');
-            const minimizeBtn = commandCenter.querySelector('.minimize-btn .material-icons');
-            
-            commandCenter.classList.toggle('minimized');
-            
-            if (commandCenter.classList.contains('minimized')) {
-                minimizeBtn.textContent = 'keyboard_arrow_left';
+            // Legacy function - kept for compatibility
+            // Now opens the modal instead
+            toggleCommandCenterModal();
+        }
+
+        function toggleCommandCenterModal() {
+            const modal = document.getElementById('command-center-modal');
+            if (modal.style.display === 'none' || modal.style.display === '') {
+                showCommandCenterModal();
             } else {
-                minimizeBtn.textContent = 'keyboard_arrow_right';
+                closeCommandCenterModal();
             }
         }
+
+        function showCommandCenterModal() {
+            const modal = document.getElementById('command-center-modal');
+            
+            // Sync the modal player list with the main one
+            syncModalPlayerList();
+            
+            // Show the modal
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            
+            // Set up image upload button in modal
+            const modalImageBtn = document.getElementById('modal-v4-image-upload-btn');
+            const originalImageBtn = document.getElementById('v4-image-upload-btn');
+            if (modalImageBtn && originalImageBtn) {
+                modalImageBtn.onclick = originalImageBtn.onclick;
+            }
+            
+            console.log('Command Center modal opened');
+        }
+
+        function closeCommandCenterModal() {
+            const modal = document.getElementById('command-center-modal');
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+            console.log('Command Center modal closed');
+        }
+
+        function syncModalPlayerList() {
+            const originalPlayerList = document.getElementById('connected-players');
+            const modalPlayerList = document.getElementById('modal-connected-players');
+            
+            if (originalPlayerList && modalPlayerList) {
+                // Copy the player list content to the modal
+                modalPlayerList.innerHTML = originalPlayerList.innerHTML;
+                
+                // Update the self player name
+                const modalSelfName = document.getElementById('modal-self-player-name');
+                const originalSelfName = document.getElementById('self-player-name');
+                if (modalSelfName && originalSelfName) {
+                    modalSelfName.textContent = originalSelfName.textContent;
+                }
+            }
+        }
+
+        // Close modal when clicking outside of it
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('command-center-modal');
+            if (event.target === modal) {
+                closeCommandCenterModal();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const modal = document.getElementById('command-center-modal');
+                if (modal.style.display === 'flex') {
+                    closeCommandCenterModal();
+                }
+            }
+        });
 
         function quickDiceRoll() {
             const roll = Math.floor(Math.random() * 20) + 1;
