@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Service Image Host Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .service-status {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .service-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .service-item:last-child {
+            border-bottom: none;
+        }
+        
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .status-enabled {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-disabled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            transition: border-color 0.3s ease;
+        }
+        
+        .upload-area:hover {
+            border-color: #667eea;
+        }
+        
+        .upload-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            transition: transform 0.2s ease;
+        }
+        
+        .upload-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .upload-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .result-area {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .result-success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+        }
+        
+        .result-error {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+        }
+        
+        .image-preview {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        
+        .progress-log {
+            background: #f1f3f4;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            margin: 2px 0;
+        }
+        
+        .chat-demo {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .chat-message {
+            background: white;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 10px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Multi-Service Image Host Test</h1>
+        
+        <div class="service-status">
+            <h3>Service Status</h3>
+            <div id="service-list"></div>
+        </div>
+        
+        <div class="upload-area">
+            <h3>📷 Upload Test</h3>
+            <p>Test the multi-service image hosting with automatic fallbacks</p>
+            <button id="upload-btn" class="upload-btn">Choose Image to Upload</button>
+            <button id="chat-btn" class="upload-btn">Add Chat Image Button</button>
+        </div>
+        
+        <div id="progress-log" class="progress-log" style="display: none;">
+            <h4>Upload Progress</h4>
+            <div id="log-entries"></div>
+        </div>
+        
+        <div id="result-area" class="result-area">
+            <h4>Upload Result</h4>
+            <div id="result-content"></div>
+        </div>
+        
+        <div class="chat-demo">
+            <h3>💬 Chat Integration Demo</h3>
+            <p>Click "Add Chat Image Button" to see how it integrates with chat systems</p>
+            <div id="chat-container"></div>
+        </div>
+    </div>
+
+    <script src="js/multiImageHost.js"></script>
+    <script>
+        // Initialize multi-service image host
+        const imageHost = new MultiImageHost({
+            maxRetries: 3,
+            retryDelay: 1500,
+            maxFileSize: 10 * 1024 * 1024, // 10MB
+            // Add API keys here if you have them
+            imgbbApiKey: null,
+            imgurClientId: 'a0113671de8f93b'
+        });
+
+        // Display service status
+        function updateServiceStatus() {
+            const statusList = document.getElementById('service-list');
+            const services = imageHost.getServiceStatus();
+            
+            statusList.innerHTML = services.map(service => `
+                <div class="service-item">
+                    <span>
+                        <strong>${service.name}</strong>
+                        ${service.hasApiKey ? '🔑' : '🆓'}
+                        (${service.rateLimit}ms rate limit)
+                    </span>
+                    <span class="status-badge ${service.enabled ? 'status-enabled' : 'status-disabled'}">
+                        ${service.enabled ? 'Enabled' : 'Disabled'}
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        // Logging functions
+        function showProgress() {
+            document.getElementById('progress-log').style.display = 'block';
+            document.getElementById('log-entries').innerHTML = '';
+        }
+
+        function addLogEntry(message, type = 'info') {
+            const logEntries = document.getElementById('log-entries');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `<span style="color: ${type === 'error' ? '#dc3545' : type === 'success' ? '#28a745' : '#6c757d'}">[${new Date().toLocaleTimeString()}]</span> ${message}`;
+            logEntries.appendChild(entry);
+            logEntries.scrollTop = logEntries.scrollHeight;
+        }
+
+        function showResult(success, content) {
+            const resultArea = document.getElementById('result-area');
+            const resultContent = document.getElementById('result-content');
+            
+            resultArea.className = `result-area ${success ? 'result-success' : 'result-error'}`;
+            resultArea.style.display = 'block';
+            resultContent.innerHTML = content;
+        }
+
+        // Upload button handler
+        document.getElementById('upload-btn').addEventListener('click', async () => {
+            const button = document.getElementById('upload-btn');
+            
+            try {
+                button.disabled = true;
+                button.textContent = '⏳ Selecting file...';
+                showProgress();
+                
+                addLogEntry('Starting upload process...');
+                
+                const result = await imageHost.pickAndUploadImage({
+                    onProgress: (message) => {
+                        addLogEntry(message);
+                    }
+                });
+                
+                addLogEntry(`✅ Upload successful via ${result.service}`, 'success');
+                
+                showResult(true, `
+                    <h5>Upload Successful! 🎉</h5>
+                    <p><strong>Service:</strong> ${result.service}</p>
+                    <p><strong>URL:</strong> <a href="${result.url}" target="_blank">${result.url}</a></p>
+                    ${result.deleteUrl ? `<p><strong>Delete URL:</strong> <a href="${result.deleteUrl}" target="_blank">Delete Image</a></p>` : ''}
+                    <img src="${result.url}" class="image-preview" alt="Uploaded image">
+                `);
+                
+                button.textContent = '✅ Upload Complete!';
+                setTimeout(() => {
+                    button.textContent = 'Choose Image to Upload';
+                    button.disabled = false;
+                }, 2000);
+                
+            } catch (error) {
+                addLogEntry(`❌ Upload failed: ${error.message}`, 'error');
+                
+                showResult(false, `
+                    <h5>Upload Failed 😞</h5>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                    <p>All services may be temporarily unavailable or rate limited.</p>
+                `);
+                
+                button.textContent = '❌ Upload Failed';
+                setTimeout(() => {
+                    button.textContent = 'Choose Image to Upload';
+                    button.disabled = false;
+                }, 3000);
+            }
+        });
+
+        // Chat button demo
+        document.getElementById('chat-btn').addEventListener('click', () => {
+            const chatContainer = document.getElementById('chat-container');
+            
+            const chatButton = imageHost.generateChatButton({
+                onImageUploaded: (url, imageHtml) => {
+                    // Simulate adding to chat
+                    const message = document.createElement('div');
+                    message.className = 'chat-message';
+                    message.innerHTML = `
+                        <strong>You:</strong> Shared an image<br>
+                        ${imageHtml}
+                    `;
+                    chatContainer.appendChild(message);
+                    
+                    addLogEntry(`Image shared in chat: ${url}`, 'success');
+                }
+            });
+            
+            chatContainer.appendChild(chatButton);
+            addLogEntry('Chat image button added');
+        });
+
+        // Initialize
+        updateServiceStatus();
+        addLogEntry('Multi-service image host initialized');
+        addLogEntry(`Services available: Telegraph (free), Catbox (free), ImgBB (API key), Imgur (fallback)`);
+    </script>
+</body>
+</html>

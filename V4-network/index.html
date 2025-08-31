@@ -1296,7 +1296,18 @@
                                             <span class="chevron" id="tools-chevron">▼</span>
                                         </div>
                                         <div class="tools-content" id="tools-content">
-                                            <!-- Quick Actions -->
+                                            <!-- Image Upload Tool -->
+                                            <div class="quick-actions">
+                                                <h6>Image Upload</h6>
+                                                <div class="action-buttons">
+                                                    <button id="v4-image-upload-btn" class="action-btn" title="Upload Image">
+                                                        <span>📷</span>
+                                                        <span>Upload Image</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Temporarily commented out - Quick Actions
                                             <div class="quick-actions">
                                                 <h6>Actions</h6>
                                                 <div class="action-buttons">
@@ -1316,6 +1327,7 @@
                                                     </button>
                                                 </div>
                                             </div>
+                                            -->
                                             
                                             <!-- Chat Effects Quick Access -->
                                             <div class="effects-quick">
@@ -2128,6 +2140,15 @@
     <script src="js/modules/jsonDataLoader.js"></script>
     <script src="js/modules/dccUtilities.js"></script>
     <script src="js/modules/chatCommandParser.js"></script>
+    
+    <!-- Image Hosting System -->
+    <script src="js/githubTokenStorage.js"></script>
+    <script src="js/githubImageHost.js"></script>
+    <script src="js/multiImageHost.js"></script>
+    <script src="js/chatImageSystem.js"></script>
+    <script src="js/githubImageTesting.js"></script>
+    <script src="js/githubImageAutoInit.js"></script>
+    
     <script src="js/command-interceptor.js"></script>
     <script src="js/modules/chatEffectsManager.js"></script>
     <script src="js/modules/emojiProcessor.js"></script>
@@ -2937,6 +2958,9 @@
             };
         }
     </script>
+    
+    <!-- Image Upload Integration -->
+    <script src="js/chatImageUploadIntegration.js"></script>
 </body>
 
 </html>

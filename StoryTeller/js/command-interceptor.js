@@ -131,7 +131,7 @@ function isCommandMessage(messageText) {
     // Look for patterns like: COMMAND:PlayerName or COMMAND:PlayerName:parameters
     const commandPattern = /^(LOOT|ACHIEVEMENT|LEVELUP|ITEM|SKILL|EXP|GOLD|HEALTH|STAT|CLEAN):[^:]+/;
     // Also check for special silent commands
-    const silentCommandPattern = /^\/refreshmap$|^\/sendmap$/;
+    const silentCommandPattern = /^\/refreshmap$|^\/sendmap$|^\/github:/;
     // Also check for map sync messages that should be hidden
     const mapSyncPattern = /^MAP_SYNC:/;
     return commandPattern.test(messageText) || silentCommandPattern.test(messageText) || mapSyncPattern.test(messageText);
@@ -193,6 +193,72 @@ async function processCommandMessage(message) {
                 }
             }
             console.log('🔄 Player requested map refresh via /sendmap');
+        }
+        
+        // Return a null message to suppress display
+        return null;
+    }
+    
+    // Handle /github:token command - storyteller distributes GitHub API token
+    if (messageText.startsWith('/github:')) {
+        console.log('📡 Processing GitHub token distribution command');
+        
+        // Only storytellers can distribute tokens
+        if (isStoryteller) {
+            const tokenPart = messageText.substring(8); // Remove '/github:'
+            
+            if (tokenPart) {
+                // Store the token in IndexedDB for this storyteller
+                if (window.githubTokenStorage) {
+                    try {
+                        await window.githubTokenStorage.storeToken(tokenPart);
+                        console.log('🔑 GitHub API token stored in IndexedDB');
+                    } catch (error) {
+                        console.warn('⚠️ IndexedDB storage failed, using localStorage fallback');
+                        localStorage.setItem('github_api_token', tokenPart);
+                    }
+                } else {
+                    localStorage.setItem('github_api_token', tokenPart);
+                }
+                console.log('🔑 GitHub API token stored locally');
+                
+                // Initialize/update GitHubImageHost if it exists
+                if (window.MultiImageHost) {
+                    try {
+                        // Update the GitHub configuration
+                        const githubConfig = {
+                            owner: 'ronmurphy',
+                            repo: 'dcc-image-storage',
+                            apiToken: tokenPart
+                        };
+                        
+                        // Update existing GitHubImageHost instance
+                        if (window.multiImageHost && window.multiImageHost.githubHost) {
+                            window.multiImageHost.githubHost.config.apiToken = tokenPart;
+                            console.log('🔑 GitHubImageHost token updated');
+                        }
+                        
+                        console.log('✅ GitHub integration ready for image hosting');
+                    } catch (error) {
+                        console.warn('⚠️ Error updating GitHub configuration:', error);
+                    }
+                }
+                
+                // Show confirmation to storyteller
+                if (originalDisplayChatMessage && typeof originalDisplayChatMessage === 'function') {
+                    const confirmationMessage = {
+                        ...message,
+                        message_text: "✅ GitHub API key configured! Image hosting ready.",
+                        sender_name: "System",
+                        created_at: new Date().toISOString()
+                    };
+                    originalDisplayChatMessage(confirmationMessage);
+                }
+            } else {
+                console.warn('⚠️ No token provided in /github: command');
+            }
+        } else {
+            console.log('🔑 Player received GitHub token distribution (ignored)');
         }
         
         // Return a null message to suppress display

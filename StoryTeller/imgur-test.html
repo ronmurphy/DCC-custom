@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Imgur Host Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+        .test-button:hover {
+            background: #5a6fd8;
+        }
+        .test-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .chat-simulation {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            min-height: 200px;
+        }
+        .chat-message {
+            margin: 10px 0;
+            padding: 8px 12px;
+            background: white;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🖼️ Imgur Host Test Interface</h1>
+        
+        <div class="status" id="status">
+            Ready to test image uploads...
+        </div>
+        
+        <div>
+            <button class="test-button" onclick="testBasicUpload()">
+                📷 Test Basic Upload
+            </button>
+            
+            <button class="test-button" onclick="testChatIntegration()">
+                💬 Test Chat Integration
+            </button>
+            
+            <button class="test-button" onclick="clearChatSimulation()">
+                🗑️ Clear Chat
+            </button>
+        </div>
+        
+        <div class="chat-simulation" id="chatSimulation">
+            <div class="chat-message">
+                <strong>System:</strong> Chat simulation ready. Upload an image to test!
+            </div>
+        </div>
+        
+        <h3>Features:</h3>
+        <ul>
+            <li>✅ File picker for image selection</li>
+            <li>✅ File validation (type, size)</li>
+            <li>✅ Imgur API upload</li>
+            <li>✅ Direct URL generation</li>
+            <li>✅ Chat button generation with player colors</li>
+            <li>✅ Modal image viewer</li>
+            <li>✅ Error handling and feedback</li>
+        </ul>
+        
+        <h3>Next Steps:</h3>
+        <ul>
+            <li>🔄 Integrate with chatCommandParser.js</li>
+            <li>🔄 Add to command-interceptor.js</li>
+            <li>🔄 Connect with player accent colors</li>
+            <li>🔄 Add to both StoryTeller and V4-network chat interfaces</li>
+        </ul>
+    </div>
+
+    <!-- Include the ImgurHost module -->
+    <script src="js/imgurHost.js"></script>
+    
+    <script>
+        // Test functions
+        
+        async function testBasicUpload() {
+            const statusDiv = document.getElementById('status');
+            
+            try {
+                statusDiv.innerHTML = '⏳ Opening file picker...';
+                statusDiv.style.background = '#fff3cd';
+                statusDiv.style.borderColor = '#ffc107';
+                
+                const result = await window.imgurHost.pickAndUploadImage({
+                    title: 'Test Upload',
+                    description: 'Testing ImgurHost module'
+                });
+                
+                statusDiv.innerHTML = `✅ Upload successful!<br>
+                    <strong>URL:</strong> <a href="${result.url}" target="_blank">${result.url}</a><br>
+                    <strong>Size:</strong> ${window.imgurHost.formatFileSize(result.size)}<br>
+                    <strong>Dimensions:</strong> ${result.width}x${result.height}`;
+                statusDiv.style.background = '#d4edda';
+                statusDiv.style.borderColor = '#28a745';
+                
+                // Add to chat simulation
+                addToChatSimulation('TestUser', `Check out this image!`, result.url, '#28a745');
+                
+            } catch (error) {
+                if (error.message !== 'Upload cancelled') {
+                    statusDiv.innerHTML = `❌ Upload failed: ${error.message}`;
+                    statusDiv.style.background = '#f8d7da';
+                    statusDiv.style.borderColor = '#dc3545';
+                } else {
+                    statusDiv.innerHTML = '🚫 Upload cancelled by user';
+                    statusDiv.style.background = '#e2e3e5';
+                    statusDiv.style.borderColor = '#6c757d';
+                }
+            }
+        }
+        
+        async function testChatIntegration() {
+            const statusDiv = document.getElementById('status');
+            
+            try {
+                statusDiv.innerHTML = '⏳ Testing chat integration...';
+                statusDiv.style.background = '#fff3cd';
+                statusDiv.style.borderColor = '#ffc107';
+                
+                const result = await window.imgurHost.pickAndUploadImage({
+                    title: 'Chat Image Share',
+                    description: 'Shared via DCC Custom Chat'
+                });
+                
+                // Simulate different player colors
+                const playerColors = ['#667eea', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4'];
+                const randomColor = playerColors[Math.floor(Math.random() * playerColors.length)];
+                
+                addToChatSimulation('Player' + Math.floor(Math.random() * 999), 'Look at this!', result.url, randomColor);
+                
+                statusDiv.innerHTML = '✅ Chat integration test complete!';
+                statusDiv.style.background = '#d4edda';
+                statusDiv.style.borderColor = '#28a745';
+                
+            } catch (error) {
+                if (error.message !== 'Upload cancelled') {
+                    statusDiv.innerHTML = `❌ Chat integration test failed: ${error.message}`;
+                    statusDiv.style.background = '#f8d7da';
+                    statusDiv.style.borderColor = '#dc3545';
+                }
+            }
+        }
+        
+        function addToChatSimulation(playerName, message, imageUrl, playerColor) {
+            const chatDiv = document.getElementById('chatSimulation');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chat-message';
+            messageDiv.style.borderLeftColor = playerColor;
+            
+            const imageButton = window.imgurHost.generateChatButton(imageUrl, playerColor, 'IMAGE');
+            
+            messageDiv.innerHTML = `<strong style="color: ${playerColor}">${playerName}:</strong> ${message} ${imageButton}`;
+            
+            chatDiv.appendChild(messageDiv);
+            chatDiv.scrollTop = chatDiv.scrollHeight;
+        }
+        
+        function clearChatSimulation() {
+            const chatDiv = document.getElementById('chatSimulation');
+            chatDiv.innerHTML = '<div class="chat-message"><strong>System:</strong> Chat cleared. Ready for new tests!</div>';
+        }
+        
+        // Test auto-initialization
+        window.addEventListener('load', () => {
+            console.log('🧪 Imgur Host test page loaded');
+            console.log('Available methods:', Object.getOwnPropertyNames(window.imgurHost));
+        });
+    </script>
+</body>
+</html>
