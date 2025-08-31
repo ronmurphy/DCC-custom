@@ -1545,8 +1545,29 @@ function handleIncomingMessage(message) {
     
     // Show notification if not on chat tab
     const chatTab = document.getElementById('chat');
-    if (chatTab && !chatTab.classList.contains('active')) {
-        showChatNotification();
+    const bottomSheet = document.getElementById('chat-bottom-sheet');
+    
+    // Only show notifications for NOTEs meant for this player
+    const isPrivateNote = message.toLowerCase().includes(`note:${(window.networkPlayerName || '').toLowerCase()}:`);
+    
+    // Don't show notifications if chat is open (redundant)
+    const isChatOpen = (chatTab && chatTab.classList.contains('active')) || 
+                      (bottomSheet && bottomSheet.classList.contains('open'));
+    
+    if (isPrivateNote && !isChatOpen) {
+        // Update FAB notification for private notes
+        if (typeof window.updateFABNotification === 'function') {
+            window.updateFABNotification();
+        }
+        
+        // Optional: Show browser notification for important private notes
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('Private Note Received', {
+                body: `You have a private note from ${senderName || 'Storyteller'}`,
+                icon: '/icon-192.png',
+                silent: false
+            });
+        }
     }
     
     // Update connected players list (debounced)

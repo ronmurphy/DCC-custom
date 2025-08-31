@@ -137,9 +137,11 @@
             <button class="header-btn trophy-btn" onclick="showAchievementsModal()" title="View Achievements">
                 <span class="material-icons">emoji_events</span>
             </button>
+            <!-- Roll History moved to Chat Bottom Sheet
             <button class="header-btn roll-history-btn" onclick="showRollHistoryModal()" title="View Roll History">
                 <i class="ra ra-perspective-dice-six"></i>
             </button>
+            -->
             <button class="header-btn status-effects-btn" onclick="showStatusEffectsModal()" title="View Status Effects">
                 <i class="ra ra-biohazard"></i>
             </button>
@@ -173,10 +175,11 @@
                     <span class="tab-icon"><i class="ra ra-fairy-wand"></i></span>
                     <span class="tab-label">Magic & Spells</span>
                 </button>
-                <button class="sidebar-tab" data-tab="chat">
+                <!-- Chat Tab Removed - Now using FAB + Bottom Sheet -->
+                <!-- <button class="sidebar-tab" data-tab="chat">
                     <span class="tab-icon"><i class="ra ra-conversation"></i></span>
                     <span class="tab-label">Game Chat</span>
-                </button>
+                </button> -->
                 <!-- <button class="sidebar-tab" data-tab="combat">
                     <span class="tab-icon"><i class="ra ra-crossed-swords"></i></span>
                     <span class="tab-label">Combat & Dice</span>
@@ -2397,6 +2400,402 @@
             chatInput.setSelectionRange(newPos, newPos);
         }
 
+        // ========================================
+        // FAB + BOTTOM SHEET CHAT FUNCTIONS
+        // ========================================
+
+        function toggleChatBottomSheet() {
+            const sheet = document.getElementById('chat-bottom-sheet');
+            if (sheet.classList.contains('open')) {
+                closeChatBottomSheet();
+            } else {
+                openChatBottomSheet();
+            }
+        }
+
+        function openChatBottomSheet() {
+            const sheet = document.getElementById('chat-bottom-sheet');
+            sheet.classList.add('open');
+            document.body.style.overflow = 'hidden';
+            
+            // Sync connection status
+            syncSheetConnectionStatus();
+            
+            // Focus on input if connected
+            const input = document.getElementById('sheet-chat-input');
+            setTimeout(() => {
+                if (input && isNetworkConnected) {
+                    input.focus();
+                }
+            }, 300);
+            
+            console.log('📱 Chat bottom sheet opened');
+        }
+
+        function closeChatBottomSheet() {
+            const sheet = document.getElementById('chat-bottom-sheet');
+            sheet.classList.remove('open', 'expanded');
+            document.body.style.overflow = '';
+            
+            console.log('📱 Chat bottom sheet closed');
+        }
+
+        function expandBottomSheet() {
+            const sheet = document.getElementById('chat-bottom-sheet');
+            sheet.classList.toggle('expanded');
+            
+            const expandBtn = document.getElementById('expand-sheet-btn');
+            const icon = expandBtn.querySelector('.material-icons');
+            
+            if (sheet.classList.contains('expanded')) {
+                icon.textContent = 'fullscreen_exit';
+                expandBtn.title = 'Exit full screen';
+            } else {
+                icon.textContent = 'fullscreen';
+                expandBtn.title = 'Expand to full screen';
+            }
+        }
+
+        function syncSheetConnectionStatus() {
+            const sheetStatusDot = document.getElementById('sheet-status-dot');
+            const sheetStatusText = document.getElementById('sheet-status-text');
+            const originalStatusDot = document.getElementById('connection-status-dot');
+            const originalStatusText = document.getElementById('connection-status-text');
+            
+            if (sheetStatusDot && originalStatusDot) {
+                sheetStatusDot.className = originalStatusDot.className;
+            }
+            
+            if (sheetStatusText && originalStatusText) {
+                sheetStatusText.textContent = originalStatusText.textContent;
+            }
+            
+            // Show/hide connection area based on connection status
+            const connectionArea = document.getElementById('sheet-connection-area');
+            const playerChips = document.getElementById('player-chips-area');
+            
+            if (connectionArea) {
+                connectionArea.style.display = isNetworkConnected ? 'none' : 'block';
+            }
+            
+            if (playerChips) {
+                playerChips.style.display = isNetworkConnected ? 'block' : 'none';
+            }
+        }
+
+        function joinGameSessionFromSheet() {
+            const input = document.getElementById('sheet-session-input');
+            const originalInput = document.getElementById('session-code-input');
+            
+            if (input && originalInput) {
+                originalInput.value = input.value;
+                joinGameSession();
+            }
+        }
+
+        function sendSheetMessage() {
+            const input = document.getElementById('sheet-chat-input');
+            if (input && input.value.trim()) {
+                const message = input.value.trim();
+                
+                if (isNetworkConnected) {
+                    sendChatMessageDirect(message);
+                } else {
+                    // Add to sheet chat for demo
+                    addSheetChatMessage(message, 'player', networkPlayerName || 'You');
+                }
+                
+                input.value = '';
+                toggleSheetSendButton();
+            }
+        }
+
+        function handleSheetChatKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendSheetMessage();
+            }
+            toggleSheetSendButton();
+        }
+
+        function toggleSheetSendButton() {
+            const input = document.getElementById('sheet-chat-input');
+            const sendBtn = document.querySelector('.sheet-send-btn');
+            
+            if (input && sendBtn) {
+                sendBtn.disabled = !input.value.trim();
+            }
+        }
+
+        function addSheetChatMessage(message, type = 'system', author = 'System') {
+            const messagesContainer = document.getElementById('sheet-chat-messages');
+            if (!messagesContainer) return;
+
+            const messageElement = document.createElement('div');
+            messageElement.className = `chat-message ${type}`;
+            
+            if (type === 'system') {
+                messageElement.innerHTML = `<span class="message-author">${author}:</span> ${message}`;
+            } else {
+                messageElement.innerHTML = `<span class="message-author">${author}:</span> ${message}`;
+            }
+
+            messageElement.style.margin = '8px 0';
+            messageElement.style.padding = '8px 12px';
+            messageElement.style.borderRadius = '8px';
+            messageElement.style.backgroundColor = type === 'system' ? 'rgba(255, 193, 7, 0.1)' : 'rgba(0, 123, 255, 0.1)';
+
+            messagesContainer.appendChild(messageElement);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function showSheetChatEffects() {
+            // Placeholder for chat effects
+            alert('Chat effects: Try :crit:, :magic:, :doom:, or :dice: in your messages!');
+        }
+
+        function showSheetImageUpload() {
+            // Trigger the existing image upload if available
+            const imageUploadBtn = document.getElementById('v4-image-upload-btn') || document.getElementById('modal-v4-image-upload-btn');
+            if (imageUploadBtn && imageUploadBtn.onclick) {
+                imageUploadBtn.onclick();
+            } else {
+                alert('Image upload will be available when connected to a session.');
+            }
+        }
+
+        function showSheetPlayers() {
+            // Show command center modal for player selection
+            if (typeof showCommandCenterModal === 'function') {
+                showCommandCenterModal();
+            } else {
+                alert('Connect to a session to see other players for sending notes.');
+            }
+        }
+
+        // Enable input monitoring for send button
+        document.addEventListener('DOMContentLoaded', function() {
+            const sheetInput = document.getElementById('sheet-chat-input');
+            if (sheetInput) {
+                sheetInput.addEventListener('input', toggleSheetSendButton);
+            }
+        });
+
+        // ========================================
+        // CHAT TAB FUNCTIONS
+        // ========================================
+
+        function switchChatTab(tabName) {
+            // Update tab buttons
+            const tabs = document.querySelectorAll('.sheet-tab');
+            const panels = document.querySelectorAll('.tab-panel');
+            
+            tabs.forEach(tab => {
+                if (tab.dataset.tab === tabName) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+            
+            // Update tab content
+            panels.forEach(panel => {
+                if (panel.id === tabName + '-tab-panel') {
+                    panel.classList.add('active');
+                } else {
+                    panel.classList.remove('active');
+                }
+            });
+            
+            // Update roll history when switching to rolls tab
+            if (tabName === 'rolls') {
+                updateChatRollHistory();
+            }
+            
+            console.log(`📋 Switched to ${tabName} tab`);
+        }
+
+        // ========================================
+        // CHAT ROLL HISTORY FUNCTIONS  
+        // ========================================
+
+        function updateChatRollHistory() {
+            const rollHistoryContainer = document.getElementById('sheet-roll-history');
+            if (!rollHistoryContainer) return;
+
+            // Get roll history from character data (same as main roll history)
+            if (!character || !character.rollHistory || character.rollHistory.length === 0) {
+                rollHistoryContainer.innerHTML = `
+                    <div style="text-align: center; color: #8a8a8a; padding: 40px;">
+                        <i class="ra ra-perspective-dice-six" style="font-size: 3em; margin-bottom: 15px; display: block;"></i>
+                        No rolls yet! Click attributes, skills, weapons, or spells to start rolling.
+                    </div>
+                `;
+                return;
+            }
+
+            // Render roll history items (using same logic as main updateRollHistoryDisplay)
+            rollHistoryContainer.innerHTML = character.rollHistory.map((roll, index) => {
+                let content = '';
+                let typeIcon = '';
+                let typeColor = '';
+
+                if (roll.type === 'Weapon') {
+                    typeIcon = 'ra-sword';
+                    typeColor = '#d4af37';
+                    content = `
+                        <div class="roll-item-header">
+                            <h4 class="roll-item-title">
+                                <i class="ra ${typeIcon}"></i> ${roll.name} Attack ${roll.toHit?.isCrit ? '💥' : ''}
+                            </h4>
+                            <span class="roll-item-timestamp">${roll.timestamp}</span>
+                        </div>
+                        ${roll.toHit?.isCrit ? '<div class="crit-indicator">CRITICAL HIT!</div>' : ''}
+                        <div class="roll-item-result">
+                            To Hit: ${roll.toHit?.total || 'N/A'} | Damage: ${roll.totalDamage}
+                        </div>
+                        <div class="roll-item-details">
+                            To Hit: d10(${roll.toHit?.d10Roll || '?'}) + ${roll.statUsed.substring(0, 3).toUpperCase()}(${roll.toHit?.statBonus || '?'}) + Lv(${roll.toHit?.levelBonus || '?'})<br>
+                            Damage: d${roll.diceType}(${roll.damageRoll}) + ${roll.statUsed.substring(0, 3).toUpperCase()}(${roll.statBonus})${roll.toHit?.isCrit ? ' + Crit(5)' : ''}<br>
+                            ${roll.weaponSize} ${roll.isRanged ? 'Ranged' : 'Melee'} Weapon
+                        </div>
+                    `;
+                } else if (roll.type === 'Spell' && roll.toHit) {
+                    typeIcon = 'ra-lightning';
+                    typeColor = '#8a4a8a';
+                    content = `
+                        <div class="roll-item-header">
+                            <h4 class="roll-item-title">
+                                <i class="ra ${typeIcon}"></i> ${roll.name} ${roll.toHit?.isCrit ? '💥' : ''}
+                            </h4>
+                            <span class="roll-item-timestamp">${roll.timestamp}</span>
+                        </div>
+                        ${roll.toHit?.isCrit ? '<div class="crit-indicator">CRITICAL HIT!</div>' : ''}
+                        <div class="roll-item-result">
+                            To Hit: ${roll.toHit?.total || 'N/A'} | Damage: ${roll.totalDamage}
+                        </div>
+                        <div class="roll-item-details">
+                            To Hit: d10(${roll.toHit?.d10Roll || '?'}) + ${roll.statUsed.substring(0, 3).toUpperCase()}(${roll.toHit?.statBonus || '?'}) + Lv(${roll.toHit?.levelBonus || '?'})<br>
+                            Damage: d${roll.diceType}(${roll.damageRoll}) + ${roll.statUsed.substring(0, 3).toUpperCase()}(${roll.statBonus})${roll.toHit?.isCrit ? ' + Crit(5)' : ''}<br>
+                            ${roll.element} Magic | Cost: ${roll.cost} MP
+                        </div>
+                    `;
+                } else if (roll.type === 'Spell' && !roll.toHit) {
+                    typeIcon = 'ra-lightning';
+                    typeColor = '#8a4a8a';
+                    content = `
+                        <div class="roll-item-header">
+                            <h4 class="roll-item-title">
+                                <i class="ra ${typeIcon}"></i> ${roll.name}
+                            </h4>
+                            <span class="roll-item-timestamp">${roll.timestamp}</span>
+                        </div>
+                        <div class="roll-item-result">
+                            ${roll.element} Magic | Cost: ${roll.cost} MP
+                        </div>
+                        <div class="roll-item-details">
+                            ${roll.results ? roll.results.join('<br>') : 'Spell cast successfully!'}
+                        </div>
+                    `;
+                } else {
+                    // Attribute/Skill rolls
+                    typeIcon = roll.type === 'Attribute' ? 'ra-muscle-up' : roll.type === 'Skill' ? 'ra-gear' : 'ra-lightning';
+                    typeColor = roll.type === 'Attribute' ? '#4a6a8a' : roll.type === 'Skill' ? '#4a8a4a' : '#8a4a8a';
+                    const diceDisplay = roll.diceRolls ? roll.diceRolls.map(r => `<span style="color: #f4d03f;">${r}</span>`).join(' + ') : 'N/A';
+
+                    content = `
+                        <div class="roll-item-header">
+                            <h4 class="roll-item-title">
+                                <i class="ra ${typeIcon}"></i> ${roll.name} ${roll.type === 'Skill' ? `[${roll.stat}]` : ''}
+                            </h4>
+                            <span class="roll-item-timestamp">${roll.timestamp}</span>
+                        </div>
+                        <div class="roll-item-result">
+                            Result: ${roll.finalTotal}
+                        </div>
+                        <div class="roll-item-details">
+                            ${roll.diceRolls ? `Dice: [${diceDisplay}] = ${roll.diceTotal} + Level: ${roll.levelBonus} + Bonus: ${roll.statBonus}` :
+                            roll.results ? roll.results.join('<br>') : 'Spell cast successfully!'}
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div class="roll-history-item" style="border-left-color: ${typeColor};">
+                        ${content}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function clearChatRollHistory() {
+            // Use the existing clearRollHistory function
+            if (typeof clearRollHistory === 'function') {
+                clearRollHistory();
+                updateChatRollHistory();
+                
+                // Also update main roll history display
+                if (typeof updateRollHistoryDisplay === 'function') {
+                    updateRollHistoryDisplay();
+                }
+                
+                console.log('🧹 Cleared roll history from chat');
+            } else {
+                console.warn('clearRollHistory function not available');
+            }
+        }
+
+        // Sync main chat messages to bottom sheet
+        function syncMessageToBottomSheet(messageHTML, type, sender) {
+            const sheetMessagesContainer = document.getElementById('sheet-chat-messages');
+            if (!sheetMessagesContainer) return;
+
+            const messageElement = document.createElement('div');
+            messageElement.className = `chat-message ${type}`;
+            messageElement.innerHTML = messageHTML;
+            
+            // Apply styling similar to main chat
+            messageElement.style.margin = '8px 0';
+            messageElement.style.padding = '8px 12px';
+            messageElement.style.borderRadius = '8px';
+            
+            if (type === 'system') {
+                messageElement.style.backgroundColor = 'rgba(255, 193, 7, 0.1)';
+                messageElement.style.borderLeft = '3px solid #ffc107';
+            } else if (type === 'storyteller') {
+                messageElement.style.backgroundColor = 'rgba(220, 53, 69, 0.1)';
+                messageElement.style.borderLeft = '3px solid #dc3545';
+            } else {
+                messageElement.style.backgroundColor = 'rgba(0, 123, 255, 0.1)';
+                messageElement.style.borderLeft = '3px solid #007bff';
+            }
+
+            sheetMessagesContainer.appendChild(messageElement);
+            sheetMessagesContainer.scrollTop = sheetMessagesContainer.scrollHeight;
+        }
+
+        // Update FAB notification dot
+        function updateFABNotification() {
+            const fab = document.getElementById('chat-fab');
+            const notificationDot = document.querySelector('.fab-notification-dot');
+            const bottomSheet = document.getElementById('chat-bottom-sheet');
+            
+            if (fab && notificationDot && bottomSheet) {
+                // Show notification if bottom sheet is closed
+                if (!bottomSheet.classList.contains('open')) {
+                    notificationDot.style.display = 'block';
+                    // Hide after a delay if user doesn't interact
+                    setTimeout(() => {
+                        if (!bottomSheet.classList.contains('open')) {
+                            notificationDot.style.display = 'none';
+                        }
+                    }, 5000);
+                } else {
+                    // Hide notification if bottom sheet is open
+                    notificationDot.style.display = 'none';
+                }
+            }
+        }
+
         // Helper function to send chat messages directly
         async function sendChatMessageDirect(message) {
             try {
@@ -2913,6 +3312,9 @@
             
             dot.className = `status-dot ${status}`;
             statusText.textContent = text;
+            
+            // Sync to bottom sheet status as well
+            syncSheetConnectionStatus();
         }
 
         // Add message to chat - copied exactly from player-test.html
@@ -2961,6 +3363,12 @@
             messageEl.innerHTML = prefix + processedMessage;
             chatMessages.appendChild(messageEl);
             chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Sync message to bottom sheet
+            syncMessageToBottomSheet(prefix + processedMessage, type, sender);
+            
+            // Update FAB notification dot for new messages
+            updateFABNotification();
             
             // Debounced reset for rapid message additions
             clearTimeout(window.chatResetTimeout);
@@ -3011,6 +3419,122 @@
     
     <!-- Image Upload Integration -->
     <script src="js/chatImageUploadIntegration.js"></script>
+
+    <!-- Floating Action Button for Chat -->
+    <button class="chat-fab" id="chat-fab" onclick="toggleChatBottomSheet()" title="Open Chat">
+        <span class="material-icons">chat_bubble</span>
+        <span class="fab-notification-dot" id="chat-fab-notification" style="display: none;"></span>
+    </button>
+
+    <!-- Chat Bottom Sheet -->
+    <div class="chat-bottom-sheet" id="chat-bottom-sheet">
+        <div class="bottom-sheet-backdrop" onclick="closeChatBottomSheet()"></div>
+        <div class="bottom-sheet-content">
+            <!-- Drag Handle -->
+            <div class="bottom-sheet-handle">
+                <div class="handle-bar"></div>
+            </div>
+            
+            <!-- Bottom Sheet Header -->
+            <div class="bottom-sheet-header">
+                <div class="sheet-tabs-container">
+                    <div class="sheet-tabs">
+                        <button class="sheet-tab active" onclick="switchChatTab('chat')" data-tab="chat">
+                            <i class="material-icons">chat_bubble</i>
+                            <span>Chat</span>
+                        </button>
+                        <button class="sheet-tab" onclick="switchChatTab('rolls')" data-tab="rolls">
+                            <i class="ra ra-perspective-dice-six"></i>
+                            <span>Rolls</span>
+                        </button>
+                    </div>
+                    <div class="connection-status-mini">
+                        <span class="status-dot" id="sheet-status-dot"></span>
+                        <span class="status-text" id="sheet-status-text">Not connected</span>
+                    </div>
+                </div>
+                <div class="sheet-controls">
+                    <button class="sheet-control-btn" id="expand-sheet-btn" onclick="expandBottomSheet()" title="Expand to full screen">
+                        <span class="material-icons">fullscreen</span>
+                    </button>
+                    <button class="sheet-control-btn" onclick="closeChatBottomSheet()" title="Close chat">
+                        <span class="material-icons">close</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab Content Areas -->
+            <div class="sheet-tab-content">
+                <!-- Chat Tab Content -->
+                <div class="tab-panel active" id="chat-tab-panel">
+                    <!-- Connection Controls (when not connected) -->
+                    <div class="sheet-connection-area" id="sheet-connection-area">
+                        <div class="connection-controls">
+                            <input type="text" id="sheet-session-input" placeholder="Paste connection URL from storyteller">
+                            <button class="sheet-join-btn" onclick="joinGameSessionFromSheet()">Join</button>
+                        </div>
+                    </div>
+
+                    <!-- Player Chips (horizontal scroll) -->
+                    <div class="player-chips-area" id="player-chips-area" style="display: none;">
+                        <div class="player-chips-scroll">
+                            <div class="player-chip self">
+                                <div class="chip-avatar">👤</div>
+                                <span class="chip-name">You</span>
+                            </div>
+                            <!-- Dynamic player chips will be added here -->
+                        </div>
+                    </div>
+
+                    <!-- Chat Messages -->
+                    <div class="sheet-chat-messages" id="sheet-chat-messages">
+                        <div class="chat-message system">
+                            <span class="message-author">System:</span>
+                            Welcome to DCC! Connect to a game session to start chatting.
+                        </div>
+                    </div>
+
+                    <!-- Chat Input -->
+                    <div class="sheet-chat-input">
+                        <div class="chat-tools-row">
+                            <button class="chat-tool-btn" onclick="showSheetChatEffects()" title="Chat Effects">
+                                <span>✨</span>
+                            </button>
+                            <button class="chat-tool-btn" onclick="showSheetImageUpload()" title="Upload Image">
+                                <span>📷</span>
+                            </button>
+                            <button class="chat-tool-btn" onclick="showSheetPlayers()" title="Send Note">
+                                <span>📝</span>
+                            </button>
+                        </div>
+                        <div class="input-row">
+                            <input type="text" id="sheet-chat-input" placeholder="Type your message..." onkeypress="handleSheetChatKeyPress(event)">
+                            <button class="sheet-send-btn" onclick="sendSheetMessage()" disabled>
+                                <span class="material-icons">send</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Roll History Tab Content -->
+                <div class="tab-panel" id="rolls-tab-panel">
+                    <div class="roll-history-header">
+                        <h4><i class="ra ra-perspective-dice-six"></i> Your Roll History</h4>
+                        <button class="clear-rolls-btn" onclick="clearChatRollHistory()" title="Clear roll history">
+                            <span class="material-icons">clear_all</span>
+                            Clear
+                        </button>
+                    </div>
+                    <div class="sheet-roll-history" id="sheet-roll-history">
+                        <div style="text-align: center; color: #8a8a8a; padding: 40px;">
+                            <i class="ra ra-perspective-dice-six" style="font-size: 3em; margin-bottom: 15px; display: block;"></i>
+                            No rolls yet! Click attributes, skills, weapons, or spells to start rolling.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

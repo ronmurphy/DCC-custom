@@ -3617,6 +3617,11 @@ function updateRollHistoryDisplay() {
     
     // Sync modal content if open
     syncModalContent();
+    
+    // Sync chat roll history if bottom sheet is open
+    if (typeof updateChatRollHistory === 'function') {
+        updateChatRollHistory();
+    }
 }
 
 function clearRollHistory() {
@@ -3624,6 +3629,11 @@ function clearRollHistory() {
     updateRollHistoryDisplay();
     // Sync modal content if open
     syncModalContent();
+    
+    // Sync chat roll history if function exists
+    if (typeof updateChatRollHistory === 'function') {
+        updateChatRollHistory();
+    }
 }
 
 // ========================================

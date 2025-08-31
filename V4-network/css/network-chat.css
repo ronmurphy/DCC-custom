@@ -848,3 +848,546 @@
         height: 44px; /* Larger touch target on mobile */
     }
 }
+
+/* ========================================
+ * FAB + BOTTOM SHEET CHAT SYSTEM
+ * ======================================== */
+
+/* Floating Action Button */
+.chat-fab {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 56px;
+    height: 56px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    transition: all 0.3s ease;
+    font-size: 24px;
+}
+
+.chat-fab:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.chat-fab:active {
+    transform: scale(0.95);
+}
+
+/* FAB Notification Dot */
+.fab-notification-dot {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 12px;
+    height: 12px;
+    background: #ff4444;
+    border: 2px solid white;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Bottom Sheet Container */
+.chat-bottom-sheet {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2000;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.chat-bottom-sheet.open {
+    pointer-events: all;
+    opacity: 1;
+}
+
+/* Bottom Sheet Backdrop */
+.bottom-sheet-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.chat-bottom-sheet.open .bottom-sheet-backdrop {
+    opacity: 1;
+}
+
+/* Bottom Sheet Content */
+.bottom-sheet-content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 70vh;
+    max-height: 600px;
+    background: var(--bg-card);
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+}
+
+.chat-bottom-sheet.open .bottom-sheet-content {
+    transform: translateY(0);
+}
+
+.chat-bottom-sheet.expanded .bottom-sheet-content {
+    height: 95vh;
+    max-height: none;
+    border-radius: 0;
+}
+
+/* Drag Handle */
+.bottom-sheet-handle {
+    padding: 12px 0 8px;
+    display: flex;
+    justify-content: center;
+    cursor: grab;
+}
+
+.handle-bar {
+    width: 40px;
+    height: 4px;
+    background: var(--border-color);
+    border-radius: 2px;
+}
+
+/* Bottom Sheet Header with Tabs */
+.bottom-sheet-header {
+    background: rgba(30, 30, 45, 0.95);
+    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+    padding: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    backdrop-filter: blur(10px);
+}
+
+.sheet-tabs-container {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+}
+
+.sheet-tabs {
+    display: flex;
+    gap: 8px;
+}
+
+.sheet-tab {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.sheet-tab:hover {
+    background: rgba(255, 215, 0, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.sheet-tab.active {
+    background: rgba(255, 215, 0, 0.2);
+    color: #ffd700;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.sheet-tab i, .sheet-tab .material-icons {
+    font-size: 16px;
+}
+
+.connection-status-mini {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    font-size: 12px;
+}
+
+.sheet-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.sheet-control-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.7);
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sheet-control-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Tab Content */
+.sheet-tab-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.tab-panel {
+    flex: 1;
+    display: none;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.tab-panel.active {
+    display: flex;
+}
+
+/* Roll History Tab Styles */
+.roll-history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+    background: rgba(30, 30, 45, 0.8);
+}
+
+.roll-history-header h4 {
+    margin: 0;
+    color: #ffd700;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.clear-rolls-btn {
+    background: rgba(139, 69, 19, 0.8);
+    border: none;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+}
+
+.clear-rolls-btn:hover {
+    background: rgba(139, 69, 19, 1);
+    transform: translateY(-1px);
+}
+
+.sheet-roll-history {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+}
+
+/* Roll History Items */
+.roll-history-item {
+    background: rgba(40, 40, 60, 0.8);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-left: 3px solid #d4af37;
+}
+
+.roll-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.roll-item-title {
+    color: #d4af37;
+    margin: 0;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.roll-item-timestamp {
+    color: #8a8a8a;
+    font-size: 12px;
+}
+
+.roll-item-result {
+    font-size: 16px;
+    font-weight: bold;
+    color: #ffffff;
+    margin-bottom: 5px;
+}
+
+.roll-item-details {
+    font-size: 12px;
+    color: #c0c0c0;
+    line-height: 1.4;
+}
+
+.crit-indicator {
+    color: #ffd700;
+    font-weight: bold;
+    font-size: 12px;
+    margin-bottom: 5px;
+}
+
+/* Connection Area */
+.sheet-connection-area {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.connection-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+#sheet-session-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.sheet-join-btn {
+    padding: 8px 16px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+/* Player Chips */
+.player-chips-area {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.player-chips-scroll {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.player-chips-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.player-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 60px;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    transition: background 0.2s ease;
+}
+
+.player-chip:hover {
+    background: var(--bg-secondary);
+}
+
+.player-chip.self {
+    background: rgba(255, 215, 0, 0.1);
+}
+
+.chip-avatar {
+    width: 32px;
+    height: 32px;
+    background: var(--bg-secondary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+.chip-name {
+    font-size: 10px;
+    color: var(--text-secondary);
+    text-align: center;
+    max-width: 60px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Chat Messages in Sheet */
+.sheet-chat-messages {
+    flex: 1;
+    padding: 16px 20px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) transparent;
+}
+
+.sheet-chat-messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sheet-chat-messages::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sheet-chat-messages::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+/* Chat Input in Sheet */
+.sheet-chat-input {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+}
+
+.chat-tools-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.chat-tool-btn {
+    width: 32px;
+    height: 32px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.chat-tool-btn:hover {
+    background: var(--primary);
+    color: white;
+}
+
+.input-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+#sheet-chat-input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 14px;
+    outline: none;
+}
+
+#sheet-chat-input:focus {
+    border-color: var(--primary);
+}
+
+.sheet-send-btn {
+    width: 40px;
+    height: 40px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.sheet-send-btn:disabled {
+    background: var(--border-color);
+    cursor: not-allowed;
+}
+
+.sheet-send-btn:not(:disabled):hover {
+    transform: scale(1.05);
+}
+
+/* Desktop Adaptations */
+@media (min-width: 769px) {
+    .chat-fab {
+        bottom: 32px;
+        right: 32px;
+    }
+    
+    .bottom-sheet-content {
+        left: 50%;
+        transform: translateX(-50%) translateY(100%);
+        width: 90%;
+        max-width: 600px;
+        border-radius: 16px;
+    }
+    
+    .chat-bottom-sheet.open .bottom-sheet-content {
+        transform: translateX(-50%) translateY(0);
+    }
+    
+    .chat-bottom-sheet.expanded .bottom-sheet-content {
+        width: 95%;
+        max-width: 800px;
+        height: 90vh;
+    }
+}
