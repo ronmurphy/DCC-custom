@@ -21,6 +21,7 @@ class ChatCommandParser {
             GOLD: /^GOLD:([^:]+):(\d+)$/i,
             HEALTH: /^HEALTH:([^:]+):([+-]?\d+)$/i,
             STAT: /^STAT:([^:]+):([^:]+):([+-]?\d+)$/i,
+            NOTE: /^NOTE:([^:]+):(.+)$/i,
             CLEAN: /^CLEAN:([^:]+):?(.*)$/i
         };
         
@@ -179,6 +180,9 @@ class ChatCommandParser {
             
             case 'STAT':
                 return await this.handleStatCommand(player, playerName, match[2], parseInt(match[3]), senderName);
+            
+            case 'NOTE':
+                return await this.handleNoteCommand(player, playerName, match[2], senderName);
             
             case 'CLEAN':
                 return await this.handleCleanCommand(playerName, match[2], senderName);
@@ -581,6 +585,42 @@ class ChatCommandParser {
         };
         
         return statMap[statName.toLowerCase()] || statName.toLowerCase();
+    }
+
+    /**
+     * Handle NOTE command for direct messages
+     * @param {Object} player - Player data
+     * @param {string} playerName - Target player name
+     * @param {string} noteText - Note content
+     * @param {string} senderName - Command sender
+     * @returns {Object} Command result
+     */
+    async handleNoteCommand(player, playerName, noteText, senderName) {
+        // Initialize notes array if it doesn't exist
+        if (!player.notes) player.notes = [];
+        
+        // Create note object
+        const note = {
+            from: senderName,
+            message: noteText,
+            timestamp: new Date().toISOString(),
+            id: Date.now() + Math.random().toString(36).substr(2, 9)
+        };
+        
+        player.notes.push(note);
+        
+        const result = {
+            success: true,
+            command: 'NOTE',
+            targetPlayer: playerName,
+            sender: senderName,
+            note: note,
+            message: `📝 ${senderName} sent a note to ${playerName}`,
+            privateMessage: `📝 Note from ${senderName}: ${noteText}`
+        };
+
+        console.log(`📝 NOTE: ${result.message}`);
+        return result;
     }
 
     /**

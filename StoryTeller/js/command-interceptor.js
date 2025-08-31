@@ -243,7 +243,7 @@ async function processCommandMessage(message) {
     
     if (targetPlayer === currentPlayer) {
         // This command is for the current player - show personal results
-        displayText = await generatePersonalResult(command, parameters);
+        displayText = await generatePersonalResult(command, parameters, message);
         messageType = 'personal-result';
     } else if (isStoryteller) {
         // Storyteller sees detailed results
@@ -267,7 +267,7 @@ async function processCommandMessage(message) {
 /**
  * Generate personal result for the target player
  */
-async function generatePersonalResult(command, parameters) {
+async function generatePersonalResult(command, parameters, message) {
     if (!commandParser) {
         return `You received a ${command} command${parameters ? ': ' + parameters : ''}`;
     }
@@ -301,6 +301,14 @@ async function generatePersonalResult(command, parameters) {
         case 'GOLD':
             const goldAmount = parseInt(parameters) || 0;
             return `💰 You ${goldAmount > 0 ? 'gained' : 'lost'} ${Math.abs(goldAmount)} gold!`;
+        case 'NOTE':
+            // Add to notification system if available
+            if (typeof window.addReceivedNote === 'function') {
+                // Extract sender name from the message context
+                const senderName = (message && message.author_name) || 'Unknown';
+                window.addReceivedNote(senderName, parameters, new Date().toISOString());
+            }
+            return `📝 You received a note: ${parameters}`;
         case 'CLEAN':
             // For players, just show a generic cleanup message
             return `🧹 The storyteller performed database maintenance`;
@@ -333,6 +341,8 @@ function generateStorytelleroResult(command, targetPlayer, parameters) {
             return `📋 ${targetPlayer}'s ${statParts[0] || 'stat'} changed by ${statParts[1] || '1'}`;
         case 'GOLD':
             return `📋 ${targetPlayer} ${parseInt(parameters) > 0 ? 'gained' : 'lost'} ${Math.abs(parseInt(parameters))} gold`;
+        case 'NOTE':
+            return `📋 Note sent to ${targetPlayer}`;
         default:
             return `📋 ${targetPlayer} received ${command}: ${parameters}`;
     }
@@ -349,6 +359,8 @@ function generateGenericResult(command, targetPlayer, parameters) {
             return `${targetPlayer} accomplished something noteworthy`;
         case 'LEVELUP':
             return `${targetPlayer} has grown stronger`;
+        case 'NOTE':
+            return `📝 Notes are being passed`;
         case 'CLEAN':
             return `🧹 Database maintenance performed`;
         default:

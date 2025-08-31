@@ -177,6 +177,11 @@ function switchTab(tabName) {
                     refreshNPCDisplay();
                 }
                 break;
+            case 'chat':
+                if (typeof updateCommandCenterPlayerName === 'function') {
+                    updateCommandCenterPlayerName();
+                }
+                break;
             case 'quest':
                 if (typeof refreshQuestDisplay === 'function') {
                     refreshQuestDisplay();
