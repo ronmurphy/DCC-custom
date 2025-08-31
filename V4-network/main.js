@@ -580,7 +580,7 @@ function showNotification(type, title, result, details) {
     const notification = document.createElement('div');
     notification.className = `notification ${type}-notification`;
     notification.innerHTML = `
-                <h4><i class="ra ra-${type === 'roll' ? 'perspective-dice-six' : type === 'weapon' ? 'sword' : type === 'spell' ? 'lightning' : type === 'rest' ? 'heart-plus' : type === 'status' ? 'lightning-bolt' : type === 'save' ? 'save' : type === 'level' ? 'trophy' : 'sword'}"></i> ${title}</h4>
+                <h4><i class="ra ra-${type === 'roll' ? 'perspective-dice-six' : type === 'weapon' ? 'sword' : type === 'spell' ? 'lightning' : type === 'rest' ? 'heart-plus' : type === 'status' ? 'lightning-bolt' : type === 'save' ? 'save' : type === 'level' ? 'trophy' : type === 'notes' ? 'scroll' : 'sword'}"></i> ${title}</h4>
                 <div class="result">${result}</div>
                 <div class="details">${details}</div>
             `;
