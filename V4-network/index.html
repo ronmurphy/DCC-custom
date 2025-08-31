@@ -2200,11 +2200,13 @@
             console.log('🧪 Notification container found:', !!testContainer);
             if (typeof showNotification === 'function') {
                 console.log('🧪 showNotification function available');
-                // Test attribute roll notification
+                // Test attribute roll notification - DISABLED
+                /*
                 setTimeout(() => {
                     console.log('🧪 Testing notification display...');
                     showNotification('roll', 'Test Notification', 'This is a test', 'Testing notification system');
                 }, 2000);
+                */
             } else {
                 console.error('🧪 showNotification function not found');
             }
@@ -2237,28 +2239,28 @@
         }
 
         // Notification system helpers (for future features)
-        function showNotification(type) {
+        function showNotificationIcon(type) {
             const notificationBtn = document.getElementById(`${type}-notification`);
             if (notificationBtn) {
                 notificationBtn.style.display = 'flex';
-                console.log(`📢 ${type} notification shown`);
+                console.log(`📢 ${type} notification icon shown`);
             }
         }
 
-        function hideNotification(type) {
+        function hideNotificationIcon(type) {
             const notificationBtn = document.getElementById(`${type}-notification`);
             if (notificationBtn) {
                 notificationBtn.style.display = 'none';
-                console.log(`📢 ${type} notification hidden`);
+                console.log(`📢 ${type} notification icon hidden`);
             }
         }
 
         // Example usage for testing notifications (can be called from console)
         function testNotifications() {
-            setTimeout(() => showNotification('notes'), 2000);
-            setTimeout(() => showNotification('dice'), 4000);
-            setTimeout(() => showNotification('map'), 6000);
-            console.log('🧪 Test notifications will appear in 2, 4, and 6 seconds');
+            setTimeout(() => showNotificationIcon('notes'), 2000);
+            setTimeout(() => showNotificationIcon('dice'), 4000);
+            setTimeout(() => showNotificationIcon('map'), 6000);
+            console.log('🧪 Test notification icons will appear in 2, 4, and 6 seconds');
         }
 
         // Make test function globally available
@@ -2555,6 +2557,14 @@
             receivedNotes.push(note);
             console.log('🐛 Note added to receivedNotes array. Total notes:', receivedNotes.length);
             updateNotificationIcon();
+            
+            // Show popup notification for received note
+            if (typeof showNotification === 'function') {
+                showNotification('notes', `📝 Note from ${fromPlayer}`, 
+                    noteText.length > 50 ? noteText.substring(0, 50) + '...' : noteText, 
+                    `Check the Notes panel to view all messages.`);
+            }
+            
             console.log(`📝 Received note from ${fromPlayer}: ${noteText}`);
         }
 

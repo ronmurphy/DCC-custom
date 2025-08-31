@@ -2500,6 +2500,14 @@ body.sidebar-open {
     color: var(--warning);
 }
 
+.notes-notification {
+    border-left-color: #8e44ad;
+}
+
+.notes-notification h4 i {
+    color: #8e44ad;
+}
+
 /* ========================================
    CHARACTER MANAGER STYLES
    ======================================== */
