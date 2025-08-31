@@ -1547,8 +1547,11 @@ function handleIncomingMessage(message) {
     const chatTab = document.getElementById('chat');
     const bottomSheet = document.getElementById('chat-bottom-sheet');
     
+    // Extract message text for checking
+    const messageText = typeof message === 'string' ? message : (message.message_text || '');
+    
     // Only show notifications for NOTEs meant for this player
-    const isPrivateNote = message.toLowerCase().includes(`note:${(window.networkPlayerName || '').toLowerCase()}:`);
+    const isPrivateNote = messageText.toLowerCase().includes(`note:${(window.networkPlayerName || '').toLowerCase()}:`);
     
     // Don't show notifications if chat is open (redundant)
     const isChatOpen = (chatTab && chatTab.classList.contains('active')) || 

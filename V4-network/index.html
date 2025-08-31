@@ -2421,11 +2421,26 @@
             // Sync connection status
             syncSheetConnectionStatus();
             
+            // Ensure connection area is visible if not connected
+            if (!isNetworkConnected) {
+                const connectionArea = document.getElementById('sheet-connection-area');
+                if (connectionArea) {
+                    connectionArea.style.display = 'block';
+                }
+                console.log('📡 Ensured connection area is visible (disconnected state)');
+            }
+            
             // Focus on input if connected
             const input = document.getElementById('sheet-chat-input');
             setTimeout(() => {
                 if (input && isNetworkConnected) {
                     input.focus();
+                } else if (!isNetworkConnected) {
+                    // Focus on session input if not connected
+                    const sessionInput = document.getElementById('sheet-session-input');
+                    if (sessionInput) {
+                        sessionInput.focus();
+                    }
                 }
             }, 300);
             
@@ -2474,12 +2489,23 @@
             const connectionArea = document.getElementById('sheet-connection-area');
             const playerChips = document.getElementById('player-chips-area');
             
+            // Always ensure connection area is visible when not connected
             if (connectionArea) {
-                connectionArea.style.display = isNetworkConnected ? 'none' : 'block';
+                if (isNetworkConnected) {
+                    connectionArea.style.display = 'none';
+                } else {
+                    connectionArea.style.display = 'block';
+                    console.log('📡 Bottom sheet connection area shown (not connected)');
+                }
             }
             
+            // Show player chips only when connected
             if (playerChips) {
-                playerChips.style.display = isNetworkConnected ? 'block' : 'none';
+                if (isNetworkConnected) {
+                    playerChips.style.display = 'block';
+                } else {
+                    playerChips.style.display = 'none';
+                }
             }
         }
 
@@ -2897,49 +2923,84 @@
 
         // Function to update connected players list (called by supabase-chat.js)
         function updateConnectedPlayers(players = []) {
-            const playerList = document.getElementById('connected-players');
-            if (!playerList) return;
-            
             console.log('🔍 Updating connected players:', players);
             
-            // Clear existing players except self
-            const selfPlayer = playerList.querySelector('.player-item.self');
-            playerList.innerHTML = '';
-            
-            // Add self back
-            if (selfPlayer) {
-                playerList.appendChild(selfPlayer);
+            // Update Command Center player list
+            const playerList = document.getElementById('connected-players');
+            if (playerList) {
+                // Clear existing players except self
+                const selfPlayer = playerList.querySelector('.player-item.self');
+                playerList.innerHTML = '';
+                
+                // Add self back
+                if (selfPlayer) {
+                    playerList.appendChild(selfPlayer);
+                }
+                
+                // Add connected players
+                players.forEach(player => {
+                    if (player.name && player.name !== networkPlayerName && player.name !== 'System' && player.name !== 'Heartbeat') {
+                        const playerDiv = document.createElement('div');
+                        playerDiv.className = 'player-item';
+                        
+                        // Add storyteller class if they are the storyteller
+                        if (player.is_storyteller) {
+                            playerDiv.classList.add('storyteller');
+                        }
+                        
+                        // For now, use placeholder data - this can be enhanced later with real character data
+                        const level = 'Unknown';
+                        const heritage = player.is_storyteller ? 'Storyteller' : 'Player';
+                        const playerClass = player.is_storyteller ? 'Master' : 'Adventurer';
+                        
+                        playerDiv.innerHTML = `
+                            <div class="player-avatar">
+                                <div class="avatar-placeholder">${player.is_storyteller ? '👑' : '⚔️'}</div>
+                            </div>
+                            <div class="player-info">
+                                <div class="player-name clickable-player-name" data-player-name="${player.name}">${player.name}</div>
+                                <div class="player-details">Level: ${level}<br>${heritage} - ${playerClass}</div>
+                            </div>
+                        `;
+                        
+                        playerList.appendChild(playerDiv);
+                    }
+                });
             }
             
-            // Add connected players
-            players.forEach(player => {
-                if (player.name && player.name !== networkPlayerName && player.name !== 'System' && player.name !== 'Heartbeat') {
-                    const playerDiv = document.createElement('div');
-                    playerDiv.className = 'player-item';
-                    
-                    // Add storyteller class if they are the storyteller
-                    if (player.is_storyteller) {
-                        playerDiv.classList.add('storyteller');
-                    }
-                    
-                    // For now, use placeholder data - this can be enhanced later with real character data
-                    const level = 'Unknown';
-                    const heritage = player.is_storyteller ? 'Storyteller' : 'Player';
-                    const playerClass = player.is_storyteller ? 'Master' : 'Adventurer';
-                    
-                    playerDiv.innerHTML = `
-                        <div class="player-avatar">
-                            <div class="avatar-placeholder">${player.is_storyteller ? '👑' : '⚔️'}</div>
-                        </div>
-                        <div class="player-info">
-                            <div class="player-name clickable-player-name" data-player-name="${player.name}">${player.name}</div>
-                            <div class="player-details">Level: ${level}<br>${heritage} - ${playerClass}</div>
-                        </div>
-                    `;
-                    
-                    playerList.appendChild(playerDiv);
+            // Update Bottom Sheet player chips
+            const playerChipsScroll = document.querySelector('.player-chips-scroll');
+            if (playerChipsScroll) {
+                // Keep the self chip
+                const selfChip = playerChipsScroll.querySelector('.player-chip.self');
+                
+                // Clear all chips except self
+                playerChipsScroll.innerHTML = '';
+                if (selfChip) {
+                    playerChipsScroll.appendChild(selfChip);
                 }
-            });
+                
+                // Add player chips for connected players
+                players.forEach(player => {
+                    if (player.name && player.name !== networkPlayerName && player.name !== 'System' && player.name !== 'Heartbeat') {
+                        const chipDiv = document.createElement('div');
+                        chipDiv.className = 'player-chip';
+                        
+                        if (player.is_storyteller) {
+                            chipDiv.classList.add('storyteller');
+                        }
+                        
+                        chipDiv.innerHTML = `
+                            <div class="chip-avatar">${player.is_storyteller ? '👑' : '⚔️'}</div>
+                            <span class="chip-name">${player.name}</span>
+                        `;
+                        
+                        playerChipsScroll.appendChild(chipDiv);
+                    }
+                });
+                
+                console.log(`✅ Player chips updated: ${players.length} players found`);
+            }
             
             console.log(`✅ Player list updated: ${players.length} players found`);
         }
@@ -3258,17 +3319,45 @@
                 
             } catch (error) {
                 console.error('❌ Connection failed:', error);
+                
+                // Reset connection state
+                isNetworkConnected = false;
+                currentSessionCode = null;
+                
                 updateConnectionStatus('disconnected', 'Connection failed');
                 addChatMessage('system', `Connection failed: ${error.message}`);
                 
                 // Show session connection area again on connection failure
-                document.querySelector('.session-connection').style.display = 'block';
+                const sessionConnection = document.querySelector('.session-connection');
+                if (sessionConnection) {
+                    sessionConnection.style.display = 'block';
+                }
+                
+                // Make sure bottom sheet connection area is visible
+                const sheetConnectionArea = document.getElementById('sheet-connection-area');
+                if (sheetConnectionArea) {
+                    sheetConnectionArea.style.display = 'block';
+                }
+                
+                // Hide player chips in bottom sheet
+                const playerChips = document.getElementById('player-chips-area');
+                if (playerChips) {
+                    playerChips.style.display = 'none';
+                }
+                
+                // Sync connection status between main and sheet
+                syncSheetConnectionStatus();
                 
                 // Hide connection toggle button when disconnected
-                document.getElementById('connection-toggle').style.display = 'none';
+                const connectionToggle = document.getElementById('connection-toggle');
+                if (connectionToggle) {
+                    connectionToggle.style.display = 'none';
+                }
                 
                 // Stop player list updates
                 stopPlayerListUpdates();
+                
+                console.log('🔄 Connection areas reset for retry');
             }
         }
 
