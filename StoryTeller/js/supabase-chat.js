@@ -177,7 +177,7 @@ async function startGameSession() {
     }
     
     const dmName = dmNameInput.value.trim();
-    const sessionCode = sessionCodeInput.value.trim();
+    const sessionCode = sessionCodeInput.value.trim().toUpperCase();
     
     if (!dmName) {
         alert('Please enter your name');
@@ -232,7 +232,7 @@ async function joinGameSession() {
     }
     
     const playerName = playerNameInput.value.trim();
-    const sessionCode = sessionCodeInput.value.trim();
+    const sessionCode = sessionCodeInput.value.trim().toUpperCase();
     
     if (!playerName) {
         alert('Please enter your name');

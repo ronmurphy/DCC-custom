@@ -109,8 +109,20 @@ class ChatImageSystem {
             background: #f8f9fa;
         `;
 
+        // Create download button container
+        const downloadContainer = document.createElement('div');
+        downloadContainer.id = 'chat-modal-download-container';
+        downloadContainer.style.cssText = `
+            padding: 15px 20px;
+            border-top: 1px solid #e5e7eb;
+            background: white;
+            display: flex;
+            justify-content: center;
+        `;
+
         modalContent.appendChild(closeBtn);
         modalContent.appendChild(imageContainer);
+        modalContent.appendChild(downloadContainer);
         modal.appendChild(modalContent);
         document.body.appendChild(modal);
 
@@ -181,6 +193,9 @@ class ChatImageSystem {
                 box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             `;
             container.appendChild(img);
+            
+            // Add download button
+            this.addDownloadButton(imageUrl, playerName);
         };
 
         img.onerror = () => {
@@ -204,6 +219,99 @@ class ChatImageSystem {
         if (modal) {
             modal.style.display = 'none';
         }
+    }
+
+    /**
+     * Add download button to modal
+     */
+    addDownloadButton(imageUrl, playerName = 'Player') {
+        const downloadContainer = document.getElementById('chat-modal-download-container');
+        if (!downloadContainer) return;
+
+        // Clear previous download button
+        downloadContainer.innerHTML = '';
+
+        // Create download button
+        const downloadBtn = document.createElement('button');
+        downloadBtn.style.cssText = `
+            background: linear-gradient(135deg, #10b981, #047857);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        `;
+        
+        downloadBtn.innerHTML = `
+            <span>💾</span>
+            <span>Download Image</span>
+        `;
+
+        downloadBtn.addEventListener('mouseenter', () => {
+            downloadBtn.style.transform = 'translateY(-1px)';
+            downloadBtn.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+        });
+
+        downloadBtn.addEventListener('mouseleave', () => {
+            downloadBtn.style.transform = 'translateY(0)';
+            downloadBtn.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+        });
+
+        downloadBtn.onclick = async () => {
+            try {
+                // Fetch the image
+                const response = await fetch(imageUrl);
+                const blob = await response.blob();
+                
+                // Create download link
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                
+                // Generate filename from URL or use default
+                const urlParts = imageUrl.split('/');
+                const filename = urlParts[urlParts.length - 1] || `image-from-${playerName.toLowerCase().replace(/\s+/g, '-')}.jpg`;
+                a.download = filename;
+                
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                // Visual feedback
+                const originalText = downloadBtn.innerHTML;
+                downloadBtn.innerHTML = '<span>✅</span><span>Downloaded!</span>';
+                downloadBtn.style.background = 'linear-gradient(135deg, #059669, #065f46)';
+                
+                setTimeout(() => {
+                    downloadBtn.innerHTML = originalText;
+                    downloadBtn.style.background = 'linear-gradient(135deg, #10b981, #047857)';
+                }, 2000);
+                
+            } catch (error) {
+                console.error('Download failed:', error);
+                
+                // Error feedback
+                const originalText = downloadBtn.innerHTML;
+                downloadBtn.innerHTML = '<span>❌</span><span>Download Failed</span>';
+                downloadBtn.style.background = 'linear-gradient(135deg, #dc2626, #991b1b)';
+                
+                setTimeout(() => {
+                    downloadBtn.innerHTML = originalText;
+                    downloadBtn.style.background = 'linear-gradient(135deg, #10b981, #047857)';
+                }, 2000);
+            }
+        };
+
+        downloadContainer.appendChild(downloadBtn);
     }
 
     /**

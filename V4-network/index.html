@@ -2514,22 +2514,7 @@
             const originalInput = document.getElementById('session-code-input');
             
             if (input && originalInput) {
-                // Ensure consistent session code capitalization
-                let sessionUrl = input.value.trim();
-                
-                // If it's a full URL with session parameter, capitalize the session part
-                if (sessionUrl.includes('?session=')) {
-                    const urlParts = sessionUrl.split('?session=');
-                    if (urlParts.length === 2) {
-                        const sessionPart = urlParts[1].split('&')[0]; // Get just the session code part
-                        sessionUrl = urlParts[0] + '?session=' + sessionPart.toUpperCase();
-                        if (urlParts[1].includes('&')) {
-                            sessionUrl += '&' + urlParts[1].split('&').slice(1).join('&');
-                        }
-                    }
-                }
-                
-                originalInput.value = sessionUrl;
+                originalInput.value = input.value;
                 joinGameSession();
             }
         }
@@ -2595,12 +2580,22 @@
         }
 
         function showSheetImageUpload() {
-            // Trigger the existing image upload if available
+            // Try to trigger the ChatImageUploadIntegration system directly
+            if (window.chatImageUploadIntegration && typeof window.chatImageUploadIntegration.handleUploadClick === 'function') {
+                // Find any available button to use as context
+                const imageUploadBtn = document.getElementById('modal-v4-image-upload-btn') || document.getElementById('v4-image-upload-btn');
+                if (imageUploadBtn) {
+                    window.chatImageUploadIntegration.handleUploadClick(imageUploadBtn);
+                    return;
+                }
+            }
+            
+            // Fallback: try existing button onclick handlers
             const imageUploadBtn = document.getElementById('v4-image-upload-btn') || document.getElementById('modal-v4-image-upload-btn');
             if (imageUploadBtn && imageUploadBtn.onclick) {
                 imageUploadBtn.onclick();
             } else {
-                alert('Image upload will be available when connected to a session.');
+                alert('Image upload system not ready. Please wait for full initialization.');
             }
         }
 
@@ -3259,16 +3254,13 @@
                 
                 // Extract session code from URL parameters
                 const params = new URLSearchParams(urlParts[1]);
-                let sessionCode = params.get('session');
+                const sessionCode = params.get('session');
                 
                 if (!sessionCode) {
                     throw new Error('No session code found in URL. Make sure the URL includes ?session=YOUR_SESSION_CODE');
                 }
                 
-                // IMPORTANT: Capitalize session code to ensure consistency across all users
-                sessionCode = sessionCode.toUpperCase();
-                
-                console.log(`🔗 Extracted: Supabase URL=${supabaseUrl}, Session=${sessionCode} (capitalized)`);
+                console.log(`🔗 Extracted: Supabase URL=${supabaseUrl}, Session=${sessionCode}`);
                 
                 // Initialize Supabase with extracted URL and default API key
                 const defaultApiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrZGR2Ym14emVwcnZ4ZnNsaGxrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU5NTMxMjEsImV4cCI6MjA3MTUyOTEyMX0.b3mv50bCw5Yq5SrY8-Sagdl4WoC592nQNdfTQciuf0M';

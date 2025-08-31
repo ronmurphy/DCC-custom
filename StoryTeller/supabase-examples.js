@@ -126,7 +126,7 @@ async function exampleUIIntegration() {
     
     if (playerNameInput && sessionCodeInput) {
         const playerName = playerNameInput.value.trim();
-        const sessionCode = sessionCodeInput.value.trim();
+        const sessionCode = sessionCodeInput.value.trim().toUpperCase();
         const isStoryteller = storytellerToggle ? storytellerToggle.checked : false;
         const mode = isStoryteller ? 'create' : 'join';
         

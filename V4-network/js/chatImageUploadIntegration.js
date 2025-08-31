@@ -28,6 +28,10 @@ class ChatImageUploadIntegration {
 
         this.setupButtons();
         this.initialized = true;
+        
+        // Make instance globally available
+        window.chatImageUploadIntegration = this;
+        
         console.log('✅ Chat Image Upload Integration initialized');
     }
 
@@ -44,6 +48,13 @@ class ChatImageUploadIntegration {
         if (v4Btn) {
             v4Btn.onclick = () => this.handleUploadClick(v4Btn);
             console.log('📷 V4-network image upload button connected');
+        }
+
+        // Setup V4-network modal button  
+        const modalV4Btn = document.getElementById('modal-v4-image-upload-btn');
+        if (modalV4Btn) {
+            modalV4Btn.onclick = () => this.handleUploadClick(modalV4Btn);
+            console.log('📷 V4-network modal image upload button connected');
         }
 
         // Create reusable hidden file input
@@ -109,7 +120,32 @@ class ChatImageUploadIntegration {
         try {
             console.log(`📁 Uploading: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
             
-            const result = await window.multiImageHost.uploadImage(file);
+            // Get character name for V4-network
+            let characterName = 'Player';
+            
+            // Try multiple ways to get character name
+            if (typeof character !== 'undefined' && character && character.name) {
+                characterName = character.name.trim();
+                console.log(`🎭 Using character name for organization: ${characterName}`);
+            } else if (typeof window.networkPlayerName !== 'undefined' && window.networkPlayerName) {
+                characterName = window.networkPlayerName.trim();
+                console.log(`👤 Using network player name for organization: ${characterName}`);
+            } else if (typeof window.playerName !== 'undefined' && window.playerName) {
+                characterName = window.playerName.trim();
+                console.log(`👤 Using global player name for organization: ${characterName}`);
+            } else {
+                // Debug what's available
+                console.log('🔍 No character name found. Available objects:');
+                console.log('🔍 character:', typeof character !== 'undefined' ? character : 'undefined');
+                console.log('🔍 window.networkPlayerName:', window.networkPlayerName);
+                console.log('🔍 window.playerName:', window.playerName);
+                
+                // Use a default character name if none found
+                characterName = 'Player';
+                console.log(`🎭 Using default character name: ${characterName}`);
+            }
+            
+            const result = await window.multiImageHost.uploadImage(file, { characterName });
             
             // Success feedback
             button.innerHTML = '<span>✅</span><span>Success!</span>';
@@ -119,8 +155,9 @@ class ChatImageUploadIntegration {
             
             console.log('✅ Upload successful:', result);
             
-            // Create and insert image button into chat
-            this.insertImageIntoChat(result);
+            // Send image message to all players in session via Supabase
+            // This will create the public image button when the message comes back from Supabase
+            await this.sendImageToChat(result, characterName);
             
             // Show brief success message
             this.showSuccess(`Image uploaded successfully! (${result.service})`);
@@ -155,9 +192,21 @@ class ChatImageUploadIntegration {
         try {
             // Add as a chat message with just the button info, then inject the button
             if (window.addChatMessage && typeof window.addChatMessage === 'function') {
+                // Get the current player name for V4-network
+                let playerName = 'Player';
+                if (typeof character !== 'undefined' && character && character.name) {
+                    playerName = character.name.trim();
+                } else if (typeof window.networkPlayerName !== 'undefined' && window.networkPlayerName) {
+                    playerName = window.networkPlayerName.trim();
+                } else if (typeof window.playerName !== 'undefined' && window.playerName) {
+                    playerName = window.playerName.trim();
+                }
+                
                 // Use a simple placeholder that we'll replace with the actual button
-                const placeholderText = `Image shared`;
-                window.addChatMessage(placeholderText, 'system');
+                const placeholderText = `📷 shared an image`;
+                
+                // Create as a PUBLIC chat message from the player, NOT a system message
+                window.addChatMessage(placeholderText, 'chat', playerName);
                 
                 // Wait for the message to be added, then replace the placeholder
                 setTimeout(() => {
@@ -179,7 +228,7 @@ class ChatImageUploadIntegration {
         const chatMessages = document.querySelectorAll('.chat-message');
         for (let i = chatMessages.length - 1; i >= 0; i--) {
             const message = chatMessages[i];
-            if (message.innerHTML && message.innerHTML.includes('Image shared') && !message.querySelector('[data-image-url]')) {
+            if (message.innerHTML && message.innerHTML.includes('📷 shared an image') && !message.querySelector('[data-image-url]')) {
                 // Create the button
                 const imageButton = document.createElement('button');
                 imageButton.setAttribute('data-image-url', uploadResult.url);
@@ -206,7 +255,14 @@ class ChatImageUploadIntegration {
                     <small style="opacity: 0.8; font-size: 0.8em;">(${uploadResult.service})</small>
                 `;
                 
-                imageButton.onclick = () => this.openImageModal(uploadResult);
+                // Use ChatImageSystem if available
+                imageButton.onclick = () => {
+                    if (window.chatImageSystem && window.chatImageSystem.openImageModal) {
+                        window.chatImageSystem.openImageModal(uploadResult.url, 'You');
+                    } else {
+                        this.openImageModal(uploadResult);
+                    }
+                };
                 
                 imageButton.onmouseover = function() {
                     this.style.transform = 'translateY(-1px)';
@@ -218,13 +274,59 @@ class ChatImageUploadIntegration {
                     this.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
                 };
 
-                // Replace the "Image shared" text with just "📷" and append button
-                message.innerHTML = message.innerHTML.replace('Image shared', '📷');
+                // Replace the "📷 shared an image" text with just the button
+                message.innerHTML = message.innerHTML.replace('📷 shared an image', '');
                 message.appendChild(imageButton);
                 
                 console.log('✅ Image button added to chat message');
                 break;
             }
+        }
+    }
+
+    async sendImageToChat(uploadResult, characterName) {
+        // Send image message to all players via Supabase (V4-network version)
+        try {
+            // Create image message with special formatting for chat processing
+            const imageMessage = `🖼️ [IMAGE:${uploadResult.url}]`;
+            
+            console.log('📤 Sending image message to chat:', imageMessage);
+            console.log('🔍 Available window functions:', Object.keys(window).filter(k => k.toLowerCase().includes('send')));
+            
+            // Use V4-network's chat functions
+            if (typeof window.sendChatMessageAsync === 'function') {
+                await window.sendChatMessageAsync(imageMessage);
+                console.log('✅ Image message sent to all players via V4-network Supabase async');
+            } else if (typeof window.sendChatMessage === 'function') {
+                await window.sendChatMessage(imageMessage);
+                console.log('✅ Image message sent to all players via V4-network Supabase sync');
+            } else if (typeof window.sendMessage === 'function') {
+                await window.sendMessage(imageMessage);
+                console.log('✅ Image message sent to all players via Supabase');
+            } else {
+                console.log('⚠️ No Supabase chat functions available - image only visible locally');
+                console.log('🔍 Available functions:', Object.keys(window).filter(k => k.includes('send')));
+                
+                // Try to manually trigger the image message processing
+                console.log('🔧 Attempting manual image message processing...');
+                if (typeof window.handleImageMessage === 'function') {
+                    const fakeMessage = {
+                        message_text: imageMessage,
+                        player_name: characterName,
+                        message_type: 'chat'
+                    };
+                    window.handleImageMessage(fakeMessage);
+                } else if (typeof handleImageMessage === 'function') {
+                    const fakeMessage = {
+                        message_text: imageMessage,
+                        player_name: characterName,
+                        message_type: 'chat'
+                    };
+                    handleImageMessage(fakeMessage);
+                }
+            }
+        } catch (error) {
+            console.error('❌ Failed to send image to chat:', error);
         }
     }
 

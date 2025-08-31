@@ -119,8 +119,9 @@ class ChatImageUploadIntegration {
             
             console.log('✅ Upload successful:', result);
             
-            // Create and insert image button into chat
-            this.insertImageIntoChat(result);
+            // Send image message to all players via Supabase
+            // This will create the public image button when the message comes back from Supabase
+            await this.sendImageToChat(result);
             
             // Show brief success message
             this.showSuccess(`Image uploaded successfully! (${result.service})`);
@@ -149,6 +150,37 @@ class ChatImageUploadIntegration {
 
         // Reset file input
         this.createFileInput();
+    }
+
+    async sendImageToChat(uploadResult) {
+        // Send image message to all players via Supabase (StoryTeller version)
+        try {
+            // Create image message with special formatting for chat processing
+            const imageMessage = `🖼️ [IMAGE:${uploadResult.url}]`;
+            
+            console.log('📤 Sending image message to chat:', imageMessage);
+            
+            // Use StoryTeller's chat functions
+            if (typeof window.sendChatMessageAsync === 'function') {
+                await window.sendChatMessageAsync(imageMessage);
+                console.log('✅ Image message sent to all players via StoryTeller Supabase async');
+            } else if (typeof window.sendChatMessage === 'function') {
+                await window.sendChatMessage(imageMessage);
+                console.log('✅ Image message sent to all players via StoryTeller Supabase sync');
+            } else if (window.supabaseChat && typeof window.supabaseChat.sendChatMessage === 'function') {
+                await window.supabaseChat.sendChatMessage(imageMessage);
+                console.log('✅ Image message sent via StoryTeller supabaseChat');
+            } else {
+                console.log('⚠️ No Supabase chat functions available - falling back to local display');
+                // Fallback to local display if Supabase not available
+                this.insertImageIntoChat(uploadResult);
+            }
+            
+        } catch (error) {
+            console.error('❌ Failed to send image to chat:', error);
+            // Fallback to local display on error
+            this.insertImageIntoChat(uploadResult);
+        }
     }
 
     insertImageIntoChat(uploadResult) {
@@ -206,7 +238,14 @@ class ChatImageUploadIntegration {
                     <small style="opacity: 0.8; font-size: 0.8em;">(${uploadResult.service})</small>
                 `;
                 
-                imageButton.onclick = () => this.openImageModal(uploadResult);
+                // Use ChatImageSystem if available
+                imageButton.onclick = () => {
+                    if (window.chatImageSystem && window.chatImageSystem.openImageModal) {
+                        window.chatImageSystem.openImageModal(uploadResult.url, 'You');
+                    } else {
+                        this.openImageModal(uploadResult);
+                    }
+                };
                 
                 imageButton.onmouseover = function() {
                     this.style.transform = 'translateY(-1px)';
