@@ -2551,6 +2551,15 @@
     <script src="js/modules/chatAdapter.js"></script>
     <script src="js/modules/chatEffectsManager.js"></script>
     
+    <!-- Image Hosting System -->
+    <script src="js/githubTokenStorage.js"></script>
+    <script src="js/githubImageHost.js"></script>
+    <script src="js/multiImageHost.js"></script>
+    <script src="js/chatImageSystem.js"></script>
+    <script src="js/githubTokenDistributor.js"></script>
+    <script src="js/githubImageTesting.js"></script>
+    <script src="js/githubImageAutoInit.js"></script>
+    
     <!-- Command Processing (Non-invasive) -->
     <script src="js/command-interceptor.js"></script>
     
@@ -3313,30 +3322,47 @@
                                 display: flex; 
                                 align-items: center; 
                                 justify-content: space-between; 
-                                padding: 4px 8px; 
+                                padding: 6px 10px; 
                                 background: var(--bg-secondary); 
                                 border-top: 1px solid var(--border-color);
                                 border-bottom: 1px solid var(--border-color);
                                 margin: 0;
-                                min-height: 28px;
+                                min-height: 34px;
                                 font-size: 0.75em;
                             ">
                                 <div class="chat-info" style="color: var(--text-tertiary); font-size: 0.8em;">
-                                    <i class="material-icons" style="font-size: 12px; vertical-align: middle;">chat</i>
+                                    <i class="material-icons" style="font-size: 14px; vertical-align: middle;">chat</i>
                                     <span style="margin-left: 4px;">Chat</span>
                                 </div>
-                                <div class="chat-actions" style="display: flex; gap: 4px;">
+                                <div class="chat-actions" style="display: flex; gap: 6px;">
+                                    <button id="chat-image-upload-btn" title="Upload Image" style="
+                                        background: none; 
+                                        border: 1px solid var(--border-color); 
+                                        color: var(--text-secondary);
+                                        padding: 4px 8px; 
+                                        border-radius: 4px; 
+                                        cursor: pointer; 
+                                        font-size: 0.75em;
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 3px;
+                                        transition: all 0.2s;
+                                    " onmouseover="this.style.background='var(--accent-color)'; this.style.color='white'; this.style.borderColor='var(--accent-color)'" 
+                                       onmouseout="this.style.background='none'; this.style.color='var(--text-secondary)'; this.style.borderColor='var(--border-color)'">
+                                        <span>📷</span>
+                                        <span>Image</span>
+                                    </button>
                                     <button onclick="showChatPicker('${panel}')" title="Chat Picker (Emojis & Effects)" style="
                                         background: none; 
                                         border: 1px solid var(--border-color); 
                                         color: var(--text-secondary);
-                                        padding: 2px 6px; 
-                                        border-radius: 3px; 
+                                        padding: 4px 8px; 
+                                        border-radius: 4px; 
                                         cursor: pointer; 
-                                        font-size: 0.7em;
+                                        font-size: 0.75em;
                                         display: flex;
                                         align-items: center;
-                                        gap: 2px;
+                                        gap: 3px;
                                         transition: all 0.2s;
                                     " onmouseover="this.style.background='var(--accent-color)'; this.style.color='white'; this.style.borderColor='var(--accent-color)'" 
                                        onmouseout="this.style.background='none'; this.style.color='var(--text-secondary)'; this.style.borderColor='var(--border-color)'">
@@ -3346,27 +3372,27 @@
                                         background: none; 
                                         border: 1px solid var(--border-color); 
                                         color: var(--text-secondary);
-                                        padding: 2px 6px; 
-                                        border-radius: 3px; 
+                                        padding: 4px 8px; 
+                                        border-radius: 4px; 
                                         cursor: pointer; 
-                                        font-size: 0.7em;
+                                        font-size: 0.75em;
                                         display: flex;
                                         align-items: center;
-                                        gap: 2px;
+                                        gap: 3px;
                                         transition: all 0.2s;
                                     " onmouseover="this.style.background='var(--danger)'; this.style.color='white'; this.style.borderColor='var(--danger)'" 
                                        onmouseout="this.style.background='none'; this.style.color='var(--text-secondary)'; this.style.borderColor='var(--border-color)'">
-                                        <i class="material-icons" style="font-size: 10px;">clear</i>
+                                        <i class="material-icons" style="font-size: 12px;">clear</i>
                                         <span>Clear</span>
                                     </button>
                                     <button onclick="exportChat()" title="Export Chat" style="
                                         background: none; 
                                         border: 1px solid var(--border-color); 
                                         color: var(--text-secondary);
-                                        padding: 2px 6px; 
-                                        border-radius: 3px; 
+                                        padding: 4px 8px; 
+                                        border-radius: 4px; 
                                         cursor: pointer; 
-                                        font-size: 0.7em;
+                                        font-size: 0.75em;
                                         display: flex;
                                         align-items: center;
                                         gap: 2px;
@@ -5923,5 +5949,8 @@ ${stats.cordova?.detected ? '📱 Cordova app detected' : '🌐 Web browser mode
         <!-- Map Editor Elements -->
         <!-- Tile selector now integrated into map panel -->
     </div>
+    
+    <!-- Image Upload Integration -->
+    <script src="js/chatImageUploadIntegration.js"></script>
 </body>
 </html>

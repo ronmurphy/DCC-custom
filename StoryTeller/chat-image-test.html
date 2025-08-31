@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Image Button System Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .demo-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .chat-simulation {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            min-height: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .chat-message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            background: #f1f3f4;
+        }
+        
+        .chat-message.player1 {
+            border-left: 4px solid #ff6b6b;
+        }
+        
+        .chat-message.player2 {
+            border-left: 4px solid #4ecdc4;
+        }
+        
+        .chat-message.player3 {
+            border-left: 4px solid #45b7d1;
+        }
+        
+        .message-header {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        .message-content {
+            margin-bottom: 8px;
+        }
+        
+        .chat-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .player-demo {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            border: 2px solid #e5e7eb;
+        }
+        
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .player-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .explanation {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .feature-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            position: relative;
+            padding-left: 25px;
+        }
+        
+        .feature-list li:before {
+            content: '✅';
+            position: absolute;
+            left: 0;
+        }
+        
+        .test-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖼️ Chat Image Button System</h1>
+        
+        <div class="explanation">
+            <h3>How It Works</h3>
+            <ul class="feature-list">
+                <li>Images appear as clickable buttons (not full images) to prevent chat spam</li>
+                <li>Each button uses the player's accent color for easy identification</li>
+                <li>Click button opens image viewer modal with the actual image</li>
+                <li>Prevents chat stretching from large images</li>
+                <li>Modular design works in both StoryTeller and V4-network</li>
+            </ul>
+        </div>
+        
+        <div class="demo-section">
+            <h3>Player Upload Demos</h3>
+            
+            <div class="player-demo">
+                <div class="player-info">
+                    <div class="player-avatar" style="background: #ff6b6b;">A</div>
+                    <span><strong>Alice</strong> (Accent: Red)</span>
+                </div>
+                <div id="alice-upload"></div>
+            </div>
+            
+            <div class="player-demo">
+                <div class="player-info">
+                    <div class="player-avatar" style="background: #4ecdc4;">B</div>
+                    <span><strong>Bob</strong> (Accent: Teal)</span>
+                </div>
+                <div id="bob-upload"></div>
+            </div>
+            
+            <div class="player-demo">
+                <div class="player-info">
+                    <div class="player-avatar" style="background: #45b7d1;">C</div>
+                    <span><strong>Charlie</strong> (Accent: Blue)</span>
+                </div>
+                <div id="charlie-upload"></div>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h3>Chat Simulation</h3>
+            <p>Upload images above and see how they appear as buttons in chat:</p>
+            
+            <div class="chat-simulation" id="chat-area">
+                <div class="chat-message">
+                    <div class="message-header">System</div>
+                    <div class="message-content">Chat ready! Upload images above to see them as buttons here.</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h3>Test Image Buttons</h3>
+            <p>Test the image viewer with sample images:</p>
+            <button class="test-button" onclick="testImageButton('Alice', '#ff6b6b', 'https://picsum.photos/800/600?random=1')">Test Alice's Image</button>
+            <button class="test-button" onclick="testImageButton('Bob', '#4ecdc4', 'https://picsum.photos/600/800?random=2')">Test Bob's Image</button>
+            <button class="test-button" onclick="testImageButton('Charlie', '#45b7d1', 'https://picsum.photos/700/500?random=3')">Test Charlie's Image</button>
+        </div>
+    </div>
+
+    <script src="js/multiImageHost.js"></script>
+    <script src="js/chatImageSystem.js"></script>
+    <script>
+        // Initialize chat image system
+        const chatImages = new ChatImageSystem({
+            defaultAccentColor: '#667eea'
+        });
+
+        // Player configurations
+        const players = {
+            alice: { name: 'Alice', color: '#ff6b6b' },
+            bob: { name: 'Bob', color: '#4ecdc4' },
+            charlie: { name: 'Charlie', color: '#45b7d1' }
+        };
+
+        // Create upload buttons for each player
+        function initializePlayerUploads() {
+            Object.keys(players).forEach(playerKey => {
+                const player = players[playerKey];
+                const container = document.getElementById(`${playerKey}-upload`);
+                
+                const uploadButton = chatImages.createUploadButton(
+                    player.name,
+                    player.color,
+                    (result) => {
+                        // When image is uploaded, add it to chat as a button
+                        addImageToChat(player.name, result.button, player.color);
+                    }
+                );
+                
+                container.appendChild(uploadButton);
+            });
+        }
+
+        // Add image button to chat simulation
+        function addImageToChat(playerName, imageButton, playerColor) {
+            const chatArea = document.getElementById('chat-area');
+            
+            const message = document.createElement('div');
+            message.className = `chat-message ${playerName.toLowerCase()}`;
+            
+            message.innerHTML = `
+                <div class="message-header">${playerName}</div>
+                <div class="message-content">Shared an image:</div>
+            `;
+            
+            message.appendChild(imageButton);
+            chatArea.appendChild(message);
+            
+            // Scroll to bottom
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        // Test function for sample images
+        function testImageButton(playerName, color, imageUrl) {
+            const button = chatImages.createImageButton(imageUrl, playerName, color);
+            addImageToChat(playerName, button, color);
+        }
+
+        // Initialize the demo
+        initializePlayerUploads();
+
+        console.log('🖼️ Chat Image Button System initialized!');
+        console.log('Features:');
+        console.log('- Multi-service image hosting (Telegraph, Catbox, ImgBB, Imgur)');
+        console.log('- Player accent color buttons');
+        console.log('- Image viewer modal');
+        console.log('- Spam prevention');
+        console.log('- Modular design');
+    </script>
+</body>
+</html>
