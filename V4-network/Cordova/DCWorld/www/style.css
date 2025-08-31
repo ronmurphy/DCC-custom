@@ -2381,9 +2381,9 @@ body.sidebar-open {
    ======================================== */
 #notification-container {
     position: fixed;
-    top: 80px;
-    right: 0;
-    z-index: 10000;
+    top: 20px;
+    right: 20px;
+    z-index: 99999;
     display: flex;
     flex-direction: column;
     gap: var(--spacing-md);
@@ -2498,6 +2498,14 @@ body.sidebar-open {
 
 .status-notification h4 i {
     color: var(--warning);
+}
+
+.notes-notification {
+    border-left-color: #8e44ad;
+}
+
+.notes-notification h4 i {
+    color: #8e44ad;
 }
 
 /* ========================================

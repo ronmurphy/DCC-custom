@@ -388,6 +388,11 @@ function createNewCharacter() {
     if (typeof character !== 'undefined') {
         resetCharacterToDefaults();
         
+        // Show creation tab and switch to it
+        if (typeof window.showCreationTab === 'function') {
+            window.showCreationTab();
+        }
+        
         // Re-render character sheet components
         const renderFunctions = [
             'renderStats', 'updateHealthMagicDisplay', 'renderCharacterSkills'
@@ -459,6 +464,11 @@ function loadCharacterFromManager(characterId) {
     // Load character data into global character object
     if (typeof character !== 'undefined') {
         Object.assign(character, charData);
+        
+        // Set network player name for chat
+        if (typeof window.setNetworkPlayerName === 'function') {
+            window.setNetworkPlayerName(character.name || 'Unknown Player');
+        }
         
         // Update UI elements
         updateUIElements();
