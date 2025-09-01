@@ -1453,6 +1453,7 @@
     <div id="notification-container"></div>
 
     <!-- Character Landing Screen (Initially visible, managed by JS) -->
+    <!-- ORIGINAL LANDING DESIGN (BACKUP)
     <div id="character-landing" class="character-landing" style="display: none;">
         <div class="landing-header">
             <h1><i class="ra ra-knight-helmet"></i> Dungeon Crawler</h1>
@@ -1480,6 +1481,89 @@
 
         <div class="landing-footer">
             <p>Characters are saved locally in your browser. Use Export to backup your characters.</p>
+        </div>
+    </div>
+    -->
+
+    <!-- MODERN LANDING DESIGN -->
+    <div id="character-landing" class="character-landing modern-landing" style="display: none;">
+        <!-- Hero Section with Background -->
+        <div class="landing-hero">
+            <div class="hero-background">
+                <div class="hero-overlay"></div>
+            </div>
+            <div class="hero-content">
+                <div class="landing-header">
+                    <h1 class="hero-title">
+                        <i class="ra ra-knight-helmet hero-icon"></i>
+                        <span class="title-text">Dungeon Crawler</span>
+                        <span class="title-subtitle">Character Portal</span>
+                    </h1>
+                    <p class="hero-description">Choose your character or forge a new legend</p>
+                </div>
+
+                <div class="landing-actions">
+                    <button class="landing-btn primary-btn hero-btn" onclick="createNewCharacter()">
+                        <div class="btn-content">
+                            <span class="material-icons btn-icon">person_add</span>
+                            <div class="btn-text">
+                                <span class="btn-title">New Character</span>
+                                <span class="btn-subtitle">Start your journey</span>
+                            </div>
+                        </div>
+                    </button>
+                    <button class="landing-btn secondary-btn hero-btn" onclick="importCharacterToManager()">
+                        <div class="btn-content">
+                            <span class="material-icons btn-icon">upload</span>
+                            <div class="btn-text">
+                                <span class="btn-title">Import</span>
+                                <span class="btn-subtitle">Load saved character</span>
+                            </div>
+                        </div>
+                    </button>
+                    <button class="landing-btn secondary-btn hero-btn" onclick="exportAllCharacters()">
+                        <div class="btn-content">
+                            <span class="material-icons btn-icon">download</span>
+                            <div class="btn-text">
+                                <span class="btn-title">Export All</span>
+                                <span class="btn-subtitle">Backup characters</span>
+                            </div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Characters Section -->
+        <div class="characters-section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <i class="ra ra-player"></i>
+                    Your Characters
+                </h2>
+                <div class="section-stats" id="character-stats">
+                    <!-- Will be populated by JS -->
+                </div>
+            </div>
+            
+            <div class="characters-grid" id="characters-grid">
+                <!-- Character cards will be populated here -->
+            </div>
+        </div>
+
+        <div class="landing-footer">
+            <div class="footer-content">
+                <div class="footer-info">
+                    <i class="material-icons footer-icon">info</i>
+                    <span>Characters are saved locally in your browser. Use Export to backup your characters.</span>
+                </div>
+                <div class="footer-links">
+                    <button class="footer-link" onclick="showStorageInfo()">
+                        <i class="material-icons">storage</i>
+                        Storage Info
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 

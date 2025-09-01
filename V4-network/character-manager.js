@@ -352,6 +352,9 @@ function renderCharacterGrid() {
     
     grid.innerHTML = '';
     
+    // Update character stats in modern landing
+    updateCharacterStats();
+    
     if (characterManager.characters.length === 0) {
         grid.innerHTML = `
             <div class="no-characters">
@@ -374,6 +377,114 @@ function renderCharacterGrid() {
         const card = createCharacterCard(charData);
         grid.appendChild(card);
     });
+}
+
+// Function to update character statistics in modern landing
+function updateCharacterStats() {
+    const statsElement = document.getElementById('character-stats');
+    if (!statsElement) return;
+    
+    const totalChars = characterManager.characters.length;
+    const maxLevel = totalChars > 0 ? Math.max(...characterManager.characters.map(c => c.level || 1)) : 0;
+    const recentPlayed = characterManager.characters.filter(c => {
+        const lastMod = new Date(c.lastModified || 0);
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        return lastMod > weekAgo;
+    }).length;
+    
+    if (totalChars === 0) {
+        statsElement.innerHTML = `
+            <div class="stat-item">
+                <i class="material-icons">person_add</i>
+                Ready to create your first character
+            </div>
+        `;
+    } else {
+        statsElement.innerHTML = `
+            <div class="stat-item">
+                <i class="material-icons">people</i>
+                ${totalChars} character${totalChars !== 1 ? 's' : ''}
+            </div>
+            <div class="stat-item">
+                <i class="material-icons">trending_up</i>
+                Max level: ${maxLevel}
+            </div>
+            ${recentPlayed > 0 ? `
+            <div class="stat-item">
+                <i class="material-icons">schedule</i>
+                ${recentPlayed} played recently
+            </div>
+            ` : ''}
+        `;
+    }
+}
+
+// Function to show storage information modal
+function showStorageInfo() {
+    // Create and show a modal with storage information
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.display = 'flex';
+    
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="material-icons">storage</i> Storage Information</h3>
+                <button class="close-modal" onclick="this.closest('.modal').remove()">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="storage-info">
+                    <div class="info-section">
+                        <h4><i class="material-icons">folder</i> Local Storage</h4>
+                        <p>Your characters are saved directly in your browser's local storage. This means:</p>
+                        <ul>
+                            <li>✅ Fast access and offline availability</li>
+                            <li>✅ No internet connection required</li>
+                            <li>⚠️ Data is device-specific</li>
+                            <li>⚠️ Clearing browser data will remove characters</li>
+                        </ul>
+                    </div>
+                    <div class="info-section">
+                        <h4><i class="material-icons">backup</i> Backup Recommendations</h4>
+                        <p>To keep your characters safe:</p>
+                        <ul>
+                            <li>🔄 Export characters regularly</li>
+                            <li>💾 Save exported files to cloud storage</li>
+                            <li>📱 Share files between devices</li>
+                            <li>🛡️ Keep backups before browser updates</li>
+                        </ul>
+                    </div>
+                    <div class="info-section">
+                        <h4><i class="material-icons">info</i> Current Status</h4>
+                        <div class="storage-stats">
+                            <div class="stat">
+                                <span class="stat-label">Characters:</span>
+                                <span class="stat-value">${characterManager.characters.length}</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Storage Type:</span>
+                                <span class="stat-value">IndexedDB + LocalStorage</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn secondary-btn" onclick="exportAllCharacters()">
+                    <i class="material-icons">download</i>
+                    Export All Characters
+                </button>
+                <button class="btn primary-btn" onclick="this.closest('.modal').remove()">
+                    Got it
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
 }
 
 // ========================================
