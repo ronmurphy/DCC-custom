@@ -1236,12 +1236,66 @@
     min-width: fit-content;
     transition: all 0.2s ease;
     cursor: pointer;
+    position: relative;
 }
 
 .player-chip:hover {
     background: rgba(60, 60, 80, 0.9);
     border-color: rgba(255, 215, 0, 0.3);
     transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+}
+
+/* Touch device interactions */
+@media (hover: none) and (pointer: coarse) {
+    .player-chip:not(.self) {
+        /* Always show that it's interactive on touch devices */
+        border-color: rgba(102, 126, 234, 0.3);
+    }
+    
+    .player-chip:not(.self):active {
+        background: rgba(60, 60, 80, 0.9);
+        border-color: rgba(102, 126, 234, 0.6);
+        transform: scale(0.98);
+        transition: all 0.1s ease;
+    }
+}
+
+/* Add visual indicator for clickable chips */
+.player-chip:not(.self)::after {
+    content: '📝';
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    font-size: 0.7em;
+    opacity: 0;
+    transition: opacity 0.2s;
+    background: rgba(102, 126, 234, 0.9);
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid white;
+    pointer-events: none; /* Prevent icon from blocking chip clicks */
+}
+
+.player-chip:not(.self):hover::after {
+    opacity: 1;
+}
+
+/* Show note icon on touch devices */
+@media (hover: none) and (pointer: coarse) {
+    .player-chip:not(.self)::after {
+        opacity: 0.8;
+    }
+    
+    .player-chip:not(.self):active::after {
+        opacity: 1;
+        transform: scale(1.1);
+    }
 }
 
 .player-chip.self {
