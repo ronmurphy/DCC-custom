@@ -3054,18 +3054,18 @@ body.sidebar-open {
 .modern-landing .characters-grid {
     max-width: 1400px;
     margin: 0 auto;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    gap: var(--spacing-xl);
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--spacing-lg);
 }
 
 .modern-landing .character-card {
     background: var(--bg-card);
     border: 2px solid var(--border-color);
-    border-radius: var(--radius-xl);
-    padding: var(--spacing-xl);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
     transition: all var(--transition-base);
     position: relative;
-    overflow: visible; /* Changed from hidden to visible to ensure buttons are clickable */
+    overflow: visible;
 }
 
 /* Ensure all card content is above the background effect */
@@ -3084,8 +3084,8 @@ body.sidebar-open {
     background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.05), transparent);
     opacity: 0;
     transition: opacity var(--transition-base);
-    z-index: 1; /* Make sure it's behind the content */
-    pointer-events: none; /* Ensure it doesn't block clicks */
+    z-index: 1;
+    pointer-events: none;
 }
 
 .modern-landing .character-card:hover::before {
@@ -3094,31 +3094,130 @@ body.sidebar-open {
 
 .modern-landing .character-card:hover {
     border-color: var(--primary);
-    transform: translateY(-8px);
-    box-shadow: 0 16px 48px rgba(0,0,0,0.12);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.1);
 }
 
-/* Enhanced Character Portrait */
+/* Compact Character Portrait */
 .modern-landing .character-portrait,
 .modern-landing .character-portrait-placeholder {
-    width: 100px;
-    height: 100px;
-    border-radius: var(--radius-xl);
+    width: 70px;
+    height: 70px;
+    border-radius: var(--radius-lg);
     border: 3px solid var(--primary);
 }
 
 .modern-landing .character-portrait-placeholder {
     background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
     border: 3px dashed var(--border-color);
-    font-size: 2.5rem;
+    font-size: 2rem;
+}
+
+/* Enhanced Character Identity */
+.character-identity {
+    display: flex;
+    gap: var(--spacing-xs);
+    margin: var(--spacing-xs) 0 var(--spacing-sm);
+    flex-wrap: wrap;
+}
+
+.identity-item {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 500;
+    border: 1px solid var(--border-color);
+}
+
+.identity-item.heritage {
+    background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1), rgba(var(--primary-rgb), 0.05));
+    border-color: rgba(var(--primary-rgb), 0.2);
+    color: var(--primary);
+}
+
+.identity-item.background {
+    background: linear-gradient(135deg, rgba(var(--secondary-rgb), 0.1), rgba(var(--secondary-rgb), 0.05));
+    border-color: rgba(var(--secondary-rgb), 0.2);
+    color: var(--secondary);
+}
+
+.identity-item.class {
+    background: linear-gradient(135deg, rgba(var(--success-rgb), 0.1), rgba(var(--success-rgb), 0.05));
+    border-color: rgba(var(--success-rgb), 0.2);
+    color: var(--success);
+}
+
+/* Compact Stats Grid */
+.character-stats-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    margin: var(--spacing-sm) 0;
+}
+
+.stat-group {
+    display: flex;
+    gap: var(--spacing-sm);
+    justify-content: space-between;
+}
+
+.character-stats-grid .stat-item {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 0.7rem;
+    font-weight: 500;
+    border: 1px solid var(--border-color);
+    flex: 1;
+    text-align: center;
+    min-width: 0;
+}
+
+.stat-item.hp {
+    border-color: rgba(220, 53, 69, 0.3);
+    background: rgba(220, 53, 69, 0.05);
+}
+
+.stat-item.mp {
+    border-color: rgba(13, 110, 253, 0.3);
+    background: rgba(13, 110, 253, 0.05);
+}
+
+.stat-item.stats {
+    border-color: rgba(var(--primary-rgb), 0.3);
+    background: rgba(var(--primary-rgb), 0.05);
+}
+
+.stat-item.skills {
+    border-color: rgba(var(--success-rgb), 0.3);
+    background: rgba(var(--success-rgb), 0.05);
+}
+
+.stat-item.spells {
+    border-color: rgba(var(--secondary-rgb), 0.3);
+    background: rgba(var(--secondary-rgb), 0.05);
+}
+
+.stat-item.items {
+    border-color: rgba(255, 193, 7, 0.3);
+    background: rgba(255, 193, 7, 0.05);
+}
+
+.stat-item.played {
+    border-color: rgba(var(--text-secondary-rgb), 0.3);
+    background: rgba(var(--text-secondary-rgb), 0.05);
+    font-size: 0.65rem;
 }
 
 /* Enhanced Action Buttons for Modern Landing */
 .modern-landing .character-card-actions {
     display: flex;
-    gap: var(--spacing-sm);
-    margin-top: var(--spacing-lg);
-    padding-top: var(--spacing-md);
+    gap: var(--spacing-xs);
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-sm);
     border-top: 1px solid var(--border-color);
     position: relative;
     z-index: 10;
@@ -3127,39 +3226,40 @@ body.sidebar-open {
 .modern-landing .card-action-btn {
     background: var(--bg-secondary);
     border: 2px solid var(--border-color);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-sm);
     cursor: pointer;
     transition: all var(--transition-base);
     color: var(--text-secondary);
-    font-size: 1.1rem;
-    min-width: 48px;
-    min-height: 48px;
+    font-size: 1rem;
+    min-width: 36px;
+    min-height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
     z-index: 11;
+    flex: 1;
 }
 
 .modern-landing .card-action-btn:hover {
     color: var(--text-primary);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .modern-landing .delete-btn:hover {
     background: var(--danger);
     border-color: var(--danger);
     color: white;
-    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
 }
 
 .modern-landing .export-btn:hover {
     background: var(--success);
     border-color: var(--success);
     color: white;
-    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
 }
 
 /* Modern Footer */
@@ -3239,8 +3339,8 @@ body.sidebar-open {
     }
     
     .modern-landing .characters-grid {
-        grid-template-columns: 1fr;
-        gap: var(--spacing-lg);
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: var(--spacing-md);
     }
     
     .footer-content {
@@ -3258,14 +3358,29 @@ body.sidebar-open {
         padding: var(--spacing-xl) var(--spacing-md);
     }
     
+    .modern-landing .characters-grid {
+        grid-template-columns: 1fr;
+    }
+    
     .modern-landing .character-card {
-        padding: var(--spacing-lg);
+        padding: var(--spacing-md);
+    }
+    
+    .modern-landing .character-portrait {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .modern-landing .character-stats-grid {
+        grid-template-columns: 1fr 1fr;
+        font-size: 0.8rem;
     }
     
     .modern-landing .card-action-btn {
         min-width: 44px;
         min-height: 44px;
         padding: var(--spacing-sm);
+        font-size: 0.9rem;
     }
 }
 
@@ -3331,6 +3446,12 @@ body.sidebar-open {
 .stat-value {
     color: var(--primary);
     font-weight: 600;
+}
+
+.storage-stat-value {
+    color: var(--primary);
+    font-weight: 600;
+    font-size: 0.9rem;
 }
 
 .modal-footer {

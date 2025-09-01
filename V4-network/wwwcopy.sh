@@ -1,6 +1,6 @@
 #!/bin/bash
 # wwwcopy.sh - Copy development files to Cordova www directory
-# Run this from the V3 directory: ./wwwcopy.sh
+# Run this from the V4-network directory: ./wwwcopy.sh
 
 echo "🔄 Copying development files to Cordova www..."
 
@@ -14,38 +14,82 @@ if [ ! -d "$DEST_DIR" ]; then
     exit 1
 fi
 
-# Clean up old versions of the file types we're about to copy
-echo "🧹 Cleaning old web files (preserving subdirectories and icons)..."
+# Clean up old versions (preserving subdirectories structure)
+echo "🧹 Cleaning old web files..."
 rm -f "$DEST_DIR"/*.html 2>/dev/null
 rm -f "$DEST_DIR"/*.css 2>/dev/null  
 rm -f "$DEST_DIR"/*.js 2>/dev/null
 rm -f "$DEST_DIR"/*.json 2>/dev/null
-# NOTE: Preserving existing icon-*.png files - they don't need to be cleaned
+
+# Remove old subdirectories to ensure clean copy
+echo "🧹 Cleaning old subdirectories..."
+rm -rf "$DEST_DIR"/assets 2>/dev/null
+rm -rf "$DEST_DIR"/css 2>/dev/null
+rm -rf "$DEST_DIR"/data 2>/dev/null
+rm -rf "$DEST_DIR"/js 2>/dev/null
 
 # Copy individual files (not in subfolders) - excluding certain files
-echo "📁 Copying fresh web files..."
+echo "📁 Copying main web files..."
 cp "$SOURCE_DIR"/*.html "$DEST_DIR"/ 2>/dev/null
 cp "$SOURCE_DIR"/*.css "$DEST_DIR"/ 2>/dev/null  
 cp "$SOURCE_DIR"/*.js "$DEST_DIR"/ 2>/dev/null
 cp "$SOURCE_DIR"/*.json "$DEST_DIR"/ 2>/dev/null
 
-# Copy icon files if they exist (only if not already there)
-echo "🖼️  Copying icon files (if needed)..."
-if [ ! -f "$DEST_DIR"/icon-192.png ] || [ ! -f "$DEST_DIR"/icon-512.png ]; then
-    cp "$SOURCE_DIR"/icon-*.png "$DEST_DIR"/ 2>/dev/null
-    echo "   📱 Icon files copied"
+# Copy subdirectories with all their contents
+echo "📁 Copying assets directory..."
+if [ -d "$SOURCE_DIR/assets" ]; then
+    cp -r "$SOURCE_DIR/assets" "$DEST_DIR"/ 2>/dev/null
+    echo "   ✅ Assets directory copied"
 else
-    echo "   📱 Icon files already present, skipping"
+    echo "   ⚠️  Assets directory not found"
 fi
+
+echo "📁 Copying css directory..."
+if [ -d "$SOURCE_DIR/css" ]; then
+    cp -r "$SOURCE_DIR/css" "$DEST_DIR"/ 2>/dev/null
+    echo "   ✅ CSS directory copied"
+else
+    echo "   ⚠️  CSS directory not found"
+fi
+
+echo "📁 Copying data directory..."
+if [ -d "$SOURCE_DIR/data" ]; then
+    cp -r "$SOURCE_DIR/data" "$DEST_DIR"/ 2>/dev/null
+    echo "   ✅ Data directory copied"
+else
+    echo "   ⚠️  Data directory not found"
+fi
+
+echo "📁 Copying js directory..."
+if [ -d "$SOURCE_DIR/js" ]; then
+    cp -r "$SOURCE_DIR/js" "$DEST_DIR"/ 2>/dev/null
+    echo "   ✅ JS directory copied"
+else
+    echo "   ⚠️  JS directory not found"
+fi
+
+# Copy icon files if they exist (only if not already there)
+echo "🖼️  Copying icon files..."
+cp "$SOURCE_DIR"/icon-*.png "$DEST_DIR"/ 2>/dev/null
+cp "$SOURCE_DIR"/favicon.ico "$DEST_DIR"/ 2>/dev/null
+echo "   📱 Icon and favicon files copied"
 
 # Don't copy these files to www (they belong elsewhere or not needed)
 echo "🚫 Removing files that don't belong in www..."
 rm -f "$DEST_DIR"/package.json 2>/dev/null
 rm -f "$DEST_DIR"/package-lock.json 2>/dev/null
 rm -f "$DEST_DIR"/game-reference.md 2>/dev/null
+rm -f "$DEST_DIR"/wwwcopy.sh 2>/dev/null
+rm -f "$DEST_DIR"/build.sh 2>/dev/null
+rm -f "$DEST_DIR"/combo.sh 2>/dev/null
 
-# Show what was copied
-echo "✅ Copy complete! Files in Cordova www:"
-ls -la "$DEST_DIR"/*.html "$DEST_DIR"/*.css "$DEST_DIR"/*.js "$DEST_DIR"/*.json 2>/dev/null | wc -l | xargs echo "   📄 Files copied:"
+# Show summary of what was copied
+echo "✅ Copy complete! Directory structure:"
+echo "   📄 Main files: $(ls "$DEST_DIR"/*.html "$DEST_DIR"/*.css "$DEST_DIR"/*.js "$DEST_DIR"/*.json 2>/dev/null | wc -l)"
+echo "   📁 Subdirectories:"
+[ -d "$DEST_DIR/assets" ] && echo "      ✅ assets/ ($(find "$DEST_DIR/assets" -type f | wc -l) files)"
+[ -d "$DEST_DIR/css" ] && echo "      ✅ css/ ($(find "$DEST_DIR/css" -type f | wc -l) files)"
+[ -d "$DEST_DIR/data" ] && echo "      ✅ data/ ($(find "$DEST_DIR/data" -type f | wc -l) files)"
+[ -d "$DEST_DIR/js" ] && echo "      ✅ js/ ($(find "$DEST_DIR/js" -type f | wc -l) files)"
 
 echo "🎯 Ready to build! Run ./build.sh to create APK"

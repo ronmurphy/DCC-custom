@@ -218,6 +218,53 @@ async function updateStorageIndicator(charData) {
     }
 }
 
+// Function to count skills properly for a character
+function getCharacterSkillCount(charData) {
+    try {
+        // Count custom skills that have been acquired
+        let totalSkills = 0;
+        
+        // Count custom skills
+        if (charData.customSkills && Array.isArray(charData.customSkills)) {
+            totalSkills += charData.customSkills.length;
+        }
+        
+        // Try to estimate skills from race/job/class if we have access to the data
+        if (window.races && charData.heritage) {
+            const raceData = window.races.find(r => r.name === charData.heritage);
+            if (raceData && raceData.skills) {
+                totalSkills += raceData.skills.length;
+            }
+        }
+        
+        if (window.jobs && charData.background) {
+            const jobData = window.jobs.find(j => j.name === charData.background);
+            if (jobData && jobData.skills) {
+                totalSkills += jobData.skills.length;
+            }
+        }
+        
+        if (window.classes && charData.className) {
+            const classData = window.classes.find(c => c.name === charData.className);
+            if (classData && classData.skills) {
+                totalSkills += classData.skills.length;
+            }
+        }
+        
+        // If we can't calculate properly, try to get a reasonable estimate
+        if (totalSkills === 0 && charData.level > 1) {
+            // Estimate based on level (most characters get some skills)
+            totalSkills = Math.max(1, Math.floor(charData.level / 2));
+        }
+        
+        return totalSkills;
+    } catch (error) {
+        console.warn('Error calculating skill count:', error);
+        // Final fallback based on level
+        return Math.max(0, Math.floor((charData.level || 1) / 2));
+    }
+}
+
 // ========================================
 function createCharacterCard(charData) {
     const card = document.createElement('div');
@@ -231,6 +278,12 @@ function createCharacterCard(charData) {
         `<img src="${charData.personal.portrait}" alt="${charData.name || 'Character'}" class="character-portrait">` :
         `<div class="character-portrait-placeholder"><i class="ra ra-player"></i></div>`;
     
+    // Calculate additional stats for more info
+    const totalStats = (charData.strength || 0) + (charData.agility || 0) + (charData.intellect || 0) + (charData.stamina || 0);
+    const skillCount = getCharacterSkillCount(charData);
+    const spellCount = Object.keys(charData.spells || {}).length;
+    const itemCount = (charData.inventory || []).length;
+    
     card.innerHTML = `
         <div class="character-card-portrait">
             ${portraitContent}
@@ -241,16 +294,28 @@ function createCharacterCard(charData) {
         </div>
         <div class="character-card-info">
             <h3 class="character-name">${charData.name || 'Unnamed Character'}</h3>
-            <div class="character-details">
-                <div class="character-race">${raceName}</div>
-                <div class="character-background">${jobName}</div>
-                <div class="character-class">${className}</div>
+            <div class="character-identity">
+                <span class="identity-item heritage">${raceName}</span>
+                <span class="identity-item background">${jobName}</span>
+                <span class="identity-item class">${className}</span>
             </div>
-            <div class="character-stats">
-                <span class="stat-item">HP: ${charData.currentHealthPoints || 0}/${charData.healthPoints || 0}</span>
-                <span class="stat-item">MP: ${charData.currentMagicPoints || 0}/${charData.magicPoints || 0}</span>
+            <div class="character-stats-grid">
+                <div class="stat-group">
+                    <span class="stat-item hp">❤️ ${charData.currentHealthPoints || 0}/${charData.healthPoints || 0}</span>
+                    <span class="stat-item mp">💙 ${charData.currentMagicPoints || 0}/${charData.magicPoints || 0}</span>
+                </div>
+                <div class="stat-group">
+                    <span class="stat-item stats">📊 ${totalStats} total</span>
+                    <span class="stat-item skills">🎯 ${skillCount} skills</span>
+                </div>
+                ${spellCount > 0 ? `<div class="stat-group">
+                    <span class="stat-item spells">✨ ${spellCount} spells</span>
+                    <span class="stat-item items">🎒 ${itemCount} items</span>
+                </div>` : `<div class="stat-group">
+                    <span class="stat-item items">🎒 ${itemCount} items</span>
+                    <span class="stat-item played">🕒 ${lastModified}</span>
+                </div>`}
             </div>
-            <div class="character-last-modified">Last played: ${lastModified}</div>
         </div>
         <div class="character-card-actions">
             <button class="card-action-btn delete-btn" onclick="event.stopPropagation(); deleteCharacterConfirm('${charData.id}')" title="Delete Character">
@@ -462,11 +527,11 @@ function showStorageInfo() {
                         <div class="storage-stats">
                             <div class="stat">
                                 <span class="stat-label">Characters:</span>
-                                <span class="stat-value">${characterManager.characters.length}</span>
+                                <span class="storage-stat-value">${characterManager.characters.length}</span>
                             </div>
                             <div class="stat">
                                 <span class="stat-label">Storage Type:</span>
-                                <span class="stat-value">IndexedDB + LocalStorage</span>
+                                <span class="storage-stat-value">IndexedDB</span>
                             </div>
                         </div>
                     </div>
