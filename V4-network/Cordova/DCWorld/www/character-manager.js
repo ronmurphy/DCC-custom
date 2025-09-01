@@ -218,6 +218,53 @@ async function updateStorageIndicator(charData) {
     }
 }
 
+// Function to count skills properly for a character
+function getCharacterSkillCount(charData) {
+    try {
+        // Count custom skills that have been acquired
+        let totalSkills = 0;
+        
+        // Count custom skills
+        if (charData.customSkills && Array.isArray(charData.customSkills)) {
+            totalSkills += charData.customSkills.length;
+        }
+        
+        // Try to estimate skills from race/job/class if we have access to the data
+        if (window.races && charData.heritage) {
+            const raceData = window.races.find(r => r.name === charData.heritage);
+            if (raceData && raceData.skills) {
+                totalSkills += raceData.skills.length;
+            }
+        }
+        
+        if (window.jobs && charData.background) {
+            const jobData = window.jobs.find(j => j.name === charData.background);
+            if (jobData && jobData.skills) {
+                totalSkills += jobData.skills.length;
+            }
+        }
+        
+        if (window.classes && charData.className) {
+            const classData = window.classes.find(c => c.name === charData.className);
+            if (classData && classData.skills) {
+                totalSkills += classData.skills.length;
+            }
+        }
+        
+        // If we can't calculate properly, try to get a reasonable estimate
+        if (totalSkills === 0 && charData.level > 1) {
+            // Estimate based on level (most characters get some skills)
+            totalSkills = Math.max(1, Math.floor(charData.level / 2));
+        }
+        
+        return totalSkills;
+    } catch (error) {
+        console.warn('Error calculating skill count:', error);
+        // Final fallback based on level
+        return Math.max(0, Math.floor((charData.level || 1) / 2));
+    }
+}
+
 // ========================================
 function createCharacterCard(charData) {
     const card = document.createElement('div');
@@ -231,6 +278,12 @@ function createCharacterCard(charData) {
         `<img src="${charData.personal.portrait}" alt="${charData.name || 'Character'}" class="character-portrait">` :
         `<div class="character-portrait-placeholder"><i class="ra ra-player"></i></div>`;
     
+    // Calculate additional stats for more info
+    const totalStats = (charData.strength || 0) + (charData.agility || 0) + (charData.intellect || 0) + (charData.stamina || 0);
+    const skillCount = getCharacterSkillCount(charData);
+    const spellCount = Object.keys(charData.spells || {}).length;
+    const itemCount = (charData.inventory || []).length;
+    
     card.innerHTML = `
         <div class="character-card-portrait">
             ${portraitContent}
@@ -241,16 +294,28 @@ function createCharacterCard(charData) {
         </div>
         <div class="character-card-info">
             <h3 class="character-name">${charData.name || 'Unnamed Character'}</h3>
-            <div class="character-details">
-                <div class="character-race">${raceName}</div>
-                <div class="character-background">${jobName}</div>
-                <div class="character-class">${className}</div>
+            <div class="character-identity">
+                <span class="identity-item heritage">${raceName}</span>
+                <span class="identity-item background">${jobName}</span>
+                <span class="identity-item class">${className}</span>
             </div>
-            <div class="character-stats">
-                <span class="stat-item">HP: ${charData.currentHealthPoints || 0}/${charData.healthPoints || 0}</span>
-                <span class="stat-item">MP: ${charData.currentMagicPoints || 0}/${charData.magicPoints || 0}</span>
+            <div class="character-stats-grid">
+                <div class="stat-group">
+                    <span class="stat-item hp">❤️ ${charData.currentHealthPoints || 0}/${charData.healthPoints || 0}</span>
+                    <span class="stat-item mp">💙 ${charData.currentMagicPoints || 0}/${charData.magicPoints || 0}</span>
+                </div>
+                <div class="stat-group">
+                    <span class="stat-item stats">📊 ${totalStats} total</span>
+                    <span class="stat-item skills">🎯 ${skillCount} skills</span>
+                </div>
+                ${spellCount > 0 ? `<div class="stat-group">
+                    <span class="stat-item spells">✨ ${spellCount} spells</span>
+                    <span class="stat-item items">🎒 ${itemCount} items</span>
+                </div>` : `<div class="stat-group">
+                    <span class="stat-item items">🎒 ${itemCount} items</span>
+                    <span class="stat-item played">🕒 ${lastModified}</span>
+                </div>`}
             </div>
-            <div class="character-last-modified">Last played: ${lastModified}</div>
         </div>
         <div class="character-card-actions">
             <button class="card-action-btn delete-btn" onclick="event.stopPropagation(); deleteCharacterConfirm('${charData.id}')" title="Delete Character">
@@ -352,6 +417,9 @@ function renderCharacterGrid() {
     
     grid.innerHTML = '';
     
+    // Update character stats in modern landing
+    updateCharacterStats();
+    
     if (characterManager.characters.length === 0) {
         grid.innerHTML = `
             <div class="no-characters">
@@ -376,6 +444,114 @@ function renderCharacterGrid() {
     });
 }
 
+// Function to update character statistics in modern landing
+function updateCharacterStats() {
+    const statsElement = document.getElementById('character-stats');
+    if (!statsElement) return;
+    
+    const totalChars = characterManager.characters.length;
+    const maxLevel = totalChars > 0 ? Math.max(...characterManager.characters.map(c => c.level || 1)) : 0;
+    const recentPlayed = characterManager.characters.filter(c => {
+        const lastMod = new Date(c.lastModified || 0);
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        return lastMod > weekAgo;
+    }).length;
+    
+    if (totalChars === 0) {
+        statsElement.innerHTML = `
+            <div class="stat-item">
+                <i class="material-icons">person_add</i>
+                Ready to create your first character
+            </div>
+        `;
+    } else {
+        statsElement.innerHTML = `
+            <div class="stat-item">
+                <i class="material-icons">people</i>
+                ${totalChars} character${totalChars !== 1 ? 's' : ''}
+            </div>
+            <div class="stat-item">
+                <i class="material-icons">trending_up</i>
+                Max level: ${maxLevel}
+            </div>
+            ${recentPlayed > 0 ? `
+            <div class="stat-item">
+                <i class="material-icons">schedule</i>
+                ${recentPlayed} played recently
+            </div>
+            ` : ''}
+        `;
+    }
+}
+
+// Function to show storage information modal
+function showStorageInfo() {
+    // Create and show a modal with storage information
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.display = 'flex';
+    
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="material-icons">storage</i> Storage Information</h3>
+                <button class="close-modal" onclick="this.closest('.modal').remove()">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="storage-info">
+                    <div class="info-section">
+                        <h4><i class="material-icons">folder</i> Local Storage</h4>
+                        <p>Your characters are saved directly in your browser's local storage. This means:</p>
+                        <ul>
+                            <li>✅ Fast access and offline availability</li>
+                            <li>✅ No internet connection required</li>
+                            <li>⚠️ Data is device-specific</li>
+                            <li>⚠️ Clearing browser data will remove characters</li>
+                        </ul>
+                    </div>
+                    <div class="info-section">
+                        <h4><i class="material-icons">backup</i> Backup Recommendations</h4>
+                        <p>To keep your characters safe:</p>
+                        <ul>
+                            <li>🔄 Export characters regularly</li>
+                            <li>💾 Save exported files to cloud storage</li>
+                            <li>📱 Share files between devices</li>
+                            <li>🛡️ Keep backups before browser updates</li>
+                        </ul>
+                    </div>
+                    <div class="info-section">
+                        <h4><i class="material-icons">info</i> Current Status</h4>
+                        <div class="storage-stats">
+                            <div class="stat">
+                                <span class="stat-label">Characters:</span>
+                                <span class="storage-stat-value">${characterManager.characters.length}</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Storage Type:</span>
+                                <span class="storage-stat-value">IndexedDB</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn secondary-btn" onclick="exportAllCharacters()">
+                    <i class="material-icons">download</i>
+                    Export All Characters
+                </button>
+                <button class="btn primary-btn" onclick="this.closest('.modal').remove()">
+                    Got it
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
 // ========================================
 // CHARACTER OPERATIONS
 // ========================================
@@ -387,6 +563,11 @@ function createNewCharacter() {
     // Reset character object to defaults
     if (typeof character !== 'undefined') {
         resetCharacterToDefaults();
+        
+        // Show creation tab and switch to it
+        if (typeof window.showCreationTab === 'function') {
+            window.showCreationTab();
+        }
         
         // Re-render character sheet components
         const renderFunctions = [
@@ -459,6 +640,11 @@ function loadCharacterFromManager(characterId) {
     // Load character data into global character object
     if (typeof character !== 'undefined') {
         Object.assign(character, charData);
+        
+        // Set network player name for chat
+        if (typeof window.setNetworkPlayerName === 'function') {
+            window.setNetworkPlayerName(character.name || 'Unknown Player');
+        }
         
         // Update UI elements
         updateUIElements();

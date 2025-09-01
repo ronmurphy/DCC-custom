@@ -580,7 +580,7 @@ function showNotification(type, title, result, details) {
     const notification = document.createElement('div');
     notification.className = `notification ${type}-notification`;
     notification.innerHTML = `
-                <h4><i class="ra ra-${type === 'roll' ? 'perspective-dice-six' : type === 'weapon' ? 'sword' : type === 'spell' ? 'lightning' : type === 'rest' ? 'heart-plus' : type === 'status' ? 'lightning-bolt' : type === 'save' ? 'save' : type === 'level' ? 'trophy' : 'sword'}"></i> ${title}</h4>
+                <h4><i class="ra ra-${type === 'roll' ? 'perspective-dice-six' : type === 'weapon' ? 'sword' : type === 'spell' ? 'lightning' : type === 'rest' ? 'heart-plus' : type === 'status' ? 'lightning-bolt' : type === 'save' ? 'save' : type === 'level' ? 'trophy' : type === 'notes' ? 'scroll' : 'sword'}"></i> ${title}</h4>
                 <div class="result">${result}</div>
                 <div class="details">${details}</div>
             `;
@@ -1668,6 +1668,101 @@ function clearCustomSelections(type) {
 
 function updateCustomRaceBonuses() {
     updateCustomBonuses('race');
+}
+
+function handleHeritageSelection() {
+    const raceSelect = document.getElementById('race-select');
+    const selectedHeritage = raceSelect.value;
+    
+    // Ensure character.personal exists
+    if (!character.personal) {
+        character.personal = { age: '', backstory: '', portrait: null };
+    }
+    
+    // Check if avatar assignment system is available and heritage is selected
+    if (window.avatarAssignmentSystem && selectedHeritage && selectedHeritage !== 'custom') {
+        // Always assign avatar when heritage changes (not just when empty)
+        const avatarFilename = window.avatarAssignmentSystem.getAvatarForHeritage(selectedHeritage);
+        if (avatarFilename) {
+            const avatarPath = `assets/avatars/${avatarFilename}`;
+            
+            // Convert avatar to base64 and save to character
+            loadImageAsBase64(avatarPath).then(base64Data => {
+                if (base64Data) {
+                    character.personal.portrait = base64Data;
+                    
+                    // Update the portrait display
+                    const portraitDisplay = document.getElementById('portrait-display');
+                    if (portraitDisplay) {
+                        portraitDisplay.innerHTML = `<img src="${base64Data}" alt="Character Portrait" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">`;
+                    }
+                    
+                    console.log(`✅ Updated avatar for ${selectedHeritage}: ${avatarFilename}`);
+                }
+            }).catch(error => {
+                console.warn(`⚠️ Could not load avatar ${avatarPath}:`, error);
+                // Show default placeholder for missing avatars
+                showDefaultPortraitPlaceholder();
+            });
+        } else {
+            // No avatar mapping found, show default placeholder
+            console.log(`ℹ️ No avatar available for ${selectedHeritage}, showing default placeholder`);
+            showDefaultPortraitPlaceholder();
+        }
+    } else if (selectedHeritage === 'custom' || selectedHeritage === '') {
+        // If custom or no heritage selected, revert to placeholder
+        showDefaultPortraitPlaceholder();
+    }
+    
+    // Update custom race bonuses as before
+    updateCustomRaceBonuses();
+}
+
+// Helper function to show default portrait placeholder
+function showDefaultPortraitPlaceholder() {
+    const portraitDisplay = document.getElementById('portrait-display');
+    if (portraitDisplay) {
+        // Clear any existing portrait data
+        character.personal.portrait = null;
+        
+        // Show the default placeholder
+        portraitDisplay.innerHTML = `
+            <div class="portrait-placeholder">
+                <i class="ra ra-hood"></i>
+                <span>Tap to Upload</span>
+            </div>
+        `;
+    }
+}
+
+// Helper function to load image and convert to base64
+function loadImageAsBase64(imagePath) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous'; // Handle CORS if needed
+        
+        img.onload = function() {
+            try {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                canvas.width = img.width;
+                canvas.height = img.height;
+                
+                ctx.drawImage(img, 0, 0);
+                const base64Data = canvas.toDataURL('image/png');
+                resolve(base64Data);
+            } catch (error) {
+                reject(error);
+            }
+        };
+        
+        img.onerror = function() {
+            reject(new Error(`Failed to load image: ${imagePath}`));
+        };
+        
+        img.src = imagePath;
+    });
 }
 
 function updateCustomJobBonuses() {
@@ -3617,6 +3712,11 @@ function updateRollHistoryDisplay() {
     
     // Sync modal content if open
     syncModalContent();
+    
+    // Sync chat roll history if bottom sheet is open
+    if (typeof updateChatRollHistory === 'function') {
+        updateChatRollHistory();
+    }
 }
 
 function clearRollHistory() {
@@ -3624,6 +3724,11 @@ function clearRollHistory() {
     updateRollHistoryDisplay();
     // Sync modal content if open
     syncModalContent();
+    
+    // Sync chat roll history if function exists
+    if (typeof updateChatRollHistory === 'function') {
+        updateChatRollHistory();
+    }
 }
 
 // ========================================

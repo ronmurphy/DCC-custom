@@ -1764,9 +1764,27 @@ function displayChatMessage(message) {
     
     const timestamp = new Date(message.created_at).toLocaleTimeString();
     
+    // Parse player name for accent color (format: "playername|#hexcolor")
+    let playerDisplayName = message.player_name || 'System';
+    let playerColor = '';
+    
+    if (playerDisplayName.includes('|')) {
+        const parts = playerDisplayName.split('|');
+        playerDisplayName = parts[0];
+        playerColor = parts[1];
+        
+        // Validate hex color format
+        if (playerColor && !playerColor.match(/^#[0-9A-Fa-f]{6}$/)) {
+            playerColor = ''; // Invalid color, use default
+        }
+    }
+    
+    // Apply color styling if valid color provided
+    const colorStyle = playerColor ? `style="color: ${playerColor}; font-weight: bold;"` : '';
+    
     messageDiv.innerHTML = `
         <div class="message-header">
-            <span class="sender ${senderClass}">${message.player_name || 'System'}</span>
+            <span class="sender ${senderClass}" ${colorStyle}>${playerDisplayName}</span>
             <span class="timestamp">${timestamp}</span>
         </div>
         <div class="message-content">${message.message_text}</div>
