@@ -177,7 +177,7 @@ async function startGameSession() {
     }
     
     const dmName = dmNameInput.value.trim();
-    const sessionCode = sessionCodeInput.value.trim();
+    const sessionCode = sessionCodeInput.value.trim().toUpperCase();
     
     if (!dmName) {
         alert('Please enter your name');
@@ -232,7 +232,7 @@ async function joinGameSession() {
     }
     
     const playerName = playerNameInput.value.trim();
-    const sessionCode = sessionCodeInput.value.trim();
+    const sessionCode = sessionCodeInput.value.trim().toUpperCase();
     
     if (!playerName) {
         alert('Please enter your name');
@@ -1545,8 +1545,32 @@ function handleIncomingMessage(message) {
     
     // Show notification if not on chat tab
     const chatTab = document.getElementById('chat');
-    if (chatTab && !chatTab.classList.contains('active')) {
-        showChatNotification();
+    const bottomSheet = document.getElementById('chat-bottom-sheet');
+    
+    // Extract message text for checking
+    const messageText = typeof message === 'string' ? message : (message.message_text || '');
+    
+    // Only show notifications for NOTEs meant for this player
+    const isPrivateNote = messageText.toLowerCase().includes(`note:${(window.networkPlayerName || '').toLowerCase()}:`);
+    
+    // Don't show notifications if chat is open (redundant)
+    const isChatOpen = (chatTab && chatTab.classList.contains('active')) || 
+                      (bottomSheet && bottomSheet.classList.contains('open'));
+    
+    if (isPrivateNote && !isChatOpen) {
+        // Update FAB notification for private notes
+        if (typeof window.updateFABNotification === 'function') {
+            window.updateFABNotification();
+        }
+        
+        // Optional: Show browser notification for important private notes
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('Private Note Received', {
+                body: `You have a private note from ${senderName || 'Storyteller'}`,
+                icon: '/icon-192.png',
+                silent: false
+            });
+        }
     }
     
     // Update connected players list (debounced)
@@ -1738,6 +1762,12 @@ function processPlayerSpell(data, playerName) {
 // ========================================
 function displayChatMessage(message) {
     console.log('🔍 DEBUG - displayChatMessage called with:', message);
+    
+    // Handle null messages (silent commands like NOTE)
+    if (!message) {
+        console.log('🔍 DEBUG - Message is null, skipping display');
+        return;
+    }
     
     // Use the main page's addChatMessage function for consistency
     if (window.addChatMessage) {

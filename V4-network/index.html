@@ -137,9 +137,11 @@
             <button class="header-btn trophy-btn" onclick="showAchievementsModal()" title="View Achievements">
                 <span class="material-icons">emoji_events</span>
             </button>
+            <!-- Roll History moved to Chat Bottom Sheet
             <button class="header-btn roll-history-btn" onclick="showRollHistoryModal()" title="View Roll History">
                 <i class="ra ra-perspective-dice-six"></i>
             </button>
+            -->
             <button class="header-btn status-effects-btn" onclick="showStatusEffectsModal()" title="View Status Effects">
                 <i class="ra ra-biohazard"></i>
             </button>
@@ -173,10 +175,11 @@
                     <span class="tab-icon"><i class="ra ra-fairy-wand"></i></span>
                     <span class="tab-label">Magic & Spells</span>
                 </button>
-                <button class="sidebar-tab" data-tab="chat">
+                <!-- Chat Tab Removed - Now using FAB + Bottom Sheet -->
+                <!-- <button class="sidebar-tab" data-tab="chat">
                     <span class="tab-icon"><i class="ra ra-conversation"></i></span>
                     <span class="tab-label">Game Chat</span>
-                </button>
+                </button> -->
                 <!-- <button class="sidebar-tab" data-tab="combat">
                     <span class="tab-icon"><i class="ra ra-crossed-swords"></i></span>
                     <span class="tab-label">Combat & Dice</span>
@@ -1219,6 +1222,10 @@
                         <div class="session-controls">
                             <input type="text" id="session-code-input" placeholder="Paste connection URL from storyteller">
                             <button class="join-session-btn" onclick="joinGameSession()">Join Game</button>
+                            <!-- Command Center Toggle Button - Always Visible -->
+                            <button class="notification-btn command-center-toggle" id="command-center-toggle-main" onclick="toggleCommandCenterModal()" title="Open Command Center" style="margin-left: 10px;">
+                                <span class="material-icons">people</span>
+                            </button>
                         </div>
                         <div class="connection-status">
                             <span class="status-dot" id="connection-status-dot"></span>
@@ -1250,105 +1257,20 @@
                                         <span class="material-icons">map</span>
                                         <span class="notification-dot"></span>
                                     </button>
+                                    <!-- Command Center Toggle Button -->
+                                    <button class="notification-btn command-center-toggle" id="command-center-toggle" onclick="toggleCommandCenterModal()" title="Open Command Center">
+                                        <span class="material-icons">people</span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
                         
-                        <!-- Chat Layout: Messages + Command Center -->
+                        <!-- Chat Layout: Full-width Messages -->
                         <div class="chat-layout">
                             <div id="chat-messages">
                                 <div class="chat-message system">
                                     <span class="message-author">System:</span>
                                     Welcome to DCC! Enter a session code above to join your game.
-                                </div>
-                            </div>
-                            
-                            <!-- Command Center Panel -->
-                            <div class="command-center" id="command-center">
-                                <div class="command-center-header">
-                                    <h4>Command Center</h4>
-                                    <button class="minimize-btn" onclick="toggleCommandCenter()" title="Toggle Command Center">
-                                        <span class="material-icons">keyboard_arrow_right</span>
-                                    </button>
-                                </div>
-                                
-                                <div class="command-center-content">
-                                    <!-- Connected Players -->
-                                    <div class="player-selector">
-                                        <h5>Connected Players</h5>
-                                        <div class="player-list" id="connected-players">
-                                            <div class="player-item self">
-                                                <div class="player-avatar">
-                                                    <div class="avatar-placeholder">👤</div>
-                                                </div>
-                                                <div class="player-info">
-                                                    <div class="player-name" id="self-player-name">You</div>
-                                                    <div class="player-details">Lvl: 1<br>Unknown - Unknown</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Collapsible Quick Tools -->
-                                    <div class="quick-tools">
-                                        <div class="tools-header" onclick="toggleQuickTools()">
-                                            <h5>Quick Tools</h5>
-                                            <span class="chevron" id="tools-chevron">▼</span>
-                                        </div>
-                                        <div class="tools-content" id="tools-content">
-                                            <!-- Image Upload Tool -->
-                                            <div class="quick-actions">
-                                                <h6>Image Upload</h6>
-                                                <div class="action-buttons">
-                                                    <button id="v4-image-upload-btn" class="action-btn" title="Upload Image">
-                                                        <span>📷</span>
-                                                        <span>Upload Image</span>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            
-                                            <!-- Temporarily commented out - Quick Actions
-                                            <div class="quick-actions">
-                                                <h6>Actions</h6>
-                                                <div class="action-buttons">
-                                                    <button class="action-btn" onclick="quickDiceRoll()" title="Roll d20">
-                                                        <span class="material-icons">casino</span>
-                                                        <span>d20</span>
-                                                    </button>
-                                                    <button class="action-btn" onclick="showChatEffects()" title="Chat Effects">
-                                                        <span>✨</span>
-                                                        <span>Effects</span>
-                                                    </button>
-                                                    <button class="action-btn" onclick="sendEmoji('👍')" title="Thumbs Up">
-                                                        <span>👍</span>
-                                                    </button>
-                                                    <button class="action-btn" onclick="sendEmoji('❤️')" title="Heart">
-                                                        <span>❤️</span>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            -->
-                                            
-                                            <!-- Chat Effects Quick Access -->
-                                            <div class="effects-quick">
-                                                <h6>Quick Effects</h6>
-                                                <div class="effects-buttons">
-                                                    <button class="effect-btn" onclick="insertChatEffect(':crit:')" title="Critical Hit">
-                                                        ⚔️ Crit
-                                                    </button>
-                                                    <button class="effect-btn" onclick="insertChatEffect(':magic:')" title="Magic Sparkle">
-                                                        ✨ Magic
-                                                    </button>
-                                                    <button class="effect-btn" onclick="insertChatEffect(':doom:')" title="Doom">
-                                                        💀 Doom
-                                                    </button>
-                                                    <button class="effect-btn" onclick="insertChatEffect(':dice:')" title="Dice Roll">
-                                                        🎲 Dice
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1434,6 +1356,20 @@
                             </div>
                             <textarea id="combat-notes" class="note-textarea"
                                 placeholder="Enemy tactics, weaknesses, strategies..."></textarea>
+                        </div>
+
+                        <div class="note-card">
+                            <div class="note-header">
+                                <i class="material-icons">mail</i>
+                                <h3>Private Messages</h3>
+                                <span class="note-count" id="private-messages-count" style="display: none;"></span>
+                            </div>
+                            <div id="private-messages-container" class="private-messages-container">
+                                <div style="text-align: center; color: #8a8a8a; padding: 20px;">
+                                    <i class="material-icons" style="font-size: 2em; margin-bottom: 10px; display: block;">mail_outline</i>
+                                    No private messages yet! Send or receive private notes via player chip clicks.
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1800,6 +1736,73 @@
                             <i class="ra ra-flask" style="margin-right: 8px;"></i>
                             Apply Effect
                         </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Command Center Modal -->
+    <div id="command-center-modal" class="modal level-up-modal-overlay" style="display: none;">
+        <div class="modal-content level-up-modal-content" style="max-width: 600px; width: 90vw;">
+            <div class="modal-header">
+                <h3><i class="material-icons">people</i> Command Center</h3>
+                <button class="close-modal" onclick="closeCommandCenterModal()" style="background: transparent; border: none; color: white; font-size: 24px; cursor: pointer;">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="command-center-modal-content">
+                    <!-- Connected Players -->
+                    <div class="player-selector">
+                        <h5>Connected Players</h5>
+                        <div class="player-list" id="modal-connected-players">
+                            <div class="player-item self">
+                                <div class="player-avatar">
+                                    <div class="avatar-placeholder">👤</div>
+                                </div>
+                                <div class="player-info">
+                                    <div class="player-name" id="modal-self-player-name">You</div>
+                                    <div class="player-details">Lvl: 1<br>Unknown - Unknown</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Tools -->
+                    <div class="quick-tools" style="margin-top: 20px;">
+                        <h5>Quick Tools</h5>
+                        <div class="tools-content">
+                            <!-- Image Upload Tool -->
+                            <div class="quick-actions">
+                                <h6>Image Upload</h6>
+                                <div class="action-buttons">
+                                    <button id="modal-v4-image-upload-btn" class="action-btn" title="Upload Image" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                                        <span>📷</span>
+                                        <span>Upload Image</span>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Chat Effects Quick Access -->
+                            <div class="effects-quick" style="margin-top: 15px;">
+                                <h6>Quick Effects</h6>
+                                <div class="effects-buttons" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                    <button class="effect-btn" onclick="insertChatEffect(':crit:')" title="Critical Hit" style="background: rgba(255, 0, 0, 0.2); color: white; border: 1px solid rgba(255, 0, 0, 0.5); padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                        ⚔️ Crit
+                                    </button>
+                                    <button class="effect-btn" onclick="insertChatEffect(':magic:')" title="Magic Sparkle" style="background: rgba(138, 43, 226, 0.2); color: white; border: 1px solid rgba(138, 43, 226, 0.5); padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                        ✨ Magic
+                                    </button>
+                                    <button class="effect-btn" onclick="insertChatEffect(':doom:')" title="Doom" style="background: rgba(0, 0, 0, 0.4); color: white; border: 1px solid rgba(128, 128, 128, 0.5); padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                        💀 Doom
+                                    </button>
+                                    <button class="effect-btn" onclick="insertChatEffect(':dice:')" title="Dice Roll" style="background: rgba(0, 128, 0, 0.2); color: white; border: 1px solid rgba(0, 128, 0, 0.5); padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                        🎲 Dice
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2212,7 +2215,17 @@
             // Set up notification button click handler
             const notesBtn = document.getElementById('notes-notification');
             if (notesBtn) {
-                notesBtn.addEventListener('click', showNotesDropdown);
+                notesBtn.addEventListener('click', () => {
+                    // Open the main notes panel
+                    showTab('notes');
+                    // Scroll to private messages section
+                    setTimeout(() => {
+                        const messagesSection = document.getElementById('private-messages-container');
+                        if (messagesSection) {
+                            messagesSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }, 100);
+                });
             }
             
             // Test notification system
@@ -2289,17 +2302,81 @@
 
         // Command Center functions
         function toggleCommandCenter() {
-            const commandCenter = document.getElementById('command-center');
-            const minimizeBtn = commandCenter.querySelector('.minimize-btn .material-icons');
-            
-            commandCenter.classList.toggle('minimized');
-            
-            if (commandCenter.classList.contains('minimized')) {
-                minimizeBtn.textContent = 'keyboard_arrow_left';
+            // Legacy function - kept for compatibility
+            // Now opens the modal instead
+            toggleCommandCenterModal();
+        }
+
+        function toggleCommandCenterModal() {
+            const modal = document.getElementById('command-center-modal');
+            if (modal.style.display === 'none' || modal.style.display === '') {
+                showCommandCenterModal();
             } else {
-                minimizeBtn.textContent = 'keyboard_arrow_right';
+                closeCommandCenterModal();
             }
         }
+
+        function showCommandCenterModal() {
+            const modal = document.getElementById('command-center-modal');
+            
+            // Sync the modal player list with the main one
+            syncModalPlayerList();
+            
+            // Show the modal
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            
+            // Set up image upload button in modal
+            const modalImageBtn = document.getElementById('modal-v4-image-upload-btn');
+            const originalImageBtn = document.getElementById('v4-image-upload-btn');
+            if (modalImageBtn && originalImageBtn) {
+                modalImageBtn.onclick = originalImageBtn.onclick;
+            }
+            
+            console.log('Command Center modal opened');
+        }
+
+        function closeCommandCenterModal() {
+            const modal = document.getElementById('command-center-modal');
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+            console.log('Command Center modal closed');
+        }
+
+        function syncModalPlayerList() {
+            const originalPlayerList = document.getElementById('connected-players');
+            const modalPlayerList = document.getElementById('modal-connected-players');
+            
+            if (originalPlayerList && modalPlayerList) {
+                // Copy the player list content to the modal
+                modalPlayerList.innerHTML = originalPlayerList.innerHTML;
+                
+                // Update the self player name
+                const modalSelfName = document.getElementById('modal-self-player-name');
+                const originalSelfName = document.getElementById('self-player-name');
+                if (modalSelfName && originalSelfName) {
+                    modalSelfName.textContent = originalSelfName.textContent;
+                }
+            }
+        }
+
+        // Close modal when clicking outside of it
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('command-center-modal');
+            if (event.target === modal) {
+                closeCommandCenterModal();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const modal = document.getElementById('command-center-modal');
+                if (modal.style.display === 'flex') {
+                    closeCommandCenterModal();
+                }
+            }
+        });
 
         function quickDiceRoll() {
             const roll = Math.floor(Math.random() * 20) + 1;
@@ -2345,6 +2422,438 @@
             // Position cursor after the inserted effect
             const newPos = cursorPos + prefix.length + effect.length + suffix.length;
             chatInput.setSelectionRange(newPos, newPos);
+        }
+
+        // ========================================
+        // FAB + BOTTOM SHEET CHAT FUNCTIONS
+        // ========================================
+
+        function toggleChatBottomSheet() {
+            const sheet = document.getElementById('chat-bottom-sheet');
+            if (sheet.classList.contains('open')) {
+                closeChatBottomSheet();
+            } else {
+                openChatBottomSheet();
+            }
+        }
+
+        function openChatBottomSheet() {
+            const sheet = document.getElementById('chat-bottom-sheet');
+            sheet.classList.add('open');
+            document.body.style.overflow = 'hidden';
+            
+            // Sync connection status
+            syncSheetConnectionStatus();
+            
+            // Ensure connection area is visible if not connected
+            if (!isNetworkConnected) {
+                const connectionArea = document.getElementById('sheet-connection-area');
+                if (connectionArea) {
+                    connectionArea.style.display = 'block';
+                }
+                console.log('📡 Ensured connection area is visible (disconnected state)');
+            }
+            
+            // Focus on input if connected
+            const input = document.getElementById('sheet-chat-input');
+            setTimeout(() => {
+                if (input && isNetworkConnected) {
+                    input.focus();
+                } else if (!isNetworkConnected) {
+                    // Focus on session input if not connected
+                    const sessionInput = document.getElementById('sheet-session-input');
+                    if (sessionInput) {
+                        sessionInput.focus();
+                    }
+                }
+            }, 300);
+            
+            console.log('📱 Chat bottom sheet opened');
+        }
+
+        function closeChatBottomSheet() {
+            const sheet = document.getElementById('chat-bottom-sheet');
+            sheet.classList.remove('open', 'expanded');
+            document.body.style.overflow = '';
+            
+            console.log('📱 Chat bottom sheet closed');
+        }
+
+        function expandBottomSheet() {
+            const sheet = document.getElementById('chat-bottom-sheet');
+            sheet.classList.toggle('expanded');
+            
+            const expandBtn = document.getElementById('expand-sheet-btn');
+            const icon = expandBtn.querySelector('.material-icons');
+            
+            if (sheet.classList.contains('expanded')) {
+                icon.textContent = 'fullscreen_exit';
+                expandBtn.title = 'Exit full screen';
+            } else {
+                icon.textContent = 'fullscreen';
+                expandBtn.title = 'Expand to full screen';
+            }
+        }
+
+        function syncSheetConnectionStatus() {
+            const sheetStatusDot = document.getElementById('sheet-status-dot');
+            const sheetStatusText = document.getElementById('sheet-status-text');
+            const originalStatusDot = document.getElementById('connection-status-dot');
+            const originalStatusText = document.getElementById('connection-status-text');
+            
+            if (sheetStatusDot && originalStatusDot) {
+                sheetStatusDot.className = originalStatusDot.className;
+            }
+            
+            if (sheetStatusText && originalStatusText) {
+                sheetStatusText.textContent = originalStatusText.textContent;
+            }
+            
+            // Show/hide connection area based on connection status
+            const connectionArea = document.getElementById('sheet-connection-area');
+            const playerChips = document.getElementById('player-chips-area');
+            
+            // Always ensure connection area is visible when not connected
+            if (connectionArea) {
+                if (isNetworkConnected) {
+                    connectionArea.style.display = 'none';
+                } else {
+                    connectionArea.style.display = 'block';
+                    console.log('📡 Bottom sheet connection area shown (not connected)');
+                }
+            }
+            
+            // Show player chips only when connected
+            if (playerChips) {
+                if (isNetworkConnected) {
+                    playerChips.style.display = 'block';
+                } else {
+                    playerChips.style.display = 'none';
+                }
+            }
+        }
+
+        function joinGameSessionFromSheet() {
+            const input = document.getElementById('sheet-session-input');
+            const originalInput = document.getElementById('session-code-input');
+            
+            if (input && originalInput) {
+                originalInput.value = input.value;
+                joinGameSession();
+            }
+        }
+
+        function sendSheetMessage() {
+            const input = document.getElementById('sheet-chat-input');
+            if (input && input.value.trim()) {
+                const message = input.value.trim();
+                
+                if (isNetworkConnected) {
+                    sendChatMessageDirect(message);
+                } else {
+                    // Add to sheet chat for demo
+                    addSheetChatMessage(message, 'player', networkPlayerName || 'You');
+                }
+                
+                input.value = '';
+                toggleSheetSendButton();
+            }
+        }
+
+        function handleSheetChatKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendSheetMessage();
+            }
+            toggleSheetSendButton();
+        }
+
+        function toggleSheetSendButton() {
+            const input = document.getElementById('sheet-chat-input');
+            const sendBtn = document.querySelector('.sheet-send-btn');
+            
+            if (input && sendBtn) {
+                sendBtn.disabled = !input.value.trim();
+            }
+        }
+
+        function addSheetChatMessage(message, type = 'system', author = 'System') {
+            const messagesContainer = document.getElementById('sheet-chat-messages');
+            if (!messagesContainer) return;
+
+            const messageElement = document.createElement('div');
+            messageElement.className = `chat-message ${type}`;
+            
+            if (type === 'system') {
+                messageElement.innerHTML = `<span class="message-author">${author}:</span> ${message}`;
+            } else {
+                messageElement.innerHTML = `<span class="message-author">${author}:</span> ${message}`;
+            }
+
+            messageElement.style.margin = '8px 0';
+            messageElement.style.padding = '8px 12px';
+            messageElement.style.borderRadius = '8px';
+            messageElement.style.backgroundColor = type === 'system' ? 'rgba(255, 193, 7, 0.1)' : 'rgba(0, 123, 255, 0.1)';
+
+            messagesContainer.appendChild(messageElement);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function showSheetChatEffects() {
+            // Placeholder for chat effects
+            alert('Chat effects: Try :crit:, :magic:, :doom:, or :dice: in your messages!');
+        }
+
+        function showSheetImageUpload() {
+            // Try to trigger the ChatImageUploadIntegration system directly
+            if (window.chatImageUploadIntegration && typeof window.chatImageUploadIntegration.handleUploadClick === 'function') {
+                // Find any available button to use as context
+                const imageUploadBtn = document.getElementById('modal-v4-image-upload-btn') || document.getElementById('v4-image-upload-btn');
+                if (imageUploadBtn) {
+                    window.chatImageUploadIntegration.handleUploadClick(imageUploadBtn);
+                    return;
+                }
+            }
+            
+            // Fallback: try existing button onclick handlers
+            const imageUploadBtn = document.getElementById('v4-image-upload-btn') || document.getElementById('modal-v4-image-upload-btn');
+            if (imageUploadBtn && imageUploadBtn.onclick) {
+                imageUploadBtn.onclick();
+            } else {
+                alert('Image upload system not ready. Please wait for full initialization.');
+            }
+        }
+
+        function showSheetPlayers() {
+            // Show command center modal for player selection
+            if (typeof showCommandCenterModal === 'function') {
+                showCommandCenterModal();
+            } else {
+                alert('Connect to a session to see other players for sending notes.');
+            }
+        }
+
+        // Enable input monitoring for send button
+        document.addEventListener('DOMContentLoaded', function() {
+            const sheetInput = document.getElementById('sheet-chat-input');
+            if (sheetInput) {
+                sheetInput.addEventListener('input', toggleSheetSendButton);
+            }
+        });
+
+        // ========================================
+        // CHAT TAB FUNCTIONS
+        // ========================================
+
+        function switchChatTab(tabName) {
+            // Update tab buttons
+            const tabs = document.querySelectorAll('.sheet-tab');
+            const panels = document.querySelectorAll('.tab-panel');
+            
+            tabs.forEach(tab => {
+                if (tab.dataset.tab === tabName) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+            
+            // Update tab content
+            panels.forEach(panel => {
+                if (panel.id === tabName + '-tab-panel') {
+                    panel.classList.add('active');
+                } else {
+                    panel.classList.remove('active');
+                }
+            });
+            
+            // Update roll history when switching to rolls tab
+            if (tabName === 'rolls') {
+                updateChatRollHistory();
+            }
+            
+            console.log(`📋 Switched to ${tabName} tab`);
+        }
+
+        // ========================================
+        // CHAT ROLL HISTORY FUNCTIONS  
+        // ========================================
+
+        function updateChatRollHistory() {
+            const rollHistoryContainer = document.getElementById('sheet-roll-history');
+            if (!rollHistoryContainer) return;
+
+            // Get roll history from character data (same as main roll history)
+            if (!character || !character.rollHistory || character.rollHistory.length === 0) {
+                rollHistoryContainer.innerHTML = `
+                    <div style="text-align: center; color: #8a8a8a; padding: 40px;">
+                        <i class="ra ra-perspective-dice-six" style="font-size: 3em; margin-bottom: 15px; display: block;"></i>
+                        No rolls yet! Click attributes, skills, weapons, or spells to start rolling.
+                    </div>
+                `;
+                return;
+            }
+
+            // Render roll history items (using same logic as main updateRollHistoryDisplay)
+            rollHistoryContainer.innerHTML = character.rollHistory.map((roll, index) => {
+                let content = '';
+                let typeIcon = '';
+                let typeColor = '';
+
+                if (roll.type === 'Weapon') {
+                    typeIcon = 'ra-sword';
+                    typeColor = '#d4af37';
+                    content = `
+                        <div class="roll-item-header">
+                            <h4 class="roll-item-title">
+                                <i class="ra ${typeIcon}"></i> ${roll.name} Attack ${roll.toHit?.isCrit ? '💥' : ''}
+                            </h4>
+                            <span class="roll-item-timestamp">${roll.timestamp}</span>
+                        </div>
+                        ${roll.toHit?.isCrit ? '<div class="crit-indicator">CRITICAL HIT!</div>' : ''}
+                        <div class="roll-item-result">
+                            To Hit: ${roll.toHit?.total || 'N/A'} | Damage: ${roll.totalDamage}
+                        </div>
+                        <div class="roll-item-details">
+                            To Hit: d10(${roll.toHit?.d10Roll || '?'}) + ${roll.statUsed.substring(0, 3).toUpperCase()}(${roll.toHit?.statBonus || '?'}) + Lv(${roll.toHit?.levelBonus || '?'})<br>
+                            Damage: d${roll.diceType}(${roll.damageRoll}) + ${roll.statUsed.substring(0, 3).toUpperCase()}(${roll.statBonus})${roll.toHit?.isCrit ? ' + Crit(5)' : ''}<br>
+                            ${roll.weaponSize} ${roll.isRanged ? 'Ranged' : 'Melee'} Weapon
+                        </div>
+                    `;
+                } else if (roll.type === 'Spell' && roll.toHit) {
+                    typeIcon = 'ra-lightning';
+                    typeColor = '#8a4a8a';
+                    content = `
+                        <div class="roll-item-header">
+                            <h4 class="roll-item-title">
+                                <i class="ra ${typeIcon}"></i> ${roll.name} ${roll.toHit?.isCrit ? '💥' : ''}
+                            </h4>
+                            <span class="roll-item-timestamp">${roll.timestamp}</span>
+                        </div>
+                        ${roll.toHit?.isCrit ? '<div class="crit-indicator">CRITICAL HIT!</div>' : ''}
+                        <div class="roll-item-result">
+                            To Hit: ${roll.toHit?.total || 'N/A'} | Damage: ${roll.totalDamage}
+                        </div>
+                        <div class="roll-item-details">
+                            To Hit: d10(${roll.toHit?.d10Roll || '?'}) + ${roll.statUsed.substring(0, 3).toUpperCase()}(${roll.toHit?.statBonus || '?'}) + Lv(${roll.toHit?.levelBonus || '?'})<br>
+                            Damage: d${roll.diceType}(${roll.damageRoll}) + ${roll.statUsed.substring(0, 3).toUpperCase()}(${roll.statBonus})${roll.toHit?.isCrit ? ' + Crit(5)' : ''}<br>
+                            ${roll.element} Magic | Cost: ${roll.cost} MP
+                        </div>
+                    `;
+                } else if (roll.type === 'Spell' && !roll.toHit) {
+                    typeIcon = 'ra-lightning';
+                    typeColor = '#8a4a8a';
+                    content = `
+                        <div class="roll-item-header">
+                            <h4 class="roll-item-title">
+                                <i class="ra ${typeIcon}"></i> ${roll.name}
+                            </h4>
+                            <span class="roll-item-timestamp">${roll.timestamp}</span>
+                        </div>
+                        <div class="roll-item-result">
+                            ${roll.element} Magic | Cost: ${roll.cost} MP
+                        </div>
+                        <div class="roll-item-details">
+                            ${roll.results ? roll.results.join('<br>') : 'Spell cast successfully!'}
+                        </div>
+                    `;
+                } else {
+                    // Attribute/Skill rolls
+                    typeIcon = roll.type === 'Attribute' ? 'ra-muscle-up' : roll.type === 'Skill' ? 'ra-gear' : 'ra-lightning';
+                    typeColor = roll.type === 'Attribute' ? '#4a6a8a' : roll.type === 'Skill' ? '#4a8a4a' : '#8a4a8a';
+                    const diceDisplay = roll.diceRolls ? roll.diceRolls.map(r => `<span style="color: #f4d03f;">${r}</span>`).join(' + ') : 'N/A';
+
+                    content = `
+                        <div class="roll-item-header">
+                            <h4 class="roll-item-title">
+                                <i class="ra ${typeIcon}"></i> ${roll.name} ${roll.type === 'Skill' ? `[${roll.stat}]` : ''}
+                            </h4>
+                            <span class="roll-item-timestamp">${roll.timestamp}</span>
+                        </div>
+                        <div class="roll-item-result">
+                            Result: ${roll.finalTotal}
+                        </div>
+                        <div class="roll-item-details">
+                            ${roll.diceRolls ? `Dice: [${diceDisplay}] = ${roll.diceTotal} + Level: ${roll.levelBonus} + Bonus: ${roll.statBonus}` :
+                            roll.results ? roll.results.join('<br>') : 'Spell cast successfully!'}
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div class="roll-history-item" style="border-left-color: ${typeColor};">
+                        ${content}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function clearChatRollHistory() {
+            // Use the existing clearRollHistory function
+            if (typeof clearRollHistory === 'function') {
+                clearRollHistory();
+                updateChatRollHistory();
+                
+                // Also update main roll history display
+                if (typeof updateRollHistoryDisplay === 'function') {
+                    updateRollHistoryDisplay();
+                }
+                
+                console.log('🧹 Cleared roll history from chat');
+            } else {
+                console.warn('clearRollHistory function not available');
+            }
+        }
+
+        // Sync main chat messages to bottom sheet
+        function syncMessageToBottomSheet(messageHTML, type, sender) {
+            const sheetMessagesContainer = document.getElementById('sheet-chat-messages');
+            if (!sheetMessagesContainer) return;
+
+            const messageElement = document.createElement('div');
+            messageElement.className = `chat-message ${type}`;
+            messageElement.innerHTML = messageHTML;
+            
+            // Apply styling similar to main chat
+            messageElement.style.margin = '8px 0';
+            messageElement.style.padding = '8px 12px';
+            messageElement.style.borderRadius = '8px';
+            
+            if (type === 'system') {
+                messageElement.style.backgroundColor = 'rgba(255, 193, 7, 0.1)';
+                messageElement.style.borderLeft = '3px solid #ffc107';
+            } else if (type === 'storyteller') {
+                messageElement.style.backgroundColor = 'rgba(220, 53, 69, 0.1)';
+                messageElement.style.borderLeft = '3px solid #dc3545';
+            } else {
+                messageElement.style.backgroundColor = 'rgba(0, 123, 255, 0.1)';
+                messageElement.style.borderLeft = '3px solid #007bff';
+            }
+
+            sheetMessagesContainer.appendChild(messageElement);
+            sheetMessagesContainer.scrollTop = sheetMessagesContainer.scrollHeight;
+        }
+
+        // Update FAB notification dot
+        function updateFABNotification() {
+            const fab = document.getElementById('chat-fab');
+            const notificationDot = document.querySelector('.fab-notification-dot');
+            const bottomSheet = document.getElementById('chat-bottom-sheet');
+            
+            if (fab && notificationDot && bottomSheet) {
+                // Show notification if bottom sheet is closed
+                if (!bottomSheet.classList.contains('open')) {
+                    notificationDot.style.display = 'block';
+                    // Hide after a delay if user doesn't interact
+                    setTimeout(() => {
+                        if (!bottomSheet.classList.contains('open')) {
+                            notificationDot.style.display = 'none';
+                        }
+                    }, 5000);
+                } else {
+                    // Hide notification if bottom sheet is open
+                    notificationDot.style.display = 'none';
+                }
+            }
         }
 
         // Helper function to send chat messages directly
@@ -2448,49 +2957,113 @@
 
         // Function to update connected players list (called by supabase-chat.js)
         function updateConnectedPlayers(players = []) {
-            const playerList = document.getElementById('connected-players');
-            if (!playerList) return;
-            
             console.log('🔍 Updating connected players:', players);
             
-            // Clear existing players except self
-            const selfPlayer = playerList.querySelector('.player-item.self');
-            playerList.innerHTML = '';
-            
-            // Add self back
-            if (selfPlayer) {
-                playerList.appendChild(selfPlayer);
+            // Update Command Center player list
+            const playerList = document.getElementById('connected-players');
+            if (playerList) {
+                // Clear existing players except self
+                const selfPlayer = playerList.querySelector('.player-item.self');
+                playerList.innerHTML = '';
+                
+                // Add self back
+                if (selfPlayer) {
+                    playerList.appendChild(selfPlayer);
+                }
+                
+                // Add connected players
+                players.forEach(player => {
+                    if (player.name && player.name !== networkPlayerName && player.name !== 'System' && player.name !== 'Heartbeat') {
+                        const playerDiv = document.createElement('div');
+                        playerDiv.className = 'player-item';
+                        
+                        // Add storyteller class if they are the storyteller
+                        if (player.is_storyteller) {
+                            playerDiv.classList.add('storyteller');
+                        }
+                        
+                        // For now, use placeholder data - this can be enhanced later with real character data
+                        const level = 'Unknown';
+                        const heritage = player.is_storyteller ? 'Storyteller' : 'Player';
+                        const playerClass = player.is_storyteller ? 'Master' : 'Adventurer';
+                        
+                        playerDiv.innerHTML = `
+                            <div class="player-avatar">
+                                <div class="avatar-placeholder">${player.is_storyteller ? '👑' : '⚔️'}</div>
+                            </div>
+                            <div class="player-info">
+                                <div class="player-name clickable-player-name" data-player-name="${player.name}">${player.name}</div>
+                                <div class="player-details">Level: ${level}<br>${heritage} - ${playerClass}</div>
+                            </div>
+                        `;
+                        
+                        playerList.appendChild(playerDiv);
+                    }
+                });
             }
             
-            // Add connected players
-            players.forEach(player => {
-                if (player.name && player.name !== networkPlayerName && player.name !== 'System' && player.name !== 'Heartbeat') {
-                    const playerDiv = document.createElement('div');
-                    playerDiv.className = 'player-item';
-                    
-                    // Add storyteller class if they are the storyteller
-                    if (player.is_storyteller) {
-                        playerDiv.classList.add('storyteller');
-                    }
-                    
-                    // For now, use placeholder data - this can be enhanced later with real character data
-                    const level = 'Unknown';
-                    const heritage = player.is_storyteller ? 'Storyteller' : 'Player';
-                    const playerClass = player.is_storyteller ? 'Master' : 'Adventurer';
-                    
-                    playerDiv.innerHTML = `
-                        <div class="player-avatar">
-                            <div class="avatar-placeholder">${player.is_storyteller ? '👑' : '⚔️'}</div>
-                        </div>
-                        <div class="player-info">
-                            <div class="player-name clickable-player-name" data-player-name="${player.name}">${player.name}</div>
-                            <div class="player-details">Level: ${level}<br>${heritage} - ${playerClass}</div>
-                        </div>
-                    `;
-                    
-                    playerList.appendChild(playerDiv);
+            // Update Bottom Sheet player chips
+            const playerChipsScroll = document.querySelector('.player-chips-scroll');
+            if (playerChipsScroll) {
+                // Keep the self chip
+                const selfChip = playerChipsScroll.querySelector('.player-chip.self');
+                
+                // Clear all chips except self
+                playerChipsScroll.innerHTML = '';
+                if (selfChip) {
+                    playerChipsScroll.appendChild(selfChip);
                 }
-            });
+                
+                // Add player chips for connected players
+                players.forEach(player => {
+                    if (player.name && player.name !== networkPlayerName && player.name !== 'System' && player.name !== 'Heartbeat') {
+                        const chipDiv = document.createElement('div');
+                        chipDiv.className = 'player-chip';
+                        
+                        if (player.is_storyteller) {
+                            chipDiv.classList.add('storyteller');
+                        }
+                        
+                        chipDiv.innerHTML = `
+                            <div class="chip-avatar">${player.is_storyteller ? '👑' : '⚔️'}</div>
+                            <span class="chip-name">${player.name}</span>
+                        `;
+                        
+                        // Add click event for sending notes
+                        chipDiv.addEventListener('click', (e) => {
+                            // Provide haptic feedback on supported devices
+                            if (navigator.vibrate) {
+                                navigator.vibrate(50); // Short vibration
+                            }
+                            
+                            // Visual feedback animation
+                            chipDiv.style.transform = 'scale(0.95)';
+                            setTimeout(() => {
+                                chipDiv.style.transform = '';
+                            }, 150);
+                            
+                            showNoteInput(player.name);
+                        });
+                        
+                        // Add touch event handlers for better mobile experience
+                        chipDiv.addEventListener('touchstart', (e) => {
+                            chipDiv.style.transition = 'transform 0.1s ease';
+                        });
+                        
+                        chipDiv.addEventListener('touchend', (e) => {
+                            chipDiv.style.transition = 'all 0.2s ease';
+                        });
+                        
+                        // Add visual feedback for clickable chips
+                        chipDiv.style.cursor = 'pointer';
+                        chipDiv.title = `Send a private note to ${player.name}`;
+                        
+                        playerChipsScroll.appendChild(chipDiv);
+                    }
+                });
+                
+                console.log(`✅ Player chips updated: ${players.length} players found`);
+            }
             
             console.log(`✅ Player list updated: ${players.length} players found`);
         }
@@ -2578,6 +3151,7 @@
             receivedNotes.push(note);
             console.log('🐛 Note added to receivedNotes array. Total notes:', receivedNotes.length);
             updateNotificationIcon();
+            updatePrivateMessagesPanel();
             
             // Show popup notification for received note
             if (typeof showNotification === 'function') {
@@ -2588,6 +3162,105 @@
             
             console.log(`📝 Received note from ${fromPlayer}: ${noteText}`);
         }
+
+        function updatePrivateMessagesPanel() {
+            const container = document.getElementById('private-messages-container');
+            const countSpan = document.getElementById('private-messages-count');
+            
+            if (!container) return;
+            
+            if (receivedNotes.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; color: #8a8a8a; padding: 20px;">
+                        <i class="material-icons" style="font-size: 2em; margin-bottom: 10px; display: block;">mail_outline</i>
+                        No private messages yet! Send or receive private notes via player chip clicks.
+                    </div>
+                `;
+                countSpan.style.display = 'none';
+                return;
+            }
+            
+            // Show count
+            countSpan.textContent = `(${receivedNotes.length})`;
+            countSpan.style.display = 'inline';
+            countSpan.style.cssText += `
+                background: #e74c3c;
+                color: white;
+                border-radius: 10px;
+                padding: 2px 6px;
+                font-size: 0.8em;
+                margin-left: 8px;
+            `;
+            
+            // Build messages HTML
+            let messagesHTML = '';
+            receivedNotes.forEach((note, index) => {
+                const time = new Date(note.timestamp).toLocaleString();
+                let messageContent = note.message;
+                
+                // Process image markup in notes
+                if (messageContent && messageContent.includes('🖼️ [IMAGE:')) {
+                    messageContent = messageContent.replace(/🖼️ \[IMAGE:(https?:\/\/[^\]]+)\]/g, (match, imageUrl) => {
+                        return `<br><div style="text-align: center; margin: 12px 0;"><img src="${imageUrl}" style="max-width: 100%; max-height: 150px; border-radius: 6px; border: 1px solid #ddd; cursor: pointer;" onclick="if(window.chatImageSystem && window.chatImageSystem.openImageModal) { window.chatImageSystem.openImageModal('${imageUrl}', '${note.from}'); } else { window.open('${imageUrl}', '_blank'); }" title="Click to view full size"><br><small style="color: #666; font-style: italic;">Click image to view full size</small></div>`;
+                    });
+                }
+                
+                messagesHTML += `
+                    <div style="border: 1px solid #e0e0e0; border-radius: 6px; padding: 12px; margin-bottom: 8px; background: #f9f9f9; position: relative;">
+                        <button onclick="deleteNote('${note.id}')" style="
+                            position: absolute;
+                            top: 8px;
+                            right: 8px;
+                            background: #e74c3c;
+                            color: white;
+                            border: none;
+                            border-radius: 50%;
+                            width: 20px;
+                            height: 20px;
+                            cursor: pointer;
+                            font-size: 12px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            opacity: 0.7;
+                            transition: opacity 0.2s;
+                        " onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'" title="Delete note">×</button>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; padding-right: 25px;">
+                            <strong style="color: #333; font-size: 0.9em;">From: ${note.from}</strong>
+                            <small style="color: #666; font-size: 0.8em;">${time}</small>
+                        </div>
+                        <div style="color: #444; line-height: 1.3; font-size: 0.9em;">${messageContent}</div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = messagesHTML;
+        }
+
+        function deleteNote(noteId) {
+            console.log('🗑️ Deleting note:', noteId);
+            
+            // Remove from array
+            const index = receivedNotes.findIndex(note => note.id === noteId);
+            if (index !== -1) {
+                receivedNotes.splice(index, 1);
+                console.log('🗑️ Note deleted. Remaining notes:', receivedNotes.length);
+                
+                // Update displays
+                updateNotificationIcon();
+                updatePrivateMessagesPanel();
+                
+                // Show confirmation
+                if (typeof showNotification === 'function') {
+                    showNotification('success', 'Note Deleted', 'Private message has been removed.', '');
+                }
+            } else {
+                console.warn('🗑️ Note not found for deletion:', noteId);
+            }
+        }
+
+        // Make deleteNote globally available
+        window.deleteNote = deleteNote;
 
         function updateNotificationIcon() {
             const notificationBtn = document.getElementById('notes-notification');
@@ -2607,18 +3280,447 @@
                 return;
             }
             
-            let notesText = "📝 Notes received this session:\n\n";
-            receivedNotes.forEach(note => {
+            // Create modal overlay
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.7);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            `;
+            
+            // Create modal content
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                background: white;
+                border-radius: 12px;
+                padding: 24px;
+                max-width: 500px;
+                width: 90%;
+                max-height: 80vh;
+                overflow-y: auto;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                animation: noteModalSlideIn 0.3s ease-out;
+            `;
+            
+            // Build notes HTML
+            let notesHTML = `
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h3 style="margin: 0 0 8px 0; color: #333; font-size: 1.3em;">📝 Received Notes</h3>
+                    <p style="margin: 0; color: #666; font-size: 0.9em;">${receivedNotes.length} note${receivedNotes.length !== 1 ? 's' : ''} this session</p>
+                </div>
+                <div id="notes-container">
+            `;
+            
+            receivedNotes.forEach((note, index) => {
                 const time = new Date(note.timestamp).toLocaleTimeString();
-                notesText += `From ${note.from} (${time}):\n${note.message}\n\n`;
+                let messageContent = note.message;
+                
+                // Process image markup in notes
+                if (messageContent && messageContent.includes('🖼️ [IMAGE:')) {
+                    messageContent = messageContent.replace(/🖼️ \[IMAGE:(https?:\/\/[^\]]+)\]/g, (match, imageUrl) => {
+                        return `<br><div style="text-align: center; margin: 12px 0;"><img src="${imageUrl}" style="max-width: 100%; max-height: 200px; border-radius: 8px; border: 2px solid #e0e0e0; cursor: pointer;" onclick="window.open('${imageUrl}', '_blank')" title="Click to view full size"><br><small style="color: #666; font-style: italic;">Click image to view full size</small></div>`;
+                    });
+                }
+                
+                notesHTML += `
+                    <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; margin-bottom: 12px; background: #fafafa;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <strong style="color: #333;">From: ${note.from}</strong>
+                            <small style="color: #666;">${time}</small>
+                        </div>
+                        <div style="color: #444; line-height: 1.4;">${messageContent}</div>
+                    </div>
+                `;
             });
             
-            alert(notesText);
+            notesHTML += `
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button id="close-notes-btn" style="
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                        color: white; 
+                        border: none; 
+                        padding: 12px 24px; 
+                        border-radius: 6px; 
+                        cursor: pointer;
+                        font-size: 14px;
+                        transition: transform 0.2s, box-shadow 0.2s;
+                        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+                    ">Close</button>
+                </div>
+            `;
+            
+            modal.innerHTML = notesHTML;
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+            
+            // Close modal function
+            function closeModal() {
+                document.body.removeChild(overlay);
+            }
+            
+            // Event listeners
+            document.getElementById('close-notes-btn').addEventListener('click', closeModal);
+            
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) closeModal();
+            });
+            
+            document.addEventListener('keydown', function escapeHandler(e) {
+                if (e.key === 'Escape') {
+                    closeModal();
+                    document.removeEventListener('keydown', escapeHandler);
+                }
+            });
         }
 
         // Make note functions globally available
         window.addReceivedNote = addReceivedNote;
         window.showNotesDropdown = showNotesDropdown;
+
+        // Modern modal-based note input for player chip clicks
+        function showNoteInput(targetPlayerName) {
+            console.log('📝 showNoteInput called for:', targetPlayerName);
+            
+            // Create modal overlay
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.7);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            `;
+            
+            // Create modal content
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                background: white;
+                border-radius: 12px;
+                padding: 24px;
+                max-width: 450px;
+                width: 90%;
+                max-height: 80vh;
+                overflow-y: auto;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                animation: noteModalSlideIn 0.3s ease-out;
+            `;
+            
+            // Add CSS animation
+            if (!document.getElementById('note-modal-styles')) {
+                const style = document.createElement('style');
+                style.id = 'note-modal-styles';
+                style.textContent = `
+                    @keyframes noteModalSlideIn {
+                        from { opacity: 0; transform: translateY(-20px) scale(0.95); }
+                        to { opacity: 1; transform: translateY(0) scale(1); }
+                    }
+                    
+                    /* Touch-friendly button sizing */
+                    @media (hover: none) and (pointer: coarse) {
+                        #note-cancel-btn, #note-send-btn, #note-image-btn {
+                            padding: 14px 16px !important;
+                            font-size: 16px !important;
+                            min-height: 44px;
+                            border-radius: 8px !important;
+                        }
+                        
+                        #note-input-text {
+                            padding: 16px !important;
+                            font-size: 16px !important;
+                            min-height: 120px !important;
+                        }
+                    }
+                    
+                    .image-preview {
+                        position: relative;
+                        display: inline-block;
+                        margin: 8px 0;
+                    }
+                    
+                    .image-preview img {
+                        max-width: 100%;
+                        max-height: 200px;
+                        border-radius: 8px;
+                        border: 2px solid #e0e0e0;
+                    }
+                    
+                    .image-preview .remove-image {
+                        position: absolute;
+                        top: -8px;
+                        right: -8px;
+                        background: #e74c3c;
+                        color: white;
+                        border: none;
+                        border-radius: 50%;
+                        width: 24px;
+                        height: 24px;
+                        cursor: pointer;
+                        font-size: 12px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+
+            modal.innerHTML = `
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h3 style="margin: 0 0 8px 0; color: #333; font-size: 1.2em;">📝 Send Private Note</h3>
+                    <p style="margin: 0; color: #666; font-size: 0.9em;">to <strong>${targetPlayerName}</strong></p>
+                </div>
+                
+                <textarea 
+                    id="note-input-text" 
+                    placeholder="Type your private note here... (optional with image)"
+                    style="width: 100%; height: 100px; padding: 12px; border: 2px solid #e0e0e0; 
+                           border-radius: 8px; font-size: 14px; resize: vertical; outline: none;
+                           font-family: inherit; box-sizing: border-box;"
+                    maxlength="500"
+                ></textarea>
+                
+                <div style="text-align: right; color: #999; font-size: 0.8em; margin: 8px 0;">
+                    <span id="char-count">0</span>/500 characters
+                </div>
+                
+                <!-- Image upload section -->
+                <div id="image-section" style="margin: 16px 0; padding: 12px; background: #f8f9fa; border-radius: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                        <span style="font-size: 0.9em; color: #666;">📎 Attach Image (optional)</span>
+                        <button id="note-image-btn" style="
+                            background: #6c757d; 
+                            color: white; 
+                            border: none; 
+                            padding: 6px 12px; 
+                            border-radius: 4px; 
+                            cursor: pointer;
+                            font-size: 12px;
+                            transition: background 0.2s;
+                        ">Choose Image</button>
+                    </div>
+                    <input type="file" id="note-image-input" accept="image/*" style="display: none;">
+                    <div id="image-preview-container"></div>
+                </div>
+                
+                <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+                    <button id="note-cancel-btn" style="
+                        background: #f5f5f5; 
+                        color: #666; 
+                        border: none; 
+                        padding: 10px 20px; 
+                        border-radius: 6px; 
+                        cursor: pointer;
+                        font-size: 14px;
+                        transition: background 0.2s;
+                    ">Cancel</button>
+                    
+                    <button id="note-send-btn" style="
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                        color: white; 
+                        border: none; 
+                        padding: 10px 20px; 
+                        border-radius: 6px; 
+                        cursor: pointer;
+                        font-size: 14px;
+                        transition: transform 0.2s, box-shadow 0.2s;
+                        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+                    ">Send Note</button>
+                </div>
+            `;
+            
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+            
+            // Get elements
+            const textArea = document.getElementById('note-input-text');
+            const charCount = document.getElementById('char-count');
+            const cancelBtn = document.getElementById('note-cancel-btn');
+            const sendBtn = document.getElementById('note-send-btn');
+            const imageBtn = document.getElementById('note-image-btn');
+            const imageInput = document.getElementById('note-image-input');
+            const imagePreviewContainer = document.getElementById('image-preview-container');
+            
+            // State for selected image
+            let selectedImage = null;
+            
+            // Focus textarea
+            setTimeout(() => textArea.focus(), 100);
+            
+            // Character counter
+            textArea.addEventListener('input', () => {
+                const length = textArea.value.length;
+                charCount.textContent = length;
+                charCount.style.color = length > 450 ? '#e74c3c' : '#999';
+            });
+            
+            // Image upload handling
+            imageBtn.addEventListener('click', () => {
+                imageInput.click();
+            });
+            
+            imageInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    selectedImage = file;
+                    showImagePreview(file);
+                }
+            });
+            
+            function showImagePreview(file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imagePreviewContainer.innerHTML = `
+                        <div class="image-preview">
+                            <img src="${e.target.result}" alt="Preview">
+                            <button class="remove-image" onclick="removeImage()">×</button>
+                        </div>
+                        <div style="font-size: 0.8em; color: #666; margin-top: 4px;">
+                            📎 ${file.name} (${(file.size / 1024).toFixed(1)} KB)
+                        </div>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            // Make removeImage globally accessible for the inline onclick
+            window.removeImage = function() {
+                selectedImage = null;
+                imagePreviewContainer.innerHTML = '';
+                imageInput.value = '';
+            };
+            
+            // Button hover effects
+            cancelBtn.addEventListener('mouseenter', () => {
+                cancelBtn.style.background = '#e0e0e0';
+            });
+            cancelBtn.addEventListener('mouseleave', () => {
+                cancelBtn.style.background = '#f5f5f5';
+            });
+            
+            sendBtn.addEventListener('mouseenter', () => {
+                sendBtn.style.transform = 'translateY(-1px)';
+                sendBtn.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
+            });
+            sendBtn.addEventListener('mouseleave', () => {
+                sendBtn.style.transform = 'translateY(0)';
+                sendBtn.style.boxShadow = '0 2px 8px rgba(102, 126, 234, 0.3)';
+            });
+            
+            imageBtn.addEventListener('mouseenter', () => {
+                imageBtn.style.background = '#5a6268';
+            });
+            imageBtn.addEventListener('mouseleave', () => {
+                imageBtn.style.background = '#6c757d';
+            });
+            
+            // Close modal function
+            function closeModal() {
+                // Clean up global function
+                if (window.removeImage) {
+                    delete window.removeImage;
+                }
+                document.body.removeChild(overlay);
+            }
+            
+            // Event listeners
+            cancelBtn.addEventListener('click', closeModal);
+            
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) closeModal();
+            });
+            
+            document.addEventListener('keydown', function escapeHandler(e) {
+                if (e.key === 'Escape') {
+                    closeModal();
+                    document.removeEventListener('keydown', escapeHandler);
+                }
+            });
+            
+            sendBtn.addEventListener('click', async () => {
+                const noteText = textArea.value.trim();
+                
+                // Validate: must have either text or image
+                if (!noteText && !selectedImage) {
+                    textArea.style.borderColor = '#e74c3c';
+                    textArea.focus();
+                    setTimeout(() => {
+                        textArea.style.borderColor = '#e0e0e0';
+                    }, 2000);
+                    return;
+                }
+                
+                // Disable send button during upload
+                sendBtn.disabled = true;
+                sendBtn.style.opacity = '0.6';
+                sendBtn.textContent = 'Sending...';
+                
+                try {
+                    // Get current player name
+                    const currentPlayerName = localStorage.getItem('playerName') || 'Anonymous';
+                    
+                    if (selectedImage) {
+                        // Upload image with smart naming
+                        console.log('🖼️ Uploading note image...');
+                        const uploadResult = await window.multiImageHost.uploadNoteImage(
+                            selectedImage, 
+                            currentPlayerName, 
+                            targetPlayerName
+                        );
+                        
+                        if (uploadResult && uploadResult.url) {
+                            // Send note with image (and optional text)
+                            const imageCommand = `🖼️ [IMAGE:${uploadResult.url}]`;
+                            const fullMessage = noteText ? `${noteText}\n\n${imageCommand}` : imageCommand;
+                            
+                            sendNoteCommand(targetPlayerName, fullMessage);
+                            console.log('✅ Private note with image sent successfully');
+                        } else {
+                            throw new Error('Image upload failed - no URL returned');
+                        }
+                    } else {
+                        // Text-only note
+                        sendNoteCommand(targetPlayerName, noteText);
+                    }
+                    
+                    closeModal();
+                    
+                } catch (error) {
+                    console.error('❌ Failed to send note:', error);
+                    alert(`Failed to send note: ${error.message}`);
+                    
+                    // Re-enable send button
+                    sendBtn.disabled = false;
+                    sendBtn.style.opacity = '1';
+                    sendBtn.textContent = 'Send Note';
+                }
+            });
+            
+            // Enter to send (Ctrl+Enter for new line)
+            textArea.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.ctrlKey && !e.shiftKey) {
+                    e.preventDefault();
+                    sendBtn.click();
+                }
+            });
+        }
+
+        // Make showNoteInput globally available
+        window.showNoteInput = showNoteInput;
 
         // Set up periodic player list updates
         function startPlayerListUpdates() {
@@ -2809,17 +3911,45 @@
                 
             } catch (error) {
                 console.error('❌ Connection failed:', error);
+                
+                // Reset connection state
+                isNetworkConnected = false;
+                currentSessionCode = null;
+                
                 updateConnectionStatus('disconnected', 'Connection failed');
                 addChatMessage('system', `Connection failed: ${error.message}`);
                 
                 // Show session connection area again on connection failure
-                document.querySelector('.session-connection').style.display = 'block';
+                const sessionConnection = document.querySelector('.session-connection');
+                if (sessionConnection) {
+                    sessionConnection.style.display = 'block';
+                }
+                
+                // Make sure bottom sheet connection area is visible
+                const sheetConnectionArea = document.getElementById('sheet-connection-area');
+                if (sheetConnectionArea) {
+                    sheetConnectionArea.style.display = 'block';
+                }
+                
+                // Hide player chips in bottom sheet
+                const playerChips = document.getElementById('player-chips-area');
+                if (playerChips) {
+                    playerChips.style.display = 'none';
+                }
+                
+                // Sync connection status between main and sheet
+                syncSheetConnectionStatus();
                 
                 // Hide connection toggle button when disconnected
-                document.getElementById('connection-toggle').style.display = 'none';
+                const connectionToggle = document.getElementById('connection-toggle');
+                if (connectionToggle) {
+                    connectionToggle.style.display = 'none';
+                }
                 
                 // Stop player list updates
                 stopPlayerListUpdates();
+                
+                console.log('🔄 Connection areas reset for retry');
             }
         }
 
@@ -2863,10 +3993,19 @@
             
             dot.className = `status-dot ${status}`;
             statusText.textContent = text;
+            
+            // Sync to bottom sheet status as well
+            syncSheetConnectionStatus();
         }
 
         // Add message to chat - copied exactly from player-test.html
         function addChatMessage(message, type = 'player', sender = '') {
+            // Handle null or undefined messages (like silent NOTE commands)
+            if (!message) {
+                console.log('📡 Null message filtered from chat display');
+                return;
+            }
+            
             // Filter out heartbeat messages
             if (type === 'heartbeat' || sender === 'Heartbeat' || 
                 (typeof message === 'object' && (message.message_type === 'heartbeat' || message.player_name === 'Heartbeat'))) {
@@ -2911,6 +4050,12 @@
             messageEl.innerHTML = prefix + processedMessage;
             chatMessages.appendChild(messageEl);
             chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Sync message to bottom sheet
+            syncMessageToBottomSheet(prefix + processedMessage, type, sender);
+            
+            // Update FAB notification dot for new messages
+            updateFABNotification();
             
             // Debounced reset for rapid message additions
             clearTimeout(window.chatResetTimeout);
@@ -2961,6 +4106,122 @@
     
     <!-- Image Upload Integration -->
     <script src="js/chatImageUploadIntegration.js"></script>
+
+    <!-- Floating Action Button for Chat -->
+    <button class="chat-fab" id="chat-fab" onclick="toggleChatBottomSheet()" title="Open Chat">
+        <span class="material-icons">chat_bubble</span>
+        <span class="fab-notification-dot" id="chat-fab-notification" style="display: none;"></span>
+    </button>
+
+    <!-- Chat Bottom Sheet -->
+    <div class="chat-bottom-sheet" id="chat-bottom-sheet">
+        <div class="bottom-sheet-backdrop" onclick="closeChatBottomSheet()"></div>
+        <div class="bottom-sheet-content">
+            <!-- Drag Handle -->
+            <div class="bottom-sheet-handle">
+                <div class="handle-bar"></div>
+            </div>
+            
+            <!-- Bottom Sheet Header -->
+            <div class="bottom-sheet-header">
+                <div class="sheet-tabs-container">
+                    <div class="sheet-tabs">
+                        <button class="sheet-tab active" onclick="switchChatTab('chat')" data-tab="chat">
+                            <i class="material-icons">chat_bubble</i>
+                            <span>Chat</span>
+                        </button>
+                        <button class="sheet-tab" onclick="switchChatTab('rolls')" data-tab="rolls">
+                            <i class="ra ra-perspective-dice-six"></i>
+                            <span>Rolls</span>
+                        </button>
+                    </div>
+                    <div class="connection-status-mini">
+                        <span class="status-dot" id="sheet-status-dot"></span>
+                        <span class="status-text" id="sheet-status-text">Not connected</span>
+                    </div>
+                </div>
+                <div class="sheet-controls">
+                    <button class="sheet-control-btn" id="expand-sheet-btn" onclick="expandBottomSheet()" title="Expand to full screen">
+                        <span class="material-icons">fullscreen</span>
+                    </button>
+                    <button class="sheet-control-btn" onclick="closeChatBottomSheet()" title="Close chat">
+                        <span class="material-icons">close</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab Content Areas -->
+            <div class="sheet-tab-content">
+                <!-- Chat Tab Content -->
+                <div class="tab-panel active" id="chat-tab-panel">
+                    <!-- Connection Controls (when not connected) -->
+                    <div class="sheet-connection-area" id="sheet-connection-area">
+                        <div class="connection-controls">
+                            <input type="text" id="sheet-session-input" placeholder="Paste connection URL from storyteller">
+                            <button class="sheet-join-btn" onclick="joinGameSessionFromSheet()">Join</button>
+                        </div>
+                    </div>
+
+                    <!-- Player Chips (horizontal scroll) -->
+                    <div class="player-chips-area" id="player-chips-area" style="display: none;">
+                        <div class="player-chips-scroll">
+                            <div class="player-chip self">
+                                <div class="chip-avatar">👤</div>
+                                <span class="chip-name">You</span>
+                            </div>
+                            <!-- Dynamic player chips will be added here -->
+                        </div>
+                    </div>
+
+                    <!-- Chat Messages -->
+                    <div class="sheet-chat-messages" id="sheet-chat-messages">
+                        <div class="chat-message system">
+                            <span class="message-author">System:</span>
+                            Welcome to DCC! Connect to a game session to start chatting.
+                        </div>
+                    </div>
+
+                    <!-- Chat Input -->
+                    <div class="sheet-chat-input">
+                        <div class="chat-tools-row">
+                            <button class="chat-tool-btn" onclick="showSheetChatEffects()" title="Chat Effects">
+                                <span>✨</span>
+                            </button>
+                            <button class="chat-tool-btn" onclick="showSheetImageUpload()" title="Upload Image">
+                                <span>📷</span>
+                            </button>
+                            <button class="chat-tool-btn" onclick="showSheetPlayers()" title="Send Note">
+                                <span>📝</span>
+                            </button>
+                        </div>
+                        <div class="input-row">
+                            <input type="text" id="sheet-chat-input" placeholder="Type your message..." onkeypress="handleSheetChatKeyPress(event)">
+                            <button class="sheet-send-btn" onclick="sendSheetMessage()" disabled>
+                                <span class="material-icons">send</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Roll History Tab Content -->
+                <div class="tab-panel" id="rolls-tab-panel">
+                    <div class="roll-history-header">
+                        <h4><i class="ra ra-perspective-dice-six"></i> Your Roll History</h4>
+                        <button class="clear-rolls-btn" onclick="clearChatRollHistory()" title="Clear roll history">
+                            <span class="material-icons">clear_all</span>
+                            Clear
+                        </button>
+                    </div>
+                    <div class="sheet-roll-history" id="sheet-roll-history">
+                        <div style="text-align: center; color: #8a8a8a; padding: 40px;">
+                            <i class="ra ra-perspective-dice-six" style="font-size: 3em; margin-bottom: 15px; display: block;"></i>
+                            No rolls yet! Click attributes, skills, weapons, or spells to start rolling.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

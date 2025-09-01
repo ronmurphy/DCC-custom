@@ -7,14 +7,26 @@ class NotesManager {
         this.currentNoteId = null;
         this.autoSaveTimeout = null;
         this.autoSaveDelay = 2000; // Auto-save after 2 seconds of inactivity
+        this.unifiedStorageDB = null;
         
         this.init();
     }
     
-    init() {
-        this.loadNotes();
+    async initStorage() {
+        if (!this.unifiedStorageDB) {
+            this.unifiedStorageDB = new UnifiedStorageDB();
+            await this.unifiedStorageDB.init();
+            
+            // Run migration from localStorage if needed
+            await this.unifiedStorageDB.migrateFromLocalStorage();
+        }
+        return this.unifiedStorageDB;
+    }
+    
+    async init() {
+        await this.loadNotes();
         this.setupEventListeners();
-        console.log('Notes Manager initialized');
+        console.log('Notes Manager initialized with IndexedDB');
     }
     
     setupEventListeners() {
@@ -53,47 +65,79 @@ class NotesManager {
         return 'note_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     }
     
-    loadNotes() {
+    async loadNotes() {
         try {
-            const stored = localStorage.getItem('storyteller_notes');
-            if (stored) {
-                this.notes = JSON.parse(stored);
-                
-                // Migrate old notes to include priority and tags
-                this.notes.forEach(note => {
-                    if (!note.priority) note.priority = 'normal';
-                    if (!note.tags) note.tags = [];
-                });
-                
-                // Save back the migrated structure
-                this.saveNotes();
-                
-                console.log(`Loaded ${this.notes.length} notes from storage`);
-            }
+            await this.initStorage();
+            this.notes = await this.unifiedStorageDB.getAllNotes();
+            
+            // Migrate old notes to include priority and tags
+            this.notes.forEach(note => {
+                if (!note.priority) note.priority = 'normal';
+                if (!note.tags) note.tags = [];
+            });
+            
+            // Save back the migrated structure
+            await this.saveNotes();
+            
+            console.log(`Loaded ${this.notes.length} notes from IndexedDB`);
         } catch (error) {
-            console.error('Error loading notes:', error);
-            this.notes = [];
+            console.error('Error loading notes from IndexedDB:', error);
+            // Fallback to localStorage
+            try {
+                const stored = localStorage.getItem('storyteller_notes');
+                if (stored) {
+                    this.notes = JSON.parse(stored);
+                    console.log(`Fallback: Loaded ${this.notes.length} notes from localStorage`);
+                } else {
+                    this.notes = [];
+                }
+            } catch (fallbackError) {
+                console.error('Error loading fallback notes:', fallbackError);
+                this.notes = [];
+            }
         }
     }
     
     saveNotes() {
+        // Use async operations internally but don't block the caller
+        this._saveNotesAsync().catch(error => {
+            console.error('Error in async save operation:', error);
+        });
+        return true; // Return immediately for synchronous callers
+    }
+    
+    async _saveNotesAsync() {
         try {
-            localStorage.setItem('storyteller_notes', JSON.stringify(this.notes));
-            console.log(`Saved ${this.notes.length} notes to storage`);
-            return true;
+            if (!this.unifiedStorageDB) {
+                await this.initStorage();
+            }
+            
+            // Save all notes to IndexedDB
+            for (const note of this.notes) {
+                await this.unifiedStorageDB.saveNote(note);
+            }
+            
+            console.log(`Saved ${this.notes.length} notes to IndexedDB`);
         } catch (error) {
-            console.error('Error saving notes:', error);
-            return false;
+            console.error('Error saving notes to IndexedDB:', error);
+            // Emergency fallback to localStorage
+            try {
+                localStorage.setItem('storyteller_notes', JSON.stringify(this.notes));
+                console.log('Emergency fallback: Saved to localStorage');
+            } catch (fallbackError) {
+                console.error('Error with localStorage fallback:', fallbackError);
+            }
         }
     }
     
     createNote(title = 'New Note', content = '') {
         const note = {
             id: this.generateId(),
-            title: title.trim() || 'Untitled Note',
+            title: title,
             content: content,
             created: new Date().toISOString(),
             modified: new Date().toISOString(),
+            charCount: content.length,
             wordCount: content.trim().split(/\s+/).filter(w => w.length > 0).length,
             tags: [], // For storing tags like 'hot', 'new-idea', 'important'
             priority: 'normal' // normal, hot, new-idea, important

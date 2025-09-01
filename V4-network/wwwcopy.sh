@@ -5,8 +5,8 @@
 echo "🔄 Copying development files to Cordova www..."
 
 # Define source and destination directories
-SOURCE_DIR="/home/brad/Documents/DCC-custom/V4"
-DEST_DIR="/home/brad/Documents/DCC-custom/V4/Cordova/DCWorld/www"
+SOURCE_DIR="/home/brad/Documents/DCC-custom/V4-network"
+DEST_DIR="/home/brad/Documents/DCC-custom/V4-network/Cordova/DCWorld/www"
 
 # Check if destination exists
 if [ ! -d "$DEST_DIR" ]; then

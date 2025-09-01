@@ -129,12 +129,15 @@ async function interceptChatMessage(message) {
  */
 function isCommandMessage(messageText) {
     // Look for patterns like: COMMAND:PlayerName or COMMAND:PlayerName:parameters
-    const commandPattern = /^(LOOT|ACHIEVEMENT|LEVELUP|ITEM|SKILL|EXP|GOLD|HEALTH|STAT|CLEAN):[^:]+/;
+    const commandPattern = /^(LOOT|ACHIEVEMENT|LEVELUP|ITEM|SKILL|EXP|GOLD|HEALTH|STAT|NOTE|CLEAN):[^:]+/;
     // Also check for special silent commands
     const silentCommandPattern = /^\/refreshmap$|^\/sendmap$|^\/github:/;
     // Also check for map sync messages that should be hidden
     const mapSyncPattern = /^MAP_SYNC:/;
-    return commandPattern.test(messageText) || silentCommandPattern.test(messageText) || mapSyncPattern.test(messageText);
+    // Check for image messages that need processing
+    const imagePattern = /^🖼️ \[IMAGE:.*\]$/;
+    
+    return commandPattern.test(messageText) || silentCommandPattern.test(messageText) || mapSyncPattern.test(messageText) || imagePattern.test(messageText);
 }
 
 /**
@@ -287,6 +290,40 @@ async function processCommandMessage(message) {
         return null;
     }
     
+    // Handle image messages 🖼️ [IMAGE:url]
+    if (messageText.match(/^🖼️ \[IMAGE:.*\]$/)) {
+        console.log('📷 Processing image message:', messageText);
+        
+        // Extract image URL from message format: 🖼️ [IMAGE:url]
+        const match = messageText.match(/\[IMAGE:([^\]]+)\]/);
+        if (match) {
+            const imageUrl = match[1];
+            console.log('📷 Extracted image URL:', imageUrl);
+            
+            // Create image message for display
+            const imageMessage = {
+                ...message,
+                message_text: `📷 shared an image` // Simple text that will be enhanced
+            };
+            
+            // Display the message normally first
+            if (originalDisplayChatMessage && typeof originalDisplayChatMessage === 'function') {
+                originalDisplayChatMessage(imageMessage);
+                
+                // Then enhance the last message with the image button
+                setTimeout(() => {
+                    addImageButtonToChat(imageUrl, message.player_name);
+                }, 100);
+            }
+            
+            // Return null to prevent double display
+            return null;
+        } else {
+            console.error('❌ Could not extract image URL from message:', messageText);
+            return message; // Display as regular message if parsing fails
+        }
+    }
+    
     // If this is the StoryTeller interface, don't process commands - let them display normally
     if (isStoryteller) {
         return message; // Pass through unchanged
@@ -368,13 +405,46 @@ async function generatePersonalResult(command, parameters, message) {
             const goldAmount = parseInt(parameters) || 0;
             return `💰 You ${goldAmount > 0 ? 'gained' : 'lost'} ${Math.abs(goldAmount)} gold!`;
         case 'NOTE':
+            console.log('🐛 Processing NOTE command for current player');
             // Add to notification system if available
-            if (typeof window.addReceivedNote === 'function') {
+            if (typeof addReceivedNote === 'function') {
                 // Extract sender name from the message context
-                const senderName = (message && message.author_name) || 'Unknown';
-                window.addReceivedNote(senderName, parameters, new Date().toISOString());
+                const senderName = (message && message.player_name) || 'Unknown';
+                console.log('🐛 Adding note to notification system:', senderName, parameters);
+                
+                // Parse the NOTE command: NOTE:Target:Text (V4-network style)
+                const noteParts = parameters ? parameters.split(':') : [];
+                const targetPlayer = noteParts[0] || '';
+                const noteText = noteParts.slice(1).join(':') || '';
+                
+                // Create note data object matching StoryTeller format, but keep text as-is
+                const noteData = {
+                    sender: senderName,
+                    recipient: targetPlayer,
+                    text: noteText, // Keep full text including any image markup
+                    imageUrl: '', // Don't parse separately - let the display function handle it
+                    timestamp: new Date().toISOString()
+                };
+                
+                // Handle async addReceivedNote properly
+                try {
+                    const result = addReceivedNote(noteData);
+                    // If it returns a promise, handle any errors
+                    if (result && typeof result.catch === 'function') {
+                        result.catch(error => {
+                            console.error('🐛 Error in addReceivedNote:', error);
+                        });
+                    }
+                } catch (error) {
+                    console.error('🐛 Error calling addReceivedNote:', error);
+                }
+            } else {
+                console.warn('🐛 addReceivedNote function not available');
             }
-            return `📝 You received a note: ${parameters}`;
+            
+            // Notes should not display in main chat - they're private!
+            // Return null to suppress chat display
+            return null;
         case 'CLEAN':
             // For players, just show a generic cleanup message
             return `🧹 The storyteller performed database maintenance`;
@@ -477,6 +547,79 @@ async function generatePersonalLoot(lootType) {
     } catch (error) {
         console.warn('Error generating personal loot:', error);
         return `💰 You found some ${lootType}!`;
+    }
+}
+
+/**
+ * Add image button to the most recent chat message
+ */
+function addImageButtonToChat(imageUrl, playerName) {
+    // Find the most recent chat message
+    const chatMessages = document.querySelectorAll('.chat-message');
+    let lastMessage = null;
+    
+    // Look for the most recent message that contains "📷 shared an image" and doesn't already have a button
+    for (let i = chatMessages.length - 1; i >= 0; i--) {
+        const message = chatMessages[i];
+        if (message.innerHTML && message.innerHTML.includes('📷 shared an image') && !message.querySelector('[data-image-url]')) {
+            lastMessage = message;
+            break;
+        }
+    }
+    
+    if (lastMessage) {
+        // Create the image button
+        const imageButton = document.createElement('button');
+        imageButton.setAttribute('data-image-url', imageUrl);
+        imageButton.style.cssText = `
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin: 4px 8px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: white;
+            font-size: 0.9em;
+            transition: all 0.2s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            vertical-align: middle;
+        `;
+        
+        imageButton.innerHTML = `
+            <span style="font-size: 1.2em;">📷</span>
+            <span>View Image</span>
+            <small style="opacity: 0.8; font-size: 0.8em;">(github)</small>
+        `;
+        
+        // Use ChatImageSystem if available, otherwise open in new tab
+        imageButton.onclick = () => {
+            if (window.chatImageSystem && window.chatImageSystem.openImageModal) {
+                window.chatImageSystem.openImageModal(imageUrl, playerName);
+            } else {
+                window.open(imageUrl, '_blank');
+            }
+        };
+        
+        imageButton.onmouseover = function() {
+            this.style.transform = 'translateY(-1px)';
+            this.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+        };
+        
+        imageButton.onmouseout = function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
+        };
+
+        // Replace the "📷 shared an image" text with just the button
+        lastMessage.innerHTML = lastMessage.innerHTML.replace('📷 shared an image', '');
+        lastMessage.appendChild(imageButton);
+        
+        console.log('✅ Image button added to chat message');
+    } else {
+        console.warn('⚠️ Could not find recent image message to enhance');
     }
 }
 

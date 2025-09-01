@@ -177,7 +177,7 @@ async function startGameSession() {
     }
     
     const dmName = dmNameInput.value.trim();
-    const sessionCode = sessionCodeInput.value.trim();
+    const sessionCode = sessionCodeInput.value.trim().toUpperCase();
     
     if (!dmName) {
         alert('Please enter your name');
@@ -232,7 +232,7 @@ async function joinGameSession() {
     }
     
     const playerName = playerNameInput.value.trim();
-    const sessionCode = sessionCodeInput.value.trim();
+    const sessionCode = sessionCodeInput.value.trim().toUpperCase();
     
     if (!playerName) {
         alert('Please enter your name');
@@ -1524,6 +1524,18 @@ function handleIncomingMessage(message) {
         return;
     }
     
+    // Check if this is a NOTE command
+    if (message.message_type === 'chat' && message.message_text.startsWith('NOTE:')) {
+        console.log('🔍 Detected NOTE command in chat:', message.message_text);
+        
+        // Process the note command
+        processNoteCommand(message.message_text, message.player_name);
+        
+        // Don't display the raw command - process silently
+        console.log('🔇 NOTE command processed silently, not displaying in chat');
+        return;
+    }
+    
     // Always display normal messages in chat
     displayChatMessage(message);
     
@@ -1641,6 +1653,74 @@ function processAttackCommand(commandText, playerName) {
             created_at: new Date().toISOString()
         };
         displayChatMessage(warningMessage);
+    }
+}
+
+function processNoteCommand(commandText, playerName) {
+    console.log('🔍 Processing NOTE command:', commandText);
+    console.log('🔍 Sender:', playerName);
+    
+    // Parse NOTE:Target:Text:ImageURL format
+    const parts = commandText.split(':');
+    console.log('🔍 Command parts:', parts);
+    
+    if (parts.length < 3) {
+        console.error('❌ Invalid NOTE command format - need at least 3 parts');
+        return;
+    }
+    
+    const [cmd, targetPlayer, ...textParts] = parts;
+    console.log('🔍 Target player:', targetPlayer);
+    console.log('🔍 Text parts:', textParts);
+    
+    // Find where image URL starts (if any)
+    let noteText = '';
+    let imageUrl = '';
+    
+    // Join all parts and then separate text from potential image URL
+    const fullText = textParts.join(':');
+    console.log('🔍 Full text:', fullText);
+    
+    const imageUrlMatch = fullText.match(/https:\/\/[^\s]+\.(jpg|jpeg|png|gif|webp)$/i);
+    
+    if (imageUrlMatch) {
+        imageUrl = imageUrlMatch[0];
+        noteText = fullText.replace(':' + imageUrl, '').trim();
+        console.log('🔍 Found image URL:', imageUrl);
+        console.log('🔍 Extracted text:', noteText);
+    } else {
+        noteText = fullText;
+        console.log('🔍 No image found, using full text:', noteText);
+    }
+    
+    // Create note data
+    const noteData = {
+        sender: playerName,
+        recipient: targetPlayer,
+        text: noteText,
+        imageUrl: imageUrl,
+        timestamp: new Date().toISOString()
+    };
+    
+    console.log('🔍 Created note data:', noteData);
+    
+    // Add to private messages (if we're the target or StoryTeller)
+    const currentPlayerName = window.playerName || playerName;
+    const isStoryTeller = window.isStoryTeller || false;
+    
+    console.log('🔍 Current player:', currentPlayerName);
+    console.log('🔍 Is StoryTeller:', isStoryTeller);
+    console.log('🔍 Should process note:', (targetPlayer === currentPlayerName || targetPlayer === 'StoryTeller' || isStoryTeller));
+    
+    if (targetPlayer === currentPlayerName || targetPlayer === 'StoryTeller' || isStoryTeller) {
+        console.log('✅ Adding received note to panel');
+        if (typeof addReceivedNote === 'function') {
+            addReceivedNote(noteData);
+        } else {
+            console.error('❌ addReceivedNote function not available');
+        }
+    } else {
+        console.log('⏭️ Note not for this user, ignoring');
     }
 }
 
@@ -1795,7 +1875,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // Wait for main app to initialize
-    setTimeout(() => {
+    setTimeout(async () => {
         if (typeof createChatSystem === 'function') {
             createChatSystem();
         }
@@ -1806,6 +1886,10 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             console.warn('Supabase library not loaded. Please include the Supabase JavaScript library.');
         }
+        
+        // Load private messages from IndexedDB
+        await loadPrivateMessages();
+        updateStoryTellerPrivateMessagesPanel();
     }, 1000);
 });
 
@@ -1862,6 +1946,419 @@ function hideGameDataCard() {
     if (gameDataCard) gameDataCard.style.display = 'none';
 }
 
+// ========================================
+// PRIVATE MESSAGES FUNCTIONS
+// ========================================
+let stPrivateMessages = [];
+let unifiedStorageDB = null;
+
+// Initialize storage database
+async function initPrivateMessagesStorage() {
+    if (!unifiedStorageDB) {
+        console.log('🔄 Initializing UnifiedStorageDB for private messages...');
+        
+        // Check if UnifiedStorageDB class is available
+        if (typeof UnifiedStorageDB === 'undefined') {
+            console.error('❌ UnifiedStorageDB class not available! Check script loading order.');
+            throw new Error('UnifiedStorageDB class not available');
+        }
+        
+        unifiedStorageDB = new UnifiedStorageDB();
+        await unifiedStorageDB.init();
+        
+        // Run migration from localStorage if needed
+        await unifiedStorageDB.migrateFromLocalStorage();
+        console.log('✅ UnifiedStorageDB initialized successfully');
+    }
+    return unifiedStorageDB;
+}
+
+// Load private messages from IndexedDB
+async function loadPrivateMessages() {
+    try {
+        console.log('🔄 Loading private messages from IndexedDB...');
+        await initPrivateMessagesStorage();
+        stPrivateMessages = await unifiedStorageDB.getAllPrivateMessages();
+        console.log(`📥 Loaded ${stPrivateMessages.length} private messages from IndexedDB`);
+        
+        if (stPrivateMessages.length > 0) {
+            console.log('📝 Sample message:', stPrivateMessages[0]);
+        }
+    } catch (error) {
+        console.error('❌ Error loading private messages from IndexedDB:', error);
+        // Fallback to localStorage for emergency recovery
+        try {
+            console.log('🔄 Attempting localStorage fallback...');
+            const stored = localStorage.getItem('storyteller_private_messages');
+            if (stored) {
+                stPrivateMessages = JSON.parse(stored);
+                console.log(`📥 Fallback: Loaded ${stPrivateMessages.length} private messages from localStorage`);
+            } else {
+                console.log('📭 No private messages found in localStorage either');
+                stPrivateMessages = [];
+            }
+        } catch (fallbackError) {
+            console.error('❌ Error loading fallback private messages:', fallbackError);
+            stPrivateMessages = [];
+        }
+    }
+}
+
+// Save private messages to IndexedDB
+async function savePrivateMessages() {
+    try {
+        if (!unifiedStorageDB) {
+            await initPrivateMessagesStorage();
+        }
+        
+        // Save all messages to IndexedDB
+        for (const message of stPrivateMessages) {
+            await unifiedStorageDB.savePrivateMessage(message);
+        }
+        
+        console.log(`💾 Saved ${stPrivateMessages.length} private messages to IndexedDB`);
+    } catch (error) {
+        console.error('❌ Error saving private messages to IndexedDB:', error);
+        // Emergency fallback to localStorage
+        try {
+            localStorage.setItem('storyteller_private_messages', JSON.stringify(stPrivateMessages));
+            console.log('💾 Emergency fallback: Saved to localStorage');
+        } catch (fallbackError) {
+            console.error('❌ Error with emergency localStorage save:', fallbackError);
+        }
+    }
+}
+
+async function addReceivedNote(noteData) {
+    console.log('📥 Adding received note:', noteData);
+    
+    // ALWAYS add to array and update UI first (non-blocking)
+    stPrivateMessages.push(noteData);
+    console.log(`📝 Added to stPrivateMessages array. Total: ${stPrivateMessages.length}`);
+    
+    // Update the UI immediately
+    updateStoryTellerPrivateMessagesPanel();
+    
+    // Show notification
+    if (window.showNotification) {
+        window.showNotification('Private Message', `New note from ${noteData.sender}`, 'success');
+    }
+    
+    // Try to save to IndexedDB (non-blocking - errors won't break the UI)
+    setTimeout(async () => {
+        try {
+            console.log('💾 Attempting to save to IndexedDB...');
+            if (!unifiedStorageDB) {
+                console.log('🔄 Initializing storage...');
+                await initPrivateMessagesStorage();
+            }
+            await unifiedStorageDB.savePrivateMessage(noteData);
+            console.log('✅ Saved private message to IndexedDB');
+        } catch (error) {
+            console.error('❌ Error saving to IndexedDB, using localStorage fallback:', error);
+            // Emergency fallback to localStorage
+            try {
+                localStorage.setItem('storyteller_private_messages', JSON.stringify(stPrivateMessages));
+                console.log('💾 Emergency fallback: Saved to localStorage');
+            } catch (fallbackError) {
+                console.error('❌ Error with localStorage fallback:', fallbackError);
+            }
+        }
+    }, 0); // Run in next tick to avoid blocking UI
+    
+    // Show notification
+    if (window.showNotification) {
+        window.showNotification('success', 'Private Message', `New note from ${noteData.sender}`, 'Click to view in Notes panel');
+    }
+    
+    // If notes panel is open, show red badge on private messages tab
+    const privateTab = document.querySelector('.notes-tab[onclick="switchNotesTab(\'private\')"]');
+    if (privateTab && !privateTab.classList.contains('active')) {
+        // Add visual indicator that there's a new message
+        privateTab.style.position = 'relative';
+        if (!privateTab.querySelector('.new-message-indicator')) {
+            const indicator = document.createElement('div');
+            indicator.className = 'new-message-indicator';
+            indicator.style.cssText = `
+                position: absolute;
+                top: 5px;
+                right: 5px;
+                width: 8px;
+                height: 8px;
+                background: #dc3545;
+                border-radius: 50%;
+                animation: pulse 1s infinite;
+            `;
+            privateTab.appendChild(indicator);
+        }
+    }
+}
+
+function updateStoryTellerPrivateMessagesPanel() {
+    console.log('🔄 updateStoryTellerPrivateMessagesPanel called');
+    let container = document.getElementById('st-private-messages-container');
+    const countElement = document.getElementById('st-private-messages-count');
+    
+    console.log('🔍 Container found:', !!container);
+    console.log('🔍 Count element found:', !!countElement);
+    console.log('🔍 stPrivateMessages.length:', stPrivateMessages.length);
+    
+    // If container not found, check if we need to switch to Private Messages tab
+    if (!container) {
+        const privateMessagesTab = document.getElementById('private-messages-tab');
+        
+        if (privateMessagesTab && privateMessagesTab.style.display === 'none' && typeof switchNotesTab === 'function') {
+            console.log('📝 Notes panel loaded but Private Messages tab not active. Switching tabs...');
+            switchNotesTab('private');
+            
+            // Try to find container again after tab switch
+            container = document.getElementById('st-private-messages-container');
+            console.log('🔍 Container found after tab switch:', !!container);
+        }
+    }
+    
+    if (!container) {
+        console.log('⏸️ Private messages container not available. Messages will be shown when Notes panel with Private Messages tab is loaded.');
+        return;
+    }
+    
+    // Check if the private messages tab is visible
+    const privateTab = document.getElementById('private-messages-tab');
+    if (privateTab) {
+        console.log('🔍 Private messages tab display:', privateTab.style.display);
+        console.log('🔍 Private messages tab visible:', privateTab.offsetHeight > 0);
+    }
+    
+    if (stPrivateMessages.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; color: #8a8a8a; padding: 20px;">
+                <i class="material-icons" style="font-size: 2em; margin-bottom: 10px; display: block;">mail_outline</i>
+                No private messages yet! Players can send private notes via player chip clicks.
+            </div>
+        `;
+        
+        if (countElement) {
+            countElement.style.display = 'none';
+        }
+        return;
+    }
+    
+    // Show count
+    if (countElement) {
+        countElement.textContent = `(${stPrivateMessages.length})`;
+        countElement.style.display = 'inline';
+        countElement.style.background = '#007bff';
+        countElement.style.color = 'white';
+        countElement.style.padding = '2px 6px';
+        countElement.style.borderRadius = '10px';
+        countElement.style.fontSize = '0.8em';
+        countElement.style.marginLeft = '5px';
+    }
+    
+    // Sort messages by timestamp (newest first) but keep track of original indices
+    const sortedMessages = stPrivateMessages
+        .map((note, originalIndex) => ({ ...note, originalIndex }))
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    
+    // Generate messages HTML
+    container.innerHTML = sortedMessages.map((note, displayIndex) => {
+        let messageContent = note.text || '';
+        
+        // Process image markup in notes (V4-network compatible format)
+        if (messageContent && messageContent.includes('🖼️ [IMAGE:')) {
+            messageContent = messageContent.replace(/🖼️ \[IMAGE:(https?:\/\/[^\]]+)\]/g, (match, imageUrl) => {
+                return `<div style="text-align: center; margin: 8px 0;"><img src="${imageUrl}" onclick="showStoryTellerImageModal('${imageUrl}', '${note.text || 'Private Image Note'}')" style="max-width: 100%; max-height: 150px; border-radius: 6px; border: 1px solid var(--border-color, #ddd); cursor: pointer;" title="Click to view full size"><br><small style="color: var(--text-secondary, #666); font-style: italic;">Click image to view full size</small></div>`;
+            });
+        }
+        
+        return `
+        <div class="st-private-message" style="
+            border: 1px solid var(--border-color, #e0e0e0);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: var(--bg-primary, white);
+            position: relative;
+        ">
+            <div class="st-message-header" style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 8px;
+                font-size: 0.9em;
+                color: var(--text-secondary, #666);
+            ">
+                <div>
+                    <strong style="color: var(--text-primary, #333);">${note.sender}</strong>
+                    ${note.recipient !== 'StoryTeller' ? `→ ${note.recipient}` : ''}
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span>${new Date(note.timestamp).toLocaleTimeString()}</span>
+                    <button onclick="deleteStoryTellerNote(${note.originalIndex})" 
+                            style="
+                                background: none;
+                                border: none;
+                                color: #dc3545;
+                                cursor: pointer;
+                                padding: 2px;
+                                border-radius: 3px;
+                                font-size: 0.8em;
+                                opacity: 0.7;
+                            "
+                            onmouseover="this.style.opacity='1'; this.style.background='#dc354520'"
+                            onmouseout="this.style.opacity='0.7'; this.style.background='none'"
+                            title="Delete note">
+                        ✕
+                    </button>
+                </div>
+            </div>
+            
+            ${messageContent ? `
+                <div class="st-message-text" style="
+                    color: var(--text-primary, #333);
+                    line-height: 1.4;
+                ">${messageContent}</div>
+            ` : ''}
+            
+            ${note.imageUrl && !messageContent.includes('[IMAGE:') ? `
+                <div class="st-message-image" style="margin-top: 8px;">
+                    <img src="${note.imageUrl}" 
+                         onclick="showStoryTellerImageModal('${note.imageUrl}', '${note.text || 'Private Image Note'}')"
+                         style="
+                             max-width: 100%;
+                             max-height: 200px;
+                             border-radius: 6px;
+                             cursor: pointer;
+                             border: 1px solid var(--border-color, #e0e0e0);
+                         "
+                         title="Click to view full size" />
+                </div>
+            ` : ''}
+        </div>
+    `
+    }).join('');
+    
+    // Ensure proper scrolling functionality
+    if (container) {
+        // Just ensure the CSS properties are set correctly
+        container.style.overflowY = 'auto';
+        container.style.overflowX = 'hidden';
+        container.style.webkitOverflowScrolling = 'touch'; // For iOS
+        
+        // Force a reflow to ensure scrolling works
+        container.scrollTop = container.scrollTop;
+        
+        console.log('📱 Scroll functionality ensured for private messages container');
+        console.log('🔍 Container scroll info:', {
+            scrollHeight: container.scrollHeight,
+            clientHeight: container.clientHeight,
+            hasScroll: container.scrollHeight > container.clientHeight
+        });
+    }
+}
+
+function deleteStoryTellerNote(index) {
+    if (confirm('Delete this private message?')) {
+        // Remove from in-memory array
+        stPrivateMessages.splice(index, 1);
+        
+        // Save updated array to IndexedDB (with localStorage fallback)
+        savePrivateMessages();
+        
+        // Update the display
+        updateStoryTellerPrivateMessagesPanel();
+        showNotification('Private message deleted', 'success');
+    }
+}
+
+function showStoryTellerImageModal(imageUrl, caption) {
+    // Create modal overlay
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+        backdrop-filter: blur(3px);
+    `;
+    
+    // Create modal content
+    const content = document.createElement('div');
+    content.style.cssText = `
+        position: relative;
+        max-width: 90%;
+        max-height: 90%;
+        background: var(--bg-primary, white);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    `;
+    
+    content.innerHTML = `
+        <div style="
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 10001;
+        ">
+            <button onclick="document.body.removeChild(this.closest('.modal-overlay'))" 
+                    style="
+                        background: rgba(0, 0, 0, 0.7);
+                        color: white;
+                        border: none;
+                        width: 30px;
+                        height: 30px;
+                        border-radius: 50%;
+                        cursor: pointer;
+                        font-size: 16px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    ">×</button>
+        </div>
+        <img src="${imageUrl}" style="
+            width: 100%;
+            height: auto;
+            display: block;
+        " />
+        ${caption ? `
+            <div style="
+                padding: 15px;
+                background: var(--bg-secondary, #f8f9fa);
+                color: var(--text-primary, #333);
+                border-top: 1px solid var(--border-color, #e0e0e0);
+            ">${caption}</div>
+        ` : ''}
+    `;
+    
+    modal.appendChild(content);
+    modal.className = 'modal-overlay';
+    
+    // Close on background click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            document.body.removeChild(modal);
+        }
+    });
+    
+    // Close on escape key
+    const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+            document.body.removeChild(modal);
+            document.removeEventListener('keydown', handleEscape);
+        }
+    };
+    document.addEventListener('keydown', handleEscape);
+    
+    document.body.appendChild(modal);
+}
+
 // Export functions for use by other modules
 if (typeof window !== 'undefined') {
     window.supabaseChat = {
@@ -1879,4 +2376,6 @@ if (typeof window !== 'undefined') {
     window.leaveGameSession = leaveGameSession;
     window.sendChatMessage = sendChatMessage;
     window.updateConnectedPlayersList = updateConnectedPlayersList;
+    window.deleteStoryTellerNote = deleteStoryTellerNote;
+    window.showStoryTellerImageModal = showStoryTellerImageModal;
 }
