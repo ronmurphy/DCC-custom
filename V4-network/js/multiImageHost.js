@@ -111,6 +111,48 @@ class MultiImageHost {
     }
 
     /**
+     * Upload image for private note with smart naming
+     * Uses GitHub exclusively for organized note storage
+     */
+    async uploadNoteImage(file, senderName, recipientName, customSessionCode = null) {
+        // Validate file
+        if (!file || !file.type.startsWith('image/')) {
+            throw new Error('Invalid file type. Please select an image.');
+        }
+
+        if (file.size > this.config.maxFileSize) {
+            throw new Error(`File too large. Maximum size: ${this.config.maxFileSize / 1024 / 1024}MB`);
+        }
+
+        // Rate limiting
+        await this.enforceRateLimit();
+
+        // Use GitHub exclusively for note images (organized storage)
+        try {
+            console.log(`🔄 Uploading private note image: ${senderName} → ${recipientName}...`);
+            
+            const result = await this.githubHost.uploadNoteImage(file, senderName, recipientName, customSessionCode);
+            
+            if (result && result.url) {
+                console.log(`✅ Private note image uploaded successfully`);
+                return {
+                    url: result.url,
+                    service: 'github',
+                    deleteUrl: null,
+                    success: true,
+                    noteMetadata: result.noteMetadata
+                };
+            }
+            
+            throw new Error('Upload returned no URL');
+            
+        } catch (error) {
+            console.error(`❌ Note image upload failed:`, error.message);
+            throw new Error(`Failed to upload note image: ${error.message}`);
+        }
+    }
+
+    /**
      * Upload with retry logic
      */
     async uploadWithRetry(service, file, options) {

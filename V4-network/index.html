@@ -1357,6 +1357,20 @@
                             <textarea id="combat-notes" class="note-textarea"
                                 placeholder="Enemy tactics, weaknesses, strategies..."></textarea>
                         </div>
+
+                        <div class="note-card">
+                            <div class="note-header">
+                                <i class="material-icons">mail</i>
+                                <h3>Private Messages</h3>
+                                <span class="note-count" id="private-messages-count" style="display: none;"></span>
+                            </div>
+                            <div id="private-messages-container" class="private-messages-container">
+                                <div style="text-align: center; color: #8a8a8a; padding: 20px;">
+                                    <i class="material-icons" style="font-size: 2em; margin-bottom: 10px; display: block;">mail_outline</i>
+                                    No private messages yet! Send or receive private notes via player chip clicks.
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -2201,7 +2215,17 @@
             // Set up notification button click handler
             const notesBtn = document.getElementById('notes-notification');
             if (notesBtn) {
-                notesBtn.addEventListener('click', showNotesDropdown);
+                notesBtn.addEventListener('click', () => {
+                    // Open the main notes panel
+                    showTab('notes');
+                    // Scroll to private messages section
+                    setTimeout(() => {
+                        const messagesSection = document.getElementById('private-messages-container');
+                        if (messagesSection) {
+                            messagesSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }, 100);
+                });
             }
             
             // Test notification system
@@ -3127,6 +3151,7 @@
             receivedNotes.push(note);
             console.log('🐛 Note added to receivedNotes array. Total notes:', receivedNotes.length);
             updateNotificationIcon();
+            updatePrivateMessagesPanel();
             
             // Show popup notification for received note
             if (typeof showNotification === 'function') {
@@ -3137,6 +3162,105 @@
             
             console.log(`📝 Received note from ${fromPlayer}: ${noteText}`);
         }
+
+        function updatePrivateMessagesPanel() {
+            const container = document.getElementById('private-messages-container');
+            const countSpan = document.getElementById('private-messages-count');
+            
+            if (!container) return;
+            
+            if (receivedNotes.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; color: #8a8a8a; padding: 20px;">
+                        <i class="material-icons" style="font-size: 2em; margin-bottom: 10px; display: block;">mail_outline</i>
+                        No private messages yet! Send or receive private notes via player chip clicks.
+                    </div>
+                `;
+                countSpan.style.display = 'none';
+                return;
+            }
+            
+            // Show count
+            countSpan.textContent = `(${receivedNotes.length})`;
+            countSpan.style.display = 'inline';
+            countSpan.style.cssText += `
+                background: #e74c3c;
+                color: white;
+                border-radius: 10px;
+                padding: 2px 6px;
+                font-size: 0.8em;
+                margin-left: 8px;
+            `;
+            
+            // Build messages HTML
+            let messagesHTML = '';
+            receivedNotes.forEach((note, index) => {
+                const time = new Date(note.timestamp).toLocaleString();
+                let messageContent = note.message;
+                
+                // Process image markup in notes
+                if (messageContent && messageContent.includes('🖼️ [IMAGE:')) {
+                    messageContent = messageContent.replace(/🖼️ \[IMAGE:(https?:\/\/[^\]]+)\]/g, (match, imageUrl) => {
+                        return `<br><div style="text-align: center; margin: 12px 0;"><img src="${imageUrl}" style="max-width: 100%; max-height: 150px; border-radius: 6px; border: 1px solid #ddd; cursor: pointer;" onclick="if(window.chatImageSystem && window.chatImageSystem.openImageModal) { window.chatImageSystem.openImageModal('${imageUrl}', '${note.from}'); } else { window.open('${imageUrl}', '_blank'); }" title="Click to view full size"><br><small style="color: #666; font-style: italic;">Click image to view full size</small></div>`;
+                    });
+                }
+                
+                messagesHTML += `
+                    <div style="border: 1px solid #e0e0e0; border-radius: 6px; padding: 12px; margin-bottom: 8px; background: #f9f9f9; position: relative;">
+                        <button onclick="deleteNote('${note.id}')" style="
+                            position: absolute;
+                            top: 8px;
+                            right: 8px;
+                            background: #e74c3c;
+                            color: white;
+                            border: none;
+                            border-radius: 50%;
+                            width: 20px;
+                            height: 20px;
+                            cursor: pointer;
+                            font-size: 12px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            opacity: 0.7;
+                            transition: opacity 0.2s;
+                        " onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'" title="Delete note">×</button>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; padding-right: 25px;">
+                            <strong style="color: #333; font-size: 0.9em;">From: ${note.from}</strong>
+                            <small style="color: #666; font-size: 0.8em;">${time}</small>
+                        </div>
+                        <div style="color: #444; line-height: 1.3; font-size: 0.9em;">${messageContent}</div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = messagesHTML;
+        }
+
+        function deleteNote(noteId) {
+            console.log('🗑️ Deleting note:', noteId);
+            
+            // Remove from array
+            const index = receivedNotes.findIndex(note => note.id === noteId);
+            if (index !== -1) {
+                receivedNotes.splice(index, 1);
+                console.log('🗑️ Note deleted. Remaining notes:', receivedNotes.length);
+                
+                // Update displays
+                updateNotificationIcon();
+                updatePrivateMessagesPanel();
+                
+                // Show confirmation
+                if (typeof showNotification === 'function') {
+                    showNotification('success', 'Note Deleted', 'Private message has been removed.', '');
+                }
+            } else {
+                console.warn('🗑️ Note not found for deletion:', noteId);
+            }
+        }
+
+        // Make deleteNote globally available
+        window.deleteNote = deleteNote;
 
         function updateNotificationIcon() {
             const notificationBtn = document.getElementById('notes-notification');
@@ -3156,13 +3280,106 @@
                 return;
             }
             
-            let notesText = "📝 Notes received this session:\n\n";
-            receivedNotes.forEach(note => {
+            // Create modal overlay
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.7);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            `;
+            
+            // Create modal content
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                background: white;
+                border-radius: 12px;
+                padding: 24px;
+                max-width: 500px;
+                width: 90%;
+                max-height: 80vh;
+                overflow-y: auto;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                animation: noteModalSlideIn 0.3s ease-out;
+            `;
+            
+            // Build notes HTML
+            let notesHTML = `
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h3 style="margin: 0 0 8px 0; color: #333; font-size: 1.3em;">📝 Received Notes</h3>
+                    <p style="margin: 0; color: #666; font-size: 0.9em;">${receivedNotes.length} note${receivedNotes.length !== 1 ? 's' : ''} this session</p>
+                </div>
+                <div id="notes-container">
+            `;
+            
+            receivedNotes.forEach((note, index) => {
                 const time = new Date(note.timestamp).toLocaleTimeString();
-                notesText += `From ${note.from} (${time}):\n${note.message}\n\n`;
+                let messageContent = note.message;
+                
+                // Process image markup in notes
+                if (messageContent && messageContent.includes('🖼️ [IMAGE:')) {
+                    messageContent = messageContent.replace(/🖼️ \[IMAGE:(https?:\/\/[^\]]+)\]/g, (match, imageUrl) => {
+                        return `<br><div style="text-align: center; margin: 12px 0;"><img src="${imageUrl}" style="max-width: 100%; max-height: 200px; border-radius: 8px; border: 2px solid #e0e0e0; cursor: pointer;" onclick="window.open('${imageUrl}', '_blank')" title="Click to view full size"><br><small style="color: #666; font-style: italic;">Click image to view full size</small></div>`;
+                    });
+                }
+                
+                notesHTML += `
+                    <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; margin-bottom: 12px; background: #fafafa;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <strong style="color: #333;">From: ${note.from}</strong>
+                            <small style="color: #666;">${time}</small>
+                        </div>
+                        <div style="color: #444; line-height: 1.4;">${messageContent}</div>
+                    </div>
+                `;
             });
             
-            alert(notesText);
+            notesHTML += `
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button id="close-notes-btn" style="
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                        color: white; 
+                        border: none; 
+                        padding: 12px 24px; 
+                        border-radius: 6px; 
+                        cursor: pointer;
+                        font-size: 14px;
+                        transition: transform 0.2s, box-shadow 0.2s;
+                        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+                    ">Close</button>
+                </div>
+            `;
+            
+            modal.innerHTML = notesHTML;
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+            
+            // Close modal function
+            function closeModal() {
+                document.body.removeChild(overlay);
+            }
+            
+            // Event listeners
+            document.getElementById('close-notes-btn').addEventListener('click', closeModal);
+            
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) closeModal();
+            });
+            
+            document.addEventListener('keydown', function escapeHandler(e) {
+                if (e.key === 'Escape') {
+                    closeModal();
+                    document.removeEventListener('keydown', escapeHandler);
+                }
+            });
         }
 
         // Make note functions globally available
@@ -3195,8 +3412,10 @@
                 background: white;
                 border-radius: 12px;
                 padding: 24px;
-                max-width: 400px;
+                max-width: 450px;
                 width: 90%;
+                max-height: 80vh;
+                overflow-y: auto;
                 box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
                 animation: noteModalSlideIn 0.3s ease-out;
             `;
@@ -3213,8 +3432,8 @@
                     
                     /* Touch-friendly button sizing */
                     @media (hover: none) and (pointer: coarse) {
-                        #note-cancel-btn, #note-send-btn {
-                            padding: 14px 24px !important;
+                        #note-cancel-btn, #note-send-btn, #note-image-btn {
+                            padding: 14px 16px !important;
                             font-size: 16px !important;
                             min-height: 44px;
                             border-radius: 8px !important;
@@ -3226,10 +3445,40 @@
                             min-height: 120px !important;
                         }
                     }
+                    
+                    .image-preview {
+                        position: relative;
+                        display: inline-block;
+                        margin: 8px 0;
+                    }
+                    
+                    .image-preview img {
+                        max-width: 100%;
+                        max-height: 200px;
+                        border-radius: 8px;
+                        border: 2px solid #e0e0e0;
+                    }
+                    
+                    .image-preview .remove-image {
+                        position: absolute;
+                        top: -8px;
+                        right: -8px;
+                        background: #e74c3c;
+                        color: white;
+                        border: none;
+                        border-radius: 50%;
+                        width: 24px;
+                        height: 24px;
+                        cursor: pointer;
+                        font-size: 12px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    }
                 `;
                 document.head.appendChild(style);
             }
-            
+
             modal.innerHTML = `
                 <div style="text-align: center; margin-bottom: 20px;">
                     <h3 style="margin: 0 0 8px 0; color: #333; font-size: 1.2em;">📝 Send Private Note</h3>
@@ -3238,7 +3487,7 @@
                 
                 <textarea 
                     id="note-input-text" 
-                    placeholder="Type your private note here..."
+                    placeholder="Type your private note here... (optional with image)"
                     style="width: 100%; height: 100px; padding: 12px; border: 2px solid #e0e0e0; 
                            border-radius: 8px; font-size: 14px; resize: vertical; outline: none;
                            font-family: inherit; box-sizing: border-box;"
@@ -3247,6 +3496,25 @@
                 
                 <div style="text-align: right; color: #999; font-size: 0.8em; margin: 8px 0;">
                     <span id="char-count">0</span>/500 characters
+                </div>
+                
+                <!-- Image upload section -->
+                <div id="image-section" style="margin: 16px 0; padding: 12px; background: #f8f9fa; border-radius: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                        <span style="font-size: 0.9em; color: #666;">📎 Attach Image (optional)</span>
+                        <button id="note-image-btn" style="
+                            background: #6c757d; 
+                            color: white; 
+                            border: none; 
+                            padding: 6px 12px; 
+                            border-radius: 4px; 
+                            cursor: pointer;
+                            font-size: 12px;
+                            transition: background 0.2s;
+                        ">Choose Image</button>
+                    </div>
+                    <input type="file" id="note-image-input" accept="image/*" style="display: none;">
+                    <div id="image-preview-container"></div>
                 </div>
                 
                 <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
@@ -3283,6 +3551,12 @@
             const charCount = document.getElementById('char-count');
             const cancelBtn = document.getElementById('note-cancel-btn');
             const sendBtn = document.getElementById('note-send-btn');
+            const imageBtn = document.getElementById('note-image-btn');
+            const imageInput = document.getElementById('note-image-input');
+            const imagePreviewContainer = document.getElementById('image-preview-container');
+            
+            // State for selected image
+            let selectedImage = null;
             
             // Focus textarea
             setTimeout(() => textArea.focus(), 100);
@@ -3293,6 +3567,42 @@
                 charCount.textContent = length;
                 charCount.style.color = length > 450 ? '#e74c3c' : '#999';
             });
+            
+            // Image upload handling
+            imageBtn.addEventListener('click', () => {
+                imageInput.click();
+            });
+            
+            imageInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    selectedImage = file;
+                    showImagePreview(file);
+                }
+            });
+            
+            function showImagePreview(file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imagePreviewContainer.innerHTML = `
+                        <div class="image-preview">
+                            <img src="${e.target.result}" alt="Preview">
+                            <button class="remove-image" onclick="removeImage()">×</button>
+                        </div>
+                        <div style="font-size: 0.8em; color: #666; margin-top: 4px;">
+                            📎 ${file.name} (${(file.size / 1024).toFixed(1)} KB)
+                        </div>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            // Make removeImage globally accessible for the inline onclick
+            window.removeImage = function() {
+                selectedImage = null;
+                imagePreviewContainer.innerHTML = '';
+                imageInput.value = '';
+            };
             
             // Button hover effects
             cancelBtn.addEventListener('mouseenter', () => {
@@ -3311,8 +3621,19 @@
                 sendBtn.style.boxShadow = '0 2px 8px rgba(102, 126, 234, 0.3)';
             });
             
+            imageBtn.addEventListener('mouseenter', () => {
+                imageBtn.style.background = '#5a6268';
+            });
+            imageBtn.addEventListener('mouseleave', () => {
+                imageBtn.style.background = '#6c757d';
+            });
+            
             // Close modal function
             function closeModal() {
+                // Clean up global function
+                if (window.removeImage) {
+                    delete window.removeImage;
+                }
                 document.body.removeChild(overlay);
             }
             
@@ -3330,17 +3651,62 @@
                 }
             });
             
-            sendBtn.addEventListener('click', () => {
+            sendBtn.addEventListener('click', async () => {
                 const noteText = textArea.value.trim();
-                if (noteText) {
-                    sendNoteCommand(targetPlayerName, noteText);
-                    closeModal();
-                } else {
+                
+                // Validate: must have either text or image
+                if (!noteText && !selectedImage) {
                     textArea.style.borderColor = '#e74c3c';
                     textArea.focus();
                     setTimeout(() => {
                         textArea.style.borderColor = '#e0e0e0';
                     }, 2000);
+                    return;
+                }
+                
+                // Disable send button during upload
+                sendBtn.disabled = true;
+                sendBtn.style.opacity = '0.6';
+                sendBtn.textContent = 'Sending...';
+                
+                try {
+                    // Get current player name
+                    const currentPlayerName = localStorage.getItem('playerName') || 'Anonymous';
+                    
+                    if (selectedImage) {
+                        // Upload image with smart naming
+                        console.log('🖼️ Uploading note image...');
+                        const uploadResult = await window.multiImageHost.uploadNoteImage(
+                            selectedImage, 
+                            currentPlayerName, 
+                            targetPlayerName
+                        );
+                        
+                        if (uploadResult && uploadResult.url) {
+                            // Send note with image (and optional text)
+                            const imageCommand = `🖼️ [IMAGE:${uploadResult.url}]`;
+                            const fullMessage = noteText ? `${noteText}\n\n${imageCommand}` : imageCommand;
+                            
+                            sendNoteCommand(targetPlayerName, fullMessage);
+                            console.log('✅ Private note with image sent successfully');
+                        } else {
+                            throw new Error('Image upload failed - no URL returned');
+                        }
+                    } else {
+                        // Text-only note
+                        sendNoteCommand(targetPlayerName, noteText);
+                    }
+                    
+                    closeModal();
+                    
+                } catch (error) {
+                    console.error('❌ Failed to send note:', error);
+                    alert(`Failed to send note: ${error.message}`);
+                    
+                    // Re-enable send button
+                    sendBtn.disabled = false;
+                    sendBtn.style.opacity = '1';
+                    sendBtn.textContent = 'Send Note';
                 }
             });
             
@@ -3634,6 +4000,12 @@
 
         // Add message to chat - copied exactly from player-test.html
         function addChatMessage(message, type = 'player', sender = '') {
+            // Handle null or undefined messages (like silent NOTE commands)
+            if (!message) {
+                console.log('📡 Null message filtered from chat display');
+                return;
+            }
+            
             // Filter out heartbeat messages
             if (type === 'heartbeat' || sender === 'Heartbeat' || 
                 (typeof message === 'object' && (message.message_type === 'heartbeat' || message.player_name === 'Heartbeat'))) {

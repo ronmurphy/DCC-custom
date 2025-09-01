@@ -400,13 +400,16 @@ async function generatePersonalResult(command, parameters, message) {
             // Add to notification system if available
             if (typeof window.addReceivedNote === 'function') {
                 // Extract sender name from the message context
-                const senderName = (message && message.author_name) || 'Unknown';
+                const senderName = (message && message.player_name) || 'Unknown';
                 console.log('🐛 Adding note to notification system:', senderName, parameters);
                 window.addReceivedNote(senderName, parameters, new Date().toISOString());
             } else {
                 console.warn('🐛 window.addReceivedNote function not available');
             }
-            return `📝 You received a note: ${parameters}`;
+            
+            // Notes should not display in main chat - they're private!
+            // Return null to suppress chat display
+            return null;
         case 'CLEAN':
             // For players, just show a generic cleanup message
             return `🧹 The storyteller performed database maintenance`;
