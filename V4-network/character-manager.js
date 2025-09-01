@@ -14,25 +14,30 @@ let characterManager = {
 // ========================================
 async function saveCharactersToStorage() {
     try {
-        console.log('Attempting to save characters to storage');
-        console.log('Characters array length:', characterManager.characters.length);
+        console.log('💾 Attempting to save characters to storage');
+        console.log('📊 Characters array length:', characterManager.characters.length);
+        
+        // Log character names for debugging
+        if (characterManager.characters.length > 0) {
+            console.log('📝 Character names:', characterManager.characters.map(c => c.name || 'Unnamed').join(', '));
+        }
         
         // Use advanced storage manager if available
         if (window.advancedStorageManager) {
             await window.advancedStorageManager.setItem('wasteland_characters', characterManager.characters);
-            console.log('Successfully saved to advanced storage');
+            console.log('✅ Successfully saved to advanced storage (IndexedDB)');
         } else {
             // Fallback to localStorage
             const dataToSave = JSON.stringify(characterManager.characters);
-            console.log('Data size to save:', dataToSave.length, 'characters');
+            console.log('📏 Data size to save:', dataToSave.length, 'characters');
             localStorage.setItem('wasteland_characters', dataToSave);
-            console.log('Successfully saved to localStorage');
+            console.log('✅ Successfully saved to localStorage');
         }
         return true;
     } catch (error) {
-        console.error('Failed to save characters:', error);
-        console.error('Error name:', error.name);
-        console.error('Error message:', error.message);
+        console.error('❌ Failed to save characters:', error);
+        console.error('📛 Error name:', error.name);
+        console.error('📛 Error message:', error.message);
         
         // Check if it's a quota exceeded error
         if (error.name === 'QuotaExceededError') {
@@ -1354,6 +1359,25 @@ window.deleteCharacterConfirm = deleteCharacterConfirm;
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    // Wait a bit for main.js to load first
-    setTimeout(initializeCharacterManager, 100);
+    // Wait for other scripts to load and check migration status
+    setTimeout(async () => {
+        console.log('🔄 Checking migration status before character manager init...');
+        
+        // Check if migration is needed and wait for it
+        if (window.storageMigration) {
+            const migrationKey = 'dcc-storage-migration-v1';
+            const migrationCompleted = localStorage.getItem(migrationKey);
+            
+            if (!migrationCompleted) {
+                console.log('⏳ Migration needed, waiting for completion...');
+                await window.storageMigration.runMigration();
+                console.log('✅ Migration completed, proceeding with character manager init');
+            } else {
+                console.log('✅ Migration already completed');
+            }
+        }
+        
+        // Now safely initialize character manager
+        await initializeCharacterManager();
+    }, 200); // Give scripts time to load
 });
