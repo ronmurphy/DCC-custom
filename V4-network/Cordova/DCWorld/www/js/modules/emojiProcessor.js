@@ -61,7 +61,17 @@ class EmojiProcessor {
     processMessage(message) {
         if (!message || typeof message !== 'string') return message;
         
+        // Protect URLs from emoji conversion
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        const urlPlaceholders = [];
         let processedMessage = message;
+        
+        // Replace URLs with placeholders
+        processedMessage = processedMessage.replace(urlRegex, (match) => {
+            const placeholder = `__URL_PLACEHOLDER_${urlPlaceholders.length}__`;
+            urlPlaceholders.push(match);
+            return placeholder;
+        });
         
         // Sort by length (longest first) to avoid partial replacements
         const sortedKeys = Object.keys(this.allMappings).sort((a, b) => b.length - a.length);
@@ -81,6 +91,12 @@ class EmojiProcessor {
                 processedMessage = processedMessage.replace(regex, emoji);
             }
         }
+        
+        // Restore URLs from placeholders
+        urlPlaceholders.forEach((url, index) => {
+            const placeholder = `__URL_PLACEHOLDER_${index}__`;
+            processedMessage = processedMessage.replace(placeholder, url);
+        });
         
         return processedMessage;
     }

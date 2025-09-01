@@ -1763,6 +1763,12 @@ function processPlayerSpell(data, playerName) {
 function displayChatMessage(message) {
     console.log('🔍 DEBUG - displayChatMessage called with:', message);
     
+    // Handle null messages (silent commands like NOTE)
+    if (!message) {
+        console.log('🔍 DEBUG - Message is null, skipping display');
+        return;
+    }
+    
     // Use the main page's addChatMessage function for consistency
     if (window.addChatMessage) {
         let messageType = 'player';

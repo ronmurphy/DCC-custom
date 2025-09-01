@@ -203,6 +203,106 @@ class GitHubImageHost {
     }
 
     /**
+     * Upload image for private note with smart naming convention
+     * Filename format: originalname_YYYY-MM-DD_SENDER_RECIPIENT.ext
+     */
+    async uploadNoteImage(file, senderName, recipientName, customSessionCode = null) {
+        if (!file || !file.type.startsWith('image/')) {
+            throw new Error('Invalid file type. Please select an image.');
+        }
+
+        if (file.size > this.config.maxFileSize) {
+            throw new Error(`File too large. Maximum size: ${this.config.maxFileSize / 1024 / 1024}MB`);
+        }
+
+        if (!this.config.apiToken) {
+            throw new Error('GitHub API token not configured. Please connect to StoryTeller first.');
+        }
+
+        const sessionCode = customSessionCode || this.sessionCode || 'default';
+        
+        try {
+            // Ensure repository exists
+            await this.ensureRepository();
+
+            // Generate smart filename with date and sender/recipient info
+            const today = new Date();
+            const dateStr = today.getFullYear() + '-' + 
+                          String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+                          String(today.getDate()).padStart(2, '0');
+            
+            // Add timestamp for uniqueness
+            const timestamp = Date.now();
+            const randomId = Math.random().toString(36).substr(2, 8);
+            
+            // Clean up the original filename (remove extension and sanitize)
+            const originalName = file.name.split('.')[0].replace(/[^a-zA-Z0-9\-_]/g, '');
+            const extension = file.name.split('.').pop() || 'png';
+            
+            // Clean up sender and recipient names (sanitize for filename)
+            const cleanSender = senderName.replace(/[^a-zA-Z0-9\-_]/g, '');
+            const cleanRecipient = recipientName.replace(/[^a-zA-Z0-9\-_]/g, '');
+            
+            // Format: originalname_YYYY-MM-DD_SENDER_RECIPIENT_timestamp_randomId.ext
+            const filename = `${originalName}_${dateStr}_${cleanSender}_${cleanRecipient}_${timestamp}_${randomId}.${extension}`;
+            
+            // Use session-based folder structure for private notes
+            const path = `sessions/${sessionCode}/private-notes/${filename}`;
+
+            // Convert file to base64
+            const base64Content = await this.fileToBase64(file);
+            const base64Data = base64Content.split(',')[1]; // Remove data:image/... prefix
+
+            // Upload to GitHub
+            const uploadResponse = await fetch(`${this.config.baseUrl}/repos/${this.config.owner}/${this.config.repo}/contents/${path}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${this.config.apiToken}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: `Private note image: ${senderName} to ${recipientName} (${sessionCode})`,
+                    content: base64Data,
+                    branch: this.config.branch
+                })
+            });
+
+            if (!uploadResponse.ok) {
+                const error = await uploadResponse.json();
+                throw new Error(`Upload failed: ${error.message}`);
+            }
+
+            const uploadData = await uploadResponse.json();
+            
+            // Generate raw URL for direct image access
+            const rawUrl = `${this.config.rawUrl}/${this.config.owner}/${this.config.repo}/${this.config.branch}/${path}`;
+
+            console.log(`✅ Private note image uploaded: ${senderName} → ${recipientName} (${sessionCode})`);
+
+            return {
+                url: rawUrl,
+                downloadUrl: uploadData.content.download_url,
+                htmlUrl: uploadData.content.html_url,
+                path: path,
+                sessionCode: sessionCode,
+                service: 'github',
+                noteMetadata: {
+                    sender: senderName,
+                    recipient: recipientName,
+                    originalFilename: file.name,
+                    date: dateStr,
+                    isPrivateNote: true
+                }
+            };
+
+        } catch (error) {
+            console.error('GitHub note image upload error:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Convert file to base64
      */
     fileToBase64(file) {
