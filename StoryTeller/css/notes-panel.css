@@ -254,8 +254,6 @@
 /* Private Messages Container */
 .st-private-messages-container {
     flex: 1; /* Fill remaining space in tab */
-    overflow-y: auto;
-    overflow-x: hidden; /* Prevent horizontal scroll */
     background: var(--bg-secondary, #f8f9fa);
     border: 1px solid var(--border-color, #e0e0e0);
     border-radius: 6px;
@@ -263,33 +261,19 @@
     min-height: 0; /* Important for flex child to allow scrolling */
     max-height: 100%; /* Ensure it doesn't exceed container */
     position: relative; /* For proper scroll context */
+    box-sizing: border-box;
     
-    /* Ensure smooth scrolling */
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch; /* iOS momentum scrolling */
-    
-    /* Force hardware acceleration for better scroll performance */
-    transform: translateZ(0);
-    will-change: scroll-position;
+    /* Note: Scroll properties are now managed dynamically via JavaScript */
 }
 
-/* Style the scrollbar for webkit browsers */
-.st-private-messages-container::-webkit-scrollbar {
-    width: 8px;
-}
-
-.st-private-messages-container::-webkit-scrollbar-track {
-    background: var(--bg-secondary, #f8f9fa);
-    border-radius: 4px;
-}
-
-.st-private-messages-container::-webkit-scrollbar-thumb {
-    background: var(--border-color, #e0e0e0);
-    border-radius: 4px;
-}
-
-.st-private-messages-container::-webkit-scrollbar-thumb:hover {
-    background: var(--text-secondary, #999);
+/* Ensure parent containers don't block scrolling */
+.notes-tab-content {
+    flex: 1; /* Fill remaining space */
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Important for flex child to allow overflow */
+    overflow: hidden; /* Parent should not scroll, child should */
+    animation: fadeIn 0.2s ease-in;
 }
 
 /* Notes List Sidebar */

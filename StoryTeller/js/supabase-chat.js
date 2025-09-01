@@ -2096,30 +2096,29 @@ async function addReceivedNote(noteData) {
 
 function updateStoryTellerPrivateMessagesPanel() {
     console.log('🔄 updateStoryTellerPrivateMessagesPanel called');
-    const container = document.getElementById('st-private-messages-container');
+    let container = document.getElementById('st-private-messages-container');
     const countElement = document.getElementById('st-private-messages-count');
     
     console.log('🔍 Container found:', !!container);
     console.log('🔍 Count element found:', !!countElement);
     console.log('🔍 stPrivateMessages.length:', stPrivateMessages.length);
     
+    // If container not found, check if we need to switch to Private Messages tab
     if (!container) {
-        console.error('❌ st-private-messages-container not found! Retrying in 500ms...');
+        const privateMessagesTab = document.getElementById('private-messages-tab');
         
-        // Retry after a short delay (the Notes panel might not be loaded yet)
-        setTimeout(() => {
-            console.log('🔄 Retrying updateStoryTellerPrivateMessagesPanel...');
-            const retryContainer = document.getElementById('st-private-messages-container');
-            if (retryContainer) {
-                console.log('✅ Container found on retry, updating messages...');
-                updateStoryTellerPrivateMessagesPanel();
-            } else {
-                console.error('❌ Container still not found after retry. Notes panel may not be loaded.');
-                console.log('🔍 Available panel containers:', 
-                    Array.from(document.querySelectorAll('[id*="panel"], [class*="panel"]')).map(el => el.id || el.className)
-                );
-            }
-        }, 500);
+        if (privateMessagesTab && privateMessagesTab.style.display === 'none' && typeof switchNotesTab === 'function') {
+            console.log('📝 Notes panel loaded but Private Messages tab not active. Switching tabs...');
+            switchNotesTab('private');
+            
+            // Try to find container again after tab switch
+            container = document.getElementById('st-private-messages-container');
+            console.log('🔍 Container found after tab switch:', !!container);
+        }
+    }
+    
+    if (!container) {
+        console.log('⏸️ Private messages container not available. Messages will be shown when Notes panel with Private Messages tab is loaded.');
         return;
     }
     
@@ -2156,11 +2155,13 @@ function updateStoryTellerPrivateMessagesPanel() {
         countElement.style.marginLeft = '5px';
     }
     
-    // Sort messages by timestamp (newest first)
-    const sortedMessages = [...stPrivateMessages].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    // Sort messages by timestamp (newest first) but keep track of original indices
+    const sortedMessages = stPrivateMessages
+        .map((note, originalIndex) => ({ ...note, originalIndex }))
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     
     // Generate messages HTML
-    container.innerHTML = sortedMessages.map((note, index) => {
+    container.innerHTML = sortedMessages.map((note, displayIndex) => {
         let messageContent = note.text || '';
         
         // Process image markup in notes (V4-network compatible format)
@@ -2193,7 +2194,7 @@ function updateStoryTellerPrivateMessagesPanel() {
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <span>${new Date(note.timestamp).toLocaleTimeString()}</span>
-                    <button onclick="deleteStoryTellerNote(${index})" 
+                    <button onclick="deleteStoryTellerNote(${note.originalIndex})" 
                             style="
                                 background: none;
                                 border: none;
@@ -2237,51 +2238,34 @@ function updateStoryTellerPrivateMessagesPanel() {
     `
     }).join('');
     
-    // Ensure proper scrolling functionality (only add listeners once)
-    if (container && !container.hasAttribute('data-scroll-enhanced')) {
-        container.setAttribute('data-scroll-enhanced', 'true');
-        
-        // Force refresh of scroll container
+    // Ensure proper scrolling functionality
+    if (container) {
+        // Just ensure the CSS properties are set correctly
         container.style.overflowY = 'auto';
+        container.style.overflowX = 'hidden';
+        container.style.webkitOverflowScrolling = 'touch'; // For iOS
         
-        // Add wheel event listener for better scroll support
-        container.addEventListener('wheel', function(e) {
-            // Prevent event from bubbling up if we can handle the scroll
-            const atTop = container.scrollTop === 0;
-            const atBottom = container.scrollTop >= (container.scrollHeight - container.clientHeight);
-            
-            // Only prevent default if we're scrolling within bounds
-            if ((!atTop && e.deltaY < 0) || (!atBottom && e.deltaY > 0)) {
-                e.stopPropagation();
-            }
-        }, { passive: false });
+        // Force a reflow to ensure scrolling works
+        container.scrollTop = container.scrollTop;
         
-        // Add touch scrolling support for mobile
-        let touchStartY = 0;
-        container.addEventListener('touchstart', function(e) {
-            touchStartY = e.touches[0].clientY;
-        }, { passive: true });
-        
-        container.addEventListener('touchmove', function(e) {
-            const touchY = e.touches[0].clientY;
-            const deltaY = touchStartY - touchY;
-            
-            const atTop = container.scrollTop === 0;
-            const atBottom = container.scrollTop >= (container.scrollHeight - container.clientHeight);
-            
-            // Allow scroll if not at boundaries
-            if ((!atTop && deltaY < 0) || (!atBottom && deltaY > 0)) {
-                e.stopPropagation();
-            }
-        }, { passive: false });
-        
-        console.log('📱 Scroll functionality enhanced for private messages container');
+        console.log('📱 Scroll functionality ensured for private messages container');
+        console.log('🔍 Container scroll info:', {
+            scrollHeight: container.scrollHeight,
+            clientHeight: container.clientHeight,
+            hasScroll: container.scrollHeight > container.clientHeight
+        });
     }
 }
 
 function deleteStoryTellerNote(index) {
     if (confirm('Delete this private message?')) {
+        // Remove from in-memory array
         stPrivateMessages.splice(index, 1);
+        
+        // Save updated array to IndexedDB (with localStorage fallback)
+        savePrivateMessages();
+        
+        // Update the display
         updateStoryTellerPrivateMessagesPanel();
         showNotification('Private message deleted', 'success');
     }

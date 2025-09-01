@@ -2842,6 +2842,11 @@
         function loadPanel(panel, content) {
             console.log(`Loading ${content} in ${panel} panel`);
             
+            // Remove private messages scroll CSS if switching away from notes panel
+            if (content !== 'notes') {
+                removePrivateMessagesScrollCSS();
+            }
+            
             if (panel === 'left') {
                 leftPanelContent = content;
                 document.getElementById('left-panel-title').textContent = getPanelTitle(content);
@@ -2877,6 +2882,13 @@
                 setTimeout(() => {
                     if (typeof initializeNotesPanel === 'function') {
                         initializeNotesPanel();
+                    }
+                    
+                    // Check if Private Messages tab is active and add scroll CSS if needed
+                    const privateMessagesTab = document.getElementById('private-messages-tab');
+                    if (privateMessagesTab && privateMessagesTab.style.display !== 'none') {
+                        console.log('📝 Notes panel loaded with Private Messages tab active, adding scroll CSS...');
+                        addPrivateMessagesScrollCSS();
                     }
                     
                     // Update private messages panel when notes panel is loaded
@@ -5576,6 +5588,56 @@ Notes: ${npc.notes || 'None'}`;
             }
         }
 
+        // Dynamic scroll CSS management for private messages
+        function addPrivateMessagesScrollCSS() {
+            // Remove any existing scroll styles first
+            removePrivateMessagesScrollCSS();
+            
+            const styleId = 'private-messages-scroll-styles';
+            const style = document.createElement('style');
+            style.id = styleId;
+            style.textContent = `
+                .st-private-messages-container {
+                    overflow-y: auto !important;
+                    overflow-x: hidden !important;
+                    max-height: calc(100vh - 300px) !important;
+                    scroll-behavior: smooth !important;
+                    -webkit-overflow-scrolling: touch !important;
+                    touch-action: auto !important;
+                    pointer-events: auto !important;
+                }
+                
+                .st-private-messages-container::-webkit-scrollbar {
+                    width: 8px;
+                }
+                
+                .st-private-messages-container::-webkit-scrollbar-track {
+                    background: rgba(255, 255, 255, 0.1);
+                    border-radius: 4px;
+                }
+                
+                .st-private-messages-container::-webkit-scrollbar-thumb {
+                    background: rgba(255, 255, 255, 0.3);
+                    border-radius: 4px;
+                }
+                
+                .st-private-messages-container::-webkit-scrollbar-thumb:hover {
+                    background: rgba(255, 255, 255, 0.5);
+                }
+            `;
+            
+            document.head.appendChild(style);
+            console.log('✅ Added dynamic scroll CSS for private messages');
+        }
+        
+        function removePrivateMessagesScrollCSS() {
+            const existingStyle = document.getElementById('private-messages-scroll-styles');
+            if (existingStyle) {
+                existingStyle.remove();
+                console.log('🗑️ Removed dynamic scroll CSS for private messages');
+            }
+        }
+
         function switchNotesTab(tabName) {
             // Remove active class from all tabs
             document.querySelectorAll('.notes-tab').forEach(tab => {
@@ -5620,6 +5682,9 @@ Notes: ${npc.notes || 'None'}`;
                 if (privateContent) {
                     privateContent.style.display = 'flex'; // Use flex instead of block
                     
+                    // Add dynamic scroll CSS for private messages container
+                    addPrivateMessagesScrollCSS();
+                    
                     // Update private messages when tab becomes visible
                     if (typeof updateStoryTellerPrivateMessagesPanel === 'function') {
                         console.log('📝 Private messages tab activated, updating panel...');
@@ -5628,6 +5693,9 @@ Notes: ${npc.notes || 'None'}`;
                         }, 50); // Small delay to ensure display is updated
                     }
                 }
+            } else {
+                // When switching away from private messages, remove the scroll CSS
+                removePrivateMessagesScrollCSS();
             }
             
             // Force layout recalculation after tab switch
