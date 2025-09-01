@@ -51,7 +51,8 @@ class AvatarAssignmentSystem {
         this.smoothVersions = [
             'race_bopca', 'race_dragonborn', 'race_dwarf', 'race_elf', 'race_gnome',
             'race_halfling', 'race_hellspawn', 'race_human', 'race_orc', 'race_primal',
-            'race_ratkin', 'race_tiefling', 'race_werecreature', 'race_skyfowl'
+            'race_ratkin', 'race_tiefling', 'race_werecreature', 'race_skyfowl',
+            'race_cyborg', 'race_slime', 'race_goblin'
             // Note: Missing avatars (goblin, slime, sci-fi, post-apocalyptic) are not listed here
             // so they will trigger the fallback to placeholder
         ];
