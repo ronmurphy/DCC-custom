@@ -1977,6 +1977,27 @@
             transition: font-size 0.3s ease, padding 0.3s ease, margin 0.3s ease, 
                        min-height 0.3s ease, min-width 0.3s ease, border-radius 0.3s ease;
         }
+
+        /* Notes Tab Styling */
+        .notes-tab.active {
+            border-bottom-color: var(--accent-color, #007bff) !important;
+            color: var(--accent-color, #007bff) !important;
+            font-weight: 600;
+        }
+
+        .notes-tab:hover {
+            background: var(--bg-secondary, #f8f9fa);
+            color: var(--accent-color, #007bff);
+        }
+
+        .notes-tab-content {
+            animation: fadeIn 0.2s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
     </style>
 </head>
 <body class="mode-tablet">
@@ -2857,6 +2878,12 @@
                     if (typeof initializeNotesPanel === 'function') {
                         initializeNotesPanel();
                     }
+                    
+                    // Update private messages panel when notes panel is loaded
+                    if (typeof updateStoryTellerPrivateMessagesPanel === 'function') {
+                        console.log('📝 Notes panel loaded, updating private messages...');
+                        updateStoryTellerPrivateMessagesPanel();
+                    }
                 }, 100); // Small delay to ensure DOM is ready
             }
             
@@ -3455,7 +3482,7 @@
                             <div class="notes-header">
                                 <h4>
                                     <i class="material-icons">note</i>
-                                    Session Notes
+                                    Notes & Messages
                                 </h4>
                                 <div class="notes-controls">
                                     <button class="notes-btn new" onclick="createNewNote()" title="Create New Note">
@@ -3473,77 +3500,136 @@
                                 </div>
                             </div>
                             
-                            <div class="notes-container">
-                                <div class="notes-list-container">
-                                    <div class="notes-list-header">
-                                        <h5>Notes List</h5>
-                                        <div class="notes-list-controls">
-                                            <select id="priority-filter" onchange="window.notesManager.filterByPriority(this.value)" title="Filter by Priority">
-                                                <option value="">All Notes</option>
-                                                <option value="hot">🔥 Hot</option>
-                                                <option value="new-idea">💡 New Ideas</option>
-                                                <option value="important">⭐ Important</option>
-                                                <option value="normal">📝 Normal</option>
-                                            </select>
-                                            <button class="notes-btn" onclick="window.notesManager.searchNotes(prompt('Search notes:'))" title="Search Notes" style="padding: 4px; min-height: 24px;">
-                                                <i class="material-icons" style="font-size: 16px;">search</i>
+                            <!-- Tab Navigation -->
+                            <div class="notes-tabs" style="
+                                display: flex;
+                                border-bottom: 1px solid var(--border-color, #e0e0e0);
+                                margin-bottom: 15px;
+                            ">
+                                <button class="notes-tab active" onclick="switchNotesTab('session')" style="
+                                    flex: 1;
+                                    padding: 10px;
+                                    border: none;
+                                    background: none;
+                                    cursor: pointer;
+                                    border-bottom: 2px solid transparent;
+                                    color: var(--text-secondary, #666);
+                                    font-weight: 500;
+                                ">
+                                    <i class="material-icons" style="font-size: 18px; margin-right: 5px;">note</i>
+                                    Session Notes
+                                </button>
+                                <button class="notes-tab" onclick="switchNotesTab('private')" style="
+                                    flex: 1;
+                                    padding: 10px;
+                                    border: none;
+                                    background: none;
+                                    cursor: pointer;
+                                    border-bottom: 2px solid transparent;
+                                    color: var(--text-secondary, #666);
+                                    font-weight: 500;
+                                    position: relative;
+                                ">
+                                    <i class="material-icons" style="font-size: 18px; margin-right: 5px;">mail</i>
+                                    Private Messages
+                                    <span class="st-notes-count" id="st-private-messages-count" style="
+                                        position: absolute;
+                                        top: 5px;
+                                        right: 10px;
+                                        background: #007bff;
+                                        color: white;
+                                        padding: 2px 6px;
+                                        border-radius: 10px;
+                                        font-size: 0.7em;
+                                        display: none;
+                                    "></span>
+                                </button>
+                            </div>
+                            
+                            <!-- Session Notes Tab Content -->
+                            <div id="session-notes-tab" class="notes-tab-content">
+                                <div class="notes-container">
+                                    <div class="notes-list-container">
+                                        <div class="notes-list-header">
+                                            <h5>Notes List</h5>
+                                            <div class="notes-list-controls">
+                                                <select id="priority-filter" onchange="window.notesManager.filterByPriority(this.value)" title="Filter by Priority">
+                                                    <option value="">All Notes</option>
+                                                    <option value="hot">🔥 Hot</option>
+                                                    <option value="new-idea">💡 New Ideas</option>
+                                                    <option value="important">⭐ Important</option>
+                                                    <option value="normal">📝 Normal</option>
+                                                </select>
+                                                <button class="notes-btn" onclick="window.notesManager.searchNotes(prompt('Search notes:'))" title="Search Notes" style="padding: 4px; min-height: 24px;">
+                                                    <i class="material-icons" style="font-size: 16px;">search</i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="notes-list" id="notes-list">
+                                            <!-- Notes will be populated by JavaScript -->
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="notes-editor-container">
+                                        <div class="notes-editor-header">
+                                            <input type="text" id="note-title-input" class="note-title-input" placeholder="Note title...">
+                                            <div class="note-priority-controls">
+                                                <button class="notes-btn priority-quick" onclick="window.notesManager.quickSetPriority('hot')" title="Mark as Hot">🔥</button>
+                                                <button class="notes-btn priority-quick" onclick="window.notesManager.quickSetPriority('new-idea')" title="Mark as New Idea">💡</button>
+                                                <button class="notes-btn priority-quick" onclick="window.notesManager.quickSetPriority('important')" title="Mark as Important">⭐</button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="editor-toolbar">
+                                            <button class="toolbar-btn" onclick="formatSelectedText('bold')" title="Bold">
+                                                <i class="material-icons">format_bold</i>
+                                            </button>
+                                            <button class="toolbar-btn" onclick="formatSelectedText('italic')" title="Italic">
+                                                <i class="material-icons">format_italic</i>
+                                            </button>
+                                            <button class="toolbar-btn" onclick="formatSelectedText('highlight')" title="Highlight">
+                                                <i class="material-icons">highlight</i>
+                                            </button>
+                                            <button class="toolbar-btn" onclick="formatSelectedText('strikethrough')" title="Strikethrough">
+                                                <i class="material-icons">strikethrough_s</i>
+                                            </button>
+                                            <div class="toolbar-separator"></div>
+                                            <button class="toolbar-btn" onclick="formatSelectedText('heading')" title="Heading">
+                                                <i class="material-icons">title</i>
+                                            </button>
+                                            <button class="toolbar-btn" onclick="formatSelectedText('bullet')" title="Bullet List">
+                                                <i class="material-icons">format_list_bulleted</i>
+                                            </button>
+                                            <button class="toolbar-btn" onclick="formatSelectedText('number')" title="Numbered List">
+                                                <i class="material-icons">format_list_numbered</i>
+                                            </button>
+                                            <div class="toolbar-separator"></div>
+                                            <button class="toolbar-btn" id="markdown-view-toggle" onclick="toggleMarkdownView()" title="Toggle Markdown Preview">
+                                                <i class="material-icons">visibility</i>
                                             </button>
                                         </div>
-                                    </div>
-                                    <div class="notes-list" id="notes-list">
-                                        <!-- Notes will be populated by JavaScript -->
+                                        
+                                        <div class="editor-content">
+                                            <textarea id="session-notes" class="session-notes" placeholder="Select a note to start editing, or create a new one"></textarea>
+                                            <div id="markdown-preview" class="markdown-preview" style="display: none;"></div>
+                                        </div>
+                                        
+                                        <div class="notes-stats" id="notes-stats">
+                                            <div class="notes-stats-item">
+                                                <i class="material-icons">info</i>
+                                                <span>No note selected</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                
-                                <div class="notes-editor-container">
-                                    <div class="notes-editor-header">
-                                        <input type="text" id="note-title-input" class="note-title-input" placeholder="Note title...">
-                                        <div class="note-priority-controls">
-                                            <button class="notes-btn priority-quick" onclick="window.notesManager.quickSetPriority('hot')" title="Mark as Hot">🔥</button>
-                                            <button class="notes-btn priority-quick" onclick="window.notesManager.quickSetPriority('new-idea')" title="Mark as New Idea">💡</button>
-                                            <button class="notes-btn priority-quick" onclick="window.notesManager.quickSetPriority('important')" title="Mark as Important">⭐</button>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="editor-toolbar">
-                                        <button class="toolbar-btn" onclick="formatSelectedText('bold')" title="Bold">
-                                            <i class="material-icons">format_bold</i>
-                                        </button>
-                                        <button class="toolbar-btn" onclick="formatSelectedText('italic')" title="Italic">
-                                            <i class="material-icons">format_italic</i>
-                                        </button>
-                                        <button class="toolbar-btn" onclick="formatSelectedText('highlight')" title="Highlight">
-                                            <i class="material-icons">highlight</i>
-                                        </button>
-                                        <button class="toolbar-btn" onclick="formatSelectedText('strikethrough')" title="Strikethrough">
-                                            <i class="material-icons">strikethrough_s</i>
-                                        </button>
-                                        <div class="toolbar-separator"></div>
-                                        <button class="toolbar-btn" onclick="formatSelectedText('heading')" title="Heading">
-                                            <i class="material-icons">title</i>
-                                        </button>
-                                        <button class="toolbar-btn" onclick="formatSelectedText('bullet')" title="Bullet List">
-                                            <i class="material-icons">format_list_bulleted</i>
-                                        </button>
-                                        <button class="toolbar-btn" onclick="formatSelectedText('number')" title="Numbered List">
-                                            <i class="material-icons">format_list_numbered</i>
-                                        </button>
-                                        <div class="toolbar-separator"></div>
-                                        <button class="toolbar-btn" id="markdown-view-toggle" onclick="toggleMarkdownView()" title="Toggle Markdown Preview">
-                                            <i class="material-icons">visibility</i>
-                                        </button>
-                                    </div>
-                                    
-                                    <div class="editor-content">
-                                        <textarea id="session-notes" class="session-notes" placeholder="Select a note to start editing, or create a new one"></textarea>
-                                        <div id="markdown-preview" class="markdown-preview" style="display: none;"></div>
-                                    </div>
-                                    
-                                    <div class="notes-stats" id="notes-stats">
-                                        <div class="notes-stats-item">
-                                            <i class="material-icons">info</i>
-                                            <span>No note selected</span>
-                                        </div>
+                            </div>
+                            
+                            <!-- Private Messages Tab Content -->
+                            <div id="private-messages-tab" class="notes-tab-content" style="display: none;">
+                                <div id="st-private-messages-container" class="st-private-messages-container">
+                                    <div style="text-align: center; color: #8a8a8a; padding: 20px;">
+                                        <i class="material-icons" style="font-size: 2em; margin-bottom: 10px; display: block;">mail_outline</i>
+                                        No private messages yet! Players can send private notes via player chip clicks.
                                     </div>
                                 </div>
                             </div>
@@ -3654,9 +3740,16 @@
             document.querySelectorAll('.player-item').forEach(el => {
                 el.classList.remove('selected');
             });
-            event.target.closest('.player-item').classList.add('selected');
+            if (event && event.target) {
+                event.target.closest('.player-item').classList.add('selected');
+            }
             
-            addChatMessage(`Selected player: ${playerName}`, 'system');
+            // Open private note modal for this player
+            if (window.chatImageSystem && window.chatImageSystem.openPrivateNoteModal) {
+                window.chatImageSystem.openPrivateNoteModal(playerName);
+            } else {
+                addChatMessage(`Selected player: ${playerName}`, 'system');
+            }
         }
 
         function executeCommand(command, parameter = '') {
@@ -5481,6 +5574,92 @@ Notes: ${npc.notes || 'None'}`;
             if (notes && notes.value.trim()) {
                 addChatMessage('📝 Session notes saved!', 'system');
             }
+        }
+
+        function switchNotesTab(tabName) {
+            // Remove active class from all tabs
+            document.querySelectorAll('.notes-tab').forEach(tab => {
+                tab.classList.remove('active');
+                tab.style.borderBottomColor = 'transparent';
+                tab.style.color = 'var(--text-secondary, #666)';
+            });
+            
+            // Hide all tab contents
+            document.querySelectorAll('.notes-tab-content').forEach(content => {
+                content.style.display = 'none';
+            });
+            
+            // Show selected tab and mark as active
+            if (tabName === 'session') {
+                const sessionTab = document.querySelector('.notes-tab[onclick="switchNotesTab(\'session\')"]');
+                const sessionContent = document.getElementById('session-notes-tab');
+                
+                if (sessionTab) {
+                    sessionTab.classList.add('active');
+                    sessionTab.style.borderBottomColor = 'var(--accent-color, #007bff)';
+                    sessionTab.style.color = 'var(--accent-color, #007bff)';
+                }
+                if (sessionContent) {
+                    sessionContent.style.display = 'flex'; // Use flex instead of block
+                }
+            } else if (tabName === 'private') {
+                const privateTab = document.querySelector('.notes-tab[onclick="switchNotesTab(\'private\')"]');
+                const privateContent = document.getElementById('private-messages-tab');
+                
+                if (privateTab) {
+                    privateTab.classList.add('active');
+                    privateTab.style.borderBottomColor = 'var(--accent-color, #007bff)';
+                    privateTab.style.color = 'var(--accent-color, #007bff)';
+                    
+                    // Remove new message indicator
+                    const indicator = privateTab.querySelector('.new-message-indicator');
+                    if (indicator) {
+                        indicator.remove();
+                    }
+                }
+                if (privateContent) {
+                    privateContent.style.display = 'flex'; // Use flex instead of block
+                    
+                    // Update private messages when tab becomes visible
+                    if (typeof updateStoryTellerPrivateMessagesPanel === 'function') {
+                        console.log('📝 Private messages tab activated, updating panel...');
+                        setTimeout(() => {
+                            updateStoryTellerPrivateMessagesPanel();
+                        }, 50); // Small delay to ensure display is updated
+                    }
+                }
+            }
+            
+            // Force layout recalculation after tab switch
+            setTimeout(() => {
+                // Get the active tab content
+                const activeContent = document.querySelector('.notes-tab-content:not([style*="display: none"])');
+                if (activeContent) {
+                    // Force immediate reflow by briefly changing display
+                    activeContent.style.display = 'none';
+                    activeContent.offsetHeight; // Force browser to process the change
+                    activeContent.style.display = 'flex';
+                    
+                    // Ensure containers inside also get proper sizing
+                    const notesContainer = activeContent.querySelector('.notes-container');
+                    const privateContainer = activeContent.querySelector('.st-private-messages-container');
+                    
+                    if (notesContainer) {
+                        notesContainer.style.height = 'auto';
+                        notesContainer.offsetHeight; // Force reflow
+                        notesContainer.style.height = '';
+                    }
+                    
+                    if (privateContainer) {
+                        privateContainer.style.height = 'auto';
+                        privateContainer.offsetHeight; // Force reflow
+                        privateContainer.style.height = '';
+                    }
+                }
+                
+                // Also trigger a resize event to help any other components recalculate
+                window.dispatchEvent(new Event('resize'));
+            }, 50); // Slightly longer delay to ensure DOM is fully updated
         }
 
         // Game Session Functions - Enhanced with fullSupabaseConnect

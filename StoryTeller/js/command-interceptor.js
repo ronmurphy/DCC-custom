@@ -129,7 +129,7 @@ async function interceptChatMessage(message) {
  */
 function isCommandMessage(messageText) {
     // Look for patterns like: COMMAND:PlayerName or COMMAND:PlayerName:parameters
-    const commandPattern = /^(LOOT|ACHIEVEMENT|LEVELUP|ITEM|SKILL|EXP|GOLD|HEALTH|STAT|CLEAN):[^:]+/;
+    const commandPattern = /^(LOOT|ACHIEVEMENT|LEVELUP|ITEM|SKILL|EXP|GOLD|HEALTH|STAT|NOTE|CLEAN):[^:]+/;
     // Also check for special silent commands
     const silentCommandPattern = /^\/refreshmap$|^\/sendmap$|^\/github:/;
     // Also check for map sync messages that should be hidden
@@ -405,13 +405,46 @@ async function generatePersonalResult(command, parameters, message) {
             const goldAmount = parseInt(parameters) || 0;
             return `💰 You ${goldAmount > 0 ? 'gained' : 'lost'} ${Math.abs(goldAmount)} gold!`;
         case 'NOTE':
+            console.log('🐛 Processing NOTE command for current player');
             // Add to notification system if available
-            if (typeof window.addReceivedNote === 'function') {
+            if (typeof addReceivedNote === 'function') {
                 // Extract sender name from the message context
-                const senderName = (message && message.author_name) || 'Unknown';
-                window.addReceivedNote(senderName, parameters, new Date().toISOString());
+                const senderName = (message && message.player_name) || 'Unknown';
+                console.log('🐛 Adding note to notification system:', senderName, parameters);
+                
+                // Parse the NOTE command: NOTE:Target:Text (V4-network style)
+                const noteParts = parameters ? parameters.split(':') : [];
+                const targetPlayer = noteParts[0] || '';
+                const noteText = noteParts.slice(1).join(':') || '';
+                
+                // Create note data object matching StoryTeller format, but keep text as-is
+                const noteData = {
+                    sender: senderName,
+                    recipient: targetPlayer,
+                    text: noteText, // Keep full text including any image markup
+                    imageUrl: '', // Don't parse separately - let the display function handle it
+                    timestamp: new Date().toISOString()
+                };
+                
+                // Handle async addReceivedNote properly
+                try {
+                    const result = addReceivedNote(noteData);
+                    // If it returns a promise, handle any errors
+                    if (result && typeof result.catch === 'function') {
+                        result.catch(error => {
+                            console.error('🐛 Error in addReceivedNote:', error);
+                        });
+                    }
+                } catch (error) {
+                    console.error('🐛 Error calling addReceivedNote:', error);
+                }
+            } else {
+                console.warn('🐛 addReceivedNote function not available');
             }
-            return `📝 You received a note: ${parameters}`;
+            
+            // Notes should not display in main chat - they're private!
+            // Return null to suppress chat display
+            return null;
         case 'CLEAN':
             // For players, just show a generic cleanup message
             return `🧹 The storyteller performed database maintenance`;

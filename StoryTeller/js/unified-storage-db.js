@@ -4,11 +4,12 @@
 class UnifiedStorageDB {
     constructor() {
         this.dbName = 'StoryTellerData';
-        this.version = 1;
+        this.version = 2; // Increment version to add private messages store
         this.stores = {
             maps: 'maps',
             notes: 'notes',
-            settings: 'settings'
+            settings: 'settings',
+            privateMessages: 'privateMessages'
         };
         this.db = null;
     }
@@ -56,6 +57,16 @@ class UnifiedStorageDB {
                 if (!db.objectStoreNames.contains(this.stores.settings)) {
                     const settingsStore = db.createObjectStore(this.stores.settings, { keyPath: 'key' });
                     console.log('⚙️ Created settings object store');
+                }
+                
+                // Create private messages store
+                if (!db.objectStoreNames.contains(this.stores.privateMessages)) {
+                    const privateMessagesStore = db.createObjectStore(this.stores.privateMessages, { keyPath: 'id' });
+                    privateMessagesStore.createIndex('sender', 'sender', { unique: false });
+                    privateMessagesStore.createIndex('recipient', 'recipient', { unique: false });
+                    privateMessagesStore.createIndex('timestamp', 'timestamp', { unique: false });
+                    privateMessagesStore.createIndex('session', 'session', { unique: false });
+                    console.log('💬 Created private messages object store');
                 }
             };
         });
@@ -209,6 +220,70 @@ class UnifiedStorageDB {
         return result ? result.value : null;
     }
 
+    // Private Messages methods
+    async savePrivateMessage(messageData) {
+        // Ensure the message has an ID and timestamp
+        if (!messageData.id) {
+            messageData.id = `pm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        }
+        if (!messageData.timestamp) {
+            messageData.timestamp = new Date().toISOString();
+        }
+        return this.save(this.stores.privateMessages, messageData);
+    }
+
+    async getPrivateMessage(id) {
+        return this.get(this.stores.privateMessages, id);
+    }
+
+    async getAllPrivateMessages() {
+        return this.getAll(this.stores.privateMessages);
+    }
+
+    async deletePrivateMessage(id) {
+        return this.delete(this.stores.privateMessages, id);
+    }
+
+    async getPrivateMessagesByRecipient(recipient) {
+        if (!this.db) await this.init();
+        
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.stores.privateMessages], 'readonly');
+            const store = transaction.objectStore(this.stores.privateMessages);
+            const index = store.index('recipient');
+            const request = index.getAll(recipient);
+
+            request.onerror = () => {
+                console.error('❌ Failed to get private messages by recipient:', request.error);
+                reject(request.error);
+            };
+
+            request.onsuccess = () => {
+                resolve(request.result);
+            };
+        });
+    }
+
+    async getPrivateMessagesBySession(sessionCode) {
+        if (!this.db) await this.init();
+        
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.stores.privateMessages], 'readonly');
+            const store = transaction.objectStore(this.stores.privateMessages);
+            const index = store.index('session');
+            const request = index.getAll(sessionCode);
+
+            request.onerror = () => {
+                console.error('❌ Failed to get private messages by session:', request.error);
+                reject(request.error);
+            };
+
+            request.onsuccess = () => {
+                resolve(request.result);
+            };
+        });
+    }
+
     // Migration from localStorage
     async migrateFromLocalStorage() {
         console.log('🔄 Starting migration from localStorage...');
@@ -241,6 +316,21 @@ class UnifiedStorageDB {
             }
         } catch (error) {
             console.error('❌ Failed to migrate notes:', error);
+        }
+        
+        // Migrate private messages
+        try {
+            const privateMessagesData = localStorage.getItem('storyteller_private_messages');
+            if (privateMessagesData) {
+                const messages = JSON.parse(privateMessagesData);
+                for (const message of messages) {
+                    await this.savePrivateMessage(message);
+                }
+                console.log('✅ Migrated private messages from localStorage');
+                // localStorage.removeItem('storyteller_private_messages'); // Uncomment to remove after migration
+            }
+        } catch (error) {
+            console.error('❌ Failed to migrate private messages:', error);
         }
     }
 

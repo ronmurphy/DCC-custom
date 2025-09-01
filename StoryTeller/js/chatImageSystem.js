@@ -26,12 +26,18 @@ class ChatImageSystem {
             ...config
         };
         
-        // Initialize image hosting with fallbacks
-        this.imageHost = new MultiImageHost({
-            maxRetries: 3,
-            retryDelay: 1500,
-            maxFileSize: this.config.maxFileSize
-        });
+        // Use global multiImageHost if available, otherwise create new instance
+        if (window.multiImageHost) {
+            console.log('🔗 Using global multiImageHost instance');
+            this.imageHost = window.multiImageHost;
+        } else {
+            console.log('🆕 Creating new MultiImageHost instance');
+            this.imageHost = new MultiImageHost({
+                maxRetries: 3,
+                retryDelay: 1500,
+                maxFileSize: this.config.maxFileSize
+            });
+        }
         
         this.createImageModal();
     }
@@ -451,6 +457,264 @@ class ChatImageSystem {
         });
 
         return button;
+    }
+
+    /**
+     * Open private note modal for sending private messages with optional images
+     */
+    openPrivateNoteModal(targetPlayer) {
+        // Create modal overlay
+        const modal = document.createElement('div');
+        modal.className = 'private-note-modal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: ${this.config.modalZIndex + 1};
+            backdrop-filter: blur(3px);
+        `;
+
+        // Create modal content
+        const modalContent = document.createElement('div');
+        modalContent.style.cssText = `
+            background: var(--bg-primary, white);
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            color: var(--text-primary, #333);
+        `;
+
+        const modalHtml = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; color: var(--text-primary, #333); display: flex; align-items: center; gap: 10px;">
+                    <i class="material-icons">mail</i>
+                    Private Note to ${targetPlayer}
+                </h3>
+                <button class="close-modal-btn" style="
+                    background: none;
+                    border: none;
+                    font-size: 24px;
+                    cursor: pointer;
+                    color: var(--text-secondary, #666);
+                    padding: 0;
+                    width: 30px;
+                    height: 30px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                " title="Close">×</button>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="
+                    display: block;
+                    margin-bottom: 8px;
+                    font-weight: 500;
+                    color: var(--text-primary, #333);
+                ">Message (optional):</label>
+                <textarea id="private-note-text" placeholder="Enter your private message..." style="
+                    width: 100%;
+                    min-height: 100px;
+                    padding: 12px;
+                    border: 1px solid var(--border-color, #ddd);
+                    border-radius: 6px;
+                    font-family: inherit;
+                    font-size: 14px;
+                    resize: vertical;
+                    background: var(--bg-secondary, #f8f9fa);
+                    color: var(--text-primary, #333);
+                "></textarea>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="
+                    display: block;
+                    margin-bottom: 8px;
+                    font-weight: 500;
+                    color: var(--text-primary, #333);
+                ">Image (optional):</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="file" id="private-note-image" accept="image/*" style="
+                        flex: 1;
+                        padding: 8px;
+                        border: 1px solid var(--border-color, #ddd);
+                        border-radius: 6px;
+                        background: var(--bg-secondary, #f8f9fa);
+                    ">
+                    <button id="clear-image-btn" style="
+                        padding: 8px 12px;
+                        background: #dc3545;
+                        color: white;
+                        border: none;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-size: 12px;
+                    " title="Clear image">Clear</button>
+                </div>
+                <div id="image-preview" style="
+                    margin-top: 10px;
+                    text-align: center;
+                    display: none;
+                "></div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="cancel-btn" style="
+                    padding: 10px 20px;
+                    background: var(--bg-secondary, #f8f9fa);
+                    color: var(--text-primary, #333);
+                    border: 1px solid var(--border-color, #ddd);
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-weight: 500;
+                ">Cancel</button>
+                <button id="send-note-btn" style="
+                    padding: 10px 20px;
+                    background: #007bff;
+                    color: white;
+                    border: none;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-weight: 500;
+                ">Send Private Note</button>
+            </div>
+        `;
+
+        modalContent.innerHTML = modalHtml;
+        modal.appendChild(modalContent);
+
+        // Add event listeners
+        const closeBtn = modalContent.querySelector('.close-modal-btn');
+        const cancelBtn = modalContent.querySelector('.cancel-btn');
+        const sendBtn = modalContent.querySelector('#send-note-btn');
+        const imageInput = modalContent.querySelector('#private-note-image');
+        const clearImageBtn = modalContent.querySelector('#clear-image-btn');
+        const textArea = modalContent.querySelector('#private-note-text');
+        const imagePreview = modalContent.querySelector('#image-preview');
+
+        // Close modal handlers
+        const closeModal = () => document.body.removeChild(modal);
+        closeBtn.addEventListener('click', closeModal);
+        cancelBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+        // Image preview handler
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imagePreview.innerHTML = `
+                        <img src="${e.target.result}" style="
+                            max-width: 200px;
+                            max-height: 150px;
+                            border-radius: 6px;
+                            border: 1px solid var(--border-color, #ddd);
+                        ">
+                        <div style="margin-top: 5px; font-size: 12px; color: var(--text-secondary, #666);">
+                            ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)
+                        </div>
+                    `;
+                    imagePreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Clear image handler
+        clearImageBtn.addEventListener('click', () => {
+            imageInput.value = '';
+            imagePreview.style.display = 'none';
+        });
+
+        // Send note handler
+        sendBtn.addEventListener('click', async () => {
+            const text = textArea.value.trim();
+            const file = imageInput.files[0];
+
+            if (!text && !file) {
+                alert('Please enter a message or select an image.');
+                return;
+            }
+
+            sendBtn.disabled = true;
+            sendBtn.textContent = 'Sending...';
+
+            try {
+                let imageUrl = '';
+
+                // Upload image if selected
+                if (file) {
+                    // Check if imageHost has a token, if not try to get one
+                    if (!this.imageHost.githubHost.apiToken && window.githubTokenStorage) {
+                        try {
+                            const token = await window.githubTokenStorage.getToken();
+                            if (token) {
+                                this.imageHost.githubHost.apiToken = token;
+                                console.log('🔑 Retrieved GitHub token for image upload');
+                            }
+                        } catch (error) {
+                            console.log('⚠️ Could not retrieve GitHub token:', error);
+                        }
+                    }
+                    
+                    const result = await this.imageHost.uploadImage(file, {
+                        type: 'note',
+                        sender: window.playerName || 'StoryTeller',
+                        recipient: targetPlayer
+                    });
+                    imageUrl = result.url;
+                }
+
+                // Construct NOTE command (match V4-network format)
+                let messageContent = text || '';
+                if (imageUrl) {
+                    const imageMarkup = `🖼️ [IMAGE:${imageUrl}]`;
+                    messageContent = messageContent ? `${messageContent}\n\n${imageMarkup}` : imageMarkup;
+                }
+                const noteCommand = `NOTE:${targetPlayer}:${messageContent}`;
+
+                // Send via chat system
+                if (window.supabaseChat && window.supabaseChat.sendChatMessage) {
+                    await window.supabaseChat.sendChatMessage(noteCommand);
+                } else if (window.sendChatMessage) {
+                    await window.sendChatMessage(noteCommand);
+                }
+
+                // Close modal
+                closeModal();
+
+                // Show success notification
+                if (window.showNotification) {
+                    window.showNotification(`Private note sent to ${targetPlayer}`, 'success');
+                }
+
+            } catch (error) {
+                console.error('Failed to send private note:', error);
+                alert('Failed to send private note. Please try again.');
+                sendBtn.disabled = false;
+                sendBtn.textContent = 'Send Private Note';
+            }
+        });
+
+        // Add to DOM
+        document.body.appendChild(modal);
+
+        // Focus text area
+        setTimeout(() => textArea.focus(), 100);
     }
 
     /**
