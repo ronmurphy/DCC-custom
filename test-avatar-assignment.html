@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, i            if (window.avatarAssignmentSystem) {
+                statusDiv.innerHTML = '✅ Avatar Assignment System loaded successfully';
+                
+                // Show available mappings
+                const mappings = window.avatarAssignmentSystem.getHeritageMappings();
+                statusDiv.innerHTML += `<br>📋 Available heritages: ${Object.keys(mappings).join(', ')}`;
+                
+                // Test a few mappings
+                statusDiv.innerHTML += '<br><br>🧪 Sample mappings:';
+                ['human', 'elf', 'dwarf'].forEach(heritage => {
+                    const avatar = window.avatarAssignmentSystem.getAvatarForHeritage(heritage);
+                    statusDiv.innerHTML += `<br>  ${heritage} → ${avatar}`;
+                });
+            } else {scale=1.0">
+    <title>Avatar Assignment Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .heritage-select {
+            margin: 10px 0;
+            padding: 5px;
+            font-size: 16px;
+        }
+        .avatar-display {
+            max-width: 150px;
+            max-height: 150px;
+            border: 2px solid #333;
+            margin: 10px 0;
+            display: none;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Avatar Assignment System Test</h1>
+    
+    <div class="test-section">
+        <h2>Heritage Selection Test</h2>
+        <label for="heritage-test">Select Heritage:</label>
+        <select id="heritage-test" class="heritage-select" onchange="testAvatarAssignment()">
+            <option value="">Choose heritage...</option>
+            <option value="bopca">🛸 Bopca</option>
+            <option value="dragonborn">🐉 Dragonborn</option>
+            <option value="dwarf">⛏️ Dwarf</option>
+            <option value="elf">🏹 Elf</option>
+            <option value="gnome">🍄 Gnome</option>
+            <option value="halfling">🥧 Halfling</option>
+            <option value="hellspawn">👹 Hellspawn</option>
+            <option value="human">👤 Human</option>
+            <option value="orc">⚔️ Orc</option>
+            <option value="primal">🌿 Primal</option>
+            <option value="ratkin">🐀 Ratkin</option>
+            <option value="skyfowl">🦅 Skyfowl</option>
+            <option value="tiefling">😈 Tiefling</option>
+            <option value="werecreature">🐺 Werecreature</option>
+        </select>
+        
+        <div class="result" id="test-result">
+            Select a heritage to test avatar assignment...
+        </div>
+        
+        <img id="avatar-preview" class="avatar-display" alt="Avatar Preview">
+    </div>
+
+    <div class="test-section">
+        <h2>System Status</h2>
+        <div id="system-status">Checking avatar assignment system...</div>
+    </div>
+
+    <script src="V4-network/js/avatarAssignmentSystem.js"></script>
+    <script>
+        function testAvatarAssignment() {
+            const heritageSelect = document.getElementById('heritage-test');
+            const resultDiv = document.getElementById('test-result');
+            const avatarPreview = document.getElementById('avatar-preview');
+            
+            const selectedHeritage = heritageSelect.value;
+            
+            if (!selectedHeritage) {
+                resultDiv.innerHTML = 'Select a heritage to test avatar assignment...';
+                avatarPreview.style.display = 'none';
+                return;
+            }
+            
+            if (!window.AvatarAssignmentSystem) {
+                resultDiv.innerHTML = '❌ Avatar Assignment System not loaded!';
+                avatarPreview.style.display = 'none';
+                return;
+            }
+            
+            const assignedAvatar = window.avatarAssignmentSystem.getAvatarForHeritage(selectedHeritage);
+            
+            if (assignedAvatar) {
+                const fullPath = `V4-network/assets/avatars/${assignedAvatar}`;
+                resultDiv.innerHTML = `✅ Heritage: <strong>${selectedHeritage}</strong><br>
+                                      Avatar file: <strong>${assignedAvatar}</strong><br>
+                                      Full path: <strong>${fullPath}</strong>`;
+                avatarPreview.src = fullPath;
+                avatarPreview.style.display = 'block';
+                
+                // Test if file exists
+                avatarPreview.onload = function() {
+                    resultDiv.innerHTML += '<br>✅ Avatar file loaded successfully';
+                };
+                avatarPreview.onerror = function() {
+                    resultDiv.innerHTML += '<br>❌ Avatar file not found';
+                };
+            } else {
+                resultDiv.innerHTML = `❌ No avatar found for heritage: <strong>${selectedHeritage}</strong>`;
+                avatarPreview.style.display = 'none';
+            }
+        }
+        
+        // Check system status on load
+        document.addEventListener('DOMContentLoaded', function() {
+            const statusDiv = document.getElementById('system-status');
+            
+            if (window.AvatarAssignmentSystem) {
+                statusDiv.innerHTML = '✅ Avatar Assignment System loaded successfully';
+                
+                // Show available mappings
+                const mappings = window.avatarAssignmentSystem.getHeritageMappings();
+                statusDiv.innerHTML += `<br>📋 Available heritages: ${Object.keys(mappings).join(', ')}`;
+            } else {
+                statusDiv.innerHTML = '❌ Avatar Assignment System failed to load';
+            }
+        });
+    </script>
+</body>
+</html>

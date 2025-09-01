@@ -3174,7 +3174,7 @@
                                         </div>
                                         <div class="control-group">
                                             <label for="manual-race">Race</label>
-                                            <select id="manual-race" class="control-select"></select>
+                                            <select id="manual-race" class="control-select" onchange="handleNPCHeritageSelection()"></select>
                                         </div>
                                         <div class="control-group">
                                             <label for="manual-background">Background</label>
@@ -4297,12 +4297,30 @@
                 console.log('❌ chatEffectsManager not available');
             }
             
+            // Parse player name for accent color (format: "playername|#hexcolor")
+            let playerDisplayName = playerName;
+            let playerColor = '';
+            
+            if (playerDisplayName.includes('|')) {
+                const parts = playerDisplayName.split('|');
+                playerDisplayName = parts[0];
+                playerColor = parts[1];
+                
+                // Validate hex color format
+                if (playerColor && !playerColor.match(/^#[0-9A-Fa-f]{6}$/)) {
+                    playerColor = ''; // Invalid color, use default
+                }
+            }
+            
+            // Apply color styling if valid color provided
+            const colorStyle = playerColor ? `style="color: ${playerColor}; font-weight: bold;"` : '';
+            
             if (type === 'system') {
                 messageEl.innerHTML = `<strong>System:</strong> ${processedMessage}`;
             } else if (type === 'player') {
-                messageEl.innerHTML = `<strong>${playerName}:</strong> ${processedMessage}`;
+                messageEl.innerHTML = `<strong ${colorStyle}>${playerDisplayName}:</strong> ${processedMessage}`;
             } else {
-                messageEl.innerHTML = `<strong>${playerName}:</strong> ${processedMessage}`;
+                messageEl.innerHTML = `<strong ${colorStyle}>${playerDisplayName}:</strong> ${processedMessage}`;
             }
             
             // Add to all visible chat panels
@@ -5520,6 +5538,27 @@ Notes: ${npc.notes || 'None'}`;
             return names[Math.floor(Math.random() * names.length)];
         }
 
+        function handleNPCHeritageSelection() {
+            const raceSelect = document.getElementById('manual-race');
+            const selectedHeritage = raceSelect.value;
+            
+            // Check if avatar assignment system is available and heritage is selected
+            if (window.AvatarAssignmentSystem && selectedHeritage) {
+                // For NPCs, we'll auto-assign avatars to the image preview
+                const assignedAvatar = window.AvatarAssignmentSystem.autoAssignAvatar(selectedHeritage);
+                if (assignedAvatar) {
+                    // Find the NPC image display if it exists
+                    const imageDisplay = document.querySelector('.npc-image, #npc-portrait, .portrait-display');
+                    if (imageDisplay) {
+                        imageDisplay.src = assignedAvatar;
+                        imageDisplay.style.display = 'block';
+                    }
+                    
+                    console.log(`Auto-assigned NPC avatar for ${selectedHeritage}: ${assignedAvatar}`);
+                }
+            }
+        }
+
         function generateRandomMood() {
             const moods = ['friendly', 'suspicious', 'helpful', 'grumpy', 'excited', 'worried'];
             return moods[Math.floor(Math.random() * moods.length)];
@@ -6197,7 +6236,8 @@ ${stats.cordova?.detected ? '📱 Cordova app detected' : '🌐 Web browser mode
         <!-- Tile selector now integrated into map panel -->
     </div>
     
-    <!-- Image Upload Integration -->
+    <!-- Avatar and Image Systems -->
+    <script src="js/avatarAssignmentSystem.js"></script>
     <script src="js/chatImageUploadIntegration.js"></script>
 </body>
 </html>

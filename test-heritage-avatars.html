@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heritage Avatar Test - V4-Network</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .heritage-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .heritage-item {
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .heritage-item img {
+            max-width: 100px;
+            max-height: 100px;
+            border: 2px solid #333;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success { background-color: #e8f5e8; border-color: #4caf50; }
+        .error { background-color: #ffebee; border-color: #f44336; }
+        .heritage-name { font-weight: bold; margin-bottom: 10px; }
+        .file-info { font-size: 0.9em; color: #666; }
+        .status { margin-top: 10px; padding: 5px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>V4-Network Heritage Avatar Test</h1>
+    
+    <div id="test-results">
+        <p>Testing all heritage mappings...</p>
+    </div>
+
+    <div id="heritage-grid" class="heritage-grid">
+        <!-- Results will be populated here -->
+    </div>
+
+    <script src="V4-network/js/avatarAssignmentSystem.js"></script>
+    <script>
+        // All heritages from V4-network dropdown
+        const heritages = [
+            // Dungeon Crawler
+            { value: 'bopca', name: '🛸 Bopca' },
+            { value: 'skyfowl', name: '🦅 Skyfowl' },
+            { value: 'rat_kin', name: '🐀 Rat-kin' },
+            { value: 'hellspawn_familiar', name: '👹 Hellspawn Familiar' },
+            { value: 'primal', name: '✨ Primal' },
+            { value: 'were_creature', name: '🐺 Were-creature' },
+            
+            // Classic Fantasy
+            { value: 'human', name: '👤 Human' },
+            { value: 'elf', name: '🧝 Elf' },
+            { value: 'dwarf', name: '⛏️ Dwarf' },
+            { value: 'orc', name: '💪 Orc' },
+            { value: 'halfling', name: '🍄 Halfling' },
+            { value: 'dragonborn', name: '🐲 Dragonborn' },
+            { value: 'tiefling', name: '😈 Tiefling' },
+            { value: 'gnome', name: '🧙 Gnome' },
+            { value: 'goblin', name: '👺 Goblin' },
+            { value: 'slime', name: '💧 Slime' },
+            
+            // Sci-Fi (these won't have avatars yet)
+            { value: 'cyborg', name: '🤖 Cyborg' },
+            { value: 'mutant', name: '☢️ Mutant' },
+            { value: 'android', name: '🦾 Android' },
+            { value: 'clone', name: '🧬 Clone' }
+        ];
+
+        function testHeritageAvatars() {
+            const resultsDiv = document.getElementById('test-results');
+            const gridDiv = document.getElementById('heritage-grid');
+            
+            if (!window.avatarAssignmentSystem) {
+                resultsDiv.innerHTML = '❌ Avatar Assignment System not loaded!';
+                return;
+            }
+            
+            let successCount = 0;
+            let totalCount = heritages.length;
+            
+            resultsDiv.innerHTML = `✅ Avatar Assignment System loaded<br>📋 Testing ${totalCount} heritages...`;
+            
+            heritages.forEach(heritage => {
+                const avatarFilename = window.avatarAssignmentSystem.getAvatarForHeritage(heritage.value);
+                
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'heritage-item';
+                
+                if (avatarFilename) {
+                    const avatarPath = `V4-network/assets/avatars/${avatarFilename}`;
+                    successCount++;
+                    
+                    itemDiv.className += ' success';
+                    itemDiv.innerHTML = `
+                        <div class="heritage-name">${heritage.name}</div>
+                        <div class="file-info">Value: ${heritage.value}</div>
+                        <div class="file-info">File: ${avatarFilename}</div>
+                        <img src="${avatarPath}" alt="${heritage.name}" onload="this.nextElementSibling.textContent='✅ Loaded'" onerror="this.nextElementSibling.textContent='❌ File not found'; this.parentElement.className='heritage-item error';">
+                        <div class="status">Loading...</div>
+                    `;
+                } else {
+                    itemDiv.className += ' error';
+                    itemDiv.innerHTML = `
+                        <div class="heritage-name">${heritage.name}</div>
+                        <div class="file-info">Value: ${heritage.value}</div>
+                        <div class="status">❌ No avatar mapping found</div>
+                    `;
+                }
+                
+                gridDiv.appendChild(itemDiv);
+            });
+            
+            resultsDiv.innerHTML += `<br>🎯 Found avatars for ${successCount}/${totalCount} heritages`;
+        }
+
+        // Run test when page loads
+        document.addEventListener('DOMContentLoaded', testHeritageAvatars);
+    </script>
+</body>
+</html>
