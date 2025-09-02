@@ -308,8 +308,8 @@ function drawCharacterPortrait(ctx, characterData, style) {
     const portraitElement = document.getElementById('portrait-display');
     const portraitImg = portraitElement ? portraitElement.querySelector('img') : null;
     
-    if (portraitImg && portraitImg.src && portraitImg.src.startsWith('data:image/')) {
-        // Draw actual portrait
+    if (portraitImg && portraitImg.src && (portraitImg.src.startsWith('data:image/') || portraitImg.src.startsWith('http'))) {
+        // Draw actual portrait (supports both base64 and URL images)
         const img = new Image();
         img.onload = function() {
             ctx.save();

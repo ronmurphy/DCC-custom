@@ -480,6 +480,166 @@ function createEmergencyBackup() {
 }
 
 // ========================================
+// CHARACTER STORAGE (INDEXEDDB)
+// ========================================
+
+class CharacterStorageManager {
+    constructor() {
+        this.db = null;
+        this.dbName = 'storyteller-characters';
+        this.version = 1;
+    }
+    
+    async initCharacterDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(this.dbName, this.version);
+            
+            request.onerror = () => {
+                console.error('❌ Failed to open character database:', request.error);
+                reject(request.error);
+            };
+            
+            request.onsuccess = () => {
+                this.db = request.result;
+                console.log('✅ Character database opened successfully');
+                resolve(this.db);
+            };
+            
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                
+                // Create characters store
+                if (!db.objectStoreNames.contains('characters')) {
+                    const store = db.createObjectStore('characters', { keyPath: 'id' });
+                    store.createIndex('name', 'name', { unique: false });
+                    store.createIndex('lastModified', 'lastModified', { unique: false });
+                    console.log('📚 Character store created');
+                }
+            };
+        });
+    }
+
+    async saveCharacter(character) {
+        try {
+            if (!this.db) {
+                await this.initCharacterDB();
+            }
+
+            const characterData = {
+                ...character,
+                lastModified: new Date().toISOString()
+            };
+
+            const transaction = this.db.transaction(['characters'], 'readwrite');
+            const store = transaction.objectStore('characters');
+            
+            return new Promise((resolve, reject) => {
+                const request = store.put(characterData);
+                request.onsuccess = () => {
+                    console.log(`💾 Character saved: ${character.name}`);
+                    resolve({ success: true, message: 'Character saved successfully' });
+                };
+                request.onerror = () => {
+                    reject(request.error);
+                };
+            });
+
+        } catch (error) {
+            console.error('❌ Save character error:', error);
+            return { success: false, message: 'Failed to save character: ' + error.message };
+        }
+    }
+
+    async getCharacter(characterId) {
+        try {
+            if (!this.db) {
+                await this.initCharacterDB();
+            }
+
+            const transaction = this.db.transaction(['characters'], 'readonly');
+            const store = transaction.objectStore('characters');
+            
+            return new Promise((resolve, reject) => {
+                const request = store.get(characterId);
+                request.onsuccess = () => {
+                    const result = request.result;
+                    resolve(result ? { success: true, data: result } : { success: false, message: 'Character not found' });
+                };
+                request.onerror = () => {
+                    reject(request.error);
+                };
+            });
+
+        } catch (error) {
+            console.error('❌ Get character error:', error);
+            return { success: false, message: 'Failed to get character: ' + error.message };
+        }
+    }
+
+    async getAllCharacters() {
+        try {
+            if (!this.db) {
+                await this.initCharacterDB();
+            }
+
+            const transaction = this.db.transaction(['characters'], 'readonly');
+            const store = transaction.objectStore('characters');
+            
+            return new Promise((resolve, reject) => {
+                const request = store.getAll();
+                request.onsuccess = () => {
+                    resolve(request.result || []);
+                };
+                request.onerror = () => {
+                    console.error('❌ Get all characters error:', request.error);
+                    resolve([]);
+                };
+            });
+
+        } catch (error) {
+            console.error('❌ Get all characters error:', error);
+            return [];
+        }
+    }
+
+    async deleteCharacter(characterId) {
+        try {
+            if (!this.db) {
+                await this.initCharacterDB();
+            }
+
+            const transaction = this.db.transaction(['characters'], 'readwrite');
+            const store = transaction.objectStore('characters');
+            
+            return new Promise((resolve, reject) => {
+                const request = store.delete(characterId);
+                request.onsuccess = () => {
+                    console.log(`🗑️ Character deleted: ${characterId}`);
+                    resolve({ success: true, message: 'Character deleted successfully' });
+                };
+                request.onerror = () => {
+                    reject(request.error);
+                };
+            });
+
+        } catch (error) {
+            console.error('❌ Delete character error:', error);
+            return { success: false, message: 'Failed to delete character: ' + error.message };
+        }
+    }
+}
+
+// Initialize character storage manager
+const characterStorageManager = new CharacterStorageManager();
+
+// Add character methods to main storage manager
+storageManager.saveCharacter = characterStorageManager.saveCharacter.bind(characterStorageManager);
+storageManager.getCharacter = characterStorageManager.getCharacter.bind(characterStorageManager);
+storageManager.getAllCharacters = characterStorageManager.getAllCharacters.bind(characterStorageManager);
+storageManager.deleteCharacter = characterStorageManager.deleteCharacter.bind(characterStorageManager);
+storageManager.db = characterStorageManager; // For compatibility
+
+// ========================================
 // PAGE LIFECYCLE
 // ========================================
 window.addEventListener('beforeunload', () => {

@@ -3,10 +3,39 @@
 // ========================================
 
 // Character Manager State
-let characterManager = {
+characterManager = {
     characters: [],
     currentCharacterId: null,
-    isLandingScreenActive: true
+    
+    /**
+     * Save a specific character (used by migration system)
+     * @param {Object} characterData - Character data to save
+     */
+    async saveCharacter(characterData) {
+        if (!characterData || !characterData.id) {
+            throw new Error('Invalid character data for saving');
+        }
+        
+        // Find and update the character in the array
+        const index = this.characters.findIndex(char => char.id === characterData.id);
+        if (index !== -1) {
+            this.characters[index] = { ...characterData };
+            console.log('💾 Updated character in array:', characterData.name);
+        } else {
+            // Character not found, add it (shouldn't happen in migration)
+            this.characters.push({ ...characterData });
+            console.log('💾 Added new character to array:', characterData.name);
+        }
+        
+        // Save to storage
+        const saveSuccess = await saveCharactersToStorage();
+        if (!saveSuccess) {
+            throw new Error('Failed to save character to storage');
+        }
+        
+        console.log('✅ Character saved successfully:', characterData.name);
+        return true;
+    }
 };
 
 // ========================================
@@ -278,18 +307,30 @@ function createCharacterCard(charData) {
     
     const { raceName, jobName, className, lastModified } = getCharacterDisplayInfo(charData);
     
-    // Portrait handling
-    const portraitContent = charData.personal?.portrait ? 
-        `<img src="${charData.personal.portrait}" alt="${charData.name || 'Character'}" class="character-portrait">` :
-        `<div class="character-portrait-placeholder"><i class="ra ra-player"></i></div>`;
+    // Portrait handling - support both URL and base64 avatars
+    let portraitContent;
+    let needsMigrationBadge = false;
+    
+    if (charData.personal?.avatarUrl) {
+        // URL-based avatar (new system)
+        portraitContent = `<img src="${charData.personal.avatarUrl}" alt="${charData.name || 'Character'}" class="character-portrait">`;
+    } else if (charData.personal?.portrait) {
+        // Base64 avatar (legacy system) - show migration badge
+        portraitContent = `<img src="${charData.personal.portrait}" alt="${charData.name || 'Character'}" class="character-portrait">`;
+        needsMigrationBadge = true;
+    } else {
+        // No avatar, show placeholder
+        portraitContent = `<div class="character-portrait-placeholder"><i class="ra ra-player"></i></div>`;
+    }
     
     // Calculate additional stats for more info
     const totalStats = (charData.strength || 0) + (charData.agility || 0) + (charData.intellect || 0) + (charData.stamina || 0);
     const skillCount = getCharacterSkillCount(charData);
     const spellCount = Object.keys(charData.spells || {}).length;
     const itemCount = (charData.inventory || []).length;
-    
+
     card.innerHTML = `
+        ${needsMigrationBadge ? '<div class="migration-badge" title="This character can be upgraded to the new avatar system">🔄</div>' : ''}
         <div class="character-card-portrait">
             ${portraitContent}
             <div class="character-level-container">
@@ -654,11 +695,33 @@ function loadCharacterFromManager(characterId) {
         // Update UI elements
         updateUIElements();
         
-        // Handle portrait
-        if (character.personal?.portrait) {
-            const portraitDisplay = document.getElementById('portrait-display');
-            if (portraitDisplay) {
+        // Handle portrait - support both URL-based and base64 avatars
+        const portraitDisplay = document.getElementById('portrait-display');
+        if (portraitDisplay) {
+            if (character.personal?.avatarUrl) {
+                // URL-based avatar (new system)
+                portraitDisplay.innerHTML = `<img src="${character.personal.avatarUrl}" alt="Character Portrait" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">`;
+                console.log('✅ Loaded character with URL-based avatar');
+            } else if (character.personal?.portrait) {
+                // Base64 avatar (legacy system) - check for migration
                 portraitDisplay.innerHTML = `<img src="${character.personal.portrait}" alt="Character Portrait" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">`;
+                console.log('✅ Loaded character with base64 avatar');
+                
+                // Check if character needs avatar migration
+                if (window.characterAvatarMigration && window.characterAvatarMigration.needsMigration(character)) {
+                    // Delay migration prompt slightly to let UI settle
+                    setTimeout(() => {
+                        promptAvatarMigration(character);
+                    }, 1000);
+                }
+            } else {
+                // No avatar, show placeholder
+                portraitDisplay.innerHTML = `
+                    <div class="portrait-placeholder">
+                        <i class="ra ra-hood"></i>
+                        <span>Tap to Upload</span>
+                    </div>
+                `;
             }
         }
         
@@ -682,6 +745,58 @@ function loadCharacterFromManager(characterId) {
     }, 100);
     
     startAutoSave();
+}
+
+/**
+ * Prompt user for avatar migration if character has old base64 avatar
+ * @param {Object} characterData - Character data to potentially migrate
+ */
+async function promptAvatarMigration(characterData) {
+    if (!window.characterAvatarMigration) {
+        console.warn('⚠️ Avatar migration system not available');
+        return;
+    }
+    
+    try {
+        console.log('🔄 Prompting avatar migration for:', characterData.name);
+        
+        const userChoice = await window.characterAvatarMigration.promptMigration(characterData);
+        
+        if (userChoice === true) {
+            // User completed migration - refresh display
+            console.log('✅ Avatar migration completed successfully');
+            
+            // Update the global character object with the migrated data
+            if (typeof character !== 'undefined' && character.id === characterData.id) {
+                Object.assign(character, characterData);
+                
+                // Refresh portrait display
+                const portraitDisplay = document.getElementById('portrait-display');
+                if (portraitDisplay && character.personal?.avatarUrl) {
+                    portraitDisplay.innerHTML = `<img src="${character.personal.avatarUrl}" alt="Character Portrait" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">`;
+                }
+                
+                // Refresh character display
+                if (typeof updateCharacterDisplay === 'function') {
+                    updateCharacterDisplay();
+                }
+            }
+            
+            // Refresh character grid to show updated avatar
+            renderCharacterGrid();
+            
+            // Show success message
+            showNotification('success', 'Avatar Updated', 'Character avatar has been upgraded to the new system!', 'Your character now uses the faster, shareable avatar system.');
+            
+        } else if (userChoice === false) {
+            console.log('ℹ️ User chose to skip avatar migration');
+        } else {
+            console.log('ℹ️ User cancelled avatar migration');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error during avatar migration:', error);
+    }
 }
 
 function updateUIElements() {
