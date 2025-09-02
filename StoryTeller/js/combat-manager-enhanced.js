@@ -357,26 +357,31 @@ function createEnhancedCombatTabContent() {
 function showAvailableEnemies() {
     const floorSelect = document.getElementById('floor-select');
     const selectedFloor = floorSelect.value;
-    const enemySelection = document.getElementById('enemy-selection');
     const enemyGrid = document.getElementById('enemy-grid');
     
+    if (!selectedFloor) {
+        enemyGrid.innerHTML = `
+            <div class="enemy-placeholder">
+                <i class="ra ra-monster-skull"></i>
+                <p>Select a floor above to see available enemies</p>
+            </div>
+        `;
+        return;
+    }
+    
     if (!loadedEnemies[selectedFloor]) {
-        enemyGrid.innerHTML = '<p>⚠️ No enemies available for this floor.</p>';
-        enemySelection.style.display = 'block';
+        enemyGrid.innerHTML = `
+            <div class="enemy-placeholder">
+                <i class="ra ra-monster-skull"></i>
+                <p>No enemies available for this floor</p>
+            </div>
+        `;
         return;
     }
     
     const floorData = loadedEnemies[selectedFloor];
     const enemies = floorData.enemies || floorData;
     enemyGrid.innerHTML = '';
-    
-    // Add floor theme info
-    if (floorData.theme) {
-        const themeInfo = document.createElement('div');
-        themeInfo.className = 'floor-theme-info';
-        themeInfo.innerHTML = `<strong>Floor Theme:</strong> ${floorData.theme}`;
-        enemyGrid.appendChild(themeInfo);
-    }
     
     Object.entries(enemies).forEach(([enemyId, enemy]) => {
         if (enemy.name) { // Skip non-enemy entries
@@ -385,59 +390,44 @@ function showAvailableEnemies() {
         }
     });
     
-    enemySelection.style.display = 'block';
+    // If no enemies were added, show message
+    if (enemyGrid.children.length === 0) {
+        enemyGrid.innerHTML = `
+            <div class="enemy-placeholder">
+                <i class="ra ra-monster-skull"></i>
+                <p>No valid enemies found for this floor</p>
+            </div>
+        `;
+    }
 }
 
 function createEnemyCard(floor, enemyId, enemy) {
     const enemyCard = document.createElement('div');
     enemyCard.className = 'enemy-card';
     
-    const attacksText = enemy.attacks ? 
-        enemy.attacks.map(a => `${a.name} (${a.damage})`).join(', ') : 
-        'No attacks defined';
-        
-    const abilitiesText = enemy.special_abilities ? 
-        enemy.special_abilities.join(', ') : 
-        'None';
-    
     enemyCard.innerHTML = `
-        <div class="enemy-card-header">
-            <h5>${enemy.name}</h5>
-            <span class="enemy-level">Level ${enemy.level || 1}</span>
-        </div>
-        <div class="enemy-card-stats">
-            <div class="stat-item">
-                <span class="stat-label">HP:</span>
-                <span class="stat-value">${enemy.hp || 10}</span>
+        <h6>${enemy.name}</h6>
+        <div class="enemy-stats">
+            <div class="enemy-stat">
+                <span>HP:</span>
+                <span>${enemy.hp || 10}</span>
             </div>
-            <div class="stat-item">
-                <span class="stat-label">AC:</span>
-                <span class="stat-value">${enemy.ac || 10}</span>
+            <div class="enemy-stat">
+                <span>AC:</span>
+                <span>${enemy.ac || 10}</span>
             </div>
-            <div class="stat-item">
-                <span class="stat-label">Attacks:</span>
-                <span class="stat-value">${enemy.attacks?.length || 0}</span>
+            <div class="enemy-stat">
+                <span>Level:</span>
+                <span>${enemy.level || 1}</span>
             </div>
-        </div>
-        <div class="enemy-preview">
-            <div class="enemy-attacks-preview">
-                <strong>Attacks:</strong> ${attacksText}
+            <div class="enemy-stat">
+                <span>Attacks:</span>
+                <span>${enemy.attacks?.length || 0}</span>
             </div>
-            <div class="enemy-abilities-preview">
-                <strong>Abilities:</strong> ${abilitiesText}
-            </div>
-        </div>
-        <div class="enemy-card-actions">
-            <button class="select-enemy-btn" onclick="selectEnemyForCombat('${floor}', '${enemyId}')">
-                <i class="ra ra-sword"></i>
-                Start Combat
-            </button>
-            <button class="view-enemy-btn" onclick="viewEnemyDetails('${floor}', '${enemyId}')">
-                <i class="material-icons">visibility</i>
-                Details
-            </button>
         </div>
     `;
+    
+    enemyCard.onclick = () => selectEnemyForCombat(floor, enemyId);
     return enemyCard;
 }
 
@@ -468,6 +458,14 @@ function selectEnemyForCombat(floor, enemyId) {
     const enemy = floorData.enemies?.[enemyId] || floorData[enemyId];
     if (!enemy) return;
     
+    // Clear previous selection
+    document.querySelectorAll('.enemy-card.selected').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Mark current selection
+    event.target.closest('.enemy-card').classList.add('selected');
+    
     // Create enhanced enemy instance
     currentCombat.currentEnemy = {
         ...enemy,
@@ -486,14 +484,10 @@ function selectEnemyForCombat(floor, enemyId) {
     // Update displays
     updateCombatStatus();
     displayCurrentEnemy();
-    showActiveCombat();
     populatePlayerNames();
     
     // Add to combat log
     addToCombatLog(`⚔️ Combat started with ${enemy.name}! (HP: ${enemy.hp}, AC: ${enemy.ac})`);
-    
-    // Hide enemy selection
-    document.getElementById('enemy-selection').style.display = 'none';
     
     console.log(`🎯 Combat started with ${enemy.name}`);
 }
@@ -502,63 +496,33 @@ function displayCurrentEnemy() {
     const enemy = currentCombat.currentEnemy;
     if (!enemy) return;
     
+    const section = document.getElementById('current-enemy-section');
     const display = document.getElementById('current-enemy-display');
     const healthPercentage = (enemy.currentHp / enemy.maxHp) * 100;
     
-    const attacksHtml = enemy.attacks ? enemy.attacks.map(attack => `
-        <div class="attack-item">
-            <strong>${attack.name}:</strong> ${attack.hit} to hit, ${attack.damage} damage
-            ${attack.effect ? `<span class="attack-effect">(${attack.effect})</span>` : ''}
-        </div>
-    `).join('') : '<div class="attack-item">No attacks defined</div>';
-    
-    const abilitiesHtml = enemy.special_abilities ? enemy.special_abilities.map(ability => 
-        `<span class="ability-tag">${ability}</span>`
-    ).join('') : '<span class="ability-tag">None</span>';
-    
     display.innerHTML = `
-        <div class="enemy-display-header">
-            <h4>${enemy.name}</h4>
-            <span class="enemy-level-badge">Level ${enemy.level || 1}</span>
-        </div>
-        
-        <div class="enemy-health-bar">
-            <div class="health-bar-container">
-                <div class="health-bar-fill" style="width: ${healthPercentage}%"></div>
-                <div class="health-bar-text">${enemy.currentHp} / ${enemy.maxHp} HP</div>
+        <h6>${enemy.name} <span style="font-size: 0.8em; color: var(--text-secondary);">Level ${enemy.level || 1}</span></h6>
+        <div class="enemy-stats">
+            <div class="enemy-stat">
+                <span>HP:</span>
+                <span>${enemy.currentHp} / ${enemy.maxHp}</span>
+            </div>
+            <div class="enemy-stat">
+                <span>AC:</span>
+                <span>${enemy.ac || 10}</span>
+            </div>
+            <div class="enemy-stat">
+                <span>Attacks:</span>
+                <span>${enemy.attacks?.length || 0}</span>
+            </div>
+            <div class="enemy-stat">
+                <span>Health:</span>
+                <span style="color: ${healthPercentage > 50 ? 'var(--success-color)' : healthPercentage > 25 ? 'var(--warning-color)' : 'var(--error-color)'}">${Math.round(healthPercentage)}%</span>
             </div>
         </div>
-        
-        <div class="enemy-combat-stats">
-            <div class="combat-stat">
-                <span class="stat-label">Armor Class:</span>
-                <span class="stat-value">${enemy.ac}</span>
-            </div>
-            <div class="combat-stat">
-                <span class="stat-label">Attacks:</span>
-                <div class="attack-list">
-                    ${attacksHtml}
-                </div>
-            </div>
-            <div class="combat-stat">
-                <span class="stat-label">Special Abilities:</span>
-                <div class="abilities-list">
-                    ${abilitiesHtml}
-                </div>
-            </div>
-        </div>
-        
-        ${enemy.ai_notes ? `
-        <div class="enemy-ai-notes">
-            <strong>🤖 AI Notes:</strong> ${enemy.ai_notes}
-        </div>
-        ` : ''}
     `;
-}
-
-function showActiveCombat() {
-    document.getElementById('active-combat-card').style.display = 'block';
-    document.getElementById('network-status-card').style.display = 'block';
+    
+    section.style.display = 'block';
 }
 
 function updateCombatStatus() {
@@ -566,6 +530,12 @@ function updateCombatStatus() {
     document.getElementById('combat-round').textContent = currentCombat.round;
     document.getElementById('current-enemy-name').textContent = 
         currentCombat.currentEnemy ? currentCombat.currentEnemy.name : 'None';
+        
+    // Show/hide end combat button
+    const endCombatBtn = document.querySelector('.end-combat-btn');
+    if (endCombatBtn) {
+        endCombatBtn.style.display = currentCombat.active ? 'block' : 'none';
+    }
 }
 
 function populatePlayerNames() {
@@ -686,8 +656,22 @@ function endCombat() {
     currentCombat.currentEnemy = null;
     
     updateCombatStatus();
-    document.getElementById('active-combat-card').style.display = 'none';
-    document.getElementById('network-status-card').style.display = 'none';
+    
+    // Hide current enemy section
+    document.getElementById('current-enemy-section').style.display = 'none';
+    
+    // Hide end combat button
+    document.querySelector('.end-combat-btn').style.display = 'none';
+    
+    // Clear enemy selection
+    document.querySelectorAll('.enemy-card.selected').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Clear input fields
+    document.getElementById('attacking-player').value = '';
+    document.getElementById('attack-roll').value = '';
+    document.getElementById('damage-roll').value = '';
     
     console.log('⚡ Combat ended');
 }

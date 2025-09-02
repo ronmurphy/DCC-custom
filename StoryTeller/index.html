@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="css/dice-panel.css">
     <link rel="stylesheet" href="css/chat-effects.css">
     <link rel="stylesheet" href="css/map.css">
+    <link rel="stylesheet" href="css/combat.css">
     <link rel="stylesheet" href="css/storyTellerPlayersPanel.css">
     <link rel="stylesheet" href="css/character-modal.css">
     <!-- end ported css -->
@@ -3252,121 +3253,115 @@
                 
                 case 'combat':
                     return `
-                        <div class="enhanced-combat-panel">
-                            <!-- Combat Setup Section -->
-                            <div class="combat-setup-section">
-                                <h4>⚔️ Combat Setup</h4>
-                                <div class="combat-controls">
-                                    <select id="floor-select" class="form-select">
-                                        <option value="">Loading floors...</option>
-                                    </select>
-                                    <button class="action-btn primary" onclick="showAvailableEnemies()">
-                                        <i class="ra ra-monster-skull"></i>
-                                        Browse Enemies
-                                    </button>
-                                    <button class="action-btn" onclick="showEncounterNPCs()" style="background: #8b5cf6;">
-                                        <i class="ra ra-player"></i>
-                                        Encounter NPCs
-                                    </button>
-                                </div>
-                                
-                                <!-- Enemy Selection -->
-                                <div class="enemy-selection" id="enemy-selection" style="display: none;">
-                                    <h5>Available Enemies:</h5>
-                                    <div class="enemy-grid" id="enemy-grid"></div>
-                                </div>
-                                
-                                <!-- Combat Status -->
-                                <div class="combat-status-panel" id="combat-status">
-                                    <div class="status-grid">
-                                        <div class="status-item">
-                                            <span class="status-label">Combat Active:</span>
-                                            <span class="status-value" id="combat-active-status">No</span>
-                                        </div>
-                                        <div class="status-item">
-                                            <span class="status-label">Round:</span>
-                                            <span class="status-value" id="combat-round">0</span>
-                                        </div>
-                                        <div class="status-item">
-                                            <span class="status-label">Current Enemy:</span>
-                                            <span class="status-value" id="current-enemy-name">None</span>
-                                        </div>
+                        <div class="combat-panel">
+                            <!-- Combat Header with Status -->
+                            <div class="combat-header">
+                                <h4>
+                                    <i class="ra ra-crossed-swords"></i>
+                                    Combat Manager
+                                </h4>
+                                <div class="combat-status-bar">
+                                    <div class="status-item">
+                                        <span class="status-label">Active:</span>
+                                        <span class="status-value" id="combat-active-status">No</span>
                                     </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Active Combat Section -->
-                            <div class="active-combat-section" id="active-combat-card" style="display: none;">
-                                <div class="section-header">
-                                    <h4>🎯 Active Combat</h4>
-                                    <button class="action-btn danger" onclick="endCombat()">
+                                    <div class="status-item">
+                                        <span class="status-label">Round:</span>
+                                        <span class="status-value" id="combat-round">0</span>
+                                    </div>
+                                    <div class="status-item">
+                                        <span class="status-label">Enemy:</span>
+                                        <span class="status-value" id="current-enemy-name">None</span>
+                                    </div>
+                                    <button class="action-btn danger end-combat-btn" onclick="endCombat()" style="display: none;">
                                         <i class="material-icons">stop</i>
                                         End Combat
                                     </button>
                                 </div>
-                                
-                                <!-- Current Enemy Display -->
-                                <div class="current-enemy-display" id="current-enemy-display"></div>
-                                
-                                <!-- Player Attack Input -->
-                                <div class="player-attack-section">
-                                    <h5>Player Attack Resolution</h5>
-                                    <div class="attack-input-grid">
-                                        <div class="input-group">
-                                            <label>Player Name</label>
-                                            <input type="text" id="attacking-player" placeholder="Player name..." list="player-names">
-                                            <datalist id="player-names"></datalist>
-                                        </div>
-                                        <div class="input-group">
-                                            <label>Attack Roll (d20 + mods)</label>
-                                            <input type="number" id="attack-roll" placeholder="Total attack roll..." min="1" max="50">
-                                        </div>
-                                        <div class="input-group">
-                                            <label>Damage Roll</label>
-                                            <input type="number" id="damage-roll" placeholder="Total damage..." min="0">
-                                        </div>
-                                        <div class="input-group">
-                                            <button class="resolve-btn action-btn success" onclick="resolvePlayerAttack()">
-                                                <i class="ra ra-sword"></i>
-                                                Resolve Attack
+                            </div>
+                            
+                            <!-- Two Column Layout -->
+                            <div class="combat-container">
+                                <!-- Left Column - Enemy Management -->
+                                <div class="enemy-management-column">
+                                    <div class="enemy-management-header">
+                                        <h5>Enemy Selection</h5>
+                                        <div class="enemy-controls">
+                                            <select id="floor-select" class="form-select">
+                                                <option value="">Loading floors...</option>
+                                            </select>
+                                            <button class="action-btn primary" onclick="showAvailableEnemies()">
+                                                <i class="ra ra-monster-skull"></i>
+                                                Browse
                                             </button>
                                         </div>
                                     </div>
-                                    <div class="quick-help">
-                                        💡 <strong>Quick Help:</strong> Enter player name, their total attack roll, and total damage. The system will compare vs enemy AC.
+                                    
+                                    <!-- Enemy Grid -->
+                                    <div class="enemy-selection" id="enemy-selection">
+                                        <div class="enemy-grid" id="enemy-grid">
+                                            <div class="enemy-placeholder">
+                                                <i class="ra ra-monster-skull"></i>
+                                                <p>Select a floor above to see available enemies</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Current Enemy Display -->
+                                    <div class="current-enemy-section" id="current-enemy-section" style="display: none;">
+                                        <h5>Current Enemy</h5>
+                                        <div class="current-enemy-display" id="current-enemy-display"></div>
                                     </div>
                                 </div>
                                 
-                                <!-- Combat Log -->
-                                <div class="combat-log-section">
-                                    <h5>📜 Combat Log</h5>
-                                    <div class="combat-log" id="combat-log">
-                                        <div class="log-entry">⚔️ Combat ready - waiting for first attack...</div>
+                                <!-- Right Column - Combat Actions & Log -->
+                                <div class="combat-actions-column">
+                                    <!-- Attack Resolution -->
+                                    <div class="attack-resolution-section">
+                                        <h5>Player Attack Resolution</h5>
+                                        <div class="attack-input-layout">
+                                            <div class="attack-row">
+                                                <div class="input-group">
+                                                    <label>Player</label>
+                                                    <input type="text" id="attacking-player" placeholder="Player name..." list="player-names">
+                                                    <datalist id="player-names"></datalist>
+                                                </div>
+                                                <div class="input-group">
+                                                    <label>Attack Roll</label>
+                                                    <input type="number" id="attack-roll" placeholder="d20 + mods" min="1" max="50">
+                                                </div>
+                                            </div>
+                                            <div class="attack-row">
+                                                <div class="input-group">
+                                                    <label>Damage</label>
+                                                    <input type="number" id="damage-roll" placeholder="Total damage" min="0">
+                                                </div>
+                                                <div class="input-group resolve-group">
+                                                    <button class="resolve-btn action-btn success" onclick="resolvePlayerAttack()">
+                                                        <i class="ra ra-sword"></i>
+                                                        Resolve Attack
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="quick-help">
+                                            💡 Enter player name, total attack roll (d20 + modifiers), and damage to resolve against enemy AC
+                                        </div>
                                     </div>
-                                    <div class="log-controls">
-                                        <button class="small-btn" onclick="clearCombatLog()">Clear Log</button>
-                                        <button class="small-btn" onclick="exportCombatLog()">Export Log</button>
+                                    
+                                    <!-- Combat Log -->
+                                    <div class="combat-log-section">
+                                        <div class="log-header">
+                                            <h5>📜 Combat Log</h5>
+                                            <div class="log-controls">
+                                                <button class="small-btn" onclick="clearCombatLog()">Clear</button>
+                                                <button class="small-btn" onclick="exportCombatLog()">Export</button>
+                                            </div>
+                                        </div>
+                                        <div class="combat-log" id="combat-log">
+                                            <div class="log-entry">⚔️ Combat system ready - select an enemy to begin</div>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Enemy Quick Reference -->
-                            <div class="enemy-reference-section">
-                                <h4>📊 Enemy Quick Reference</h4>
-                                <div class="enemy-quick-stats" id="enemy-quick-stats">
-                                    <p>Select an enemy from the combat setup to see quick reference stats.</p>
-                                </div>
-                            </div>
-                            
-                            <!-- Network Status (for future) -->
-                            <div class="network-status-section" style="display: none;" id="network-status-card">
-                                <h4>🌐 Network Combat</h4>
-                                <div class="network-status">
-                                    <div class="status-indicator offline" id="network-indicator">
-                                        <span class="indicator-dot"></span>
-                                        <span>Offline - Manual Mode</span>
-                                    </div>
-                                    <p>When network combat is enabled, player attacks will appear here automatically.</p>
                                 </div>
                             </div>
                         </div>
