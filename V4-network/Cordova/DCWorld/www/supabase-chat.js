@@ -529,6 +529,13 @@ function updateUIAfterConnect(playerName, sessionCode, isStoryteller, mode) {
         }
         
         console.log(`🎨 UI updated for ${playerName} (${isStoryteller ? 'Storyteller' : 'Player'})`);
+        
+        // Initialize V4 character sync manager
+        if (window.v4CharacterSyncManager) {
+            window.v4CharacterSyncManager.initialize(playerName, sessionCode);
+            console.log('🔄 V4 Character sync manager initialized');
+        }
+        
     } catch (error) {
         console.warn('⚠️ UI update failed (non-critical):', error.message);
     }
@@ -1497,7 +1504,7 @@ async function sendGameResponse(responseText) {
 // ========================================
 // MESSAGE PROCESSING
 // ========================================
-function handleIncomingMessage(message) {
+async function handleIncomingMessage(message) {
     if (window.showDebug) {
         if (window.showDebug) console.log('🔍 DEBUG - Handling incoming message:', message);
         if (window.showDebug) console.log('🔍 DEBUG - Message is_storyteller:', message.is_storyteller);
@@ -1509,6 +1516,24 @@ function handleIncomingMessage(message) {
     if (message.message_type === 'heartbeat' || message.player_name === 'Heartbeat') {
         if (window.showDebug) console.log('📡 Heartbeat received, connection healthy');
         return;
+    }
+    
+    // Check if this is a CHARACTER SYNC command
+    if (message.message_type === 'chat' && message.message_text.startsWith('CHAR_')) {
+        console.log('🔄 Detected CHARACTER SYNC command in chat:', message.message_text);
+        
+        // Process character sync command
+        if (window.v4CharacterSyncManager) {
+            const handled = await window.v4CharacterSyncManager.handleCharacterSyncMessage(
+                message.message_text, 
+                message.player_name
+            );
+            
+            if (handled) {
+                console.log('🔇 Character sync command processed silently');
+                return; // Don't display in chat
+            }
+        }
     }
     
     // Check if this is a command disguised as a chat message
@@ -1767,6 +1792,21 @@ function displayChatMessage(message) {
     if (!message) {
         console.log('🔍 DEBUG - Message is null, skipping display');
         return;
+    }
+    
+    // Filter out character sync messages - these should be handled silently
+    if (message.message_text && typeof message.message_text === 'string') {
+        if (message.message_text.startsWith('CHAR_ANNOUNCE:') || 
+            message.message_text.startsWith('CHAR_REQUEST:') || 
+            message.message_text.startsWith('CHAR_DATA:')) {
+            console.log('🔍 DEBUG - Filtering out character sync message:', message.message_text.substring(0, 20) + '...');
+            
+            // Process the sync message silently
+            if (window.v4CharacterSyncManager) {
+                window.v4CharacterSyncManager.handleCharacterSyncMessage(message.message_text, message.player_name);
+            }
+            return; // Don't display in chat
+        }
     }
     
     // Use the main page's addChatMessage function for consistency

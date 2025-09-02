@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avatar URL System Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
+        .avatar-test { margin: 10px 0; }
+        .avatar-img { width: 100px; height: 100px; object-fit: cover; border-radius: 8px; border: 2px solid #ddd; }
+        .status { padding: 5px; margin: 5px 0; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <h1>Avatar URL System Test</h1>
+    
+    <div class="test-section">
+        <h2>GitHub Avatar URLs Test</h2>
+        <div id="avatar-tests"></div>
+        <button onclick="testGithubUrls()">Test GitHub Avatar URLs</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Upload Test</h2>
+        <input type="file" id="test-upload" accept="image/*">
+        <button onclick="testUpload()">Test Upload to GitHub</button>
+        <div id="upload-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>System Status</h2>
+        <div id="system-status"></div>
+    </div>
+
+    <script src="js/githubImageHost.js"></script>
+    <script src="js/avatarUrlSystem.js"></script>
+    
+    <script>
+        // Test GitHub avatar URLs
+        async function testGithubUrls() {
+            const testContainer = document.getElementById('avatar-tests');
+            testContainer.innerHTML = '<div class="info">Testing GitHub avatar URLs...</div>';
+            
+            // Test heritages from avatars.json
+            const testHeritages = ['human', 'elf', 'dwarf', 'orc', 'dragonborn'];
+            
+            for (const heritage of testHeritages) {
+                try {
+                    const avatarUrl = await window.avatarUrlSystem.getAvatarUrlForHeritage(heritage);
+                    
+                    if (avatarUrl) {
+                        // Test if URL is accessible
+                        const response = await fetch(avatarUrl, { method: 'HEAD' });
+                        
+                        if (response.ok) {
+                            testContainer.innerHTML += `
+                                <div class="avatar-test success">
+                                    <strong>${heritage}</strong>: ✅ ${avatarUrl}<br>
+                                    <img src="${avatarUrl}" class="avatar-img" alt="${heritage}" />
+                                </div>
+                            `;
+                        } else {
+                            testContainer.innerHTML += `
+                                <div class="avatar-test error">
+                                    <strong>${heritage}</strong>: ❌ URL not accessible (${response.status})
+                                </div>
+                            `;
+                        }
+                    } else {
+                        testContainer.innerHTML += `
+                            <div class="avatar-test info">
+                                <strong>${heritage}</strong>: ℹ️ No URL found
+                            </div>
+                        `;
+                    }
+                } catch (error) {
+                    testContainer.innerHTML += `
+                        <div class="avatar-test error">
+                            <strong>${heritage}</strong>: ❌ Error: ${error.message}
+                        </div>
+                    `;
+                }
+            }
+        }
+        
+        // Test upload functionality
+        async function testUpload() {
+            const fileInput = document.getElementById('test-upload');
+            const resultDiv = document.getElementById('upload-result');
+            
+            if (!fileInput.files[0]) {
+                resultDiv.innerHTML = '<div class="error">Please select a file first</div>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '<div class="info">Uploading...</div>';
+            
+            try {
+                const file = fileInput.files[0];
+                const result = await window.githubImageHost.uploadCharacterAvatar(file, 'TestCharacter');
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        ✅ Upload successful!<br>
+                        URL: <a href="${result.url}" target="_blank">${result.url}</a><br>
+                        <img src="${result.url}" class="avatar-img" alt="Uploaded" />
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Upload failed: ${error.message}</div>`;
+            }
+        }
+        
+        // Show system status
+        function showSystemStatus() {
+            const statusDiv = document.getElementById('system-status');
+            
+            const systems = [
+                { name: 'GitHub Image Host', available: !!window.githubImageHost },
+                { name: 'Avatar URL System', available: !!window.avatarUrlSystem },
+                { name: 'Avatar Assignment System', available: !!window.avatarAssignmentSystem }
+            ];
+            
+            statusDiv.innerHTML = systems.map(system => 
+                `<div class="${system.available ? 'success' : 'error'}">
+                    ${system.name}: ${system.available ? '✅ Available' : '❌ Not Available'}
+                </div>`
+            ).join('');
+            
+            if (window.avatarUrlSystem) {
+                const stats = window.avatarUrlSystem.getAvatarStats();
+                statusDiv.innerHTML += `
+                    <div class="info">
+                        <strong>Avatar Statistics:</strong><br>
+                        GitHub Avatars: ${stats.githubAvatars}<br>
+                        Local Avatars: ${stats.localAvatars}<br>
+                        Total Heritages: ${stats.totalHeritages}
+                    </div>
+                `;
+            }
+        }
+        
+        // Initialize on load
+        window.addEventListener('load', () => {
+            showSystemStatus();
+            console.log('🧪 Avatar URL System Test Page Loaded');
+        });
+    </script>
+</body>
+</html>

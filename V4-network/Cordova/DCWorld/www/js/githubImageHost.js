@@ -128,37 +128,74 @@ class GitHubImageHost {
     }
 
     /**
-     * Upload image to GitHub repository
+     * Universal upload method to any folder in GitHub repository
+     * @param {string} folderPath - Target folder path (e.g., 'avatars', 'sessions/ABC123', 'sessions/ABC123/private-notes')
+     * @param {File|string} fileToSend - File object or filename string for avatars  
+     * @param {Object} options - Additional options { customFilename, commitMessage }
+     * @returns {Promise<Object>} Upload result with URL and metadata
      */
-    async uploadImage(file, customSessionCode = null) {
-        if (!file || !file.type.startsWith('image/')) {
-            throw new Error('Invalid file type. Please select an image.');
+    async uploadToGithub(folderPath, fileToSend, options = {}) {
+        // Handle different file input types
+        let file, customFilename;
+        
+        if (typeof fileToSend === 'string') {
+            // String input - likely for avatar uploads (character name)
+            customFilename = fileToSend;
+            file = null; // Will be handled differently for avatars
+        } else if (fileToSend instanceof File) {
+            // File object - standard upload
+            file = fileToSend;
+            customFilename = options.customFilename || null;
+        } else {
+            throw new Error('Invalid fileToSend: must be File object or string filename');
         }
 
-        if (file.size > this.config.maxFileSize) {
-            throw new Error(`File too large. Maximum size: ${this.config.maxFileSize / 1024 / 1024}MB`);
+        // Validate file for standard uploads
+        if (file) {
+            if (!file.type.startsWith('image/')) {
+                throw new Error('Invalid file type. Please select an image.');
+            }
+
+            if (file.size > this.config.maxFileSize) {
+                throw new Error(`File too large. Maximum size: ${this.config.maxFileSize / 1024 / 1024}MB`);
+            }
         }
 
         if (!this.config.apiToken) {
             throw new Error('GitHub API token not configured. Please connect to StoryTeller first.');
         }
 
-        const sessionCode = customSessionCode || this.sessionCode || 'default';
-        
         try {
             // Ensure repository exists
             await this.ensureRepository();
 
-            // Generate unique filename
-            const timestamp = Date.now();
-            const randomId = Math.random().toString(36).substr(2, 8);
-            const extension = file.name.split('.').pop() || 'png';
-            const filename = `${timestamp}_${randomId}.${extension}`;
-            const path = `sessions/${sessionCode}/${filename}`;
+            let filename, path, base64Data, commitMessage;
 
-            // Convert file to base64
-            const base64Content = await this.fileToBase64(file);
-            const base64Data = base64Content.split(',')[1]; // Remove data:image/... prefix
+            if (file) {
+                // Standard file upload
+                if (customFilename) {
+                    // Use custom filename (e.g., for character avatars)
+                    const extension = file.name.split('.').pop() || 'png';
+                    filename = customFilename.includes('.') ? customFilename : `${customFilename}.${extension}`;
+                } else {
+                    // Generate unique filename
+                    const timestamp = Date.now();
+                    const randomId = Math.random().toString(36).substr(2, 8);
+                    const extension = file.name.split('.').pop() || 'png';
+                    filename = `${timestamp}_${randomId}.${extension}`;
+                }
+                
+                path = `${folderPath}/${filename}`;
+                commitMessage = options.commitMessage || `Upload ${filename} to ${folderPath}`;
+
+                // Convert file to base64
+                const base64Content = await this.fileToBase64(file);
+                base64Data = base64Content.split(',')[1]; // Remove data:image/... prefix
+                
+            } else {
+                // Avatar upload case - fileToSend is character name
+                throw new Error('Avatar upload from character name not yet implemented - use file upload');
+            }
 
             // Upload to GitHub
             const uploadResponse = await fetch(`${this.config.baseUrl}/repos/${this.config.owner}/${this.config.repo}/contents/${path}`, {
@@ -169,7 +206,7 @@ class GitHubImageHost {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    message: `Upload image for session ${sessionCode}`,
+                    message: commitMessage,
                     content: base64Data,
                     branch: this.config.branch
                 })
@@ -185,121 +222,108 @@ class GitHubImageHost {
             // Generate raw URL for direct image access
             const rawUrl = `${this.config.rawUrl}/${this.config.owner}/${this.config.repo}/${this.config.branch}/${path}`;
 
-            console.log(`✅ Image uploaded successfully to session ${sessionCode}`);
+            console.log(`✅ Image uploaded successfully to ${folderPath}: ${filename}`);
 
             return {
                 url: rawUrl,
                 downloadUrl: uploadData.content.download_url,
                 htmlUrl: uploadData.content.html_url,
                 path: path,
-                sessionCode: sessionCode,
+                filename: filename,
+                folderPath: folderPath,
                 service: 'github'
             };
 
         } catch (error) {
-            console.error('GitHub upload error:', error);
+            console.error('GitHub universal upload error:', error);
             throw error;
         }
     }
 
     /**
-     * Upload image for private note with smart naming convention
+     * Upload image to GitHub repository - LEGACY METHOD (uses universal upload)
+     */
+    async uploadImage(file, customSessionCode = null) {
+        const sessionCode = customSessionCode || this.sessionCode || 'default';
+        const folderPath = `sessions/${sessionCode}`;
+        
+        return await this.uploadToGithub(folderPath, file, {
+            commitMessage: `Upload image for session ${sessionCode}`
+        });
+    }
+
+    /**
+     * Upload image for private note with smart naming convention - LEGACY METHOD (uses universal upload)
      * Filename format: originalname_YYYY-MM-DD_SENDER_RECIPIENT.ext
      */
     async uploadNoteImage(file, senderName, recipientName, customSessionCode = null) {
+        const sessionCode = customSessionCode || this.sessionCode || 'default';
+        
+        // Generate smart filename with date and sender/recipient info
+        const today = new Date();
+        const dateStr = today.getFullYear() + '-' + 
+                      String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+                      String(today.getDate()).padStart(2, '0');
+        
+        // Add timestamp for uniqueness
+        const timestamp = Date.now();
+        const randomId = Math.random().toString(36).substr(2, 8);
+        
+        // Clean up the original filename (remove extension and sanitize)
+        const originalName = file.name.split('.')[0].replace(/[^a-zA-Z0-9\-_]/g, '');
+        const extension = file.name.split('.').pop() || 'png';
+        
+        // Clean up sender and recipient names (sanitize for filename)
+        const cleanSender = senderName.replace(/[^a-zA-Z0-9\-_]/g, '');
+        const cleanRecipient = recipientName.replace(/[^a-zA-Z0-9\-_]/g, '');
+        
+        // Format: originalname_YYYY-MM-DD_SENDER_RECIPIENT_timestamp_randomId.ext
+        const filename = `${originalName}_${dateStr}_${cleanSender}_${cleanRecipient}_${timestamp}_${randomId}.${extension}`;
+        const folderPath = `sessions/${sessionCode}/private-notes`;
+        
+        const result = await this.uploadToGithub(folderPath, file, {
+            customFilename: filename,
+            commitMessage: `Private note image: ${senderName} to ${recipientName} (${sessionCode})`
+        });
+        
+        // Add note-specific metadata
+        result.sessionCode = sessionCode;
+        result.noteMetadata = {
+            sender: senderName,
+            recipient: recipientName,
+            originalFilename: file.name,
+            date: dateStr,
+            isPrivateNote: true
+        };
+        
+        console.log(`✅ Private note image uploaded: ${senderName} → ${recipientName} (${sessionCode})`);
+        return result;
+    }
+
+    /**
+     * Upload custom character avatar to avatars folder
+     * @param {File} file - Image file
+     * @param {string} characterName - Character name for filename
+     * @returns {Promise<Object>} Upload result with avatar URL
+     */
+    async uploadCharacterAvatar(file, characterName) {
         if (!file || !file.type.startsWith('image/')) {
             throw new Error('Invalid file type. Please select an image.');
         }
 
-        if (file.size > this.config.maxFileSize) {
-            throw new Error(`File too large. Maximum size: ${this.config.maxFileSize / 1024 / 1024}MB`);
-        }
-
-        if (!this.config.apiToken) {
-            throw new Error('GitHub API token not configured. Please connect to StoryTeller first.');
-        }
-
-        const sessionCode = customSessionCode || this.sessionCode || 'default';
+        // Clean character name for filename safety
+        const cleanName = characterName.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30);
+        const extension = file.name.split('.').pop() || 'png';
+        const timestamp = Date.now();
+        const filename = `custom_${cleanName}_${timestamp}.${extension}`;
         
-        try {
-            // Ensure repository exists
-            await this.ensureRepository();
-
-            // Generate smart filename with date and sender/recipient info
-            const today = new Date();
-            const dateStr = today.getFullYear() + '-' + 
-                          String(today.getMonth() + 1).padStart(2, '0') + '-' + 
-                          String(today.getDate()).padStart(2, '0');
-            
-            // Add timestamp for uniqueness
-            const timestamp = Date.now();
-            const randomId = Math.random().toString(36).substr(2, 8);
-            
-            // Clean up the original filename (remove extension and sanitize)
-            const originalName = file.name.split('.')[0].replace(/[^a-zA-Z0-9\-_]/g, '');
-            const extension = file.name.split('.').pop() || 'png';
-            
-            // Clean up sender and recipient names (sanitize for filename)
-            const cleanSender = senderName.replace(/[^a-zA-Z0-9\-_]/g, '');
-            const cleanRecipient = recipientName.replace(/[^a-zA-Z0-9\-_]/g, '');
-            
-            // Format: originalname_YYYY-MM-DD_SENDER_RECIPIENT_timestamp_randomId.ext
-            const filename = `${originalName}_${dateStr}_${cleanSender}_${cleanRecipient}_${timestamp}_${randomId}.${extension}`;
-            
-            // Use session-based folder structure for private notes
-            const path = `sessions/${sessionCode}/private-notes/${filename}`;
-
-            // Convert file to base64
-            const base64Content = await this.fileToBase64(file);
-            const base64Data = base64Content.split(',')[1]; // Remove data:image/... prefix
-
-            // Upload to GitHub
-            const uploadResponse = await fetch(`${this.config.baseUrl}/repos/${this.config.owner}/${this.config.repo}/contents/${path}`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `token ${this.config.apiToken}`,
-                    'Accept': 'application/vnd.github.v3+json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    message: `Private note image: ${senderName} to ${recipientName} (${sessionCode})`,
-                    content: base64Data,
-                    branch: this.config.branch
-                })
-            });
-
-            if (!uploadResponse.ok) {
-                const error = await uploadResponse.json();
-                throw new Error(`Upload failed: ${error.message}`);
-            }
-
-            const uploadData = await uploadResponse.json();
-            
-            // Generate raw URL for direct image access
-            const rawUrl = `${this.config.rawUrl}/${this.config.owner}/${this.config.repo}/${this.config.branch}/${path}`;
-
-            console.log(`✅ Private note image uploaded: ${senderName} → ${recipientName} (${sessionCode})`);
-
-            return {
-                url: rawUrl,
-                downloadUrl: uploadData.content.download_url,
-                htmlUrl: uploadData.content.html_url,
-                path: path,
-                sessionCode: sessionCode,
-                service: 'github',
-                noteMetadata: {
-                    sender: senderName,
-                    recipient: recipientName,
-                    originalFilename: file.name,
-                    date: dateStr,
-                    isPrivateNote: true
-                }
-            };
-
-        } catch (error) {
-            console.error('GitHub note image upload error:', error);
-            throw error;
-        }
+        const result = await this.uploadToGithub('avatars', file, {
+            customFilename: filename,
+            commitMessage: `Upload custom avatar for character: ${characterName}`
+        });
+        
+        console.log(`✅ Custom character avatar uploaded: ${characterName}`);
+        return result;
     }
 
     /**

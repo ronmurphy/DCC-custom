@@ -1541,14 +1541,62 @@ function updateBonusesDisplay() {
 function handlePortraitUpload(event) {
     const file = event.target.files[0];
     if (file) {
-        const reader = new FileReader();
-        reader.onload = function (e) {
-            character.personal.portrait = e.target.result;
-            const portraitDisplay = document.getElementById('portrait-display');
-            portraitDisplay.innerHTML = `<img src="${e.target.result}" alt="Character Portrait" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">`;
-        };
-        reader.readAsDataURL(file);
+        // Check if we should upload to GitHub for custom avatars
+        if (window.avatarUrlSystem && window.githubImageHost) {
+            // Ask user if they want to upload to GitHub or use local only
+            const useGitHub = confirm(
+                'Would you like to upload this custom avatar to GitHub?\n\n' +
+                '✅ Yes: Avatar will be accessible from any device and shareable\n' +
+                '❌ No: Avatar will only be stored locally in this browser'
+            );
+            
+            if (useGitHub) {
+                // Upload to GitHub and use URL
+                const characterName = character.name || 'CustomCharacter';
+                window.avatarUrlSystem.uploadCustomAvatar(file, characterName)
+                    .then(avatarUrl => {
+                        if (avatarUrl) {
+                            character.personal.avatarUrl = avatarUrl;
+                            character.personal.portrait = null; // Clear base64 data
+                            
+                            const portraitDisplay = document.getElementById('portrait-display');
+                            portraitDisplay.innerHTML = `<img src="${avatarUrl}" alt="Character Portrait" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">`;
+                            
+                            console.log('✅ Custom avatar uploaded to GitHub');
+                        } else {
+                            // Fallback to local base64
+                            handlePortraitUploadLocal(file);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('❌ GitHub upload failed:', error);
+                        // Fallback to local base64
+                        handlePortraitUploadLocal(file);
+                    });
+            } else {
+                // Use local base64 storage
+                handlePortraitUploadLocal(file);
+            }
+        } else {
+            // Fallback to local base64 storage
+            handlePortraitUploadLocal(file);
+        }
     }
+}
+
+// Local base64 upload function
+function handlePortraitUploadLocal(file) {
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        character.personal.portrait = e.target.result;
+        character.personal.avatarUrl = null; // Clear URL if using base64
+        
+        const portraitDisplay = document.getElementById('portrait-display');
+        portraitDisplay.innerHTML = `<img src="${e.target.result}" alt="Character Portrait" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">`;
+        
+        console.log('✅ Custom avatar stored locally as base64');
+    };
+    reader.readAsDataURL(file);
 }
 
 function handleRaceSelection() {
@@ -1679,7 +1727,55 @@ function handleHeritageSelection() {
         character.personal = { age: '', backstory: '', portrait: null };
     }
     
-    // Check if avatar assignment system is available and heritage is selected
+    // Check if heritage is selected and not custom
+    if (selectedHeritage && selectedHeritage !== 'custom') {
+        // Try new URL system first, fallback to old system
+        if (window.avatarUrlSystem) {
+            // Use new URL-based avatar system (no base64 conversion needed)
+            window.avatarUrlSystem.updateCharacterPortrait(selectedHeritage, 'portrait-display', true)
+                .then(avatarResult => {
+                    if (avatarResult) {
+                        if (avatarResult.startsWith('http')) {
+                            // URL-based avatar - store URL instead of base64
+                            character.personal.avatarUrl = avatarResult;
+                            character.personal.portrait = null; // Clear old base64 data
+                            console.log(`✅ Updated character with avatar URL: ${selectedHeritage}`);
+                        } else {
+                            // Base64 fallback
+                            character.personal.portrait = avatarResult;
+                            character.personal.avatarUrl = null;
+                            console.log(`✅ Updated character with base64 fallback: ${selectedHeritage}`);
+                        }
+                    } else {
+                        // No avatar available
+                        showDefaultPortraitPlaceholder();
+                        character.personal.portrait = null;
+                        character.personal.avatarUrl = null;
+                    }
+                })
+                .catch(error => {
+                    console.warn(`⚠️ Error with avatar URL system: ${error.message}`);
+                    // Fallback to old system
+                    handleHeritageSelectionFallback(selectedHeritage);
+                });
+        } else {
+            // Fallback to old avatar assignment system
+            handleHeritageSelectionFallback(selectedHeritage);
+        }
+    } else if (selectedHeritage === 'custom' || selectedHeritage === '') {
+        // If custom or no heritage selected, revert to placeholder
+        showDefaultPortraitPlaceholder();
+        character.personal.portrait = null;
+        character.personal.avatarUrl = null;
+    }
+    
+    // Update custom race bonuses as before
+    updateCustomRaceBonuses();
+}
+
+// Fallback function for old avatar assignment system
+function handleHeritageSelectionFallback(selectedHeritage) {
+    // Check if old avatar assignment system is available
     if (window.avatarAssignmentSystem && selectedHeritage && selectedHeritage !== 'custom') {
         // Always assign avatar when heritage changes (not just when empty)
         const avatarFilename = window.avatarAssignmentSystem.getAvatarForHeritage(selectedHeritage);
@@ -1690,6 +1786,7 @@ function handleHeritageSelection() {
             loadImageAsBase64(avatarPath).then(base64Data => {
                 if (base64Data) {
                     character.personal.portrait = base64Data;
+                    character.personal.avatarUrl = null; // Clear URL if using base64
                     
                     // Update the portrait display
                     const portraitDisplay = document.getElementById('portrait-display');
@@ -1709,13 +1806,10 @@ function handleHeritageSelection() {
             console.log(`ℹ️ No avatar available for ${selectedHeritage}, showing default placeholder`);
             showDefaultPortraitPlaceholder();
         }
-    } else if (selectedHeritage === 'custom' || selectedHeritage === '') {
-        // If custom or no heritage selected, revert to placeholder
+    } else {
+        // No system available, show placeholder
         showDefaultPortraitPlaceholder();
     }
-    
-    // Update custom race bonuses as before
-    updateCustomRaceBonuses();
 }
 
 // Helper function to show default portrait placeholder
@@ -1906,12 +2000,17 @@ function updateCharacterDisplay() {
         console.log('Level up button element not found!');
     }
 
-    // Add portrait to overview
+    // Add portrait to overview - support both URL and base64 avatars
     const overviewPortrait = document.getElementById('overview-portrait');
     if (overviewPortrait) {
-        if (character.personal?.portrait) {
+        if (character.personal?.avatarUrl) {
+            // URL-based avatar (new system)
+            overviewPortrait.innerHTML = `<img src="${character.personal.avatarUrl}" alt="Character Portrait">`;
+        } else if (character.personal?.portrait) {
+            // Base64 avatar (legacy system)
             overviewPortrait.innerHTML = `<img src="${character.personal.portrait}" alt="Character Portrait">`;
         } else {
+            // No avatar, show placeholder
             overviewPortrait.innerHTML = `
                 <div class="portrait-placeholder">
                     <i class="ra ra-hood"></i>

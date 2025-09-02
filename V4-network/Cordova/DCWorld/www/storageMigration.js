@@ -213,14 +213,11 @@ class StorageMigration {
 // Create global instance
 window.storageMigration = new StorageMigration();
 
-// Auto-run migration when script loads
+// Auto-run migration when script loads (but only once)
 document.addEventListener('DOMContentLoaded', () => {
-    // Wait a bit for other scripts to load
-    setTimeout(() => {
-        if (window.advancedStorageManager) {
-            window.storageMigration.runMigration();
-        }
-    }, 1000);
+    // Don't auto-run migration here since character manager will handle it
+    // This prevents double-execution
+    console.log('📦 StorageMigration ready, waiting for character manager');
 });
 
 // Export for modules
