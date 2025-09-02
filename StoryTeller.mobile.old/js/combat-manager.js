@@ -1,42 +1,21 @@
 // ========================================
-// LEGACY COMBAT MANAGER - DEPRECATED
-// Use combat-manager-enhanced.js instead
+// COMBAT MANAGER
+// Handle combat encounters and enemy management
 // ========================================
 
-// This file is kept for compatibility but should not be used
-// All combat functionality has been moved to combat-manager-enhanced.js
-
-console.warn('⚠️ Loading legacy combat-manager.js - this file is deprecated. Use combat-manager-enhanced.js instead.');
-
-// Empty implementation to prevent errors
+// ========================================
+// COMBAT STATE
+// ========================================
 let currentCombat = {
     active: false,
     round: 0,
     turn: 0,
     participants: [],
     currentEnemy: null,
-    environment: null,
-    combatLog: []
+    environment: null
 };
 
 let loadedEnemies = {};
-
-// Placeholder functions to prevent errors
-function initializeCombatManager() {
-    console.log('⚠️ Legacy combat manager - using enhanced version instead');
-}
-
-function startCombat() {
-    console.log('⚠️ Legacy startCombat called - functionality moved to enhanced version');
-}
-
-function nextTurn() {
-    console.log('⚠️ Legacy nextTurn called - functionality moved to enhanced version');
-}
-
-function endCombat() {
-    console.log('⚠️ Legacy endCombat called - functionality moved to enhanced version');
-}
 
 // ========================================
 // LOAD ENEMY DATA
@@ -71,8 +50,6 @@ function addCombatTab() {
     
     // Add tab button
     const tabNav = document.querySelector('.tab-nav');
-    if (!tabNav) return;
-    
     const combatTabBtn = document.createElement('button');
     combatTabBtn.className = 'tab-btn';
     combatTabBtn.setAttribute('data-tab', 'combat');
@@ -84,8 +61,6 @@ function addCombatTab() {
     
     // Add tab content
     const tabContainer = document.querySelector('.tab-container');
-    if (!tabContainer) return;
-    
     const combatTab = document.createElement('section');
     combatTab.className = 'tab-content';
     combatTab.id = 'combat';
