@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="css/chat-effects.css">
     <link rel="stylesheet" href="css/map.css">
     <link rel="stylesheet" href="css/storyTellerPlayersPanel.css">
+    <link rel="stylesheet" href="css/character-modal.css">
     <!-- end ported css -->
 
     <style>
@@ -858,6 +859,14 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
+        }
+
+        /* Override for character items - use horizontal layout */
+        .player-item.character-item {
+            flex-direction: row !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+            min-height: auto !important;
         }
 
         .player-item:hover {

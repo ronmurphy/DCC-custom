@@ -3,16 +3,49 @@
    Character management and display styles
    ==================================== */
 
+/* Player List Container - Enhanced Scrolling Support */
+/* Only add scrolling properties, don't override existing layout */
+.player-list {
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch; /* iOS touch scrolling */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 107, 53, 0.3) transparent;
+    scroll-behavior: smooth;
+    /* Add small padding to prevent scrollbar overlap */
+    padding-right: 4px;
+    box-sizing: border-box;
+}
+
 /* Character List Items */
 .character-item {
-    display: flex;
-    align-items: center;
+    display: flex !important;
+    align-items: center !important;
+    flex-direction: row !important;
     padding: 12px;
     margin: 8px 0;
     background: rgba(255, 255, 255, 0.05);
     border-radius: 8px;
     border: 1px solid rgba(255, 107, 53, 0.2);
     transition: all 0.3s ease;
+}
+
+/* Ensure character items maintain horizontal layout even with player-item class */
+.player-item.character-item {
+    display: flex !important;
+    align-items: center !important;
+    flex-direction: row !important;
+    justify-content: flex-start !important;
+}
+
+/* Additional specificity for character item layout */
+.player-list .player-item.character-item {
+    display: flex !important;
+    align-items: center !important;
+    flex-direction: row !important;
+    justify-content: flex-start !important;
+    min-height: auto !important;
 }
 
 .character-item:hover {
@@ -61,6 +94,9 @@
 .player-info {
     flex: 1;
     min-width: 0; /* Allows text to truncate */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 .character-header {

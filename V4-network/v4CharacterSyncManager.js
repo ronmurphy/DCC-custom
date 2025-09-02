@@ -152,10 +152,11 @@ class V4CharacterSyncManager {
      */
     async sendCharacterData(character, toPlayer) {
         try {
-            // Clean character data for transmission
+            // Clean character data for transmission - exclude personal notes
             const cleanCharacter = {
                 ...character,
                 id: undefined, // Remove ID to prevent conflicts
+                notes: undefined, // Don't send personal notes to StoryTeller
                 lastModified: new Date().toISOString()
             };
 
@@ -169,7 +170,7 @@ class V4CharacterSyncManager {
             };
 
             await this.sendSystemMessage(`CHAR_DATA:${JSON.stringify(message)}`);
-            console.log(`📤 Sent character data: ${character.name} to ${toPlayer}`);
+            console.log(`📤 Sent character data: ${character.name} to ${toPlayer} (notes excluded)`);
 
             // Show notification
             if (typeof showNotification === 'function') {

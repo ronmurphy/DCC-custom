@@ -39,6 +39,11 @@ class StoryTellerPlayersPanel {
             // Update the panel if it's currently displayed
             this.updatePlayersPanelDisplay();
             
+            // Enable scrolling after a brief delay for dynamic content
+            setTimeout(() => {
+                this.enableScrollingForAllPanels();
+            }, 100);
+            
         } catch (error) {
             console.error('❌ Failed to initialize StoryTeller Players Panel:', error);
         }
@@ -308,10 +313,10 @@ class StoryTellerPlayersPanel {
         // Update display immediately
         this.updatePlayersPanelDisplay();
         
-        // Force a refresh after a short delay to ensure UI is updated
+        // Force a refresh after a short delay to ensure UI is updated and scrolling is enabled
         setTimeout(() => {
             this.updatePlayersPanelDisplay();
-            console.log(`✅ Character panel refreshed with ${this.characters.size} characters`);
+            console.log(`✅ Character panel refreshed with ${this.characters.size} characters - scrolling enabled`);
         }, 100);
         
         // Notify about new character
@@ -321,19 +326,34 @@ class StoryTellerPlayersPanel {
     /**
      * Handle character deletion
      */
-    handleCharacterDeletion(characterId) {
+    async handleCharacterDeletion(characterId) {
         if (!characterId) return;
 
         const character = this.characters.get(characterId);
         if (character) {
             console.log(`🗑️ Removing character: ${character.name}`);
+            
+            // Remove from memory
             this.characters.delete(characterId);
+            
+            // Remove from IndexedDB storage
+            try {
+                if (window.storageManager && window.storageManager.deleteCharacter) {
+                    await window.storageManager.deleteCharacter(characterId);
+                    console.log(`💾 Character deleted from storage: ${character.name}`);
+                }
+            } catch (error) {
+                console.warn('⚠️ Failed to delete character from storage:', error);
+            }
+            
+            // Close character modal if open
+            this.closeCharacterModal();
             
             // Update display
             this.updatePlayersPanelDisplay();
             
             // Notify about deletion
-            this.showNotification(`Removed: ${character.name}`, 'Character left the party');
+            this.showNotification(`Removed: ${character.name}`, 'Character deleted from storage');
         }
     }
 
@@ -347,11 +367,56 @@ class StoryTellerPlayersPanel {
         
         if (leftPanel && leftPanel.querySelector('.player-manager')) {
             this.renderPlayersPanel(leftPanel);
+            this.enablePlayerListScrolling(leftPanel);
         }
         
         if (rightPanel && rightPanel.querySelector('.player-manager')) {
             this.renderPlayersPanel(rightPanel);
+            this.enablePlayerListScrolling(rightPanel);
         }
+    }
+
+    /**
+     * Enable proper scrolling for player list (fix for touch and mouse wheel)
+     */
+    enablePlayerListScrolling(container) {
+        const playerList = container.querySelector('#player-list');
+        if (!playerList) return;
+
+        // Apply the same scrolling fix used for private messages
+        playerList.style.overflowY = 'auto';
+        playerList.style.overflowX = 'hidden';
+        playerList.style.webkitOverflowScrolling = 'touch'; // For iOS touch scrolling
+        playerList.style.maxHeight = 'calc(100vh - 200px)'; // Ensure container has height limit
+        
+        // Force a reflow to ensure scrolling works
+        playerList.scrollTop = playerList.scrollTop;
+        
+        console.log('📱 Scroll functionality enabled for player list');
+        console.log('🔍 Player list scroll info:', {
+            scrollHeight: playerList.scrollHeight,
+            clientHeight: playerList.clientHeight,
+            hasScroll: playerList.scrollHeight > playerList.clientHeight,
+            itemCount: this.characters.size
+        });
+    }
+
+    /**
+     * Enable scrolling for all visible player panels
+     */
+    enableScrollingForAllPanels() {
+        const leftPanel = document.getElementById('left-panel-content');
+        const rightPanel = document.getElementById('right-panel-content');
+        
+        if (leftPanel && leftPanel.querySelector('.player-manager')) {
+            this.enablePlayerListScrolling(leftPanel);
+        }
+        
+        if (rightPanel && rightPanel.querySelector('.player-manager')) {
+            this.enablePlayerListScrolling(rightPanel);
+        }
+        
+        console.log('📱 Scrolling enabled for all active player panels');
     }
 
     /**
@@ -522,104 +587,374 @@ class StoryTellerPlayersPanel {
     }
 
     /**
-     * Show character details in a modal
+     * Show character details in a modal (NPC-style layout)
      */
     showCharacterDetailsModal(character) {
-        const modalHtml = `
-            <div class="modal character-details-modal" id="character-details-modal">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h3>${character.name || 'Unnamed Character'}</h3>
-                        <span class="close" onclick="storyTellerPlayersPanel.closeModal('character-details-modal')">&times;</span>
-                    </div>
-                    <div class="modal-body">
-                        <div class="character-details-grid">
-                            <div class="character-overview">
-                                <div class="character-portrait-large">
-                                    ${this.getCharacterPortrait(character)}
-                                </div>
-                                <div class="character-basic-info">
-                                    <h4>Level ${character.level || 1}</h4>
-                                    <p>${this.getRaceName(character)} ${this.getJobName(character)} ${this.getClassName(character)}</p>
-                                    <div class="character-resources">
-                                        <div class="resource-bar">
-                                            <label>Health:</label>
-                                            <span>${character.currentHealthPoints || 0} / ${character.healthPoints || 0}</span>
-                                        </div>
-                                        <div class="resource-bar">
-                                            <label>Magic:</label>
-                                            <span>${character.currentMagicPoints || 0} / ${character.magicPoints || 0}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="character-stats">
-                                <h5>Attributes</h5>
-                                <div class="stats-grid">
-                                    <div class="stat-item">STR: ${character.stats?.strength || 0}</div>
-                                    <div class="stat-item">DEX: ${character.stats?.dexterity || 0}</div>
-                                    <div class="stat-item">CON: ${character.stats?.constitution || 0}</div>
-                                    <div class="stat-item">INT: ${character.stats?.intelligence || 0}</div>
-                                    <div class="stat-item">WIS: ${character.stats?.wisdom || 0}</div>
-                                    <div class="stat-item">CHA: ${character.stats?.charisma || 0}</div>
-                                </div>
-                            </div>
-                            <div class="character-skills">
-                                <h5>Skills (${character.customSkills?.length || 0})</h5>
-                                <div class="skills-list">
-                                    ${this.getSkillsList(character)}
-                                </div>
-                            </div>
-                            <div class="character-achievements">
-                                <h5>Achievements (${Array.isArray(character.achievements) ? character.achievements.length : 0})</h5>
-                                <div class="achievements-list">
-                                    ${this.getAchievementsList(character)}
-                                </div>
-                            </div>
-                            <div class="character-inventory">
-                                <h5>Inventory (${character.inventory?.length || 0} items)</h5>
-                                <div class="inventory-summary">
-                                    ${this.getInventorySummary(character)}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button class="action-btn primary" onclick="storyTellerPlayersPanel.editCharacter('${character.id}')">Edit Character</button>
-                        <button class="action-btn secondary" onclick="storyTellerPlayersPanel.closeModal('character-details-modal')">Close</button>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        // Add modal to document
+        // Remove existing modal if present
         const existingModal = document.getElementById('character-details-modal');
         if (existingModal) {
             existingModal.remove();
         }
 
+        // Create modal HTML with NPC-inspired layout
+        const modalHtml = `
+            <div class="character-modal" id="character-details-modal" onclick="storyTellerPlayersPanel.closeCharacterModal(event)">
+                <div class="character-modal-content" onclick="event.stopPropagation()">
+                    <div class="character-modal-header">
+                        <h3 class="character-modal-title">
+                            <i class="ra ra-user"></i>
+                            ${character.name || 'Unnamed Character'}
+                        </h3>
+                        <div class="character-modal-controls">
+                            <button class="btn-modal-edit" onclick="storyTellerPlayersPanel.editCharacter('${character.id}')" title="Edit Character">
+                                <i class="ra ra-edit"></i>
+                                <span>Edit</span>
+                            </button>
+                            <button class="btn-modal-close" onclick="storyTellerPlayersPanel.closeCharacterModal()">
+                                <i class="ra ra-close"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="character-modal-body" id="character-modal-body">
+                        ${this.generateCharacterModalContent(character)}
+                    </div>
+                    <div class="character-modal-footer">
+                        <button class="btn-secondary" onclick="storyTellerPlayersPanel.exportCharacter('${character.id}')">
+                            <i class="ra ra-download"></i> Export Character
+                        </button>
+                        <button class="btn-secondary" onclick="storyTellerPlayersPanel.kickCharacter('${character.id}')">
+                            <i class="ra ra-sword"></i> Remove from Party
+                        </button>
+                        <button class="btn-secondary" onclick="storyTellerPlayersPanel.closeCharacterModal()">
+                            <i class="ra ra-close"></i> Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Add modal to body and show
         document.body.insertAdjacentHTML('beforeend', modalHtml);
-        
-        // Show modal
         const modal = document.getElementById('character-details-modal');
-        modal.style.display = 'block';
+        modal.style.display = 'flex';
     }
 
     /**
-     * Get skills list HTML
+     * Generate character modal content in NPC-style layout
      */
-    getSkillsList(character) {
+    generateCharacterModalContent(character) {
+        const raceName = this.getRaceName(character);
+        const className = this.getClassName(character);
+        const jobName = this.getJobName(character);
+        const achievementCount = Array.isArray(character.achievements) ? character.achievements.length : 0;
+        const skillCount = character.customSkills?.length || 0;
+        const inventoryCount = character.inventory?.length || 0;
+
+        return `
+            <div class="character-display modal-character-display">
+                <div class="character-card">
+                    <div class="character-header">
+                        <div class="character-portrait-modal">
+                            ${this.getCharacterPortrait(character)}
+                        </div>
+                        <div class="character-header-info">
+                            <h4 class="character-name">${character.name}</h4>
+                            <span class="character-identity">${raceName} ${jobName} ${className}</span>
+                            <div class="character-level-badge">Level ${character.level || 1}</div>
+                        </div>
+                        <div class="character-vital-stats">
+                            <div class="vital-stat health">
+                                <span class="vital-label">❤️ HP</span>
+                                <span class="vital-value">${character.currentHealthPoints || 0}/${character.healthPoints || 0}</span>
+                            </div>
+                            <div class="vital-stat magic">
+                                <span class="vital-label">💙 MP</span>
+                                <span class="vital-value">${character.currentMagicPoints || 0}/${character.magicPoints || 0}</span>
+                            </div>
+                            <div class="vital-stat armor">
+                                <span class="vital-label">🛡️ AC</span>
+                                <span class="vital-value">${character.armorClass || 'N/A'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="character-details">
+                        <div class="character-info-sections">
+                            
+                            <!-- Attributes Section -->
+                            <div class="info-section">
+                                <div class="section-header collapsed" onclick="storyTellerPlayersPanel.toggleSection(this)">
+                                    <i class="ra ra-muscle-up section-icon"></i>
+                                    <span>Attributes</span>
+                                    <i class="ra ra-arrow-down toggle-arrow"></i>
+                                </div>
+                                <div class="section-content">
+                                    <div class="attribute-grid">
+                                        <div class="attribute-item">
+                                            <span class="attr-label">STR</span>
+                                            <span class="attr-value">${character.stats?.strength || character.strength || 0}</span>
+                                        </div>
+                                        <div class="attribute-item">
+                                            <span class="attr-label">DEX</span>
+                                            <span class="attr-value">${character.stats?.dexterity || character.dexterity || 0}</span>
+                                        </div>
+                                        <div class="attribute-item">
+                                            <span class="attr-label">CON</span>
+                                            <span class="attr-value">${character.stats?.constitution || character.constitution || 0}</span>
+                                        </div>
+                                        <div class="attribute-item">
+                                            <span class="attr-label">INT</span>
+                                            <span class="attr-value">${character.stats?.intelligence || character.intelligence || 0}</span>
+                                        </div>
+                                        <div class="attribute-item">
+                                            <span class="attr-label">WIS</span>
+                                            <span class="attr-value">${character.stats?.wisdom || character.wisdom || 0}</span>
+                                        </div>
+                                        <div class="attribute-item">
+                                            <span class="attr-label">CHA</span>
+                                            <span class="attr-value">${character.stats?.charisma || character.charisma || 0}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Skills Section -->
+                            <div class="info-section">
+                                <div class="section-header collapsed" onclick="storyTellerPlayersPanel.toggleSection(this)">
+                                    <i class="ra ra-round-star section-icon"></i>
+                                    <span>Skills (${skillCount})</span>
+                                    <i class="ra ra-arrow-down toggle-arrow"></i>
+                                </div>
+                                <div class="section-content">
+                                    <div class="skills-grid">
+                                        ${this.getExpandedSkillsList(character)}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Achievements Section -->
+                            <div class="info-section">
+                                <div class="section-header collapsed" onclick="storyTellerPlayersPanel.toggleSection(this)">
+                                    <i class="ra ra-trophy section-icon"></i>
+                                    <span>Achievements (${achievementCount})</span>
+                                    <i class="ra ra-arrow-down toggle-arrow"></i>
+                                </div>
+                                <div class="section-content">
+                                    <div class="achievements-grid">
+                                        ${this.getExpandedAchievementsList(character)}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Inventory Section -->
+                            <div class="info-section">
+                                <div class="section-header collapsed" onclick="storyTellerPlayersPanel.toggleSection(this)">
+                                    <i class="ra ra-knapsack section-icon"></i>
+                                    <span>Inventory (${inventoryCount})</span>
+                                    <i class="ra ra-arrow-down toggle-arrow"></i>
+                                </div>
+                                <div class="section-content">
+                                    <div class="inventory-grid">
+                                        ${this.getExpandedInventoryList(character)}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Character Details Section -->
+                            <div class="info-section">
+                                <div class="section-header collapsed" onclick="storyTellerPlayersPanel.toggleSection(this)">
+                                    <i class="ra ra-scroll-unfurled section-icon"></i>
+                                    <span>Character Details</span>
+                                    <i class="ra ra-arrow-down toggle-arrow"></i>
+                                </div>
+                                <div class="section-content">
+                                    <div class="character-meta-info">
+                                        <div class="meta-item">
+                                            <span class="meta-label">Character ID:</span>
+                                            <span class="meta-value">${character.id || 'Unknown'}</span>
+                                        </div>
+                                        <div class="meta-item">
+                                            <span class="meta-label">Last Modified:</span>
+                                            <span class="meta-value">${character.lastModified ? new Date(character.lastModified).toLocaleString() : 'Unknown'}</span>
+                                        </div>
+                                        <div class="meta-item">
+                                            <span class="meta-label">Last Sync:</span>
+                                            <span class="meta-value">${character.lastSync ? new Date(character.lastSync).toLocaleString() : 'Never'}</span>
+                                        </div>
+                                        ${this.hasRelevantNotes(character) ? `
+                                        <div class="meta-item full-width">
+                                            <span class="meta-label">Public Notes:</span>
+                                            <div class="character-notes">${this.formatCharacterNotes(character)}</div>
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Toggle collapsible sections in character modal
+     */
+    toggleSection(headerElement) {
+        const section = headerElement.parentElement;
+        const content = section.querySelector('.section-content');
+        const arrow = headerElement.querySelector('.toggle-arrow');
+        
+        if (headerElement.classList.contains('collapsed')) {
+            headerElement.classList.remove('collapsed');
+            content.style.display = 'block';
+            arrow.style.transform = 'rotate(180deg)';
+        } else {
+            headerElement.classList.add('collapsed');
+            content.style.display = 'none';
+            arrow.style.transform = 'rotate(0deg)';
+        }
+    }
+
+    /**
+     * Close character modal
+     */
+    closeCharacterModal(event) {
+        if (event && event.target !== event.currentTarget) return;
+        
+        const modal = document.getElementById('character-details-modal');
+        if (modal) {
+            modal.remove();
+        }
+    }
+
+    /**
+     * Get expanded skills list for modal
+     */
+    getExpandedSkillsList(character) {
         if (!character.customSkills || character.customSkills.length === 0) {
-            return '<p class="no-items">No skills</p>';
+            return '<div class="no-content">No skills learned yet</div>';
         }
 
         return character.customSkills.map(skill => `
             <div class="skill-item">
                 <span class="skill-name">${skill.name}</span>
                 <span class="skill-stat">[${skill.stat?.toUpperCase() || '?'}]</span>
-                <span class="skill-source">(${skill.source || 'unknown'})</span>
+                <span class="skill-source">(${skill.source || 'Unknown'})</span>
             </div>
         `).join('');
+    }
+
+    /**
+     * Get expanded achievements list for modal
+     */
+    getExpandedAchievementsList(character) {
+        if (!Array.isArray(character.achievements) || character.achievements.length === 0) {
+            return '<div class="no-content">No achievements earned yet</div>';
+        }
+
+        return character.achievements.map(achievement => {
+            const rarity = achievement.rarity || 'common';
+            const rarityClass = `rarity-${rarity}`;
+            const categoryIcon = this.getAchievementCategoryIcon(achievement.category);
+            
+            return `
+                <div class="achievement-item ${rarityClass}">
+                    <div class="achievement-icon">${categoryIcon}</div>
+                    <div class="achievement-info">
+                        <span class="achievement-name">${achievement.name}</span>
+                        <span class="achievement-rarity">${rarity.charAt(0).toUpperCase() + rarity.slice(1)}</span>
+                        ${achievement.description ? `<p class="achievement-desc">${achievement.description}</p>` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    /**
+     * Get achievement category icon
+     */
+    getAchievementCategoryIcon(category) {
+        const icons = {
+            combat: '⚔️',
+            exploration: '🗺️',
+            social: '👥',
+            crafting: '🔨',
+            magic: '🔮',
+            survival: '🏕️',
+            knowledge: '📚',
+            special: '⭐'
+        };
+        return icons[category] || '🏆';
+    }
+
+    /**
+     * Get expanded inventory list for modal
+     */
+    getExpandedInventoryList(character) {
+        if (!character.inventory || character.inventory.length === 0) {
+            return '<div class="no-content">No items in inventory</div>';
+        }
+
+        return character.inventory.slice(0, 20).map(item => `
+            <div class="inventory-item">
+                <span class="item-name">${item.name}</span>
+                ${item.quantity > 1 ? `<span class="item-quantity">x${item.quantity}</span>` : ''}
+            </div>
+        `).join('') + (character.inventory.length > 20 ? `<p class="more-items">...and ${character.inventory.length - 20} more items</p>` : '');
+    }
+
+    /**
+     * Check if character has relevant notes for StoryTeller
+     */
+    hasRelevantNotes(character) {
+        // If notes is undefined (filtered out), return false
+        if (!character.notes) return false;
+        
+        // If notes is a string and not empty
+        if (typeof character.notes === 'string') {
+            return character.notes.trim().length > 0;
+        }
+        
+        // If notes is an object, check for party/session notes (not personal)
+        if (typeof character.notes === 'object') {
+            const relevantNotes = character.notes.party || character.notes.session || character.notes.world;
+            return relevantNotes && relevantNotes.trim().length > 0;
+        }
+        
+        return false;
+    }
+
+    /**
+     * Format character notes for display
+     */
+    formatCharacterNotes(character) {
+        if (!character.notes) return '';
+        
+        // If notes is a simple string
+        if (typeof character.notes === 'string') {
+            return character.notes;
+        }
+        
+        // If notes is an object, show only party/session/world notes
+        if (typeof character.notes === 'object') {
+            const sections = [];
+            
+            if (character.notes.party && character.notes.party.trim()) {
+                sections.push(`<strong>Party:</strong> ${character.notes.party}`);
+            }
+            if (character.notes.session && character.notes.session.trim()) {
+                sections.push(`<strong>Session:</strong> ${character.notes.session}`);
+            }
+            if (character.notes.world && character.notes.world.trim()) {
+                sections.push(`<strong>World:</strong> ${character.notes.world}`);
+            }
+            
+            return sections.join('<br><br>') || 'No public notes';
+        }
+        
+        return 'Invalid notes format';
     }
 
     /**
