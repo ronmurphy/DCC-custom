@@ -141,9 +141,13 @@ class ChatCommandParser {
     async executeCommand(commandType, match, senderName) {
         const playerName = match[1];
         
-        // CLEAN command doesn't require a player to be registered
+        // CLEAN and AVATAR_URL commands don't require a player to be registered
         if (commandType === 'CLEAN') {
             return await this.handleCleanCommand(playerName, match[2], senderName);
+        }
+        
+        if (commandType === 'AVATAR_URL') {
+            return await this.handleAvatarUrlCommand(playerName, match[2], senderName);
         }
         
         const player = this.getPlayer(playerName);
@@ -190,9 +194,6 @@ class ChatCommandParser {
             
             case 'CLEAN':
                 return await this.handleCleanCommand(playerName, match[2], senderName);
-            
-            case 'AVATAR_URL':
-                return await this.handleAvatarUrlCommand(playerName, match[2], senderName);
             
             default:
                 throw new Error(`Unknown command type: ${commandType}`);
@@ -760,20 +761,49 @@ class ChatCommandParser {
      * @param {string} avatarUrl - Avatar URL
      */
     updatePlayerChipAvatar(playerName, avatarUrl) {
-        // Find player chip in the UI
-        const playerChips = document.querySelectorAll('.player-chip');
+        console.log(`🔍 Looking for chip with player name: "${playerName}"`);
         
-        playerChips.forEach(chip => {
-            const nameElement = chip.querySelector('.chip-name');
-            if (nameElement && nameElement.textContent === playerName) {
-                const avatarElement = chip.querySelector('.chip-avatar');
-                if (avatarElement && avatarUrl) {
-                    // Replace emoji with actual image
-                    avatarElement.innerHTML = `<img src="${avatarUrl}" alt="${playerName}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" onerror="this.parentElement.innerHTML='⚔️'">`;
-                    console.log(`✅ Updated ${playerName}'s chip avatar`);
+        const attemptUpdate = (retryCount = 0) => {
+            // Find player chip in the UI
+            const playerChips = document.querySelectorAll('.player-chip');
+            console.log(`🔍 Found ${playerChips.length} player chips total (attempt ${retryCount + 1})`);
+            
+            let chipFound = false;
+            playerChips.forEach((chip, index) => {
+                const nameElement = chip.querySelector('.chip-name');
+                if (nameElement) {
+                    const chipPlayerName = nameElement.textContent.trim();
+                    console.log(`🔍 Chip ${index}: "${chipPlayerName}"`);
+                    
+                    if (chipPlayerName === playerName) {
+                        console.log(`✅ Found matching chip for: "${playerName}"`);
+                        chipFound = true;
+                        
+                        const avatarElement = chip.querySelector('.chip-avatar');
+                        if (avatarElement && avatarUrl) {
+                            console.log(`🔄 Updating avatar element for ${playerName} with URL: ${avatarUrl}`);
+                            // Replace emoji with actual image
+                            avatarElement.innerHTML = `<img src="${avatarUrl}" alt="${playerName}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" onerror="this.parentElement.innerHTML='⚔️'">`;
+                            console.log(`✅ Updated ${playerName}'s chip avatar`);
+                        } else {
+                            console.warn(`❌ Avatar element not found or no URL for ${playerName}`);
+                        }
+                    }
+                } else {
+                    console.log(`🔍 Chip ${index}: No name element found`);
                 }
+            });
+            
+            // If chip not found and we have retries left, try again after a delay
+            if (!chipFound && retryCount < 3) {
+                console.log(`⏳ Chip for "${playerName}" not found, retrying in 500ms...`);
+                setTimeout(() => attemptUpdate(retryCount + 1), 500);
+            } else if (!chipFound) {
+                console.warn(`❌ No chip found for player: "${playerName}" after ${retryCount + 1} attempts`);
             }
-        });
+        };
+        
+        attemptUpdate();
     }
 
     /**

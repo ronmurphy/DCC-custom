@@ -371,7 +371,16 @@ async function fullSupabaseConnect(playerName, sessionCode, isStoryteller = fals
         }
         
         // Step 9: Auto-send avatar URL if available (silent command)
+        console.log('🔍 DEBUG - About to call autoSendAvatarUrl for:', playerName);
         await autoSendAvatarUrl(playerName);
+        console.log('🔍 DEBUG - autoSendAvatarUrl completed for:', playerName);
+        
+        // Step 10: Update self chip avatar immediately
+        if (typeof window.updateSelfChipAvatar === 'function') {
+            setTimeout(() => {
+                window.updateSelfChipAvatar();
+            }, 200);
+        }
         
         // Success!
         result.success = true;
@@ -413,20 +422,75 @@ async function fullSupabaseConnect(playerName, sessionCode, isStoryteller = fals
  */
 async function autoSendAvatarUrl(playerName) {
     try {
-        // Get player's character data to find avatar URL
-        const characterData = window.characterManager?.getCharacterData?.();
+        console.log('🔍 DEBUG - autoSendAvatarUrl called for:', playerName);
         
-        if (!characterData || !characterData.avatarURL) {
+        // Get player's character data - use the same method as v4CharacterSyncManager
+        let characterData = null;
+        
+        console.log('🔍 DEBUG - Checking character manager...');
+        console.log('🔍 DEBUG - window.characterManager exists:', !!window.characterManager);
+        console.log('🔍 DEBUG - characterManager.currentCharacterId:', window.characterManager?.currentCharacterId);
+        console.log('🔍 DEBUG - window.character exists:', !!window.character);
+        
+        // V4-network uses characterManager.currentCharacterId and global 'character' object
+        if (window.characterManager && window.characterManager.currentCharacterId && window.character) {
+            // Verify the character object matches the current ID
+            if (character.id === characterManager.currentCharacterId) {
+                characterData = character;
+                console.log('🔍 DEBUG - Found character via currentCharacterId match');
+            }
+        }
+        
+        // Fallback: try to find current character in characters array
+        if (!characterData && window.characterManager && window.characterManager.currentCharacterId && window.characterManager.characters) {
+            characterData = characterManager.characters.find(
+                char => char.id === characterManager.currentCharacterId
+            );
+            if (characterData) {
+                console.log('🔍 DEBUG - Found character via characters array search');
+            }
+        }
+        
+        // Last resort: if we have a global character object, use it
+        if (!characterData && window.character && window.character.id) {
+            characterData = character;
+            console.log('🔍 DEBUG - Using global character object as fallback');
+        }
+        
+        if (!characterData) {
+            console.log(`📸 No character data found for ${playerName} to auto-send avatar`);
+            console.log(`📸 Debug - characterManager:`, window.characterManager);
+            console.log(`📸 Debug - currentCharacterId:`, window.characterManager?.currentCharacterId);
+            console.log(`📸 Debug - global character:`, window.character);
+            return;
+        }
+        
+        console.log('🔍 DEBUG - Character data found:', characterData.name);
+        console.log('🔍 DEBUG - Character personal section:', characterData.personal);
+        
+        // Check for avatar URL (new system) or portrait (old system)
+        let avatarUrl = null;
+        if (characterData.personal?.avatarUrl) {
+            avatarUrl = characterData.personal.avatarUrl;
+            console.log('🔍 DEBUG - Found avatarUrl:', avatarUrl);
+        } else if (characterData.personal?.portrait) {
+            // For now, skip base64 portraits in avatar announcements
+            console.log(`📸 Character ${playerName} has base64 portrait - skipping avatar URL announcement`);
+            return;
+        }
+        
+        if (!avatarUrl) {
             console.log(`📸 No avatar URL found for ${playerName} to auto-send`);
             return;
         }
         
         // Send silent AVATAR_URL command
-        const avatarCommand = `AVATAR_URL:${playerName}:${characterData.avatarURL}`;
-        console.log(`🎭 Auto-sending avatar URL for ${playerName}`);
+        const avatarCommand = `AVATAR_URL:${playerName}:${avatarUrl}`;
+        console.log(`🎭 Auto-sending avatar URL for ${playerName}: ${avatarUrl}`);
         
-        // Send as silent command (no visible message)
-        await sendGameMessage(avatarCommand, 'system');
+        // Send as silent command (no visible message) - use the correct function
+        await sendChatMessageAsync(avatarCommand);
+        console.log(`🎭 Avatar URL command sent successfully for ${playerName}`);
         
     } catch (error) {
         console.error('❌ Error auto-sending avatar URL:', error);
@@ -1542,6 +1606,14 @@ async function handleIncomingMessage(message) {
         if (window.showDebug) console.log('🔍 DEBUG - Current window.playerName:', window.playerName);
     }
     
+    // Add specific debugging for all messages to help diagnose AVATAR_URL issue
+    console.log('📨 Incoming message structure:');
+    console.log('   - message_type:', message.message_type);
+    console.log('   - message_text:', message.message_text);
+    console.log('   - player_name:', message.player_name);
+    console.log('   - is_storyteller:', message.is_storyteller);
+    console.log('   - startsWith AVATAR_URL check:', message.message_text?.startsWith('AVATAR_URL:'));
+    
     // Filter out heartbeat messages (don't display them)
     if (message.message_type === 'heartbeat' || message.player_name === 'Heartbeat') {
         if (window.showDebug) console.log('📡 Heartbeat received, connection healthy');
@@ -1576,6 +1648,60 @@ async function handleIncomingMessage(message) {
         }
         
         // Don't display the raw command - we'll show a nicer message instead
+        return;
+    }
+    
+    // Check if this is an AVATAR_URL command
+    if (message.message_type === 'chat' && message.message_text.startsWith('AVATAR_URL:')) {
+        console.log('🎭 Detected AVATAR_URL command in chat:', message.message_text);
+        console.log('🎭 Message from player:', message.player_name);
+        console.log('🎭 Current player:', window.playerName || playerName);
+        console.log('🎭 ChatCommandParser available:', !!window.chatCommandParser);
+        
+        // Process the avatar URL command using the chatCommandParser
+        if (window.chatCommandParser) {
+            try {
+                const result = await window.chatCommandParser.processMessage(message.message_text, message.player_name);
+                if (result && result.success) {
+                    console.log('✅ Avatar URL command processed successfully for:', message.player_name);
+                    console.log('✅ Avatar URL:', result.details?.avatarUrl);
+                    
+                    // Cache the avatar for the sender (in case they want to see their own chip update)
+                    if (result.details?.avatarUrl && window.chatCommandParser) {
+                        window.chatCommandParser.playerAvatars.set(message.player_name, result.details.avatarUrl);
+                        console.log('🔄 Manually cached avatar for:', message.player_name);
+                    }
+                    
+                    // First trigger a refresh of connected players list (this will recreate chips with cached avatars)
+                    console.log('🔄 Triggering connected players list refresh first');
+                    if (window.updateConnectedPlayers) {
+                        await new Promise(resolve => {
+                            updateConnectedPlayersList();
+                            setTimeout(resolve, 300); // Wait for chips to be created
+                        });
+                    }
+                    
+                    // Then force immediate chip update for this specific player (as backup)
+                    if (window.chatCommandParser.updatePlayerChipAvatar) {
+                        const avatarUrl = result.details?.avatarUrl;
+                        if (avatarUrl) {
+                            console.log('🔄 Double-checking chip update for:', message.player_name);
+                            window.chatCommandParser.updatePlayerChipAvatar(message.player_name, avatarUrl);
+                        }
+                    }
+                    
+                } else {
+                    console.warn('❌ Avatar URL command processing failed:', result);
+                }
+            } catch (error) {
+                console.error('❌ Error processing AVATAR_URL command:', error);
+            }
+        } else {
+            console.warn('❌ ChatCommandParser not available!');
+        }
+        
+        console.log('🔇 AVATAR_URL command processed, returning early to hide from chat');
+        // Don't display the raw command in chat
         return;
     }
     
@@ -1979,4 +2105,31 @@ if (typeof window !== 'undefined') {
     window.leaveGameSession = leaveGameSession;
     window.sendChatMessage = sendChatMessage;
     window.updateConnectedPlayersList = updateConnectedPlayersList;
+    
+    // Debug function to check cached avatars
+    window.checkCachedAvatars = function() {
+        console.log('🔍 === AVATAR DEBUG INFO ===');
+        console.log('🔍 ChatCommandParser available:', !!window.chatCommandParser);
+        
+        if (window.chatCommandParser) {
+            // Get all player chips
+            const playerChips = document.querySelectorAll('.player-chip');
+            console.log('🔍 Found player chips:', playerChips.length);
+            
+            playerChips.forEach((chip, index) => {
+                const nameElement = chip.querySelector('.chip-name');
+                const avatarElement = chip.querySelector('.chip-avatar');
+                const playerName = nameElement ? nameElement.textContent : 'Unknown';
+                const cachedUrl = window.chatCommandParser.getCachedAvatarUrl(playerName);
+                const hasImage = avatarElement ? avatarElement.querySelector('img') !== null : false;
+                
+                console.log(`🔍 Chip ${index}: ${playerName}`);
+                console.log(`    - Cached URL: ${cachedUrl || 'None'}`);
+                console.log(`    - Has image: ${hasImage}`);
+                console.log(`    - Avatar content: ${avatarElement ? avatarElement.innerHTML.substring(0, 50) + '...' : 'None'}`);
+            });
+        }
+        
+        console.log('🔍 === END DEBUG INFO ===');
+    };
 }

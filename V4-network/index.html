@@ -3056,6 +3056,7 @@
         // Function to update connected players list (called by supabase-chat.js)
         function updateConnectedPlayers(players = []) {
             console.log('🔍 Updating connected players:', players);
+            console.log('🔍 ChatCommandParser available:', !!window.chatCommandParser);
             
             // DEPRECATED: The old connected-players list has been replaced by player-chips-area
             // Legacy code commented out below:
@@ -3106,18 +3107,54 @@
             // Update Bottom Sheet player chips
             const playerChipsScroll = document.querySelector('.player-chips-scroll');
             if (playerChipsScroll) {
-                // Keep the self chip
-                const selfChip = playerChipsScroll.querySelector('.player-chip.self');
-                
-                // Clear all chips except self
-                playerChipsScroll.innerHTML = '';
+                // Update the self chip with current player info and avatar
+                let selfChip = playerChipsScroll.querySelector('.player-chip.self');
                 if (selfChip) {
-                    playerChipsScroll.appendChild(selfChip);
+                    // Update self chip with current player name and avatar
+                    const currentPlayerName = window.networkPlayerName || 'You';
+                    const nameElement = selfChip.querySelector('.chip-name');
+                    if (nameElement) {
+                        nameElement.textContent = currentPlayerName;
+                    }
+                    
+                    // Check if we have an avatar for the current player
+                    const avatarElement = selfChip.querySelector('.chip-avatar');
+                    if (avatarElement) {
+                        const chatParser = window.chatCommandParser;
+                        const cachedAvatarUrl = chatParser?.getCachedAvatarUrl?.(currentPlayerName);
+                        
+                        if (cachedAvatarUrl) {
+                            avatarElement.innerHTML = `<img src="${cachedAvatarUrl}" alt="${currentPlayerName}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" onerror="this.parentElement.innerHTML='👤'">`;
+                        } else {
+                            // Try to get avatar from current character data
+                            const characterData = getCurrentCharacterData();
+                            if (characterData?.personal?.avatarUrl) {
+                                avatarElement.innerHTML = `<img src="${characterData.personal.avatarUrl}" alt="${currentPlayerName}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" onerror="this.parentElement.innerHTML='👤'">`;
+                                
+                                // Cache it for future use
+                                if (chatParser && typeof chatParser.handleAvatarUrlCommand === 'function') {
+                                    chatParser.handleAvatarUrlCommand(currentPlayerName, characterData.personal.avatarUrl, 'self');
+                                }
+                            } else {
+                                avatarElement.innerHTML = '👤';
+                            }
+                        }
+                    }
                 }
                 
+                // Clear other chips but keep self
+                const allChips = Array.from(playerChipsScroll.children);
+                allChips.forEach(chip => {
+                    if (!chip.classList.contains('self')) {
+                        chip.remove();
+                    }
+                });
+                
                 // Add player chips for connected players
+                console.log('🔍 Creating chips for connected players:', players);
                 players.forEach(player => {
                     if (player.name && player.name !== networkPlayerName && player.name !== 'System' && player.name !== 'Heartbeat') {
+                        console.log(`🔍 Creating chip for player: ${player.name}`);
                         const chipDiv = document.createElement('div');
                         chipDiv.className = 'player-chip';
                         
@@ -3130,10 +3167,14 @@
                         const chatParser = window.chatCommandParser;
                         const cachedAvatarUrl = chatParser?.getCachedAvatarUrl?.(player.name);
                         
+                        console.log(`🔍 Cached avatar URL for ${player.name}:`, cachedAvatarUrl);
+                        
                         if (cachedAvatarUrl) {
                             avatarContent = `<img src="${cachedAvatarUrl}" alt="${player.name}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" onerror="this.parentElement.innerHTML='${player.is_storyteller ? '👑' : '⚔️'}'">`;
+                            console.log(`✅ Using cached avatar for ${player.name}`);
                         } else {
                             avatarContent = player.is_storyteller ? '👑' : '⚔️';
+                            console.log(`🔍 No cached avatar for ${player.name}, using default: ${avatarContent}`);
                         }
                         
                         chipDiv.innerHTML = `
@@ -3178,6 +3219,34 @@
             }
             
             console.log(`✅ Player list updated: ${players.length} players found`);
+        }
+
+        // Helper function to get current character data (similar to qr.js)
+        function getCurrentCharacterData() {
+            // Try different ways to get current character data
+            
+            // First check if the global character object exists (main.js)
+            if (typeof character !== 'undefined' && character) {
+                return character;
+            }
+            
+            if (window.currentCharacter) {
+                return window.currentCharacter;
+            }
+            
+            if (window.character) {
+                return window.character;
+            }
+            
+            // Try to get from character manager
+            if (window.characterManager && window.characterManager.currentCharacterId && window.characterManager.characters) {
+                const currentChar = characterManager.characters.find(
+                    char => char.id === characterManager.currentCharacterId
+                );
+                if (currentChar) return currentChar;
+            }
+            
+            return null;
         }
 
         // Make updateConnectedPlayers globally available for supabase-chat.js
@@ -4331,9 +4400,53 @@
                         </div>
                     </div>
                 </div>
-            </div>
         </div>
     </div>
+</div>
+
+<script>
+// Initialize Chat Command Parser
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize the chat command parser for handling avatar URLs and other commands
+    if (typeof ChatCommandParser !== 'undefined') {
+        window.chatCommandParser = new ChatCommandParser();
+        console.log('✅ ChatCommandParser initialized');
+    } else {
+        console.warn('⚠️ ChatCommandParser class not found');
+    }
+});
+
+// Function to update self chip avatar manually (called when character changes)
+function updateSelfChipAvatar() {
+    const selfChip = document.querySelector('.player-chip.self');
+    if (!selfChip) return;
+    
+    const currentPlayerName = window.networkPlayerName || 'You';
+    const characterData = getCurrentCharacterData();
+    
+    if (characterData?.personal?.avatarUrl) {
+        const avatarElement = selfChip.querySelector('.chip-avatar');
+        if (avatarElement) {
+            avatarElement.innerHTML = `<img src="${characterData.personal.avatarUrl}" alt="${currentPlayerName}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" onerror="this.parentElement.innerHTML='👤'">`;
+            
+            // Cache it for future use
+            if (window.chatCommandParser && typeof window.chatCommandParser.handleAvatarUrlCommand === 'function') {
+                window.chatCommandParser.handleAvatarUrlCommand(currentPlayerName, characterData.personal.avatarUrl, 'self');
+            }
+        }
+        
+        // Update name as well
+        const nameElement = selfChip.querySelector('.chip-name');
+        if (nameElement) {
+            nameElement.textContent = currentPlayerName;
+        }
+    }
+}
+
+// Make it globally available
+window.updateSelfChipAvatar = updateSelfChipAvatar;
+</script>
+
 </body>
 
 </html>
