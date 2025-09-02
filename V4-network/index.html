@@ -1837,7 +1837,7 @@
             </div>
             <div class="modal-body">
                 <div class="command-center-modal-content">
-                    <!-- Connected Players -->
+                    <!-- Connected Players - COMMENTED OUT (replaced by player-chips-area)
                     <div class="player-selector">
                         <h5>Connected Players</h5>
                         <div class="player-list" id="modal-connected-players">
@@ -1852,6 +1852,7 @@
                             </div>
                         </div>
                     </div>
+                    -->
                     
                     <!-- Quick Tools -->
                     <div class="quick-tools" style="margin-top: 20px;">
@@ -1894,14 +1895,14 @@
     </div>
 
     <!-- Scripts -->
-    <script src="advancedStorageManager.js"></script>
-    <script src="storageMigration.js"></script>
-    <script src="main.js"></script>
-    <script src="character-manager.js"></script>
-    <script src="v4CharacterSyncManager.js"></script>
-    <script src="storyTellerBridge.js"></script>
-    <script src="cache-manager.js"></script>
-    <script src="qr.js"></script>
+    <script src="js/core/advancedStorageManager.js"></script>
+    <script src="js/core/storageMigration.js"></script>
+    <script src="js/core/main.js"></script>
+    <script src="js/core/character-manager.js"></script>
+    <script src="js/core/v4CharacterSyncManager.js"></script>
+    <script src="js/core/storyTellerBridge.js"></script>
+    <script src="js/core/cache-manager.js"></script>
+    <script src="js/core/qr.js"></script>
     <script src="js/character-storage-diagnostic.js"></script>
     
     <script>
@@ -2161,10 +2162,10 @@
         });
     </script>
 
-    <script src="skills.js"></script>
-    <script src="improvements.js"></script>
-    <script src="achievements.js"></script>
-    <script src="levelSystem.js"></script>
+    <script src="js/core/skills.js"></script>
+    <script src="js/core/improvements.js"></script>
+    <script src="js/core/achievements.js"></script>
+    <script src="js/core/levelSystem.js"></script>
     <!-- <script src="debug-dcc.js"></script> -->
     <script>
         // PWA Service Worker Registration - DISABLED TO PREVENT CACHING ISSUES
@@ -2221,8 +2222,8 @@
 
     <!-- Network Integration Scripts -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <script src="supabaseUrlEncoder.js"></script>
-    <script src="supabase-config.js"></script>
+    <script src="js/core/supabaseUrlEncoder.js"></script>
+    <script src="js/core/supabase-config.js"></script>
     
     <!-- Essential modules for chat system -->
     <script src="js/modules/dccMechanics.js"></script>
@@ -2246,7 +2247,7 @@
     <script src="js/modules/chatEffectsManager.js"></script>
     <script src="js/modules/emojiProcessor.js"></script>
     
-    <script src="supabase-chat.js"></script>
+    <script src="js/core/supabase-chat.js"></script>
     
     <!-- Network Integration Functions -->
     <script>
@@ -2434,6 +2435,12 @@
         }
 
         function syncModalPlayerList() {
+            // DEPRECATED: The modal player list has been replaced by player-chips-area
+            // This function is kept for compatibility but no longer performs any actions
+            console.log('📝 syncModalPlayerList called but modal player list is deprecated');
+            return;
+            
+            /*
             const originalPlayerList = document.getElementById('connected-players');
             const modalPlayerList = document.getElementById('modal-connected-players');
             
@@ -2448,6 +2455,7 @@
                     modalSelfName.textContent = originalSelfName.textContent;
                 }
             }
+            */
         }
 
         // Close modal when clicking outside of it
@@ -3049,7 +3057,9 @@
         function updateConnectedPlayers(players = []) {
             console.log('🔍 Updating connected players:', players);
             
-            // Update Command Center player list
+            // DEPRECATED: The old connected-players list has been replaced by player-chips-area
+            // Legacy code commented out below:
+            /*
             const playerList = document.getElementById('connected-players');
             if (playerList) {
                 // Clear existing players except self
@@ -3091,6 +3101,7 @@
                     }
                 });
             }
+            */
             
             // Update Bottom Sheet player chips
             const playerChipsScroll = document.querySelector('.player-chips-scroll');
@@ -3165,7 +3176,7 @@
         function setupPlayerClickHandlers() {
             const playerList = document.getElementById('connected-players');
             if (!playerList) {
-                console.error('🐛 Player list not found for click handlers');
+                console.log('� Connected players list not found - player click handlers not needed');
                 return;
             }
             

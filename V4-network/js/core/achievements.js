@@ -15,7 +15,7 @@ let characterAchievements = [];
 // ========================================
 async function loadAchievements() {
     try {
-        const response = await fetch('achievements.json');
+        const response = await fetch('data/achievements.json');
         achievementsData = await response.json();
         console.log('📜 Achievements loaded successfully!');
         console.log(`📊 Total achievements available: ${getTotalAchievementCount()}`);

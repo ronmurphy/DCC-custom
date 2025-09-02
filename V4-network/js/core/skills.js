@@ -14,7 +14,7 @@ let allSkills = {};
 // ========================================
 async function loadSkills() {
     try {
-        const response = await fetch('skills.json');
+        const response = await fetch('data/skills.json');
         skillsData = await response.json();
         
         // Flatten skills into a single object for compatibility

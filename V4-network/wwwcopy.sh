@@ -27,6 +27,7 @@ rm -rf "$DEST_DIR"/assets 2>/dev/null
 rm -rf "$DEST_DIR"/css 2>/dev/null
 rm -rf "$DEST_DIR"/data 2>/dev/null
 rm -rf "$DEST_DIR"/js 2>/dev/null
+rm -rf "$DEST_DIR"/temp 2>/dev/null
 
 # Copy individual files (not in subfolders) - excluding certain files
 echo "📁 Copying main web files..."
@@ -63,9 +64,17 @@ fi
 echo "📁 Copying js directory..."
 if [ -d "$SOURCE_DIR/js" ]; then
     cp -r "$SOURCE_DIR/js" "$DEST_DIR"/ 2>/dev/null
-    echo "   ✅ JS directory copied"
+    echo "   ✅ JS directory copied (including core/ and modules/ subfolders)"
 else
     echo "   ⚠️  JS directory not found"
+fi
+
+echo "📁 Copying temp directory..."
+if [ -d "$SOURCE_DIR/temp" ]; then
+    cp -r "$SOURCE_DIR/temp" "$DEST_DIR"/ 2>/dev/null
+    echo "   ✅ Temp directory copied"
+else
+    echo "   ⚠️  Temp directory not found"
 fi
 
 # Copy icon files if they exist (only if not already there)
@@ -82,6 +91,9 @@ rm -f "$DEST_DIR"/game-reference.md 2>/dev/null
 rm -f "$DEST_DIR"/wwwcopy.sh 2>/dev/null
 rm -f "$DEST_DIR"/build.sh 2>/dev/null
 rm -f "$DEST_DIR"/combo.sh 2>/dev/null
+rm -f "$DEST_DIR"/REORGANIZATION_SUMMARY.md 2>/dev/null
+rm -f "$DEST_DIR"/integration.md 2>/dev/null
+rm -f "$DEST_DIR"/supabase.key.md 2>/dev/null
 
 # Show summary of what was copied
 echo "✅ Copy complete! Directory structure:"
@@ -91,5 +103,8 @@ echo "   📁 Subdirectories:"
 [ -d "$DEST_DIR/css" ] && echo "      ✅ css/ ($(find "$DEST_DIR/css" -type f | wc -l) files)"
 [ -d "$DEST_DIR/data" ] && echo "      ✅ data/ ($(find "$DEST_DIR/data" -type f | wc -l) files)"
 [ -d "$DEST_DIR/js" ] && echo "      ✅ js/ ($(find "$DEST_DIR/js" -type f | wc -l) files)"
+[ -d "$DEST_DIR/js/core" ] && echo "         ├── core/ ($(find "$DEST_DIR/js/core" -type f | wc -l) files)"
+[ -d "$DEST_DIR/js/modules" ] && echo "         └── modules/ ($(find "$DEST_DIR/js/modules" -type f | wc -l) files)"
+[ -d "$DEST_DIR/temp" ] && echo "      ✅ temp/ ($(find "$DEST_DIR/temp" -type f | wc -l) files)"
 
 echo "🎯 Ready to build! Run ./build.sh to create APK"
