@@ -3125,8 +3125,19 @@
                             chipDiv.classList.add('storyteller');
                         }
                         
+                        // Check for cached avatar URL
+                        let avatarContent;
+                        const chatParser = window.chatCommandParser;
+                        const cachedAvatarUrl = chatParser?.getCachedAvatarUrl?.(player.name);
+                        
+                        if (cachedAvatarUrl) {
+                            avatarContent = `<img src="${cachedAvatarUrl}" alt="${player.name}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" onerror="this.parentElement.innerHTML='${player.is_storyteller ? '👑' : '⚔️'}'">`;
+                        } else {
+                            avatarContent = player.is_storyteller ? '👑' : '⚔️';
+                        }
+                        
                         chipDiv.innerHTML = `
-                            <div class="chip-avatar">${player.is_storyteller ? '👑' : '⚔️'}</div>
+                            <div class="chip-avatar">${avatarContent}</div>
                             <span class="chip-name">${player.name}</span>
                         `;
                         

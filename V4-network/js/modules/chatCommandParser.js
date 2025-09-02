@@ -22,11 +22,15 @@ class ChatCommandParser {
             HEALTH: /^HEALTH:([^:]+):([+-]?\d+)$/i,
             STAT: /^STAT:([^:]+):([^:]+):([+-]?\d+)$/i,
             NOTE: /^NOTE:([^:]+):(.+)$/i,
-            CLEAN: /^CLEAN:([^:]+):?(.*)$/i
+            CLEAN: /^CLEAN:([^:]+):?(.*)$/i,
+            AVATAR_URL: /^AVATAR_URL:([^:]+):(.+)$/i
         };
         
         // Active players (should be populated from session)
         this.activePlayers = new Map();
+        
+        // Avatar URL cache for late-joining players
+        this.playerAvatars = new Map();
         
         // Loot generation tables
         this.lootTables = {
@@ -186,6 +190,9 @@ class ChatCommandParser {
             
             case 'CLEAN':
                 return await this.handleCleanCommand(playerName, match[2], senderName);
+            
+            case 'AVATAR_URL':
+                return await this.handleAvatarUrlCommand(playerName, match[2], senderName);
             
             default:
                 throw new Error(`Unknown command type: ${commandType}`);
@@ -720,6 +727,73 @@ class ChatCommandParser {
     }
 
     /**
+     * Handle AVATAR_URL command - Update player avatar in UI
+     * @param {string} targetPlayer - Player name
+     * @param {string} avatarUrl - Avatar URL
+     * @param {string} senderName - Who sent the command
+     */
+    async handleAvatarUrlCommand(targetPlayer, avatarUrl, senderName) {
+        // Cache the avatar URL for this player
+        this.playerAvatars.set(targetPlayer, avatarUrl);
+        
+        console.log(`🎭 Avatar URL received for ${targetPlayer}:`, avatarUrl);
+        
+        // Update player chip avatar if it exists
+        this.updatePlayerChipAvatar(targetPlayer, avatarUrl);
+        
+        return {
+            success: true,
+            command: 'AVATAR_URL',
+            message: '', // Silent command - no message shown
+            targetPlayer: targetPlayer,
+            sender: senderName,
+            silent: true, // Mark as silent so it doesn't display
+            details: {
+                avatarUrl: avatarUrl
+            }
+        };
+    }
+
+    /**
+     * Update player chip avatar with actual image
+     * @param {string} playerName - Player name
+     * @param {string} avatarUrl - Avatar URL
+     */
+    updatePlayerChipAvatar(playerName, avatarUrl) {
+        // Find player chip in the UI
+        const playerChips = document.querySelectorAll('.player-chip');
+        
+        playerChips.forEach(chip => {
+            const nameElement = chip.querySelector('.chip-name');
+            if (nameElement && nameElement.textContent === playerName) {
+                const avatarElement = chip.querySelector('.chip-avatar');
+                if (avatarElement && avatarUrl) {
+                    // Replace emoji with actual image
+                    avatarElement.innerHTML = `<img src="${avatarUrl}" alt="${playerName}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" onerror="this.parentElement.innerHTML='⚔️'">`;
+                    console.log(`✅ Updated ${playerName}'s chip avatar`);
+                }
+            }
+        });
+    }
+
+    /**
+     * Get cached avatar URL for a player
+     * @param {string} playerName - Player name
+     * @returns {string|null} Avatar URL or null if not cached
+     */
+    getCachedAvatarUrl(playerName) {
+        return this.playerAvatars.get(playerName) || null;
+    }
+
+    /**
+     * Clear avatar cache (useful for session cleanup)
+     */
+    clearAvatarCache() {
+        this.playerAvatars.clear();
+        console.log('🧹 Avatar cache cleared');
+    }
+
+    /**
      * Get list of available commands
      * @returns {Array} Array of command descriptions
      */
@@ -735,7 +809,8 @@ class ChatCommandParser {
             { command: 'HEALTH:PlayerName:amount', description: 'Heal/damage player' },
             { command: 'STAT:PlayerName:stat_name:modifier', description: 'Modify player stat' },
             { command: 'CLEAN:session:old', description: 'Remove messages older than 7 days (storyteller only)' },
-            { command: 'CLEAN:session:all', description: 'Remove ALL session messages (storyteller only)' }
+            { command: 'CLEAN:session:all', description: 'Remove ALL session messages (storyteller only)' },
+            { command: 'AVATAR_URL:PlayerName:url', description: 'Update player avatar (silent command)' }
         ];
     }
 

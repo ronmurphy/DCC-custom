@@ -76,7 +76,9 @@ function initializeCommandInterceptor() {
     // Initialize command parser if available
     if (typeof ChatCommandParser !== 'undefined') {
         commandParser = new ChatCommandParser();
-        console.log('✅ Command Parser initialized');
+        // Make it globally available
+        window.chatCommandParser = commandParser;
+        console.log('✅ Command Parser initialized and made globally available');
     } else {
         console.warn('⚠️ ChatCommandParser not available - commands will pass through unprocessed');
     }

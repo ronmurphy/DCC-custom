@@ -370,6 +370,9 @@ async function fullSupabaseConnect(playerName, sessionCode, isStoryteller = fals
             await sendSystemMessage(`${playerName} joined the session`);
         }
         
+        // Step 9: Auto-send avatar URL if available (silent command)
+        await autoSendAvatarUrl(playerName);
+        
         // Success!
         result.success = true;
         result.sessionInfo = {
@@ -401,6 +404,33 @@ async function fullSupabaseConnect(playerName, sessionCode, isStoryteller = fals
         }
         
         return result;
+    }
+}
+
+/**
+ * Auto-send avatar URL as silent command when player joins
+ * @param {string} playerName - Name of the player who joined
+ */
+async function autoSendAvatarUrl(playerName) {
+    try {
+        // Get player's character data to find avatar URL
+        const characterData = window.characterManager?.getCharacterData?.();
+        
+        if (!characterData || !characterData.avatarURL) {
+            console.log(`📸 No avatar URL found for ${playerName} to auto-send`);
+            return;
+        }
+        
+        // Send silent AVATAR_URL command
+        const avatarCommand = `AVATAR_URL:${playerName}:${characterData.avatarURL}`;
+        console.log(`🎭 Auto-sending avatar URL for ${playerName}`);
+        
+        // Send as silent command (no visible message)
+        await sendGameMessage(avatarCommand, 'system');
+        
+    } catch (error) {
+        console.error('❌ Error auto-sending avatar URL:', error);
+        // Don't fail the connection if avatar sending fails
     }
 }
 
