@@ -134,10 +134,12 @@ function isCommandMessage(messageText) {
     const silentCommandPattern = /^\/refreshmap$|^\/sendmap$|^\/github:/;
     // Also check for map sync messages that should be hidden
     const mapSyncPattern = /^MAP_SYNC:/;
+    // Check for character sync messages that should be hidden
+    const characterSyncPattern = /^CHAR_(ANNOUNCE|REQUEST|DATA):/;
     // Check for image messages that need processing
     const imagePattern = /^🖼️ \[IMAGE:.*\]$/;
     
-    return commandPattern.test(messageText) || silentCommandPattern.test(messageText) || mapSyncPattern.test(messageText) || imagePattern.test(messageText);
+    return commandPattern.test(messageText) || silentCommandPattern.test(messageText) || mapSyncPattern.test(messageText) || characterSyncPattern.test(messageText) || imagePattern.test(messageText);
 }
 
 /**
@@ -284,6 +286,23 @@ async function processCommandMessage(message) {
             }
         } catch (error) {
             console.warn('⚠️ Error processing MAP_SYNC message:', error);
+        }
+        
+        // Return a null message to suppress display
+        return null;
+    }
+    
+    // Handle CHAR_ sync messages - these should be processed but not displayed
+    if (messageText.startsWith('CHAR_ANNOUNCE:') || messageText.startsWith('CHAR_REQUEST:') || messageText.startsWith('CHAR_DATA:')) {
+        console.log('📡 Processing character sync message (silent)');
+        
+        try {
+            // Let the character sync manager handle this message
+            if (window.characterSyncManager) {
+                window.characterSyncManager.handleCharacterSyncMessage(messageText, message.player_name);
+            }
+        } catch (error) {
+            console.warn('⚠️ Error processing character sync message:', error);
         }
         
         // Return a null message to suppress display

@@ -529,6 +529,13 @@ function updateUIAfterConnect(playerName, sessionCode, isStoryteller, mode) {
         }
         
         console.log(`🎨 UI updated for ${playerName} (${isStoryteller ? 'Storyteller' : 'Player'})`);
+        
+        // Initialize character sync manager
+        if (window.characterSyncManager) {
+            window.characterSyncManager.initialize(playerName, sessionCode, isStoryteller);
+            console.log('🔄 Character sync manager initialized');
+        }
+        
     } catch (error) {
         console.warn('⚠️ UI update failed (non-critical):', error.message);
     }
@@ -1497,7 +1504,7 @@ async function sendGameResponse(responseText) {
 // ========================================
 // MESSAGE PROCESSING
 // ========================================
-function handleIncomingMessage(message) {
+async function handleIncomingMessage(message) {
     if (window.showDebug) {
         if (window.showDebug) console.log('🔍 DEBUG - Handling incoming message:', message);
         if (window.showDebug) console.log('🔍 DEBUG - Message is_storyteller:', message.is_storyteller);
@@ -1534,6 +1541,24 @@ function handleIncomingMessage(message) {
         // Don't display the raw command - process silently
         console.log('🔇 NOTE command processed silently, not displaying in chat');
         return;
+    }
+
+    // Check if this is a CHARACTER SYNC command
+    if (message.message_type === 'chat' && message.message_text.startsWith('CHAR_')) {
+        console.log('🔄 Detected CHARACTER SYNC command in chat:', message.message_text);
+        
+        // Process character sync command
+        if (window.characterSyncManager) {
+            const handled = await window.characterSyncManager.handleCharacterSyncMessage(
+                message.message_text, 
+                message.player_name
+            );
+            
+            if (handled) {
+                console.log('🔇 Character sync command processed silently');
+                return; // Don't display in chat
+            }
+        }
     }
     
     // Always display normal messages in chat

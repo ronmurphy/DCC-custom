@@ -290,7 +290,7 @@ class StoryTellerPlayersPanel {
     /**
      * Handle new character creation
      */
-    handleNewCharacter(characterData) {
+    async handleNewCharacter(characterData) {
         if (!characterData || !characterData.id) return;
 
         console.log(`➕ Adding new character: ${characterData.name}`);
@@ -302,8 +302,17 @@ class StoryTellerPlayersPanel {
             lastSync: new Date().toISOString()
         });
 
-        // Update display
+        // Save to IndexedDB
+        await this.saveToStorage();
+
+        // Update display immediately
         this.updatePlayersPanelDisplay();
+        
+        // Force a refresh after a short delay to ensure UI is updated
+        setTimeout(() => {
+            this.updatePlayersPanelDisplay();
+            console.log(`✅ Character panel refreshed with ${this.characters.size} characters`);
+        }, 100);
         
         // Notify about new character
         this.showNotification(`New Character: ${characterData.name}`, 'Character joined the party');
@@ -750,13 +759,13 @@ class StoryTellerPlayersPanel {
     /**
      * Import character from external source
      */
-    importCharacter(characterData) {
+    async importCharacter(characterData) {
         if (!characterData || !characterData.id) {
             console.error('❌ Invalid character data for import');
             return false;
         }
 
-        this.handleNewCharacter(characterData);
+        await this.handleNewCharacter(characterData);
         return true;
     }
 

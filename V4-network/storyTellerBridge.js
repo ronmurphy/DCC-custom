@@ -92,8 +92,17 @@ class StoryTellerBridge {
      */
     async sendCharacterToStoryTeller(characterId) {
         try {
-            // Get character data
-            const character = await getCharacterById(characterId);
+            // Get character data using V4's character manager
+            let character;
+            if (characterId && window.characterManager && window.characterManager.characters) {
+                character = characterManager.characters.find(char => char.id === characterId);
+            }
+            
+            // If no specific ID provided or not found, use current character
+            if (!character && window.character && window.character.id) {
+                character = window.character;
+            }
+            
             if (!character) {
                 throw new Error('Character not found');
             }
@@ -196,7 +205,7 @@ class StoryTellerBridge {
     /**
      * Test connection to StoryTeller
      */
-    testConnection() {
+    testConnection(showNotificationOnFail = false) {
         console.log('🔍 Testing connection to StoryTeller...');
         this.sendMessage('ping', { test: true });
         
@@ -205,9 +214,15 @@ class StoryTellerBridge {
             const status = this.connectionStatus === 'connected' ? 
                 'Connected to StoryTeller' : 'StoryTeller not detected';
             
-            showNotification('info', 'Connection Status', status, 
-                this.connectionStatus === 'connected' ? 
-                'Real-time export enabled' : 'Make sure StoryTeller is open');
+            // Only show notification if connected OR explicitly requested
+            if (this.connectionStatus === 'connected' || showNotificationOnFail) {
+                showNotification('info', 'Connection Status', status, 
+                    this.connectionStatus === 'connected' ? 
+                    'Real-time export enabled' : 'Chat-based sync is now primary method');
+            }
+            
+            // Log status regardless
+            console.log(`🔗 Bridge Status: ${status}`);
         }, 1000);
     }
 
@@ -261,9 +276,10 @@ window.storyTellerBridge = new StoryTellerBridge();
 
 // Add connection test to interface
 document.addEventListener('DOMContentLoaded', () => {
-    // Test connection on load
+    // Test connection on load but don't show failure notification
+    // The new chat-based sync is the primary method
     setTimeout(() => {
-        window.storyTellerBridge.testConnection();
+        window.storyTellerBridge.testConnection(false); // false = don't show "not detected" notification
     }, 2000);
 });
 

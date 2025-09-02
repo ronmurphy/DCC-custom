@@ -84,7 +84,7 @@ class V4NetworkBridge {
                 
                 // Import to StoryTeller
                 if (window.storyTellerPlayersPanel) {
-                    const success = window.storyTellerPlayersPanel.importCharacter(normalized);
+                    const success = await window.storyTellerPlayersPanel.importCharacter(normalized);
                     
                     if (success) {
                         this.showImportNotification(normalized);
