@@ -367,6 +367,9 @@ function createCharacterCard(charData) {
             <button class="card-action-btn delete-btn" onclick="event.stopPropagation(); deleteCharacterConfirm('${charData.id}')" title="Delete Character">
                 <span class="material-icons">delete</span>
             </button>
+            <button class="card-action-btn chat-btn" onclick="event.stopPropagation(); loadCharacterAndConnect('${charData.id}')" title="Load Character & Connect to Chat">
+                💬
+            </button>
             <button class="card-action-btn export-btn" onclick="event.stopPropagation(); exportCharacterFromManager('${charData.id}')" title="Export Character">
                 <span class="material-icons">download</span>
             </button>
@@ -922,6 +925,77 @@ function exportAllCharacters() {
     downloadJSON(exportData, `wasteland_characters_backup_${new Date().toISOString().split('T')[0]}.json`);
 }
 
+// ========================================
+// LOAD CHARACTER AND CONNECT TO CHAT
+// ========================================
+async function loadCharacterAndConnect(characterId) {
+    console.log('🎮 Loading character and connecting to chat:', characterId);
+    
+    try {
+        // First, load the character using the existing function
+        loadCharacterFromManager(characterId);
+        
+        // Switch to the character sheet view
+        hideLandingScreen();
+        
+        // Get the saved connection URL with IndexedDB fallback
+        const lastUrl = await (window.getConnectionUrl ? window.getConnectionUrl() : localStorage.getItem('lastConnectionUrl'));
+        console.log('🔍 Retrieved connection URL:', lastUrl);
+        console.log('🔍 URL type:', typeof lastUrl);
+        console.log('🔍 URL length:', lastUrl ? lastUrl.length : 'null');
+        
+        if (!lastUrl) {
+            // No saved connection URL, just show the chat tab
+            console.log('📡 No saved connection URL found. Opening chat tab for manual connection.');
+            setTimeout(() => {
+                const chatTab = document.querySelector('[data-tab="chat"]');
+                if (chatTab) {
+                    chatTab.click();
+                }
+            }, 100);
+            return;
+        }
+        
+        // Populate both connection input fields
+        const sessionInput = document.getElementById('session-code-input');
+        const sheetSessionInput = document.getElementById('sheet-session-input');
+        
+        console.log('🔍 Before setting - session input value:', sessionInput ? sessionInput.value : 'null');
+        console.log('🔍 Before setting - sheet session input value:', sheetSessionInput ? sheetSessionInput.value : 'null');
+        
+        if (sessionInput) {
+            sessionInput.value = lastUrl;
+            console.log('🔍 After setting - session input value:', sessionInput.value);
+        }
+        if (sheetSessionInput) {
+            sheetSessionInput.value = lastUrl;
+            console.log('🔍 After setting - sheet session input value:', sheetSessionInput.value);
+        }
+        
+        console.log('📡 Connection URL loaded:', lastUrl);
+        
+        // Switch to chat tab
+        setTimeout(() => {
+            const chatTab = document.querySelector('[data-tab="chat"]');
+            if (chatTab) {
+                chatTab.click();
+                
+                // Auto-connect after a short delay to allow tab switch
+                setTimeout(() => {
+                    if (typeof joinGameSessionFromSheet === 'function') {
+                        console.log('🔗 Auto-connecting to saved session...');
+                        joinGameSessionFromSheet();
+                    }
+                }, 500);
+            }
+        }, 100);
+        
+    } catch (error) {
+        console.error('❌ Error loading character and connecting to chat:', error);
+        alert('Error loading character: ' + error.message);
+    }
+}
+
 function downloadJSON(data, filename) {
     // Convert .json extension to .dcw for better user experience
     const dcwFilename = filename.replace('.json', '.dcw');
@@ -1471,6 +1545,9 @@ window.importCharacterToManager = importCharacterToManager;
 window.exportAllCharacters = exportAllCharacters;
 window.exportCharacterFromManager = exportCharacterFromManager;
 window.deleteCharacterConfirm = deleteCharacterConfirm;
+window.loadCharacterAndConnect = loadCharacterAndConnect;
+window.showLandingScreen = showLandingScreen;
+window.hideLandingScreen = hideLandingScreen;
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {

@@ -102,6 +102,37 @@
         .material-icons:empty:after {
             display: none !important;
         }
+        
+        /* Chat button styles for character cards */
+        .card-action-btn.chat-btn {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 16px;
+            margin: 0 2px;
+            line-height: 1;
+            padding: 0;
+            min-height: 32px;
+            max-height: 32px;
+        }
+        
+        .card-action-btn.chat-btn:hover {
+            background: linear-gradient(135deg, #45a049, #3d8b40);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+        }
+        
+        .card-action-btn.chat-btn:active {
+            transform: translateY(0);
+        }
     </style>
 
     <!-- Custom CSS -->
@@ -1279,7 +1310,7 @@
                         <div class="chat-input-container">
                             <div class="chat-tools">
                                 <button class="chat-tool-btn" onclick="showChatPicker()" title="Chat Effects & Emojis">
-                                    <span>💬</span>
+                                    💬
                                     <span>Effects</span>
                                 </button>
                             </div>
@@ -2263,6 +2294,177 @@
         }
         window.setNetworkPlayerName = setNetworkPlayerName;
 
+        // ========================================
+        // CONNECTION URL STORAGE MANAGEMENT
+        // ========================================
+        
+        /**
+         * Save connection URL to both localStorage and IndexedDB
+         * @param {string} url - The connection URL to save
+         */
+        async function saveConnectionUrl(url) {
+            if (!url) return;
+            
+            try {
+                // Save to localStorage for immediate access
+                localStorage.setItem('lastConnectionUrl', url);
+                console.log('💾 Connection URL saved to localStorage:', url);
+                
+                // Save to IndexedDB for persistent backup
+                if (window.advancedStorageManager) {
+                    await window.advancedStorageManager.setItem('lastConnectionUrl', url);
+                    console.log('💾 Connection URL saved to IndexedDB:', url);
+                }
+            } catch (error) {
+                console.error('❌ Failed to save connection URL:', error);
+            }
+        }
+        
+        /**
+         * Get connection URL with fallback from localStorage to IndexedDB
+         * @returns {Promise<string|null>} The connection URL or null if not found
+         */
+        async function getConnectionUrl() {
+            try {
+                // Try localStorage first (faster)
+                let url = localStorage.getItem('lastConnectionUrl');
+                if (url) {
+                    // Check if localStorage has corrupted JSON format
+                    if (url.startsWith('{"compressed":') && url.includes('"data":"')) {
+                        console.log('� Detected corrupted JSON in localStorage, cleaning up...');
+                        url = cleanupCorruptedUrl(url);
+                        if (url) {
+                            // Re-save the cleaned URL
+                            await saveConnectionUrl(url);
+                            console.log('�📡 Cleaned and re-saved URL from localStorage:', url);
+                            return url;
+                        }
+                    } else {
+                        console.log('📡 Connection URL loaded from localStorage:', url);
+                        return url;
+                    }
+                }
+                
+                // Fallback to IndexedDB
+                if (window.advancedStorageManager) {
+                    const indexedData = await window.advancedStorageManager.getItem('lastConnectionUrl');
+                    if (indexedData) {
+                        console.log('🔍 Raw IndexedDB data:', indexedData);
+                        
+                        // Handle various data formats from IndexedDB
+                        let url;
+                        
+                        if (typeof indexedData === 'string') {
+                            // Check if it's corrupted JSON string
+                            if (indexedData.startsWith('{"compressed":') && indexedData.includes('"data":"')) {
+                                console.log('🔧 Detected corrupted JSON in IndexedDB string, cleaning up...');
+                                url = cleanupCorruptedUrl(indexedData);
+                            } else {
+                                // Already a clean string
+                                url = indexedData;
+                            }
+                        } else if (indexedData && typeof indexedData === 'object') {
+                            if (indexedData.compressed !== undefined && indexedData.data !== undefined) {
+                                // Handle compressed format: {"compressed":false,"data":"\"actual-url\""}
+                                url = indexedData.data;
+                                console.log('🔍 Extracted data property:', url);
+                                
+                                // Remove extra JSON quotes if present
+                                if (typeof url === 'string') {
+                                    if (url.startsWith('"') && url.endsWith('"')) {
+                                        url = url.slice(1, -1);
+                                        console.log('🔍 Removed JSON quotes:', url);
+                                    }
+                                }
+                            } else {
+                                // Try to extract URL from object properties
+                                console.warn('⚠️ Unexpected IndexedDB object format:', indexedData);
+                                url = indexedData.url || indexedData.value || indexedData.lastConnectionUrl;
+                            }
+                        } else {
+                            console.warn('⚠️ Unexpected IndexedDB data type:', typeof indexedData, indexedData);
+                            return null;
+                        }
+                        
+                        // Final validation and cleanup
+                        if (url && typeof url === 'string') {
+                            // Check if it's still corrupted JSON
+                            if (url.startsWith('{"compressed":') && url.includes('"data":"')) {
+                                console.log('🔧 Detected corrupted JSON in extracted URL, cleaning up...');
+                                url = cleanupCorruptedUrl(url);
+                            }
+                            
+                            // Validate the final URL format
+                            if (url && (url.includes('.sc?s=') || url.includes('supabase'))) {
+                                console.log('📡 Connection URL loaded from IndexedDB:', url);
+                                // Re-save both to localStorage and IndexedDB to fix corruption
+                                await saveConnectionUrl(url);
+                                console.log('🔧 Re-saved cleaned URL to both storages');
+                                return url;
+                            } else {
+                                console.warn('⚠️ Invalid URL format after cleanup:', url);
+                                return null;
+                            }
+                        }
+                    }
+                }
+                
+                console.log('📡 No saved connection URL found');
+                return null;
+            } catch (error) {
+                console.error('❌ Failed to get connection URL:', error);
+                console.error('Error details:', error.message, error.stack);
+                return null;
+            }
+        }
+        
+        /**
+         * Clean up corrupted JSON format and extract the actual URL
+         * @param {string} corruptedUrl - The corrupted JSON string
+         * @returns {string|null} The cleaned URL or null if extraction fails
+         */
+        function cleanupCorruptedUrl(corruptedUrl) {
+            try {
+                console.log('🧹 Cleaning corrupted URL:', corruptedUrl);
+                
+                // Handle format: {"compressed":false,"data":"\"skddvbmxzeprvxfslhlk.sc?s=BRADTEST\""}
+                if (corruptedUrl.startsWith('{"compressed":') && corruptedUrl.includes('"data":"')) {
+                    // Parse the JSON
+                    const parsed = JSON.parse(corruptedUrl);
+                    if (parsed && parsed.data) {
+                        let cleanUrl = parsed.data;
+                        
+                        // Remove extra JSON quotes if present
+                        if (typeof cleanUrl === 'string' && cleanUrl.startsWith('"') && cleanUrl.endsWith('"')) {
+                            cleanUrl = cleanUrl.slice(1, -1);
+                        }
+                        
+                        console.log('🧹 Cleaned URL result:', cleanUrl);
+                        return cleanUrl;
+                    }
+                }
+                
+                // If above doesn't work, try regex extraction
+                const match = corruptedUrl.match(/"data":"\\?"([^"\\]+(?:\\.[^"\\]*)*)"\\?"/);
+                if (match && match[1]) {
+                    const cleanUrl = match[1].replace(/\\"/g, '"');
+                    console.log('🧹 Regex extracted URL:', cleanUrl);
+                    return cleanUrl;
+                }
+                
+                console.warn('⚠️ Could not clean corrupted URL');
+                return null;
+            } catch (error) {
+                console.error('❌ Error cleaning corrupted URL:', error);
+                return null;
+            }
+        }
+        
+        // Make functions available globally
+        window.saveConnectionUrl = saveConnectionUrl;
+        window.getConnectionUrl = getConnectionUrl;
+        window.cleanupCorruptedUrl = cleanupCorruptedUrl;
+
         // Show creation tab (called by New Character button)
         function showCreationTab() {
             const creationTab = document.querySelector('[data-tab="creation"]');
@@ -2275,7 +2477,7 @@
         window.showCreationTab = showCreationTab;
 
         // Initialize network integration when page loads
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             console.log('🌐 V4-Network: Initializing network features...');
             
             // Check for session code in URL first
@@ -2284,12 +2486,22 @@
             
             if (sessionFromUrl) {
                 document.getElementById('session-code-input').value = sessionFromUrl;
+                // Also populate the sheet session input
+                const sheetSessionInput = document.getElementById('sheet-session-input');
+                if (sheetSessionInput) {
+                    sheetSessionInput.value = sessionFromUrl;
+                }
                 console.log('📎 Session code found in URL:', sessionFromUrl);
             } else {
-                // Load last saved connection URL
-                const lastUrl = localStorage.getItem('lastConnectionUrl');
+                // Load last saved connection URL with IndexedDB fallback
+                const lastUrl = await getConnectionUrl();
                 if (lastUrl) {
                     document.getElementById('session-code-input').value = lastUrl;
+                    // Also populate the sheet session input
+                    const sheetSessionInput = document.getElementById('sheet-session-input');
+                    if (sheetSessionInput) {
+                        sheetSessionInput.value = lastUrl;
+                    }
                     console.log('📎 Loaded saved connection URL:', lastUrl);
                 }
             }
@@ -4295,7 +4507,7 @@
                         currentSessionCode = sessionCode;
                         
                         // Store the original connection URL for future reference
-                        localStorage.setItem('lastConnectionUrl', connectionUrl);
+                        await saveConnectionUrl(connectionUrl);
                         
                         // Keep the original URL in the input field for easy reconnection
                         document.getElementById('session-code-input').value = connectionUrl;
@@ -4612,13 +4824,13 @@
                     <div class="sheet-chat-input">
                         <div class="chat-tools-row">
                             <button class="chat-tool-btn" onclick="showSheetChatEffects()" title="Chat Effects">
-                                <span>✨</span>
+                                ✨
                             </button>
                             <button class="chat-tool-btn" onclick="showSheetImageUpload()" title="Upload Image">
-                                <span>📷</span>
+                                📷
                             </button>
                             <button class="chat-tool-btn" onclick="showSheetPlayers()" title="Send Note">
-                                <span>📝</span>
+                                📝
                             </button>
                         </div>
                         <div class="input-row">
