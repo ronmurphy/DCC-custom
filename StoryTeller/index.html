@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="css/notes-panel.css">
     <link rel="stylesheet" href="css/maps-panel.css">
     <link rel="stylesheet" href="css/dice-panel.css">
-    <link rel="stylesheet" href="css/chat-effects.css">
+    <link rel="stylesheet" href="css/enhanced_chat_effects.css">
     <link rel="stylesheet" href="css/map.css">
     <link rel="stylesheet" href="css/combat.css">
     <link rel="stylesheet" href="css/storyTellerPlayersPanel.css">
@@ -1002,7 +1002,7 @@
             background: var(--primary-color);
             border-top: 1px solid #e9ecef;
             min-height: calc(var(--input-height) + 16px); /* Adjusted for smaller padding */
-            margin-top: var(--grid-gap);
+            /* margin-top: var(--grid-gap); */
         }
 
         .chat-input {
@@ -2695,10 +2695,11 @@
                     loadPanel('right', rightPanelContent);
                     console.log('✅ Right panel chat initialized with dependencies');
                 }, 100);
-            } else if (checkCount > 50) {
-                // Give up after 5 seconds and try anyway
-                console.warn('⚠️ Chat dependencies taking too long, initializing anyway...');
+            } else if (checkCount > 30) {
+                // Give up after 3 seconds and initialize anyway
+                console.warn('⚠️ Chat dependencies taking too long, initializing chat anyway...');
                 loadPanel('right', rightPanelContent);
+                console.log('💬 Chat initialized without full dependencies (fallback mode)');
             } else {
                 // Not ready yet, check again in 100ms
                 setTimeout(waitForChatDependenciesAndInitialize, 100);
@@ -2788,6 +2789,14 @@
             
             console.log(`Switched to mode: ${mode}`);
         }
+
+        // Force load chat panel for debugging
+        window.forceChatLoad = function() {
+            console.log('🔧 Force loading chat panel...');
+            rightPanelContent = 'chat';
+            loadPanel('right', 'chat');
+            console.log('💬 Chat panel force-loaded');
+        };
 
         // Initialize mode selector and DCC systems
         document.addEventListener('DOMContentLoaded', function() {
@@ -4215,24 +4224,50 @@
                 background: var(--bg-primary);
                 border-radius: 8px;
                 padding: 20px;
-                max-width: 600px;
-                max-height: 80vh;
+                max-width: 700px;
+                max-height: 85vh;
                 overflow-y: auto;
                 box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
                 border: 1px solid var(--border-color);
                 color: var(--text-primary);
+                position: relative;
             `;
             
-            let pickerHTML = '<h4 style="margin: 0 0 16px 0; color: var(--text-primary); text-align: center;">💬 Chat Picker</h4>';
+            let pickerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h4 style="margin: 0; color: var(--text-primary);">💬 Enhanced Chat Picker</h4>
+                    <button onclick="this.closest('.chat-picker-modal').remove()" 
+                            style="background: none; border: none; font-size: 1.5em; cursor: pointer; color: var(--text-secondary);"
+                            title="Close">×</button>
+                </div>
+                
+                <!-- Tab Navigation -->
+                <div style="display: flex; margin-bottom: 16px; border-bottom: 1px solid var(--border-color);">
+                    <button onclick="switchPickerTab('emojis')" id="tab-emojis" class="picker-tab active" 
+                            style="flex: 1; padding: 8px 16px; background: none; border: none; cursor: pointer; color: var(--accent-color); border-bottom: 2px solid var(--accent-color);">
+                        � Emojis
+                    </button>
+                    <button onclick="switchPickerTab('effects')" id="tab-effects" class="picker-tab"
+                            style="flex: 1; padding: 8px 16px; background: none; border: none; cursor: pointer; color: var(--text-secondary); border-bottom: 2px solid transparent;">
+                        ✨ Effects
+                    </button>
+                    <button onclick="switchPickerTab('combinations')" id="tab-combinations" class="picker-tab"
+                            style="flex: 1; padding: 8px 16px; background: none; border: none; cursor: pointer; color: var(--text-secondary); border-bottom: 2px solid transparent;">
+                        🎨 Combos
+                    </button>
+                </div>
+                
+                <!-- Content Area -->
+                <div id="picker-content" style="min-height: 300px;">
+            `;
             
-            // EMOJI SECTION
-            pickerHTML += '<h3 style="margin: 0 0 12px 0; color: var(--text-primary); font-size: 1.1em;">😊 Emojis</h3>';
-            
+            // EMOJI TAB CONTENT
+            pickerHTML += '<div id="emojis-content" class="tab-content">';
             Object.keys(emoticonList).forEach(category => {
                 const cat = emoticonList[category];
-                pickerHTML += `<div style="margin-bottom: 12px;">`;
-                pickerHTML += `<h5 style="margin: 0 0 6px 0; color: var(--text-secondary); font-size: 0.85em;">${cat.name}</h5>`;
-                pickerHTML += `<div style="display: flex; flex-wrap: wrap; gap: 4px;">`;
+                pickerHTML += `<div style="margin-bottom: 16px;">`;
+                pickerHTML += `<h5 style="margin: 0 0 8px 0; color: var(--text-secondary); font-size: 0.9em; font-weight: 600;">${cat.name}</h5>`;
+                pickerHTML += `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px;">`;
                 
                 cat.emojis.forEach(emoji => {
                     pickerHTML += `
@@ -4240,40 +4275,38 @@
                                 style="
                                     background: var(--bg-secondary);
                                     border: 1px solid var(--border-color);
-                                    border-radius: 4px;
-                                    padding: 6px 8px;
+                                    border-radius: 6px;
+                                    padding: 8px;
                                     cursor: pointer;
                                     font-size: 0.8em;
                                     transition: all 0.2s;
                                     display: flex;
                                     align-items: center;
-                                    gap: 4px;
+                                    gap: 6px;
                                     color: var(--text-primary);
+                                    text-align: left;
                                 "
-                                onmouseover="this.style.background='var(--accent-color)'; this.style.color='white';"
-                                onmouseout="this.style.background='var(--bg-secondary)'; this.style.color='var(--text-primary)';"
+                                onmouseover="this.style.background='var(--accent-color)'; this.style.color='white'; this.style.transform='translateY(-1px)';"
+                                onmouseout="this.style.background='var(--bg-secondary)'; this.style.color='var(--text-primary)'; this.style.transform='translateY(0)';"
                                 title="${emoji.name}">
-                            <span style="font-size: 1.1em;">${emoji.emoji}</span>
-                            <span style="font-size: 0.7em; opacity: 0.8;">${emoji.code}</span>
+                            <span style="font-size: 1.2em;">${emoji.emoji}</span>
+                            <span style="font-size: 0.75em; opacity: 0.8;">${emoji.code}</span>
                         </button>
                     `;
                 });
-                
                 pickerHTML += `</div></div>`;
             });
+            pickerHTML += '</div>';
             
-            // SEPARATOR
-            pickerHTML += '<hr style="margin: 20px 0; border: none; height: 1px; background: var(--border-color);">';
-            
-            // EFFECTS SECTION
-            pickerHTML += '<h3 style="margin: 0 0 12px 0; color: var(--text-primary); font-size: 1.1em;">🎨 Chat Effects</h3>';
+            // EFFECTS TAB CONTENT
+            pickerHTML += '<div id="effects-content" class="tab-content" style="display: none;">';
             
             if (effectsData && effectsData.effects) {
                 // Basic effects
                 if (effectsData.effects.basic) {
-                    pickerHTML += `<div style="margin-bottom: 12px;">`;
-                    pickerHTML += `<h5 style="margin: 0 0 6px 0; color: var(--text-secondary); font-size: 0.85em;">✨ Basic Effects</h5>`;
-                    pickerHTML += `<div style="display: flex; flex-wrap: wrap; gap: 4px;">`;
+                    pickerHTML += `<div style="margin-bottom: 16px;">`;
+                    pickerHTML += `<h5 style="margin: 0 0 8px 0; color: var(--text-secondary); font-size: 0.9em; font-weight: 600;">✨ Basic Effects</h5>`;
+                    pickerHTML += `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px;">`;
                     
                     Object.keys(effectsData.effects.basic).forEach(key => {
                         const effect = effectsData.effects.basic[key];
@@ -4282,21 +4315,24 @@
                                     style="
                                         background: var(--bg-secondary);
                                         border: 1px solid var(--border-color);
-                                        border-radius: 4px;
-                                        padding: 6px 10px;
+                                        border-radius: 6px;
+                                        padding: 8px;
                                         cursor: pointer;
                                         font-size: 0.8em;
                                         transition: all 0.2s;
                                         display: flex;
-                                        align-items: center;
+                                        flex-direction: column;
+                                        align-items: flex-start;
                                         gap: 4px;
                                         color: var(--text-primary);
+                                        text-align: left;
                                     "
-                                    onmouseover="this.style.background='var(--accent-color)'; this.style.color='white';"
-                                    onmouseout="this.style.background='var(--bg-secondary)'; this.style.color='var(--text-primary)';"
+                                    onmouseover="this.style.background='var(--accent-color)'; this.style.color='white'; this.style.transform='translateY(-1px)';"
+                                    onmouseout="this.style.background='var(--bg-secondary)'; this.style.color='var(--text-primary)'; this.style.transform='translateY(0)';"
                                     title="${effect.description}">
-                                <span style="font-weight: bold;">${effect.name}</span>
-                                <span style="font-size: 0.7em; opacity: 0.8;">${effect.command}</span>
+                                <span style="font-weight: bold; font-size: 0.85em;">${effect.name}</span>
+                                <span style="font-size: 0.7em; opacity: 0.8; color: var(--accent-color);">${effect.command}</span>
+                                <span style="font-size: 0.65em; opacity: 0.6; line-height: 1.2;">${effect.description}</span>
                             </button>
                         `;
                     });
@@ -4305,9 +4341,9 @@
                 
                 // Gaming effects
                 if (effectsData.effects.gaming) {
-                    pickerHTML += `<div style="margin-bottom: 12px;">`;
-                    pickerHTML += `<h5 style="margin: 0 0 6px 0; color: var(--text-secondary); font-size: 0.85em;">🎮 Gaming Effects</h5>`;
-                    pickerHTML += `<div style="display: flex; flex-wrap: wrap; gap: 4px;">`;
+                    pickerHTML += `<div style="margin-bottom: 16px;">`;
+                    pickerHTML += `<h5 style="margin: 0 0 8px 0; color: var(--text-secondary); font-size: 0.9em; font-weight: 600;">🎮 Gaming Effects</h5>`;
+                    pickerHTML += `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px;">`;
                     
                     Object.keys(effectsData.effects.gaming).forEach(key => {
                         const effect = effectsData.effects.gaming[key];
@@ -4316,21 +4352,61 @@
                                     style="
                                         background: var(--bg-secondary);
                                         border: 1px solid var(--border-color);
-                                        border-radius: 4px;
-                                        padding: 6px 10px;
+                                        border-radius: 6px;
+                                        padding: 8px;
                                         cursor: pointer;
                                         font-size: 0.8em;
                                         transition: all 0.2s;
                                         display: flex;
-                                        align-items: center;
+                                        flex-direction: column;
+                                        align-items: flex-start;
                                         gap: 4px;
                                         color: var(--text-primary);
+                                        text-align: left;
                                     "
-                                    onmouseover="this.style.background='var(--accent-color)'; this.style.color='white';"
-                                    onmouseout="this.style.background='var(--bg-secondary)'; this.style.color='var(--text-primary)';"
+                                    onmouseover="this.style.background='var(--accent-color)'; this.style.color='white'; this.style.transform='translateY(-1px)';"
+                                    onmouseout="this.style.background='var(--bg-secondary)'; this.style.color='var(--text-primary)'; this.style.transform='translateY(0)';"
                                     title="${effect.description}">
-                                <span style="font-weight: bold;">${effect.name}</span>
-                                <span style="font-size: 0.7em; opacity: 0.8;">${effect.command}</span>
+                                <span style="font-weight: bold; font-size: 0.85em;">${effect.name}</span>
+                                <span style="font-size: 0.7em; opacity: 0.8; color: var(--accent-color);">${effect.command}</span>
+                                <span style="font-size: 0.65em; opacity: 0.6; line-height: 1.2;">${effect.description}</span>
+                            </button>
+                        `;
+                    });
+                    pickerHTML += `</div></div>`;
+                }
+                
+                // Emotional effects
+                if (effectsData.effects.emotional) {
+                    pickerHTML += `<div style="margin-bottom: 16px;">`;
+                    pickerHTML += `<h5 style="margin: 0 0 8px 0; color: var(--text-secondary); font-size: 0.9em; font-weight: 600;">💭 Emotional Effects</h5>`;
+                    pickerHTML += `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px;">`;
+                    
+                    Object.keys(effectsData.effects.emotional).forEach(key => {
+                        const effect = effectsData.effects.emotional[key];
+                        pickerHTML += `
+                            <button onclick="insertText('${inputId}', '${effect.command}')" 
+                                    style="
+                                        background: var(--bg-secondary);
+                                        border: 1px solid var(--border-color);
+                                        border-radius: 6px;
+                                        padding: 8px;
+                                        cursor: pointer;
+                                        font-size: 0.8em;
+                                        transition: all 0.2s;
+                                        display: flex;
+                                        flex-direction: column;
+                                        align-items: flex-start;
+                                        gap: 4px;
+                                        color: var(--text-primary);
+                                        text-align: left;
+                                    "
+                                    onmouseover="this.style.background='var(--accent-color)'; this.style.color='white'; this.style.transform='translateY(-1px)';"
+                                    onmouseout="this.style.background='var(--bg-secondary)'; this.style.color='var(--text-primary)'; this.style.transform='translateY(0)';"
+                                    title="${effect.description}">
+                                <span style="font-weight: bold; font-size: 0.85em;">${effect.name}</span>
+                                <span style="font-size: 0.7em; opacity: 0.8; color: var(--accent-color);">${effect.command}</span>
+                                <span style="font-size: 0.65em; opacity: 0.6; line-height: 1.2;">${effect.description}</span>
                             </button>
                         `;
                     });
@@ -4339,9 +4415,9 @@
                 
                 // Modifiers
                 if (effectsData.effects.modifiers) {
-                    pickerHTML += `<div style="margin-bottom: 12px;">`;
-                    pickerHTML += `<h5 style="margin: 0 0 6px 0; color: var(--text-secondary); font-size: 0.85em;">⚙️ Modifiers</h5>`;
-                    pickerHTML += `<div style="display: flex; flex-wrap: wrap; gap: 4px;">`;
+                    pickerHTML += `<div style="margin-bottom: 16px;">`;
+                    pickerHTML += `<h5 style="margin: 0 0 8px 0; color: var(--text-secondary); font-size: 0.9em; font-weight: 600;">⚙️ Modifiers</h5>`;
+                    pickerHTML += `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px;">`;
                     
                     Object.keys(effectsData.effects.modifiers).forEach(key => {
                         const effect = effectsData.effects.modifiers[key];
@@ -4350,51 +4426,82 @@
                                     style="
                                         background: var(--bg-secondary);
                                         border: 1px solid var(--border-color);
-                                        border-radius: 4px;
-                                        padding: 6px 10px;
+                                        border-radius: 6px;
+                                        padding: 8px;
                                         cursor: pointer;
                                         font-size: 0.8em;
                                         transition: all 0.2s;
                                         display: flex;
-                                        align-items: center;
+                                        flex-direction: column;
+                                        align-items: flex-start;
                                         gap: 4px;
                                         color: var(--text-primary);
+                                        text-align: left;
                                     "
-                                    onmouseover="this.style.background='var(--accent-color)'; this.style.color='white';"
-                                    onmouseout="this.style.background='var(--bg-secondary)'; this.style.color='var(--text-primary)';"
+                                    onmouseover="this.style.background='var(--accent-color)'; this.style.color='white'; this.style.transform='translateY(-1px)';"
+                                    onmouseout="this.style.background='var(--bg-secondary)'; this.style.color='var(--text-primary)'; this.style.transform='translateY(0)';"
                                     title="${effect.description}">
-                                <span style="font-weight: bold;">${effect.name}</span>
-                                <span style="font-size: 0.7em; opacity: 0.8;">${effect.command}</span>
+                                <span style="font-weight: bold; font-size: 0.85em;">${effect.name}</span>
+                                <span style="font-size: 0.7em; opacity: 0.8; color: var(--accent-color);">${effect.command}</span>
+                                <span style="font-size: 0.65em; opacity: 0.6; line-height: 1.2;">${effect.description}</span>
                             </button>
                         `;
                     });
                     pickerHTML += `</div></div>`;
                 }
             }
+            pickerHTML += '</div>';
+            
+            // COMBINATIONS TAB CONTENT
+            pickerHTML += `
+                <div id="combinations-content" class="tab-content" style="display: none;">
+                    <div style="margin-bottom: 16px;">
+                        <h5 style="margin: 0 0 8px 0; color: var(--text-secondary); font-size: 0.9em; font-weight: 600;">🎨 Popular Combinations</h5>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <button onclick="insertText('${inputId}', ':crit: :big: ')" 
+                                    style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; cursor: pointer; text-align: left; transition: all 0.2s;"
+                                    onmouseover="this.style.background='var(--accent-color)'; this.style.color='white';"
+                                    onmouseout="this.style.background='var(--bg-secondary)'; this.style.color='var(--text-primary)';">
+                                <strong>:crit: :big:</strong> - Big Critical Hit Effect
+                            </button>
+                            <button onclick="insertText('${inputId}', ':sparkle: :slow: ')" 
+                                    style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; cursor: pointer; text-align: left; transition: all 0.2s;"
+                                    onmouseover="this.style.background='var(--accent-color)'; this.style.color='white';"
+                                    onmouseout="this.style.background='var(--bg-secondary)'; this.style.color='var(--text-primary)';">
+                                <strong>:sparkle: :slow:</strong> - Slow Magic Sparkle
+                            </button>
+                            <button onclick="insertText('${inputId}', ':fire: :throb: ')" 
+                                    style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; cursor: pointer; text-align: left; transition: all 0.2s;"
+                                    onmouseover="this.style.background='var(--accent-color)'; this.style.color='white';"
+                                    onmouseout="this.style.background='var(--bg-secondary)'; this.style.color='var(--text-primary)';">
+                                <strong>:fire: :throb:</strong> - Throbbing Fire Effect
+                            </button>
+                            <button onclick="insertText('${inputId}', ':divine: :glow: ')" 
+                                    style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; cursor: pointer; text-align: left; transition: all 0.2s;"
+                                    onmouseover="this.style.background='var(--accent-color)'; this.style.color='white';"
+                                    onmouseout="this.style.background='var(--bg-secondary)'; this.style.color='var(--text-primary)';">
+                                <strong>:divine: :glow:</strong> - Divine Glow
+                            </button>
+                            <button onclick="insertText('${inputId}', ':bounce: :fast: ')" 
+                                    style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; cursor: pointer; text-align: left; transition: all 0.2s;"
+                                    onmouseover="this.style.background='var(--accent-color)'; this.style.color='white';"
+                                    onmouseout="this.style.background='var(--bg-secondary)'; this.style.color='var(--text-primary)';">
+                                <strong>:bounce: :fast:</strong> - Quick Bounce
+                            </button>
+                        </div>
+                    </div>
+                    <div style="padding: 16px; background: var(--bg-secondary); border-radius: 6px; color: var(--text-tertiary); font-size: 0.8em; line-height: 1.4;">
+                        <strong>💡 Pro Tips:</strong><br>
+                        • Effects apply to text that follows them<br>
+                        • Combine multiple effects for unique results<br>
+                        • Use modifiers like :fast: :slow: :big: to customize<br>
+                        • Mix with emojis for enhanced visual impact<br>
+                        • Example: ":lightning: :big: ⚡ THUNDER STRIKE! ⚡"
+                    </div>
+                </div>
+            `;
             
             pickerHTML += `
-                <div style="margin-top: 16px; padding: 12px; background: var(--bg-secondary); border-radius: 4px; color: var(--text-tertiary); font-size: 0.75em; line-height: 1.4;">
-                    💡 <strong>Tips:</strong><br>
-                    • Combine effects: ":crit: :big: MASSIVE DAMAGE!"<br>
-                    • Mix with emojis: ":mp: :magic: ✨ Spell cast!"<br>
-                    • Use modifiers: ":pulse: :slow: Mysterious glow..."
-                </div>
-                <div style="margin-top: 16px; text-align: right;">
-                    <button onclick="this.closest('.chat-picker-modal').remove()" 
-                            style="
-                                background: var(--accent-color);
-                                border: none;
-                                color: white;
-                                padding: 8px 16px;
-                                border-radius: 4px;
-                                cursor: pointer;
-                                font-weight: bold;
-                                transition: opacity 0.2s;
-                            "
-                            onmouseover="this.style.opacity='0.8'"
-                            onmouseout="this.style.opacity='1'">
-                        Close
-                    </button>
                 </div>
             `;
             
@@ -4409,6 +4516,28 @@
                     modal.remove();
                 }
             });
+        }
+
+        // Tab switching function
+        function switchPickerTab(tabName) {
+            // Hide all content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.style.display = 'none';
+            });
+            
+            // Reset all tabs
+            document.querySelectorAll('.picker-tab').forEach(tab => {
+                tab.style.color = 'var(--text-secondary)';
+                tab.style.borderBottomColor = 'transparent';
+            });
+            
+            // Show selected content
+            document.getElementById(tabName + '-content').style.display = 'block';
+            
+            // Highlight selected tab
+            const selectedTab = document.getElementById('tab-' + tabName);
+            selectedTab.style.color = 'var(--accent-color)';
+            selectedTab.style.borderBottomColor = 'var(--accent-color)';
         }
 
         // Unified function for inserting text (emojis and effects)

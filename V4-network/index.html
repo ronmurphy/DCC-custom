@@ -111,7 +111,7 @@
     <link rel="stylesheet" href="themes.css">
     <!-- Network Integration CSS -->
     <link rel="stylesheet" href="css/network-chat.css">
-    <link rel="stylesheet" href="css/chat-effects.css">
+    <link rel="stylesheet" href="css/enhanced_chat_effects.css">
 </head>
 
 <body>
@@ -2697,8 +2697,254 @@
         }
 
         function showSheetChatEffects() {
-            // Placeholder for chat effects
-            alert('Chat effects: Try :crit:, :magic:, :doom:, or :dice: in your messages!');
+            // Mobile-optimized chat picker modal
+            if (!window.emojiProcessor || !window.chatEffectsManager) {
+                alert('Chat effects: Try :crit:, :sparkle:, :fire:, :lightning:, :glow:, :pulse:, or :bounce: in your messages!');
+                return;
+            }
+            
+            const emoticonList = window.emojiProcessor.getEmoticonList();
+            const effectsData = window.chatEffectsManager.effects;
+            const inputId = 'sheet-chat-input';
+            
+            // Create mobile modal
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: flex-end;
+                justify-content: center;
+                z-index: 10000;
+                padding: 0;
+            `;
+            
+            // Create mobile picker content
+            const picker = document.createElement('div');
+            picker.style.cssText = `
+                background: var(--bg-primary);
+                border-radius: 16px 16px 0 0;
+                padding: 20px;
+                width: 100%;
+                max-height: 70vh;
+                overflow-y: auto;
+                box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+                border: 1px solid var(--border-color);
+                color: var(--text-primary);
+                position: relative;
+                animation: slideUp 0.3s ease-out;
+            `;
+            
+            // Add slide-up animation
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideUp {
+                    from { transform: translateY(100%); }
+                    to { transform: translateY(0); }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            let pickerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid var(--border-color);">
+                    <h4 style="margin: 0; color: var(--text-primary); font-size: 1.2em;">💬 Chat Picker</h4>
+                    <button onclick="this.closest('.mobile-chat-modal').remove()" 
+                            style="background: none; border: none; font-size: 1.8em; cursor: pointer; color: var(--text-secondary); padding: 4px;"
+                            title="Close">×</button>
+                </div>
+                
+                <!-- Quick Access Row -->
+                <div style="margin-bottom: 20px;">
+                    <h5 style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 0.9em; font-weight: 600;">⚡ Quick Effects</h5>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+            `;
+            
+            // Quick access buttons for most popular effects
+            const quickEffects = [
+                { command: ':crit:', name: 'Crit', icon: '💥' },
+                { command: ':fire:', name: 'Fire', icon: '🔥' },
+                { command: ':sparkle:', name: 'Magic', icon: '✨' },
+                { command: ':lightning:', name: 'Thunder', icon: '⚡' },
+                { command: ':glow:', name: 'Glow', icon: '🌟' },
+                { command: ':throb:', name: 'Throb', icon: '💓' },
+                { command: ':bounce:', name: 'Bounce', icon: '🏀' },
+                { command: ':divine:', name: 'Divine', icon: '😇' }
+            ];
+            
+            quickEffects.forEach(effect => {
+                pickerHTML += `
+                    <button onclick="insertMobileText('${inputId}', '${effect.command}')" 
+                            style="
+                                background: var(--bg-secondary);
+                                border: 1px solid var(--border-color);
+                                border-radius: 8px;
+                                padding: 12px 8px;
+                                cursor: pointer;
+                                font-size: 0.8em;
+                                transition: all 0.2s;
+                                display: flex;
+                                flex-direction: column;
+                                align-items: center;
+                                gap: 4px;
+                                color: var(--text-primary);
+                                text-align: center;
+                                min-height: 60px;
+                            "
+                            ontouchstart="this.style.background='var(--accent-color)'; this.style.color='white'; this.style.transform='scale(0.95)';"
+                            ontouchend="setTimeout(() => { this.style.background='var(--bg-secondary)'; this.style.color='var(--text-primary)'; this.style.transform='scale(1)'; }, 150);"
+                            onmousedown="this.style.background='var(--accent-color)'; this.style.color='white'; this.style.transform='scale(0.95)';"
+                            onmouseup="this.style.background='var(--bg-secondary)'; this.style.color='var(--text-primary)'; this.style.transform='scale(1)';"
+                            title="${effect.command}">
+                        <span style="font-size: 1.2em;">${effect.icon}</span>
+                        <span style="font-size: 0.7em; font-weight: 600;">${effect.name}</span>
+                    </button>
+                `;
+            });
+            
+            pickerHTML += `
+                    </div>
+                </div>
+                
+                <!-- Emojis Section -->
+                <div style="margin-bottom: 20px;">
+                    <h5 style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 0.9em; font-weight: 600;">😊 Popular Emojis</h5>
+                    <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px;">
+            `;
+            
+            // Popular emojis for gaming
+            const popularEmojis = [
+                { emoji: '⚔️', code: ':sword:' },
+                { emoji: '🛡️', code: ':shield:' },
+                { emoji: '🏹', code: ':bow:' },
+                { emoji: '🪄', code: ':magic_wand:' },
+                { emoji: '💎', code: ':gem:' },
+                { emoji: '🏆', code: ':trophy:' },
+                { emoji: '💀', code: ':skull:' },
+                { emoji: '👑', code: ':crown:' },
+                { emoji: '🎯', code: ':target:' },
+                { emoji: '🧿', code: ':eye:' },
+                { emoji: '⭐', code: ':star:' },
+                { emoji: '🌙', code: ':moon:' }
+            ];
+            
+            popularEmojis.forEach(emoji => {
+                pickerHTML += `
+                    <button onclick="insertMobileText('${inputId}', '${emoji.code}')" 
+                            style="
+                                background: var(--bg-secondary);
+                                border: 1px solid var(--border-color);
+                                border-radius: 8px;
+                                padding: 12px;
+                                cursor: pointer;
+                                font-size: 1.5em;
+                                transition: all 0.2s;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                color: var(--text-primary);
+                                min-height: 50px;
+                            "
+                            ontouchstart="this.style.background='var(--accent-color)'; this.style.transform='scale(0.9)';"
+                            ontouchend="setTimeout(() => { this.style.background='var(--bg-secondary)'; this.style.transform='scale(1)'; }, 150);"
+                            onmousedown="this.style.background='var(--accent-color)'; this.style.transform='scale(0.9)';"
+                            onmouseup="this.style.background='var(--bg-secondary)'; this.style.transform='scale(1)';"
+                            title="${emoji.code}">
+                        ${emoji.emoji}
+                    </button>
+                `;
+            });
+            
+            pickerHTML += `
+                    </div>
+                </div>
+                
+                <!-- Combinations Section -->
+                <div style="margin-bottom: 20px;">
+                    <h5 style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 0.9em; font-weight: 600;">🎨 Quick Combos</h5>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+            `;
+            
+            const quickCombos = [
+                { combo: ':crit: :big: ', text: 'MASSIVE DAMAGE!', desc: 'Critical Hit' },
+                { combo: ':fire: :throb: ', text: 'Burning Throb!', desc: 'Fire Attack' },
+                { combo: ':sparkle: :glow: ', text: 'Magic Spell!', desc: 'Magical Effect' },
+                { combo: ':lightning: :fast: ', text: 'Quick Strike!', desc: 'Lightning Attack' }
+            ];
+            
+            quickCombos.forEach(combo => {
+                pickerHTML += `
+                    <button onclick="insertMobileText('${inputId}', '${combo.combo}')" 
+                            style="
+                                background: var(--bg-secondary);
+                                border: 1px solid var(--border-color);
+                                border-radius: 8px;
+                                padding: 12px;
+                                cursor: pointer;
+                                font-size: 0.9em;
+                                transition: all 0.2s;
+                                display: flex;
+                                justify-content: space-between;
+                                align-items: center;
+                                color: var(--text-primary);
+                                text-align: left;
+                            "
+                            ontouchstart="this.style.background='var(--accent-color)'; this.style.color='white';"
+                            ontouchend="setTimeout(() => { this.style.background='var(--bg-secondary)'; this.style.color='var(--text-primary)'; }, 150);"
+                            onmousedown="this.style.background='var(--accent-color)'; this.style.color='white';"
+                            onmouseup="this.style.background='var(--bg-secondary)'; this.style.color='var(--text-primary)';">
+                        <div>
+                            <strong>${combo.combo}</strong>${combo.text}
+                        </div>
+                        <span style="font-size: 0.7em; opacity: 0.6;">${combo.desc}</span>
+                    </button>
+                `;
+            });
+            
+            pickerHTML += `
+                    </div>
+                </div>
+                
+                <!-- Tips Section -->
+                <div style="padding: 16px; background: var(--bg-secondary); border-radius: 8px; color: var(--text-tertiary); font-size: 0.8em; line-height: 1.4; margin-top: 16px;">
+                    <strong>💡 Tips:</strong><br>
+                    • Effects work on text that follows them<br>
+                    • Combine effects: <code>:fire: :big: HUGE FIREBALL!</code><br>
+                    • Mix with emojis: <code>:crit: ⚔️ Critical Hit!</code>
+                </div>
+            `;
+            
+            picker.innerHTML = pickerHTML;
+            modal.className = 'mobile-chat-modal';
+            modal.appendChild(picker);
+            document.body.appendChild(modal);
+            
+            // Close on outside click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        }
+
+        // Mobile text insertion function
+        function insertMobileText(inputId, text) {
+            const input = document.getElementById(inputId);
+            if (input) {
+                const cursorPos = input.selectionStart;
+                const textBefore = input.value.substring(0, cursorPos);
+                const textAfter = input.value.substring(input.selectionEnd);
+                
+                input.value = textBefore + text + ' ' + textAfter;
+                input.setSelectionRange(cursorPos + text.length + 1, cursorPos + text.length + 1);
+                input.focus();
+                
+                // Close the modal
+                document.querySelector('.mobile-chat-modal')?.remove();
+            }
         }
 
         function showSheetImageUpload() {
@@ -3942,7 +4188,7 @@
         // Send "user has joined" announcement with random effect and emoji
         async function sendJoinAnnouncement(playerName) {
             const joinEmojis = ['🎉', '✨', '🌟', '🎊', '🔥', '⚡', '💫', '🌈', '🎯', '🚀'];
-            const joinEffects = ['sparkle', 'flame', 'ice', 'pulse', 'glow'];
+            const joinEffects = ['sparkle', 'glow', 'fire', 'lightning', 'divine', 'heal', 'pulse', 'bounce'];
             const joinMessages = [
                 'has joined the adventure!',
                 'enters the realm!',
@@ -3958,8 +4204,8 @@
             const randomEffect = joinEffects[Math.floor(Math.random() * joinEffects.length)];
             const randomMessage = joinMessages[Math.floor(Math.random() * joinMessages.length)];
             
-            // Create the announcement message with effect syntax
-            const announcement = `${randomEmoji} ${playerName} ${randomMessage} [effect:${randomEffect}]`;
+            // Create the announcement message with effect syntax (effect before text)
+            const announcement = `${randomEmoji} :${randomEffect}: ${playerName} ${randomMessage}`;
             
             try {
                 // Send via Supabase real-time system (like regular messages)

@@ -16,7 +16,7 @@ class ChatEffectsManager {
      */
     async loadEffects() {
         try {
-            const response = await fetch('data/chat-effects.json');
+            const response = await fetch('data/enhanced_chat_effects.json');
             this.effects = await response.json();
             this.initialized = true;
             console.log('Chat effects loaded:', Object.keys(this.effects.effects).length, 'categories');
@@ -54,16 +54,15 @@ class ChatEffectsManager {
         // Build CSS classes
         let effectClasses = [];
         
-        // Add main effect (take first one if multiple)
-        if (mainEffects.length > 0) {
-            const effectCommand = mainEffects[0];
+        // Add ALL main effects (support chaining)
+        mainEffects.forEach(effectCommand => {
             const effectData = this.getEffectDataByCommand(effectCommand);
             if (effectData) {
                 effectClasses.push('chat-effect', effectData.class);
                 appliedEffects.push(effectCommand);
                 hasEffects = true;
             }
-        }
+        });
 
         // Add modifiers
         modifiers.forEach(modifier => {
@@ -71,13 +70,18 @@ class ChatEffectsManager {
             if (modifierData) {
                 effectClasses.push(modifierData.class);
                 appliedEffects.push(modifier);
-                hasEffects = true; // Modifiers should also trigger effects
+                hasEffects = true;
             }
         });
 
-        // Remove effect commands from message
+        // Remove effect commands from message, handling invisible vs visible modifiers
         effectCommands.forEach(cmd => {
-            processedMessage = processedMessage.replace(new RegExp(this.escapeRegex(cmd), 'g'), '');
+            const effectData = this.getEffectDataByCommand(cmd) || this.getModifierDataByCommand(cmd);
+            
+            // Only remove invisible modifiers and main effects from the text
+            if (!effectData || effectData.invisible !== false) {
+                processedMessage = processedMessage.replace(new RegExp(this.escapeRegex(cmd), 'g'), '');
+            }
         });
 
         // Clean up extra spaces

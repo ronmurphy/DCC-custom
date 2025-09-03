@@ -75,7 +75,12 @@ class V4NetworkBridge {
      */
     async handleCharacterExport(characterData) {
         try {
-            console.log('📥 Importing character from V4-network:', characterData.name);
+            // Check if characterData is valid
+            if (!characterData) {
+                throw new Error('No character data provided');
+            }
+            
+            console.log('📥 Importing character from V4-network:', characterData.name || 'Unknown');
 
             // Use our CharacterImportProfile system
             if (window.CharacterImportProfile) {
@@ -106,7 +111,7 @@ class V4NetworkBridge {
             console.error('❌ Character import failed:', error);
             this.sendResponse('import-error', { 
                 error: error.message,
-                characterName: characterData.name || 'Unknown'
+                characterName: characterData?.name || 'Unknown'
             });
             
             window.showNotification('error', 'Import Failed', 
