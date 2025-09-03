@@ -1559,8 +1559,27 @@ async function handleIncomingMessage(message) {
     if (message.message_type === 'chat' && message.message_text.startsWith('AVATAR_URL:')) {
         console.log('🎭 Detected AVATAR_URL command in chat:', message.message_text);
         
-        // Process the avatar URL command
-        processAvatarUrlCommand(message.message_text, message.player_name);
+        // Process the command with the ChatCommandParser if available (like V4-network)
+        if (window.chatCommandParser && typeof window.chatCommandParser.processMessage === 'function') {
+            try {
+                console.log('🎭 Using ChatCommandParser to process AVATAR_URL');
+                const result = await window.chatCommandParser.processMessage(message.message_text, message.player_name);
+                if (result && result.success) {
+                    console.log('✅ AVATAR_URL processed successfully via ChatCommandParser');
+                } else {
+                    console.warn('❌ AVATAR_URL processing failed via ChatCommandParser:', result);
+                    // Fallback to direct processing
+                    processAvatarUrlCommand(message.message_text, message.player_name);
+                }
+            } catch (error) {
+                console.error('❌ Error processing AVATAR_URL via ChatCommandParser:', error);
+                // Fallback to direct processing
+                processAvatarUrlCommand(message.message_text, message.player_name);
+            }
+        } else {
+            console.log('🎭 ChatCommandParser not available, using direct processing');
+            processAvatarUrlCommand(message.message_text, message.player_name);
+        }
         
         // Don't display the raw command - process silently
         console.log('🔇 AVATAR_URL command processed silently, not displaying in chat');
