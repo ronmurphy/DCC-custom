@@ -20,7 +20,7 @@ let playerName = '';
 
 // Global debug toggle - set to false to reduce console spam
 if (typeof window.showDebug === 'undefined') {
-    window.showDebug = true; // TEMPORARILY ENABLED for debugging chat issue
+    window.showDebug = false;
 }
 
 // ========================================
@@ -1555,9 +1555,6 @@ async function handleIncomingMessage(message) {
         return;
     }
 
-    // TEMPORARILY DISABLED: AVATAR_URL command processing
-    // Rollback to test if this is causing chat message issues
-    /*
     // Check if this is an AVATAR_URL command
     if (message.message_type === 'chat' && message.message_text.startsWith('AVATAR_URL:')) {
         console.log('🎭 Detected AVATAR_URL command in chat:', message.message_text);
@@ -1569,7 +1566,6 @@ async function handleIncomingMessage(message) {
         console.log('🔇 AVATAR_URL command processed silently, not displaying in chat');
         return;
     }
-    */
 
     // Check if this is a CHARACTER SYNC command
     if (message.message_type === 'chat' && message.message_text.startsWith('CHAR_')) {
@@ -2800,4 +2796,11 @@ if (typeof window !== 'undefined') {
     window.announceAvatarUrl = announceAvatarUrl;
     window.checkAndAnnounceCurrentAvatar = checkAndAnnounceCurrentAvatar;
     window.updatePlayerChips = updatePlayerChips;
+    
+    // Make updateConnectedPlayers globally available (for compatibility with index.html)
+    if (typeof window.updateConnectedPlayers === 'function') {
+        // Function is defined in index.html, keep it
+    } else {
+        console.warn('updateConnectedPlayers function not found in window - should be defined in index.html');
+    }
 }

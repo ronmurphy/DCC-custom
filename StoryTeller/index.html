@@ -3602,29 +3602,14 @@
                                 </div>
                             </div>
                             
-                            <!-- Player Selector (moved from command center panel) -->
-                            <div class="player-selector" id="${panel}-player-selector">
-                                <h4>Connected Players</h4>
-                                <div class="player-list" id="${panel}-player-list">
-                                    <div class="player-item" id="${panel}-dm-player">
-                                        <div class="player-name">Storyteller (You)</div>
-                                        <div class="player-stats">Session Master</div>
+                            <!-- Player Chips Area (V4-network style) - Always visible -->
+                            <div class="player-chips-area" id="${panel}-player-chips-area">
+                                <div class="player-chips-scroll">
+                                    <div class="player-chip self">
+                                        <div class="chip-avatar">👤</div>
+                                        <span class="chip-name">You</span>
                                     </div>
-                                    <!-- Connected players will be populated here dynamically -->
-                                </div>
-                                <div class="no-players" id="${panel}-no-players" style="display: none; padding: 15px; text-align: center; color: #666;">
-                                    No players connected yet. Share the player URL to invite players!
-                                </div>
-                                
-                                <!-- Player Chips for avatar display and quick actions -->
-                                <div class="player-chips-area" id="${panel}-player-chips-area" style="display: none;">
-                                    <div class="player-chips-scroll">
-                                        <div class="player-chip self">
-                                            <div class="chip-avatar">👤</div>
-                                            <span class="chip-name">You</span>
-                                        </div>
-                                        <!-- Dynamic player chips will be added here -->
-                                    </div>
+                                    <!-- Dynamic player chips will be added here -->
                                 </div>
                             </div>
                             
@@ -4595,9 +4580,128 @@
             }
         }
         
-        // Function to update connected players list
+        // Function to update connected players list (copied from V4-network)
         function updateConnectedPlayers(players = []) {
-            // Update all player lists (both panel-specific and legacy global)
+            console.log('🔍 Updating connected players:', players);
+            console.log('🔍 ChatCommandParser available:', !!window.chatCommandParser);
+            
+            // Update player chips in chat interface
+            const playerChipsScroll = document.querySelector('.player-chips-scroll');
+            if (playerChipsScroll) {
+                // Update the self chip with current player info and avatar
+                let selfChip = playerChipsScroll.querySelector('.player-chip.self');
+                if (selfChip) {
+                    // Update self chip with current player name and avatar
+                    const currentPlayerName = window.currentPlayerName || 'You';
+                    const nameElement = selfChip.querySelector('.chip-name');
+                    if (nameElement) {
+                        nameElement.textContent = currentPlayerName;
+                    }
+                    
+                    // Check if we have an avatar for the current player
+                    const avatarElement = selfChip.querySelector('.chip-avatar');
+                    if (avatarElement) {
+                        const chatParser = window.chatCommandParser;
+                        const cachedAvatarUrl = chatParser?.getCachedAvatarUrl?.(currentPlayerName);
+                        
+                        if (cachedAvatarUrl) {
+                            avatarElement.innerHTML = `<img src="${cachedAvatarUrl}" alt="${currentPlayerName}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" onerror="this.parentElement.innerHTML='👤'">`;
+                        } else {
+                            // Try to get avatar from current character data
+                            const characterData = getCurrentCharacterData();
+                            if (characterData?.personal?.avatarUrl) {
+                                avatarElement.innerHTML = `<img src="${characterData.personal.avatarUrl}" alt="${currentPlayerName}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" onerror="this.parentElement.innerHTML='👤'">`;
+                                
+                                // Cache it for future use
+                                if (chatParser && typeof chatParser.handleAvatarUrlCommand === 'function') {
+                                    chatParser.handleAvatarUrlCommand(currentPlayerName, characterData.personal.avatarUrl, 'self');
+                                }
+                            } else {
+                                avatarElement.innerHTML = '👤';
+                            }
+                        }
+                    }
+                }
+                
+                // Clear other chips but keep self
+                const allChips = Array.from(playerChipsScroll.children);
+                allChips.forEach(chip => {
+                    if (!chip.classList.contains('self')) {
+                        chip.remove();
+                    }
+                });
+                
+                // Add player chips for connected players
+                console.log('🔍 Creating chips for connected players:', players);
+                players.forEach(player => {
+                    if (player.name && player.name !== window.currentPlayerName && player.name !== 'System' && player.name !== 'Heartbeat') {
+                        console.log(`🔍 Creating chip for player: ${player.name}`);
+                        const chipDiv = document.createElement('div');
+                        chipDiv.className = 'player-chip';
+                        
+                        if (player.is_storyteller) {
+                            chipDiv.classList.add('storyteller');
+                        }
+                        
+                        // Check for cached avatar URL
+                        let avatarContent;
+                        const chatParser = window.chatCommandParser;
+                        const cachedAvatarUrl = chatParser?.getCachedAvatarUrl?.(player.name);
+                        
+                        console.log(`🔍 Cached avatar URL for ${player.name}:`, cachedAvatarUrl);
+                        
+                        if (cachedAvatarUrl) {
+                            avatarContent = `<img src="${cachedAvatarUrl}" alt="${player.name}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" onerror="this.parentElement.innerHTML='${player.is_storyteller ? '👑' : '⚔️'}'">`;
+                            console.log(`✅ Using cached avatar for ${player.name}`);
+                        } else {
+                            avatarContent = player.is_storyteller ? '👑' : '⚔️';
+                            console.log(`🔍 No cached avatar for ${player.name}, using default: ${avatarContent}`);
+                        }
+                        
+                        chipDiv.innerHTML = `
+                            <div class="chip-avatar">${avatarContent}</div>
+                            <span class="chip-name">${player.name}</span>
+                        `;
+                        
+                        // Add click event for sending notes
+                        chipDiv.addEventListener('click', (e) => {
+                            // Provide haptic feedback on supported devices
+                            if (navigator.vibrate) {
+                                navigator.vibrate(50); // Short vibration
+                            }
+                            
+                            // Visual feedback animation
+                            chipDiv.style.transform = 'scale(0.95)';
+                            setTimeout(() => {
+                                chipDiv.style.transform = '';
+                            }, 150);
+                            
+                            showNoteInput(player.name);
+                        });
+                        
+                        // Add touch event handlers for better mobile experience
+                        chipDiv.addEventListener('touchstart', (e) => {
+                            chipDiv.style.transition = 'transform 0.1s ease';
+                        });
+                        
+                        chipDiv.addEventListener('touchend', (e) => {
+                            chipDiv.style.transition = 'all 0.2s ease';
+                        });
+                        
+                        // Add visual feedback for clickable chips
+                        chipDiv.style.cursor = 'pointer';
+                        chipDiv.title = `Send a private note to ${player.name}`;
+                        
+                        playerChipsScroll.appendChild(chipDiv);
+                    }
+                });
+                
+                console.log(`✅ Player chips updated: ${players.length} players found`);
+                
+                // Player chips area is always visible now - no need to show/hide
+            }
+            
+            // Update legacy player lists for panels (backup support)
             const playerListSelectors = ['#player-list', '#right-player-list', '#left-player-list'];
             const noPlayersSelectors = ['#no-players', '#right-no-players', '#left-no-players'];
             
@@ -4637,6 +4741,192 @@
                     noPlayersDiv.style.display = hasPlayers ? 'none' : 'block';
                 }
             });
+            
+            console.log(`✅ Player list updated: ${players.length} players found`);
+        }
+        
+        // Helper function to get current character data (similar to qr.js)
+        function getCurrentCharacterData() {
+            // Try different ways to get current character data
+            
+            // First check if the global character object exists (main.js)
+            if (typeof character !== 'undefined' && character) {
+                return character;
+            }
+            
+            if (window.currentCharacter) {
+                return window.currentCharacter;
+            }
+            
+            if (window.character) {
+                return window.character;
+            }
+            
+            // Try to get from character manager
+            if (window.characterManager && window.characterManager.currentCharacterId && window.characterManager.characters) {
+                const currentChar = characterManager.characters.find(
+                    char => char.id === characterManager.currentCharacterId
+                );
+                if (currentChar) return currentChar;
+            }
+            
+            return null;
+        }
+        
+        // Modern modal-based note input for player chip clicks (copied from V4-network)
+        function showNoteInput(targetPlayerName) {
+            console.log('📝 showNoteInput called for:', targetPlayerName);
+            
+            // Create modal overlay
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.7);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            `;
+            
+            // Create modal content
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                background: white;
+                border-radius: 12px;
+                padding: 24px;
+                max-width: 450px;
+                width: 90%;
+                max-height: 80vh;
+                overflow-y: auto;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                animation: noteModalSlideIn 0.3s ease-out;
+            `;
+            
+            // Add CSS animation if not already present
+            if (!document.getElementById('note-modal-styles')) {
+                const style = document.createElement('style');
+                style.id = 'note-modal-styles';
+                style.textContent = `
+                    @keyframes noteModalSlideIn {
+                        from { opacity: 0; transform: translateY(-20px) scale(0.95); }
+                        to { opacity: 1; transform: translateY(0) scale(1); }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            // Create modal HTML
+            modal.innerHTML = `
+                <h3 style="margin: 0 0 16px; color: #333; font-size: 20px;">Send Note to ${targetPlayerName}</h3>
+                <textarea 
+                    id="note-text" 
+                    placeholder="Type your private note here..."
+                    style="width: 100%; height: 120px; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; resize: vertical; box-sizing: border-box; font-family: inherit;"
+                ></textarea>
+                <div style="display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap;">
+                    <button id="note-cancel-btn" style="flex: 1; min-width: 100px; padding: 12px; background: #6c757d; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; transition: background 0.2s;">Cancel</button>
+                    <button id="note-send-btn" style="flex: 1; min-width: 100px; padding: 12px; background: #007bff; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; transition: background 0.2s;">Send Note</button>
+                </div>
+            `;
+            
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+            
+            // Focus the textarea
+            const textarea = modal.querySelector('#note-text');
+            setTimeout(() => textarea.focus(), 100);
+            
+            // Handle buttons
+            const cancelBtn = modal.querySelector('#note-cancel-btn');
+            const sendBtn = modal.querySelector('#note-send-btn');
+            
+            const closeModal = () => {
+                overlay.style.animation = 'noteModalSlideIn 0.2s ease-in reverse';
+                setTimeout(() => {
+                    if (overlay.parentNode) {
+                        overlay.parentNode.removeChild(overlay);
+                    }
+                }, 200);
+            };
+            
+            cancelBtn.addEventListener('click', closeModal);
+            
+            sendBtn.addEventListener('click', () => {
+                const noteText = textarea.value.trim();
+                if (!noteText) {
+                    alert('Please enter a note before sending.');
+                    textarea.focus();
+                    return;
+                }
+                
+                // Send the note via chat system
+                const message = `/note ${targetPlayerName} ${noteText}`;
+                
+                // Try to send through the chat system
+                if (window.sendChatMessage && typeof window.sendChatMessage === 'function') {
+                    window.sendChatMessage(message);
+                } else if (window.sendMessage && typeof window.sendMessage === 'function') {
+                    window.sendMessage(message);
+                } else {
+                    // Fallback: try to trigger the chat input
+                    console.log('Sending note message:', message);
+                    const chatInput = document.querySelector('#chat-input, .chat-input, input[type="text"]');
+                    if (chatInput) {
+                        chatInput.value = message;
+                        // Trigger enter key event
+                        const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13 });
+                        chatInput.dispatchEvent(enterEvent);
+                    } else {
+                        console.warn('Could not find chat input to send note');
+                        alert('Note functionality not available - chat system not found.');
+                    }
+                }
+                
+                closeModal();
+            });
+            
+            // Close on overlay click
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    closeModal();
+                }
+            });
+            
+            // Close on Escape key
+            const escapeHandler = (e) => {
+                if (e.key === 'Escape') {
+                    closeModal();
+                    document.removeEventListener('keydown', escapeHandler);
+                }
+            };
+            document.addEventListener('keydown', escapeHandler);
+        }
+        
+        // Make updateConnectedPlayers globally available for supabase-chat.js
+        window.updateConnectedPlayers = updateConnectedPlayers;
+        
+        // Create a simple chatCommandParser-like object for compatibility
+        if (!window.chatCommandParser) {
+            window.chatCommandParser = {
+                getCachedAvatarUrl: function(playerName) {
+                    if (window.stPlayerAvatars && window.stPlayerAvatars.has) {
+                        return window.stPlayerAvatars.get(playerName) || null;
+                    }
+                    return null;
+                },
+                handleAvatarUrlCommand: function(playerName, avatarUrl, type) {
+                    if (!window.stPlayerAvatars) {
+                        window.stPlayerAvatars = new Map();
+                    }
+                    window.stPlayerAvatars.set(playerName, avatarUrl);
+                    console.log(`✅ Cached avatar for ${playerName}:`, avatarUrl);
+                }
+            };
         }
 
         function swapPanels() {
