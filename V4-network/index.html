@@ -2746,6 +2746,7 @@
                 openChatBottomSheet();
             }
         }
+        window.toggleChatBottomSheet = toggleChatBottomSheet;
 
         function openChatBottomSheet() {
             const sheet = document.getElementById('chat-bottom-sheet');
@@ -2909,7 +2910,7 @@
         }
 
         function showSheetChatEffects() {
-            // Mobile-optimized chat picker modal
+            // Mobile-optimized chat picker modal with exact bottom sheet design
             if (!window.emojiProcessor || !window.chatEffectsManager) {
                 alert('Chat effects: Try :crit:, :sparkle:, :fire:, :lightning:, :glow:, :throb:, or :bounce: in your messages!');
                 return;
@@ -2919,56 +2920,53 @@
             const effectsData = window.chatEffectsManager.effects;
             const inputId = 'sheet-chat-input';
             
-            // Create mobile modal
+            // Create effects modal with identical bottom sheet structure
             const modal = document.createElement('div');
-            modal.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0, 0, 0, 0.5);
-                display: flex;
-                align-items: flex-end;
-                justify-content: center;
-                z-index: 10000;
-                padding: 0;
-            `;
+            modal.className = 'chat-bottom-sheet chat-effects-modal';
+            modal.id = 'chat-effects-modal';
+            modal.style.zIndex = '3000'; // Higher than chat modal
             
-            // Create mobile picker content
-            const picker = document.createElement('div');
-            picker.style.cssText = `
-                background: var(--bg-primary);
-                border-radius: 16px 16px 0 0;
-                padding: 20px;
-                width: 100%;
-                max-height: 70vh;
-                overflow-y: auto;
-                box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
-                border: 1px solid var(--border-color);
-                color: var(--text-primary);
-                position: relative;
-                animation: slideUp 0.3s ease-out;
-            `;
-            
-            // Add slide-up animation
-            const style = document.createElement('style');
-            style.textContent = `
-                @keyframes slideUp {
-                    from { transform: translateY(100%); }
-                    to { transform: translateY(0); }
-                }
-            `;
-            document.head.appendChild(style);
-            
-            let pickerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid var(--border-color);">
-                    <h4 style="margin: 0; color: var(--text-primary); font-size: 1.2em;">💬 Chat Picker</h4>
-                    <button onclick="this.closest('.mobile-chat-modal').remove()" 
-                            style="background: none; border: none; font-size: 1.8em; cursor: pointer; color: var(--text-secondary); padding: 4px;"
-                            title="Close">×</button>
+            modal.innerHTML = `
+                <div class="bottom-sheet-backdrop" onclick="document.getElementById('chat-effects-modal').remove()"></div>
+                <div class="bottom-sheet-content" style="height: 60vh; max-height: 500px;">
+                    <!-- Drag Handle -->
+                    <div class="bottom-sheet-handle">
+                        <div class="handle-bar"></div>
+                    </div>
+                    
+                    <!-- Bottom Sheet Header -->
+                    <div class="bottom-sheet-header">
+                        <div class="sheet-tabs-container">
+                            <h4 style="margin: 0; color: var(--text-primary); font-size: 1.2em; display: flex; align-items: center; gap: 8px;">
+                                ✨ Chat Effects
+                            </h4>
+                        </div>
+                        <div class="sheet-controls">
+                            <button class="sheet-control-btn" onclick="document.getElementById('chat-effects-modal').remove()" title="Close effects">
+                                <span class="material-icons">close</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Effects Content -->
+                    <div class="sheet-tab-content" style="flex: 1; overflow-y: auto; padding: 16px;">
+                        <div id="effects-content-area">
+                            <!-- Content will be populated by JavaScript -->
+                        </div>
+                    </div>
                 </div>
-                
+            `;
+            
+            // Add to document
+            document.body.appendChild(modal);
+            
+            // Apply the open state immediately
+            modal.classList.add('open');
+            
+            // Populate effects content
+            const contentArea = document.getElementById('effects-content-area');
+            
+            let contentHTML = `
                 <!-- Quick Access Row -->
                 <div style="margin-bottom: 20px;">
                     <h5 style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 0.9em; font-weight: 600;">⚡ Quick Effects</h5>
@@ -2988,7 +2986,7 @@
             ];
             
             quickEffects.forEach(effect => {
-                pickerHTML += `
+                contentHTML += `
                     <button onclick="insertMobileText('${inputId}', '${effect.command}')" 
                             style="
                                 background: var(--bg-secondary);
@@ -3001,15 +2999,15 @@
                                 display: flex;
                                 flex-direction: column;
                                 align-items: center;
-                                gap: 4px;
+                                justify-content: center;
                                 color: var(--text-primary);
-                                text-align: center;
                                 min-height: 60px;
+                                gap: 4px;
                             "
-                            ontouchstart="this.style.background='var(--accent-color)'; this.style.color='white'; this.style.transform='scale(0.95)';"
-                            ontouchend="setTimeout(() => { this.style.background='var(--bg-secondary)'; this.style.color='var(--text-primary)'; this.style.transform='scale(1)'; }, 150);"
-                            onmousedown="this.style.background='var(--accent-color)'; this.style.color='white'; this.style.transform='scale(0.95)';"
-                            onmouseup="this.style.background='var(--bg-secondary)'; this.style.color='var(--text-primary)'; this.style.transform='scale(1)';"
+                            ontouchstart="this.style.background='var(--accent-color)'; this.style.transform='scale(0.95)';"
+                            ontouchend="setTimeout(() => { this.style.background='var(--bg-secondary)'; this.style.transform='scale(1)'; }, 150);"
+                            onmousedown="this.style.background='var(--accent-color)'; this.style.transform='scale(0.95)';"
+                            onmouseup="this.style.background='var(--bg-secondary)'; this.style.transform='scale(1)';"
                             title="${effect.command}">
                         <span style="font-size: 1.2em;">${effect.icon}</span>
                         <span style="font-size: 0.7em; font-weight: 600;">${effect.name}</span>
@@ -3017,7 +3015,7 @@
                 `;
             });
             
-            pickerHTML += `
+            contentHTML += `
                     </div>
                 </div>
                 
@@ -3044,7 +3042,7 @@
             ];
             
             popularEmojis.forEach(emoji => {
-                pickerHTML += `
+                contentHTML += `
                     <button onclick="insertMobileText('${inputId}', '${emoji.code}')" 
                             style="
                                 background: var(--bg-secondary);
@@ -3070,7 +3068,7 @@
                 `;
             });
             
-            pickerHTML += `
+            contentHTML += `
                     </div>
                 </div>
                 
@@ -3088,7 +3086,7 @@
             ];
             
             quickCombos.forEach(combo => {
-                pickerHTML += `
+                contentHTML += `
                     <button onclick="insertMobileText('${inputId}', '${combo.combo}')" 
                             style="
                                 background: var(--bg-secondary);
@@ -3116,7 +3114,7 @@
                 `;
             });
             
-            pickerHTML += `
+            contentHTML += `
                     </div>
                 </div>
                 
@@ -3129,10 +3127,8 @@
                 </div>
             `;
             
-            picker.innerHTML = pickerHTML;
-            modal.className = 'mobile-chat-modal';
-            modal.appendChild(picker);
-            document.body.appendChild(modal);
+            // Set the content
+            contentArea.innerHTML = contentHTML;
             
             // Close on outside click
             modal.addEventListener('click', (e) => {
@@ -3154,8 +3150,14 @@
                 input.setSelectionRange(cursorPos + text.length + 1, cursorPos + text.length + 1);
                 input.focus();
                 
-                // Close the modal
+                // Enable send button if this is the sheet input
+                if (inputId === 'sheet-chat-input') {
+                    toggleSheetSendButton();
+                }
+                
+                // Close the modal (handle both old and new modal classes)
                 document.querySelector('.mobile-chat-modal')?.remove();
+                document.querySelector('.chat-effects-modal')?.remove();
             }
         }
 
@@ -3229,6 +3231,7 @@
             
             console.log(`📋 Switched to ${tabName} tab`);
         }
+        window.switchChatTab = switchChatTab;
 
         // ========================================
         // CHAT ROLL HISTORY FUNCTIONS  
