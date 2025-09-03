@@ -2573,6 +2573,11 @@
     <script src="js/modules/equipmentBonusSystem.js"></script>
     <script src="js/modules/chatCommandParser.js"></script>
     <script src="js/modules/emojiProcessor.js"></script>
+    
+    <!-- Shared Chat Picker System -->
+    <script src="../shared-modules/chatPickerManager.js"></script>
+    <script src="../shared-modules/storyTellerChatPickerIntegration.js"></script>
+    
     <script>
         // Test emoji processor after loading
         setTimeout(() => {
@@ -2653,6 +2658,22 @@
     <script src="js/StorytellerIntegration.js"></script>
     <!-- End Map Sync -->
     <script src="js/combat-manager-enhanced.js"></script>
+    <script>
+        // Enhanced stub for updateConnectedPlayers to prevent errors during loading
+        // This will be replaced by the full function defined later in the HTML
+        if (typeof window.updateConnectedPlayers === 'undefined') {
+            console.log('🔧 Setting up updateConnectedPlayers stub BEFORE supabase-chat.js');
+            window.updateConnectedPlayers = function(players = []) {
+                console.log('📋 Temporary updateConnectedPlayers stub called with:', players.length, 'players');
+                // Store the players for when the real function loads
+                window._pendingConnectedPlayers = players;
+                console.log('📋 Stored pending players for later processing');
+            };
+            console.log('✅ updateConnectedPlayers stub is now available in window');
+        } else {
+            console.log('🔍 updateConnectedPlayers already exists in window');
+        }
+    </script>
     <script src="js/supabase-chat.js"></script>
     <script src="js/map-sharing.js"></script>
     <script src="js/player-data-parser.js"></script>
@@ -5037,7 +5058,17 @@
         }
         
         // Make updateConnectedPlayers globally available for supabase-chat.js
+        console.log('🔧 Setting up real updateConnectedPlayers function in window');
         window.updateConnectedPlayers = updateConnectedPlayers;
+        console.log('✅ updateConnectedPlayers is now available in window:', typeof window.updateConnectedPlayers);
+        
+        // Process any pending players that were stored by the temporary stub
+        if (window._pendingConnectedPlayers) {
+            console.log('🔄 Processing pending connected players from stub');
+            updateConnectedPlayers(window._pendingConnectedPlayers);
+            delete window._pendingConnectedPlayers;
+            console.log('✅ Processed and cleared pending players');
+        }
         
         // Create a simple chatCommandParser-like object for compatibility
         if (!window.chatCommandParser) {

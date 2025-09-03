@@ -180,12 +180,29 @@ class V4NetworkBridge {
     handleStorageEvent(event) {
         if (event.key === 'v4-character-export') {
             try {
+                // Add validation for the storage data
+                if (!event.newValue || event.newValue.trim() === '') {
+                    console.log('📭 Storage event with empty data, ignoring');
+                    return;
+                }
+                
                 const data = JSON.parse(event.newValue);
+                
+                // Additional validation for character data structure
+                if (!data || (typeof data === 'object' && Object.keys(data).length === 0)) {
+                    console.log('📭 Storage event with empty character object, ignoring');
+                    return;
+                }
+                
+                console.log('📥 Processing character export from storage:', data.name || 'Unknown character');
                 this.handleCharacterExport(data);
+                
                 // Clean up the storage event
                 localStorage.removeItem('v4-character-export');
             } catch (error) {
                 console.error('❌ Storage event parsing failed:', error);
+                // Clean up potentially corrupted data
+                localStorage.removeItem('v4-character-export');
             }
         }
     }
@@ -243,11 +260,30 @@ class V4NetworkBridge {
 // ========================================
 // GLOBAL INITIALIZATION
 // ========================================
-window.v4NetworkBridge = new V4NetworkBridge();
 
-// Auto-start listening when DOM is ready
+// Defer initialization to prevent timing issues
+console.log('🔧 V4NetworkBridge script loaded, deferring initialization...');
+
+// Auto-start listening when DOM is ready and other dependencies are loaded
 document.addEventListener('DOMContentLoaded', () => {
-    window.v4NetworkBridge.startListening();
+    // Add a small delay to ensure all other scripts are ready
+    setTimeout(() => {
+        console.log('🔧 Initializing V4NetworkBridge...');
+        window.v4NetworkBridge = new V4NetworkBridge();
+        window.v4NetworkBridge.startListening();
+        console.log('✅ V4NetworkBridge initialized and listening');
+        
+        // Clean up any stale storage data from previous sessions
+        try {
+            const staleData = localStorage.getItem('v4-character-export');
+            if (staleData) {
+                console.log('🧹 Cleaning up stale character export data from localStorage');
+                localStorage.removeItem('v4-character-export');
+            }
+        } catch (error) {
+            console.warn('⚠️ Could not clean up stale storage data:', error);
+        }
+    }, 100); // Small delay to ensure dependencies are ready
 });
 
 // Export for modules

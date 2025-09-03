@@ -2278,6 +2278,10 @@
     <script src="js/modules/chatEffectsManager.js"></script>
     <script src="js/modules/emojiProcessor.js"></script>
     
+    <!-- Shared Chat Picker System -->
+    <script src="../shared-modules/chatPickerManager.js"></script>
+    <script src="../shared-modules/v4NetworkChatPickerIntegration.js"></script>
+    
     <script src="js/core/supabase-chat.js"></script>
     
     <!-- Network Integration Functions -->
@@ -3021,24 +3025,35 @@
                 
                 <!-- Emojis Section -->
                 <div style="margin-bottom: 20px;">
-                    <h5 style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 0.9em; font-weight: 600;">😊 Popular Emojis</h5>
-                    <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px;">
+                    <h5 style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 0.9em; font-weight: 600;">😊 Gaming Emojis (Tap to Add)</h5>
+                    <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; max-width: 100%;">
             `;
             
-            // Popular emojis for gaming - using codes that are properly defined in emojiProcessor
+            // Popular emojis for gaming - COMPACT MOBILE VERSION
             const popularEmojis = [
+                // Row 1: Combat & Actions
                 { emoji: '⚔️', code: ':sword:' },
                 { emoji: '🛡️', code: ':shield:' },
-                { emoji: '�', code: ':dice:' },
-                { emoji: '💰', code: ':treasure:' },
-                { emoji: '✨', code: ':mp:' },
+                { emoji: '🎲', code: ':dice:' },
+                { emoji: '�', code: ':boom:' },
+                { emoji: '💢', code: ':fumble:' },
                 { emoji: '🔥', code: ':fire:' },
-                { emoji: '💀', code: ':skull:' },
-                { emoji: '�', code: ':fumble:' },
+                
+                // Row 2: Magic & Items  
+                { emoji: '✨', code: ':mp:' },
+                { emoji: '�', code: ':spell:' },
+                { emoji: '�', code: ':treasure:' },
+                { emoji: '�', code: ':skull:' },
                 { emoji: '❄️', code: ':ice:' },
                 { emoji: '☠️', code: ':poison:' },
+                
+                // Row 3: Social & Fun
+                { emoji: '❤️', code: '<3' },
                 { emoji: '⭐', code: ':star:' },
-                { emoji: '❤️', code: '<3' }
+                { emoji: '😊', code: ':)' },
+                { emoji: '😁', code: ':D' },
+                { emoji: '💚', code: ':heal:' },
+                { emoji: '🍀', code: ':luck:' }
             ];
             
             popularEmojis.forEach(emoji => {
@@ -3047,16 +3062,17 @@
                             style="
                                 background: var(--bg-secondary);
                                 border: 1px solid var(--border-color);
-                                border-radius: 8px;
-                                padding: 12px;
+                                border-radius: 6px;
+                                padding: 8px;
                                 cursor: pointer;
-                                font-size: 1.5em;
+                                font-size: 1.3em;
                                 transition: all 0.2s;
                                 display: flex;
                                 align-items: center;
                                 justify-content: center;
                                 color: var(--text-primary);
-                                min-height: 50px;
+                                min-height: 44px;
+                                aspect-ratio: 1;
                             "
                             ontouchstart="this.style.background='var(--accent-color)'; this.style.transform='scale(0.9)';"
                             ontouchend="setTimeout(() => { this.style.background='var(--bg-secondary)'; this.style.transform='scale(1)'; }, 150);"
