@@ -2911,7 +2911,7 @@
         function showSheetChatEffects() {
             // Mobile-optimized chat picker modal
             if (!window.emojiProcessor || !window.chatEffectsManager) {
-                alert('Chat effects: Try :crit:, :sparkle:, :fire:, :lightning:, :glow:, :pulse:, or :bounce: in your messages!');
+                alert('Chat effects: Try :crit:, :sparkle:, :fire:, :lightning:, :glow:, :throb:, or :bounce: in your messages!');
                 return;
             }
             
@@ -4400,7 +4400,7 @@
         // Send "user has joined" announcement with random effect and emoji
         async function sendJoinAnnouncement(playerName) {
             const joinEmojis = ['🎉', '✨', '🌟', '🎊', '🔥', '⚡', '💫', '🌈', '🎯', '🚀'];
-            const joinEffects = ['sparkle', 'glow', 'fire', 'lightning', 'divine', 'heal', 'pulse', 'bounce'];
+            const joinEffects = ['sparkle', 'glow', 'fire', 'lightning', 'divine', 'heal', 'throb', 'bounce'];
             const joinMessages = [
                 'has joined the adventure!',
                 'enters the realm!',
@@ -4416,8 +4416,8 @@
             const randomEffect = joinEffects[Math.floor(Math.random() * joinEffects.length)];
             const randomMessage = joinMessages[Math.floor(Math.random() * joinMessages.length)];
             
-            // Create the announcement message with effect syntax (effect before text)
-            const announcement = `${randomEmoji} :${randomEffect}: ${playerName} ${randomMessage}`;
+            // Create the announcement message with proper format: PlayerName: :effect: emoji message
+            const announcement = `:${randomEffect}: ${randomEmoji} ${randomMessage}`;
             
             try {
                 // Send via Supabase real-time system (like regular messages)
