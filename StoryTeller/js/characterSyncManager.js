@@ -221,29 +221,33 @@ class CharacterSyncManager {
      * Handle character announcement from another player
      */
     async handleCharacterAnnouncement(message, senderName) {
-        const { character_name, character_hash, player_name } = message;
+        const { character_name, character_hash, player_name, original_name, device_id } = message;
         
-        console.log(`📢 Character announced: ${character_name} by ${player_name} (${character_hash})`);
+        // Use original name for display if available
+        const displayName = original_name || character_name;
+        const uniqueName = character_name; // This is already the unique device-scoped name
+        
+        console.log(`📢 Character announced: ${displayName} by ${player_name} (device: ${device_id || 'unknown'}) as ${uniqueName} (${character_hash})`);
 
         // Only StoryTeller processes character announcements
         if (!this.isStoryTeller) return;
 
-        // Check if we already have this character
-        const existingCharacter = await this.getStoredCharacter(character_name);
+        // Check if we already have this unique character (device-scoped)
+        const existingCharacter = await this.getStoredCharacter(uniqueName);
         
         if (!existingCharacter) {
             // We don't have this character, request it
-            console.log(`📥 New character detected: ${character_name}, requesting data`);
-            await this.requestCharacterData(character_name, player_name);
+            console.log(`📥 New character detected: ${displayName} from device ${device_id || 'unknown'}, requesting data`);
+            await this.requestCharacterData(uniqueName, player_name);
         } else {
             // Check if our version is up to date
             const existingHash = this.generateCharacterHash(existingCharacter);
             
             if (existingHash !== character_hash) {
-                console.log(`🔄 Character update detected: ${character_name}, requesting latest data`);
-                await this.requestCharacterData(character_name, player_name);
+                console.log(`🔄 Character update detected: ${displayName}, requesting latest data`);
+                await this.requestCharacterData(uniqueName, player_name);
             } else {
-                console.log(`✅ Character up to date: ${character_name}`);
+                console.log(`✅ Character up to date: ${displayName} (${uniqueName})`);
             }
         }
     }
@@ -265,45 +269,62 @@ class CharacterSyncManager {
      * Handle incoming character data
      */
     async handleCharacterData(message, senderName) {
-        const { character_name, character_data, to_player, from_player } = message;
+        const { character_name, character_data, to_player, from_player, original_name, device_id } = message;
         
         // Only process if the data is for us
         if (to_player !== this.playerName) return;
         
-        console.log(`📥 Received character data: ${character_name} from ${from_player}`);
+        const displayName = original_name || character_name;
+        const uniqueName = character_name; // This is the device-scoped unique name
+        
+        console.log(`📥 Received character data: ${displayName} (${uniqueName}) from ${from_player} (device: ${device_id || 'unknown'})`);
 
         try {
             // Import character using existing system
             if (window.CharacterImportProfile) {
                 const importProfile = new window.CharacterImportProfile();
-                const normalized = importProfile.normalizeCharacter(character_data);
+                
+                // Use the unique name for storage but preserve original name for display
+                const characterToImport = {
+                    ...character_data,
+                    name: uniqueName, // Store with unique name to prevent conflicts
+                    displayName: displayName, // Keep original name for UI display
+                    originalName: original_name, // Preserve original
+                    deviceId: device_id, // Track source device
+                    syncedFrom: from_player, // Track source player
+                    syncTimestamp: Date.now()
+                };
+                
+                const normalized = importProfile.normalizeCharacter(characterToImport);
                 
                 // Import to StoryTeller
                 if (window.storyTellerPlayersPanel) {
                     const success = window.storyTellerPlayersPanel.importCharacter(normalized);
                     
                     if (success) {
-                        // Store for future hash comparisons
+                        // Store for future hash comparisons using unique name
                         const hash = this.generateCharacterHash(normalized);
-                        this.localCharacters.set(character_name, {
+                        this.localCharacters.set(uniqueName, {
                             hash,
                             data: normalized,
-                            lastSync: Date.now()
+                            lastSync: Date.now(),
+                            originalName: displayName,
+                            deviceId: device_id
                         });
 
-                        // Show success notification
-                        this.showCharacterSyncNotification(normalized, from_player);
+                        // Show success notification with display name
+                        this.showCharacterSyncNotification(normalized, from_player, displayName);
                         
                         // Clear pending request
-                        this.syncRequests.delete(character_name);
+                        this.syncRequests.delete(uniqueName);
                         
-                        console.log(`✅ Character imported: ${character_name}`);
+                        console.log(`✅ Character imported: ${displayName} as ${uniqueName} from device ${device_id || 'unknown'}`);
                     }
                 }
             }
 
         } catch (error) {
-            console.error(`❌ Failed to import character ${character_name}:`, error);
+            console.error(`❌ Failed to import character ${displayName}:`, error);
         }
     }
 
@@ -339,21 +360,22 @@ class CharacterSyncManager {
     /**
      * Show character sync notification
      */
-    showCharacterSyncNotification(character, fromPlayer) {
+    showCharacterSyncNotification(character, fromPlayer, displayName = null) {
         const level = character.level || 1;
         const className = character.class || 'Unknown';
         const race = character.race || 'Unknown';
+        const charName = displayName || character.displayName || character.originalName || character.name;
 
         if (typeof showNotification === 'function') {
             showNotification('success', 'Character Synced', 
-                `${character.name} (Level ${level} ${race} ${className})`,
-                `Automatically received from ${fromPlayer}`);
+                `${charName} (Level ${level} ${race} ${className})`,
+                `Automatically received from ${fromPlayer}${character.deviceId ? ' (device: ' + character.deviceId + ')' : ''}`);
         }
 
         // Also add to chat if available
         if (typeof window.addMessage === 'function') {
             window.addMessage('System', 
-                `📥 Character synced: ${character.name} from ${fromPlayer}`, 
+                `📥 Character synced: ${charName} from ${fromPlayer}${character.deviceId ? ' (device: ' + character.deviceId + ')' : ''}`, 
                 'system');
         }
     }

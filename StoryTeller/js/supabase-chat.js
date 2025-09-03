@@ -387,6 +387,11 @@ async function fullSupabaseConnect(playerName, sessionCode, isStoryteller = fals
             updateConnectedPlayersList();
         }, 2000); // Give time for system messages to be sent
         
+        // Check and announce avatar URL after connection
+        setTimeout(() => {
+            checkAndAnnounceCurrentAvatar();
+        }, 3000); // Give time for connected players update
+        
         return result;
         
     } catch (error) {
@@ -1380,10 +1385,17 @@ async function updateConnectedPlayersList() {
         
         if (window.showDebug) console.log('🔍 DEBUG - Connected players found:', uniquePlayers);
         
+        // Store connected players globally for player chips
+        window.connectedPlayers = uniquePlayers;
+        
         // Update the UI if the function exists
         if (typeof window.updateConnectedPlayers === 'function') {
             window.updateConnectedPlayers(uniquePlayers);
         }
+        
+        // Update player chips in chat panels
+        updatePlayerChips('right'); // Update right panel chips
+        updatePlayerChips('left');  // Update left panel chips if chat is loaded there
         
     } catch (error) {
         console.warn('⚠️ Failed to update connected players:', error.message);
@@ -1540,6 +1552,18 @@ async function handleIncomingMessage(message) {
         
         // Don't display the raw command - process silently
         console.log('🔇 NOTE command processed silently, not displaying in chat');
+        return;
+    }
+
+    // Check if this is an AVATAR_URL command
+    if (message.message_type === 'chat' && message.message_text.startsWith('AVATAR_URL:')) {
+        console.log('🎭 Detected AVATAR_URL command in chat:', message.message_text);
+        
+        // Process the avatar URL command
+        processAvatarUrlCommand(message.message_text, message.player_name);
+        
+        // Don't display the raw command - process silently
+        console.log('🔇 AVATAR_URL command processed silently, not displaying in chat');
         return;
     }
 
@@ -1747,6 +1771,370 @@ function processNoteCommand(commandText, playerName) {
     } else {
         console.log('⏭️ Note not for this user, ignoring');
     }
+}
+
+/**
+ * Process AVATAR_URL command - Update player avatar in player chips
+ * @param {string} commandText - Full AVATAR_URL command text
+ * @param {string} playerName - Player sending the command
+ */
+function processAvatarUrlCommand(commandText, playerName) {
+    console.log('🎭 Processing AVATAR_URL command:', commandText);
+    console.log('🎭 Sender:', playerName);
+    
+    // Parse AVATAR_URL:PlayerName:URL format
+    const parts = commandText.split(':');
+    if (parts.length < 3) {
+        console.error('❌ Invalid AVATAR_URL command format - need at least 3 parts');
+        return;
+    }
+    
+    const [cmd, targetPlayer, ...urlParts] = parts;
+    const avatarUrl = urlParts.join(':'); // Rejoin in case URL contains colons
+    
+    console.log('🎭 Target player:', targetPlayer);
+    console.log('🎭 Avatar URL:', avatarUrl);
+    
+    // Cache the avatar URL for this player
+    if (!window.stPlayerAvatars) {
+        window.stPlayerAvatars = new Map();
+    }
+    window.stPlayerAvatars.set(targetPlayer, avatarUrl);
+    
+    // Update player chip avatar if it exists
+    updatePlayerChipAvatar(targetPlayer, avatarUrl);
+    
+    console.log('✅ Avatar URL processed for:', targetPlayer);
+}
+
+/**
+ * Update player chip avatar with actual image
+ * @param {string} playerName - Player name
+ * @param {string} avatarUrl - Avatar URL
+ */
+function updatePlayerChipAvatar(playerName, avatarUrl) {
+    console.log(`🔍 Looking for chip with player name: "${playerName}"`);
+    
+    const attemptUpdate = (retryCount = 0) => {
+        // Find player chip in the UI
+        const playerChips = document.querySelectorAll('.player-chip');
+        console.log(`🔍 Found ${playerChips.length} player chips total (attempt ${retryCount + 1})`);
+        
+        let chipFound = false;
+        playerChips.forEach((chip, index) => {
+            const nameElement = chip.querySelector('.chip-name');
+            if (nameElement) {
+                const chipPlayerName = nameElement.textContent.trim();
+                console.log(`🔍 Chip ${index}: "${chipPlayerName}"`);
+                
+                if (chipPlayerName === playerName) {
+                    console.log(`✅ Found matching chip for: "${playerName}"`);
+                    chipFound = true;
+                    
+                    const avatarElement = chip.querySelector('.chip-avatar');
+                    if (avatarElement && avatarUrl) {
+                        console.log(`🔄 Updating avatar element for ${playerName} with URL: ${avatarUrl}`);
+                        // Replace emoji with actual image
+                        avatarElement.innerHTML = `<img src="${avatarUrl}" alt="${playerName}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" onerror="this.parentElement.innerHTML='⚔️'">`;
+                        console.log(`✅ Updated ${playerName}'s chip avatar`);
+                    } else {
+                        console.warn(`❌ Avatar element not found or no URL for ${playerName}`);
+                    }
+                }
+            } else {
+                console.log(`🔍 Chip ${index}: No name element found`);
+            }
+        });
+        
+        // If chip not found and we have retries left, try again after a delay
+        if (!chipFound && retryCount < 3) {
+            console.log(`⏳ Chip for "${playerName}" not found, retrying in 500ms...`);
+            setTimeout(() => attemptUpdate(retryCount + 1), 500);
+        } else if (!chipFound) {
+            console.warn(`❌ No chip found for player: "${playerName}" after ${retryCount + 1} attempts`);
+        }
+    };
+    
+    attemptUpdate();
+}
+
+/**
+ * Get cached avatar URL for a player
+ * @param {string} playerName - Player name
+ * @returns {string|null} Avatar URL or null if not cached
+ */
+function getCachedAvatarUrl(playerName) {
+    if (!window.stPlayerAvatars) {
+        return null;
+    }
+    return window.stPlayerAvatars.get(playerName) || null;
+}
+
+/**
+ * Announce current player's avatar URL to other connected players
+ * @param {string} playerName - Player name
+ * @param {string} avatarUrl - Avatar URL to announce
+ */
+async function announceAvatarUrl(playerName, avatarUrl) {
+    if (!playerName || !avatarUrl || !currentGameSession) {
+        console.log('🎭 Cannot announce avatar - missing data:', { playerName, avatarUrl, session: !!currentGameSession });
+        return;
+    }
+    
+    console.log(`🎭 Announcing avatar URL for ${playerName}:`, avatarUrl);
+    
+    // Send AVATAR_URL command via chat
+    const avatarCommand = `AVATAR_URL:${playerName}:${avatarUrl}`;
+    await sendChatMessageAsync(avatarCommand);
+    
+    // Also cache it locally
+    if (!window.stPlayerAvatars) {
+        window.stPlayerAvatars = new Map();
+    }
+    window.stPlayerAvatars.set(playerName, avatarUrl);
+    
+    console.log(`✅ Avatar URL announced for ${playerName}`);
+}
+
+/**
+ * Check and announce avatar URL for current character
+ * Called when character is loaded or session is joined
+ */
+async function checkAndAnnounceCurrentAvatar() {
+    const currentPlayerName = window.playerName;
+    if (!currentPlayerName) {
+        console.log('🎭 No player name available for avatar announcement');
+        return;
+    }
+    
+    // Try to get avatar URL from current character data
+    let avatarUrl = null;
+    
+    // Method 1: From V4 character data if available
+    if (window.getCurrentCharacterData && typeof window.getCurrentCharacterData === 'function') {
+        try {
+            const characterData = window.getCurrentCharacterData();
+            if (characterData?.personal?.avatarUrl) {
+                avatarUrl = characterData.personal.avatarUrl;
+                console.log('🎭 Found avatar URL from V4 character data:', avatarUrl);
+            }
+        } catch (error) {
+            console.log('🎭 Could not get V4 character data:', error.message);
+        }
+    }
+    
+    // Method 2: From StoryTeller selected character if available
+    if (!avatarUrl && window.storyTellerPlayersPanel && window.storyTellerPlayersPanel.selectedCharacter) {
+        const selectedChar = window.storyTellerPlayersPanel.selectedCharacter;
+        if (selectedChar?.personal?.avatarUrl) {
+            avatarUrl = selectedChar.personal.avatarUrl;
+            console.log('🎭 Found avatar URL from StoryTeller selected character:', avatarUrl);
+        }
+    }
+    
+    // Method 3: From cached avatar URLs
+    if (!avatarUrl) {
+        avatarUrl = getCachedAvatarUrl(currentPlayerName);
+        if (avatarUrl) {
+            console.log('🎭 Found avatar URL from cache:', avatarUrl);
+        }
+    }
+    
+    // Announce the avatar URL if found
+    if (avatarUrl) {
+        await announceAvatarUrl(currentPlayerName, avatarUrl);
+    } else {
+        console.log('🎭 No avatar URL found to announce');
+    }
+}
+
+/**
+ * Update player chips in the chat interface
+ * Called when players connect/disconnect or when switching chat panels
+ */
+function updatePlayerChips(panelId = 'right') {
+    const playerChipsArea = document.getElementById(`${panelId}-player-chips-area`);
+    if (!playerChipsArea) {
+        console.log('Player chips area not found for panel:', panelId);
+        return;
+    }
+    
+    const playerChipsScroll = playerChipsArea.querySelector('.player-chips-scroll');
+    if (!playerChipsScroll) {
+        console.log('Player chips scroll container not found');
+        return;
+    }
+    
+    // Get connected players from the existing player list
+    const players = getConnectedPlayersList();
+    const currentPlayerName = window.playerName || 'You';
+    const isStoryteller = window.isStoryTeller || window.isStoryteller || false;
+    
+    console.log('🔄 Updating player chips for panel:', panelId);
+    console.log('🔄 Connected players:', players);
+    console.log('🔄 Current player:', currentPlayerName);
+    console.log('🔄 Is storyteller:', isStoryteller);
+    
+    // Update the self chip
+    let selfChip = playerChipsScroll.querySelector('.player-chip.self');
+    if (selfChip) {
+        const nameElement = selfChip.querySelector('.chip-name');
+        const avatarElement = selfChip.querySelector('.chip-avatar');
+        
+        if (nameElement) {
+            nameElement.textContent = currentPlayerName;
+        }
+        
+        // Update self chip styling based on role
+        if (isStoryteller) {
+            selfChip.classList.add('storyteller');
+        } else {
+            selfChip.classList.remove('storyteller');
+        }
+        
+        // Check for cached avatar
+        if (avatarElement) {
+            const cachedAvatarUrl = getCachedAvatarUrl(currentPlayerName);
+            if (cachedAvatarUrl) {
+                avatarElement.innerHTML = `<img src="${cachedAvatarUrl}" alt="${currentPlayerName}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" onerror="this.parentElement.innerHTML='👤'">`;
+            } else {
+                avatarElement.innerHTML = isStoryteller ? '👑' : '👤';
+            }
+        }
+    }
+    
+    // Clear other chips but keep self
+    const allChips = Array.from(playerChipsScroll.children);
+    allChips.forEach(chip => {
+        if (!chip.classList.contains('self')) {
+            chip.remove();
+        }
+    });
+    
+    // Add chips for other connected players
+    players.forEach(player => {
+        if (player.name && player.name !== currentPlayerName && 
+            player.name !== 'System' && player.name !== 'Heartbeat') {
+            
+            console.log(`🔍 Creating chip for player: ${player.name}`);
+            const chipDiv = document.createElement('div');
+            chipDiv.className = 'player-chip';
+            
+            if (player.is_storyteller) {
+                chipDiv.classList.add('storyteller');
+            }
+            
+            // Check for cached avatar URL
+            let avatarContent;
+            const cachedAvatarUrl = getCachedAvatarUrl(player.name);
+            
+            if (cachedAvatarUrl) {
+                avatarContent = `<img src="${cachedAvatarUrl}" alt="${player.name}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" onerror="this.parentElement.innerHTML='${player.is_storyteller ? '👑' : '⚔️'}'">`;
+                console.log(`✅ Using cached avatar for ${player.name}`);
+            } else {
+                avatarContent = player.is_storyteller ? '👑' : '⚔️';
+                console.log(`🔍 No cached avatar for ${player.name}, using default: ${avatarContent}`);
+            }
+            
+            chipDiv.innerHTML = `
+                <div class="chip-avatar">${avatarContent}</div>
+                <span class="chip-name">${player.name}</span>
+            `;
+            
+            // Add click event for sending notes (reuse V4-network functionality)
+            chipDiv.addEventListener('click', (e) => {
+                // Provide haptic feedback on supported devices
+                if (navigator.vibrate) {
+                    navigator.vibrate(50);
+                }
+                
+                // Visual feedback animation
+                chipDiv.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    chipDiv.style.transform = '';
+                }, 150);
+                
+                // Show note input for this player (you can customize this)
+                showPlayerNoteInput(player.name);
+            });
+            
+            playerChipsScroll.appendChild(chipDiv);
+        }
+    });
+    
+    // Show/hide the chips area based on connected players
+    const hasOtherPlayers = players.some(p => 
+        p.name && p.name !== currentPlayerName && 
+        p.name !== 'System' && p.name !== 'Heartbeat'
+    );
+    
+    if (hasOtherPlayers || isStoryteller) {
+        playerChipsArea.style.display = 'block';
+        playerChipsArea.classList.add('has-players');
+        console.log('✅ Player chips area shown');
+    } else {
+        playerChipsArea.style.display = 'none';
+        playerChipsArea.classList.remove('has-players');
+        console.log('⚪ Player chips area hidden (no other players)');
+    }
+}
+
+/**
+ * Show note input for a specific player (basic implementation)
+ * You can enhance this with a modal or better UI
+ */
+function showPlayerNoteInput(playerName) {
+    const message = prompt(`Send a private note to ${playerName}:`);
+    if (message && message.trim()) {
+        // Send note command via chat
+        const noteCommand = `NOTE:${playerName}:${message.trim()}`;
+        sendChatMessageAsync(noteCommand);
+        console.log(`📝 Sent note to ${playerName}: ${message}`);
+    }
+}
+
+/**
+ * Helper function to get connected players list
+ * Reuses existing connected players logic
+ */
+function getConnectedPlayersList() {
+    // Try to get from existing connected players tracking
+    if (window.connectedPlayers && Array.isArray(window.connectedPlayers)) {
+        return window.connectedPlayers;
+    }
+    
+    // Fallback: parse from existing UI elements
+    const players = [];
+    
+    // Try multiple selectors (both legacy and panel-specific)
+    const selectors = ['#player-list .player-item', '#right-player-list .player-item', '#left-player-list .player-item'];
+    
+    for (const selector of selectors) {
+        const playerItems = document.querySelectorAll(selector);
+        if (playerItems.length > 0) {
+            playerItems.forEach(item => {
+                const nameElement = item.querySelector('.player-name');
+                if (nameElement) {
+                    const name = nameElement.textContent.replace(' (You)', '').trim();
+                    const isStoryteller = nameElement.textContent.includes('Storyteller') || 
+                                       nameElement.textContent.includes('Session Master');
+                    
+                    if (name && name !== 'Storyteller (You)') {
+                        // Avoid duplicates
+                        if (!players.find(p => p.name === name)) {
+                            players.push({
+                                name: name,
+                                is_storyteller: isStoryteller
+                            });
+                        }
+                    }
+                }
+            });
+            break; // Use the first selector that has results
+        }
+    }
+    
+    return players;
 }
 
 function processGameCommand(message) {
@@ -2403,4 +2791,9 @@ if (typeof window !== 'undefined') {
     window.updateConnectedPlayersList = updateConnectedPlayersList;
     window.deleteStoryTellerNote = deleteStoryTellerNote;
     window.showStoryTellerImageModal = showStoryTellerImageModal;
+    
+    // Avatar URL system functions
+    window.announceAvatarUrl = announceAvatarUrl;
+    window.checkAndAnnounceCurrentAvatar = checkAndAnnounceCurrentAvatar;
+    window.updatePlayerChips = updatePlayerChips;
 }

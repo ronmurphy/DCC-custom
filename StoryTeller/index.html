@@ -20,6 +20,7 @@
     <link rel="stylesheet" href="css/combat.css">
     <link rel="stylesheet" href="css/storyTellerPlayersPanel.css">
     <link rel="stylesheet" href="css/character-modal.css">
+    <link rel="stylesheet" href="css/player-chips.css">
     <!-- end ported css -->
 
     <style>
@@ -834,6 +835,46 @@
             border: 1px solid #e9ecef;
             padding: var(--padding-base);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Compact player selector for chat panel */
+        .chat-interface .player-selector {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            margin: 0;
+            border-radius: 0;
+            border-left: none;
+            border-right: none;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .chat-interface .player-selector h4 {
+            margin-bottom: 8px;
+            font-size: 0.9em;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .chat-interface .player-list {
+            gap: 4px;
+        }
+
+        .chat-interface .player-item {
+            padding: 6px 8px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .chat-interface .player-name {
+            font-size: 0.85em;
+        }
+
+        .chat-interface .player-stats {
+            font-size: 0.75em;
+            opacity: 0.8;
         }
 
         .player-selector h4 {
@@ -2467,20 +2508,9 @@
                             </div>
                         </div>
 
-                        <!-- Player Selector -->
-                        <div class="player-selector">
-                            <h4>Connected Players</h4>
-                            <div class="player-list" id="player-list">
-                                <div class="player-item" id="dm-player">
-                                    <div class="player-name">Storyteller (You)</div>
-                                    <div class="player-stats">Session Master</div>
-                                </div>
-                                <!-- Connected players will be populated here dynamically -->
-                            </div>
-                            <div class="no-players" id="no-players" style="display: none; padding: 15px; text-align: center; color: #666;">
-                                No players connected yet. Share the player URL to invite players!
-                            </div>
-                        </div>
+                        <!-- Player Selector moved to Chat Panel -->
+                        <!-- The player-selector has been moved to the chat interface between toolbar and input -->
+                        
                     </div>
                 </div>
             </div>
@@ -3572,6 +3602,32 @@
                                 </div>
                             </div>
                             
+                            <!-- Player Selector (moved from command center panel) -->
+                            <div class="player-selector" id="${panel}-player-selector">
+                                <h4>Connected Players</h4>
+                                <div class="player-list" id="${panel}-player-list">
+                                    <div class="player-item" id="${panel}-dm-player">
+                                        <div class="player-name">Storyteller (You)</div>
+                                        <div class="player-stats">Session Master</div>
+                                    </div>
+                                    <!-- Connected players will be populated here dynamically -->
+                                </div>
+                                <div class="no-players" id="${panel}-no-players" style="display: none; padding: 15px; text-align: center; color: #666;">
+                                    No players connected yet. Share the player URL to invite players!
+                                </div>
+                                
+                                <!-- Player Chips for avatar display and quick actions -->
+                                <div class="player-chips-area" id="${panel}-player-chips-area" style="display: none;">
+                                    <div class="player-chips-scroll">
+                                        <div class="player-chip self">
+                                            <div class="chip-avatar">👤</div>
+                                            <span class="chip-name">You</span>
+                                        </div>
+                                        <!-- Dynamic player chips will be added here -->
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <div class="chat-input-area">
                                 <input type="text" class="chat-input" placeholder="Type your message or command..." id="${inputId}">
                                 <!-- Hidden input for supabase compatibility -->
@@ -4541,39 +4597,46 @@
         
         // Function to update connected players list
         function updateConnectedPlayers(players = []) {
-            const playerList = document.getElementById('player-list');
-            const noPlayersDiv = document.getElementById('no-players');
+            // Update all player lists (both panel-specific and legacy global)
+            const playerListSelectors = ['#player-list', '#right-player-list', '#left-player-list'];
+            const noPlayersSelectors = ['#no-players', '#right-no-players', '#left-no-players'];
             
-            if (!playerList) return;
-            
-            // Clear existing players (except DM)
-            const dmPlayer = document.getElementById('dm-player');
-            playerList.innerHTML = '';
-            if (dmPlayer) {
-                playerList.appendChild(dmPlayer);
-            }
-            
-            // Add connected players
-            players.forEach(player => {
-                if (player.name && player.name !== 'System' && !player.is_storyteller) {
-                    const playerDiv = document.createElement('div');
-                    playerDiv.className = 'player-item';
-                    playerDiv.onclick = () => selectPlayer(player.name);
-                    
-                    playerDiv.innerHTML = `
-                        <div class="player-name">${player.name}</div>
-                        <div class="player-stats">Connected Player</div>
-                    `;
-                    
-                    playerList.appendChild(playerDiv);
+            playerListSelectors.forEach((selector, index) => {
+                const playerList = document.querySelector(selector);
+                if (!playerList) return;
+                
+                const noPlayersDiv = document.querySelector(noPlayersSelectors[index]);
+                
+                // Clear existing players (except DM)
+                const dmPlayerSelector = selector.replace('-player-list', '-dm-player');
+                const dmPlayer = document.querySelector(dmPlayerSelector);
+                playerList.innerHTML = '';
+                if (dmPlayer) {
+                    playerList.appendChild(dmPlayer);
+                }
+                
+                // Add connected players
+                players.forEach(player => {
+                    if (player.name && player.name !== 'System' && !player.is_storyteller) {
+                        const playerDiv = document.createElement('div');
+                        playerDiv.className = 'player-item';
+                        playerDiv.onclick = () => selectPlayer(player.name);
+                        
+                        playerDiv.innerHTML = `
+                            <div class="player-name">${player.name}</div>
+                            <div class="player-stats">Connected Player</div>
+                        `;
+                        
+                        playerList.appendChild(playerDiv);
+                    }
+                });
+                
+                // Show/hide no players message
+                const hasPlayers = players.length > 0;
+                if (noPlayersDiv) {
+                    noPlayersDiv.style.display = hasPlayers ? 'none' : 'block';
                 }
             });
-            
-            // Show/hide no players message
-            const hasPlayers = players.length > 0;
-            if (noPlayersDiv) {
-                noPlayersDiv.style.display = hasPlayers ? 'none' : 'block';
-            }
         }
 
         function swapPanels() {

@@ -9,11 +9,63 @@ class V4CharacterSyncManager {
         this.playerName = '';
         this.sessionCode = '';
         this.isConnected = false;
+        this.deviceId = this.generateDeviceId();
         
         // Enable debug mode for testing
         this.debugMode = true;
         
-        console.log('🔄 V4CharacterSyncManager initialized');
+        console.log(`🔄 V4CharacterSyncManager initialized with device ID: ${this.deviceId}`);
+    }
+
+    /**
+     * Generate a unique device ID for this machine/browser
+     */
+    generateDeviceId() {
+        // Check if we already have a device ID stored
+        let deviceId = localStorage.getItem('dcc_device_id');
+        
+        if (!deviceId) {
+            // Generate new device ID based on browser fingerprint + timestamp
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.textBaseline = 'top';
+            ctx.font = '14px Arial';
+            ctx.fillText('Device fingerprint for DCC', 2, 2);
+            
+            const fingerprint = canvas.toDataURL().slice(-20);
+            const timestamp = Date.now().toString(36);
+            const random = Math.random().toString(36).substr(2, 5);
+            
+            deviceId = `${fingerprint}${timestamp}${random}`.replace(/[^a-zA-Z0-9]/g, '').substr(0, 12);
+            
+            // Store for future use
+            localStorage.setItem('dcc_device_id', deviceId);
+            console.log(`🆔 Generated new device ID: ${deviceId}`);
+        } else {
+            console.log(`🆔 Using existing device ID: ${deviceId}`);
+        }
+        
+        return deviceId;
+    }
+
+    /**
+     * Create unique character identifier with device ID
+     */
+    createUniqueCharacterName(characterName) {
+        return `device_${this.deviceId}_${characterName}`;
+    }
+
+    /**
+     * Extract original character name from unique identifier
+     */
+    extractOriginalCharacterName(uniqueName) {
+        if (uniqueName.startsWith('device_')) {
+            const parts = uniqueName.split('_');
+            if (parts.length >= 3) {
+                return parts.slice(2).join('_'); // Handle character names with underscores
+            }
+        }
+        return uniqueName; // Fallback to original name
     }
 
     /**
@@ -81,17 +133,22 @@ class V4CharacterSyncManager {
 
             const hash = this.generateCharacterHash(character);
             this.currentCharacterHash = hash;
+            
+            // Create unique character name with device ID
+            const uniqueCharacterName = this.createUniqueCharacterName(character.name);
 
             const message = {
                 type: 'character_announcement',
-                character_name: character.name,
+                character_name: uniqueCharacterName,
+                original_name: character.name, // Keep original name for display
                 character_hash: hash,
                 player_name: this.playerName,
+                device_id: this.deviceId,
                 timestamp: Date.now()
             };
 
             await this.sendSystemMessage(`CHAR_ANNOUNCE:${JSON.stringify(message)}`);
-            console.log(`📢 Announced character: ${character.name} (${hash})`);
+            console.log(`📢 Announced character: ${character.name} as ${uniqueCharacterName} (${hash})`);
 
             // Also send to old bridge system for compatibility
             if (window.storyTellerBridge) {
@@ -138,39 +195,49 @@ class V4CharacterSyncManager {
         
         console.log(`📨 Character data requested: ${character_name} by ${from_player}`);
         
-        // Send our current character if it matches
+        // Extract original character name if it's a unique name
+        const originalName = this.extractOriginalCharacterName(character_name);
+        
+        // Send our current character if it matches the original name
         const character = this.getCurrentCharacter();
-        if (character && character.name === character_name) {
-            await this.sendCharacterData(character, from_player);
+        if (character && character.name === originalName) {
+            await this.sendCharacterData(character, from_player, character_name);
         } else {
-            console.warn(`⚠️ Requested character ${character_name} not currently loaded`);
+            console.warn(`⚠️ Requested character ${originalName} not currently loaded`);
         }
     }
 
     /**
      * Send character data to requesting player
      */
-    async sendCharacterData(character, toPlayer) {
+    async sendCharacterData(character, toPlayer, uniqueCharacterName = null) {
         try {
+            // Use provided unique name or generate one
+            const charName = uniqueCharacterName || this.createUniqueCharacterName(character.name);
+            
             // Clean character data for transmission - exclude personal notes
             const cleanCharacter = {
                 ...character,
                 id: undefined, // Remove ID to prevent conflicts
                 notes: undefined, // Don't send personal notes to StoryTeller
-                lastModified: new Date().toISOString()
+                lastModified: new Date().toISOString(),
+                device_id: this.deviceId, // Add device ID for tracking
+                original_name: character.name // Preserve original name
             };
 
             const message = {
                 type: 'character_data',
-                character_name: character.name,
+                character_name: charName, // Use unique character name
+                original_name: character.name, // Keep original for display
                 character_data: cleanCharacter,
                 to_player: toPlayer,
                 from_player: this.playerName,
+                device_id: this.deviceId,
                 timestamp: Date.now()
             };
 
             await this.sendSystemMessage(`CHAR_DATA:${JSON.stringify(message)}`);
-            console.log(`📤 Sent character data: ${character.name} to ${toPlayer} (notes excluded)`);
+            console.log(`📤 Sent character data: ${character.name} as ${charName} to ${toPlayer} (notes excluded)`);
 
             // Show notification
             if (typeof showNotification === 'function') {

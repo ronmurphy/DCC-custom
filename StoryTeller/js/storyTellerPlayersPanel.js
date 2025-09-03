@@ -19,6 +19,46 @@ class StoryTellerPlayersPanel {
     }
 
     /**
+     * Extract display name from device-scoped character name
+     * device_abc123_Testificate -> Testificate
+     */
+    getDisplayName(character) {
+        // Check if character has explicit display name or original name
+        if (character.displayName) return character.displayName;
+        if (character.originalName) return character.originalName;
+        
+        // Extract from device-scoped name
+        const name = character.name || '';
+        if (name.startsWith('device_')) {
+            const parts = name.split('_');
+            if (parts.length >= 3) {
+                return parts.slice(2).join('_'); // Handle names with underscores
+            }
+        }
+        
+        return name; // Fallback to full name
+    }
+
+    /**
+     * Get device info from character for display purposes
+     */
+    getDeviceInfo(character) {
+        if (character.deviceId) {
+            return `(Device: ${character.deviceId})`;
+        }
+        
+        const name = character.name || '';
+        if (name.startsWith('device_')) {
+            const parts = name.split('_');
+            if (parts.length >= 2) {
+                return `(Device: ${parts[1]})`;
+            }
+        }
+        
+        return '';
+    }
+
+    /**
      * Initialize the players panel system
      */
     async init() {
@@ -457,6 +497,10 @@ class StoryTellerPlayersPanel {
         const characterId = character.id || character.name;
         const achievementCount = Array.isArray(character.achievements) ? character.achievements.length : 0;
         
+        // Get clean display name and device info
+        const displayName = this.getDisplayName(character);
+        const deviceInfo = this.getDeviceInfo(character);
+        
         return `
             <div class="player-item character-item" data-character-id="${characterId}">
                 <div class="character-portrait-small">
@@ -464,9 +508,10 @@ class StoryTellerPlayersPanel {
                 </div>
                 <div class="player-info">
                     <div class="character-header">
-                        <span class="player-name character-name">${character.name || 'Unnamed Character'}</span>
+                        <span class="player-name character-name">${displayName || 'Unnamed Character'}</span>
                         <span class="character-level">Lv.${character.level || 1}</span>
                         <span class="player-status ${isOnline ? 'online' : 'offline'}">${isOnline ? 'Online' : 'Offline'}</span>
+                        ${deviceInfo ? `<span class="device-info" style="font-size: 0.7em; color: var(--text-secondary); margin-left: 4px;">${deviceInfo}</span>` : ''}
                     </div>
                     <div class="character-details">
                         <span class="character-identity">${raceName} ${jobName} ${className}</span>
@@ -649,6 +694,10 @@ class StoryTellerPlayersPanel {
         const achievementCount = Array.isArray(character.achievements) ? character.achievements.length : 0;
         const skillCount = character.customSkills?.length || 0;
         const inventoryCount = character.inventory?.length || 0;
+        
+        // Get clean display name and device info
+        const displayName = this.getDisplayName(character);
+        const deviceInfo = this.getDeviceInfo(character);
 
         return `
             <div class="character-display modal-character-display">
@@ -658,7 +707,8 @@ class StoryTellerPlayersPanel {
                             ${this.getCharacterPortrait(character)}
                         </div>
                         <div class="character-header-info">
-                            <h4 class="character-name">${character.name}</h4>
+                            <h4 class="character-name">${displayName}</h4>
+                            ${deviceInfo ? `<div class="device-info" style="font-size: 0.8em; color: var(--text-secondary); margin-bottom: 4px;">${deviceInfo}</div>` : ''}
                             <span class="character-identity">${raceName} ${jobName} ${className}</span>
                             <div class="character-level-badge">Level ${character.level || 1}</div>
                         </div>

@@ -61,6 +61,16 @@ class EmojiProcessor {
     processMessage(message) {
         if (!message || typeof message !== 'string') return message;
         
+        // Skip emoji processing for AVATAR_URL commands to preserve URLs
+        if (message.startsWith('AVATAR_URL:')) {
+            return message;
+        }
+        
+        // Skip emoji processing for any message containing URLs
+        if (message.includes('http://') || message.includes('https://')) {
+            return message;
+        }
+        
         let processedMessage = message;
         
         // Sort by length (longest first) to avoid partial replacements
