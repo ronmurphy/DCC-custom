@@ -20,7 +20,7 @@ let playerName = '';
 
 // Global debug toggle - set to false to reduce console spam
 if (typeof window.showDebug === 'undefined') {
-    window.showDebug = false;
+    window.showDebug = true; // TEMPORARILY ENABLED for debugging chat issue
 }
 
 // ========================================
@@ -1555,6 +1555,9 @@ async function handleIncomingMessage(message) {
         return;
     }
 
+    // TEMPORARILY DISABLED: AVATAR_URL command processing
+    // Rollback to test if this is causing chat message issues
+    /*
     // Check if this is an AVATAR_URL command
     if (message.message_type === 'chat' && message.message_text.startsWith('AVATAR_URL:')) {
         console.log('🎭 Detected AVATAR_URL command in chat:', message.message_text);
@@ -1566,6 +1569,7 @@ async function handleIncomingMessage(message) {
         console.log('🔇 AVATAR_URL command processed silently, not displaying in chat');
         return;
     }
+    */
 
     // Check if this is a CHARACTER SYNC command
     if (message.message_type === 'chat' && message.message_text.startsWith('CHAR_')) {
