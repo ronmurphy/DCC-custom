@@ -259,17 +259,28 @@ async function joinGameSession() {
     }
 }
 
-function sendChatMessage() {
-    const messageInput = document.getElementById('chat-message-input');
-    const messageText = messageInput.value.trim();
+function sendChatMessage(messageText = null) {
+    // If messageText is provided, use it directly (for combat commands)
+    if (messageText) {
+        sendChatMessageAsync(messageText);
+        return;
+    }
     
-    if (!messageText) return;
+    // Otherwise, get message from input (for UI usage)
+    const messageInput = document.getElementById('chat-message-input');
+    if (!messageInput) {
+        console.error('Chat message input not found');
+        return;
+    }
+    
+    const inputText = messageInput.value.trim();
+    if (!inputText) return;
     
     // Clear input
     messageInput.value = '';
     
     // Send the message using the existing async function
-    sendChatMessageAsync(messageText);
+    sendChatMessageAsync(inputText);
 }
 
 // ========================================
@@ -2096,7 +2107,9 @@ if (typeof window !== 'undefined') {
         leaveGameSession,
         sendChatMessage,
         sendGameCommand,
-        sendGameResponse
+        sendGameResponse,
+        isConnected: () => currentGameSession !== null,
+        getCurrentSession: () => currentGameSession
     };
     
     // Global functions for HTML onclick handlers

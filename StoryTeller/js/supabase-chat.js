@@ -1543,6 +1543,45 @@ async function handleIncomingMessage(message) {
         return;
     }
     
+    // Check if this is an INITIATIVE command
+    if (message.message_type === 'chat' && message.message_text.startsWith('INITIATIVE:')) {
+        console.log('Detected INITIATIVE command in chat');
+        
+        if (isStoryTeller) {
+            // Parse and process the initiative command
+            processInitiativeCommand(message.message_text, message.player_name);
+        }
+        
+        // Don't display the raw command - we'll show a nicer message instead
+        return;
+    }
+    
+    // Check if this is a SPELL command
+    if (message.message_type === 'chat' && message.message_text.startsWith('SPELL:')) {
+        console.log('Detected SPELL command in chat');
+        
+        if (isStoryTeller) {
+            // Parse and process the spell command
+            processSpellCommand(message.message_text, message.player_name);
+        }
+        
+        // Don't display the raw command - we'll show a nicer message instead
+        return;
+    }
+    
+    // Check if this is a ROLL command (skills)
+    if (message.message_type === 'chat' && message.message_text.startsWith('ROLL:')) {
+        console.log('Detected ROLL command in chat');
+        
+        if (isStoryTeller) {
+            // Parse and process the roll command
+            processRollCommand(message.message_text, message.player_name);
+        }
+        
+        // Don't display the raw command - we'll show a nicer message instead
+        return;
+    }
+    
     // Check if this is a NOTE command
     if (message.message_type === 'chat' && message.message_text.startsWith('NOTE:')) {
         console.log('🔍 Detected NOTE command in chat:', message.message_text);
@@ -1722,6 +1761,101 @@ function processAttackCommand(commandText, playerName) {
         };
         displayChatMessage(warningMessage);
     }
+}
+
+function processInitiativeCommand(commandText, playerName) {
+    console.log('Processing INITIATIVE command:', commandText);
+    
+    // Parse INITIATIVE:PlayerName:Roll:Details
+    const parts = commandText.split(':');
+    if (parts.length < 3) {
+        console.error('Invalid INITIATIVE command format');
+        return;
+    }
+    
+    const [cmd, initiativePlayerName, roll, details] = parts;
+    
+    // Create a nice display message
+    const displayMessage = `🎲 ${initiativePlayerName} rolled initiative: ${roll}${details ? ` (${details})` : ''}`;
+    
+    // Display the nice message instead of the raw command
+    const fakeMessage = {
+        player_name: 'Initiative System',
+        message_text: displayMessage,
+        message_type: 'initiative',
+        is_storyteller: true,
+        created_at: new Date().toISOString()
+    };
+    displayChatMessage(fakeMessage);
+    
+    // If there's an initiative tracker in the Story Teller interface, update it
+    if (typeof addToInitiativeTracker === 'function') {
+        addToInitiativeTracker(initiativePlayerName, parseInt(roll), details);
+    }
+    
+    // Log the initiative roll
+    console.log(`Initiative: ${initiativePlayerName} rolled ${roll}`);
+}
+
+function processSpellCommand(commandText, playerName) {
+    console.log('Processing SPELL command:', commandText);
+    
+    // Parse SPELL:PlayerName:AttackRoll:Damage:SpellName:MPCost
+    const parts = commandText.split(':');
+    if (parts.length < 5) {
+        console.error('Invalid SPELL command format');
+        return;
+    }
+    
+    const [cmd, spellPlayerName, attackRoll, damage, spellName, mpCost] = parts;
+    
+    // Create a nice display message
+    const attackText = attackRoll && attackRoll !== 'auto' ? ` (${attackRoll} to hit)` : '';
+    const damageText = damage && damage !== '0' ? ` for ${damage} damage` : '';
+    const displayMessage = `✨ ${spellPlayerName} cast ${spellName}${attackText}${damageText} (${mpCost || 0} MP)`;
+    
+    // Display the nice message instead of the raw command
+    const fakeMessage = {
+        player_name: 'Magic System',
+        message_text: displayMessage,
+        message_type: 'spell',
+        is_storyteller: true,
+        created_at: new Date().toISOString()
+    };
+    displayChatMessage(fakeMessage);
+    
+    // Log the spell cast
+    console.log(`Spell: ${spellPlayerName} cast ${spellName}`);
+}
+
+function processRollCommand(commandText, playerName) {
+    console.log('Processing ROLL command:', commandText);
+    
+    // Parse ROLL:PlayerName:SkillName:Result:Stat
+    const parts = commandText.split(':');
+    if (parts.length < 4) {
+        console.error('Invalid ROLL command format');
+        return;
+    }
+    
+    const [cmd, rollPlayerName, skillName, result, stat] = parts;
+    
+    // Create a nice display message
+    const statText = stat ? ` (${stat})` : '';
+    const displayMessage = `🎲 ${rollPlayerName} rolled ${skillName}${statText}: ${result}`;
+    
+    // Display the nice message instead of the raw command
+    const fakeMessage = {
+        player_name: 'Skill System',
+        message_text: displayMessage,
+        message_type: 'skill',
+        is_storyteller: true,
+        created_at: new Date().toISOString()
+    };
+    displayChatMessage(fakeMessage);
+    
+    // Log the skill roll
+    console.log(`Skill Roll: ${rollPlayerName} rolled ${skillName} (${result})`);
 }
 
 function processNoteCommand(commandText, playerName) {

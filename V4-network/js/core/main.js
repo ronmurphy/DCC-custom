@@ -3484,7 +3484,9 @@ function rollAttribute(statName, statValue) {
 
 function isInCombatMode() {
     // Check if we're connected to a game session (indicating potential combat)
-    if (typeof window.supabaseChat !== 'undefined' && window.supabaseChat.isConnected) {
+    if (typeof window.supabaseChat !== 'undefined' && 
+        typeof window.supabaseChat.isConnected === 'function' && 
+        window.supabaseChat.isConnected()) {
         return true; // For now, always consider connected = potential combat
     }
     return false;

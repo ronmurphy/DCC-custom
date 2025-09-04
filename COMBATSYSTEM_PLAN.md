@@ -43,11 +43,12 @@ This document tracks the complete implementation of the DCC combat system across
 - ✅ **V4-network**: `rollInitiativeForDexterity()` function with d20+DEX+luck calculation
 - ✅ **V4-network**: Luck dice auto-calculation (level ÷ 10, rounded up)
 - ✅ **StoryTeller**: `processInitiativeCommand()` processes INITIATIVE commands
-- ✅ **Tested**: Basic initiative rolling works
+- ✅ **Tested**: Basic initiative rolling works - CONSOLE TESTED 2025-09-03 ✅
 
 **Files Modified:**
 - `V4-network/js/core/main.js` - Added combat detection and initiative functions
 - `V4-network/js/supabase-chat.js` - Added INITIATIVE command processing
+- `StoryTeller/js/supabase-chat.js` - Added INITIATIVE command processing
 
 **Chat Command:** `INITIATIVE:PlayerName:TotalRoll:Details`
 
@@ -83,11 +84,12 @@ This document tracks the complete implementation of the DCC combat system across
 - ✅ **V4-network**: Weapon buttons send ATTACK commands when in combat
 - ✅ **V4-network**: `rollWeaponDamage()` modified for combat integration
 - ✅ **StoryTeller**: `processAttackCommand()` processes ATTACK commands
-- ✅ **Tested**: Basic attack integration works
+- ✅ **Tested**: Basic attack integration works - UI TESTED 2025-09-03 ✅
 
 **Files Modified:**
 - `V4-network/js/core/main.js` - Added combat detection to weapon rolling
 - `V4-network/js/supabase-chat.js` - ATTACK command processing exists
+- `StoryTeller/js/supabase-chat.js` - ATTACK command processing exists
 
 **Chat Command:** `ATTACK:PlayerName:AttackRoll:Damage:WeaponName`
 
@@ -95,11 +97,12 @@ This document tracks the complete implementation of the DCC combat system across
 - ✅ **V4-network**: Spell buttons send SPELL commands when in combat
 - ✅ **V4-network**: `castSpell()` modified for combat integration
 - ✅ **StoryTeller**: `processSpellCommand()` processes SPELL commands
-- ✅ **Tested**: Basic spell integration works
+- ✅ **Tested**: Basic spell integration works - UI TESTED 2025-09-03 ✅
 
 **Files Modified:**
 - `V4-network/js/core/main.js` - Added combat detection to spell casting
 - `V4-network/js/supabase-chat.js` - Added SPELL command processing
+- `StoryTeller/js/supabase-chat.js` - Added SPELL command processing
 
 **Chat Command:** `SPELL:PlayerName:AttackRoll:Damage:SpellName:MPCost`
 
@@ -107,11 +110,12 @@ This document tracks the complete implementation of the DCC combat system across
 - ✅ **V4-network**: Skill buttons send ROLL commands when in combat
 - ✅ **V4-network**: `rollSkill()` modified for combat integration
 - ✅ **StoryTeller**: `processRollCommand()` processes ROLL commands
-- ✅ **Tested**: Basic skill integration works
+- ✅ **Tested**: Basic skill integration works - UI TESTED 2025-09-03 ✅
 
 **Files Modified:**
 - `V4-network/js/core/main.js` - Added combat detection to skill rolling
 - `V4-network/js/supabase-chat.js` - Added ROLL command processing
+- `StoryTeller/js/supabase-chat.js` - Added ROLL command processing
 
 **Chat Command:** `ROLL:PlayerName:SkillName:Result:Stat`
 
@@ -265,16 +269,16 @@ This document tracks the complete implementation of the DCC combat system across
 ## 🧪 TESTING CHECKLIST
 
 ### Phase 1 Testing
-- ✅ DEX attribute rolls initiative when connected
-- ✅ Initiative calculation includes luck dice
-- ✅ INITIATIVE commands appear in StoryTeller chat
+- ✅ DEX attribute rolls initiative when connected - TESTED 2025-09-03
+- ✅ Initiative calculation includes luck dice - TESTED 2025-09-03  
+- ✅ INITIATIVE commands appear in StoryTeller chat - TESTED 2025-09-03
 - ⬜ Initiative collector gathers all player rolls
 - ⬜ Turn order displays correctly
 
 ### Phase 2 Testing
-- ✅ Weapon attacks send ATTACK commands
-- ✅ Spells send SPELL commands
-- ✅ Skills send ROLL commands
+- ✅ Weapon attacks send ATTACK commands - TESTED 2025-09-03
+- ✅ Spells send SPELL commands - TESTED 2025-09-03
+- ✅ Skills send ROLL commands - TESTED 2025-09-03
 - ⬜ Actions queue when not player's turn
 - ⬜ Actions process on correct turn
 
@@ -292,18 +296,27 @@ This document tracks the complete implementation of the DCC combat system across
 
 ## 🚨 CURRENT STATUS
 
-**✅ COMPLETED:**
-- Initiative rolling with luck dice (V4-network)
-- Combat mode detection (V4-network)
-- Attack/Spell/Skill integration (V4-network)
-- Chat command processing (StoryTeller)
+**✅ COMPLETED & TESTED:**
+- Initiative rolling with luck dice (V4-network) ✅✅✅ 
+- Combat mode detection (V4-network) ✅✅✅
+- Attack/Spell/Skill integration (V4-network) ✅✅✅
+- Chat command processing (StoryTeller) ✅✅✅
+- All basic command processing functions implemented ✅✅✅
+- **MAJOR MILESTONE: All Phase 1.1 and Phase 2.1-2.3 COMPLETE! 🎉**
 
-**🔄 IN PROGRESS:**
-- Initiative collector interface (StoryTeller)
+**⏳ NEXT PHASE:**
+- **PHASE 1.2**: Initiative collector interface (StoryTeller UI)
+- **PHASE 1.3**: Turn order display
+- **PHASE 2.4**: Action buffer interface
 
-**⏳ NEXT UP:**
-- Turn order display
-- Action buffer system
+**📋 TESTING PLAN:**
+1. Connect V4-network to StoryTeller chat
+2. Test DEX attribute → initiative roll → StoryTeller display
+3. Test weapon button → attack command → StoryTeller display  
+4. Test spell button → spell command → StoryTeller display
+5. Test skill button → roll command → StoryTeller display
+6. Verify all commands show formatted messages (not raw commands)
+7. **IF ALL PASS**: Mark Phase 1.1 and Phase 2.1-2.3 as ✅✅✅
 
 ---
 
