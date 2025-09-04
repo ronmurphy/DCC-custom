@@ -21,10 +21,10 @@
  * 
  * COMMAND FORMATS RECEIVED:
  * ========================
- * - INITIATIVE|CharacterName|Total|d20|DEX|LuckDice
- * - ATTACK|CharacterName|WeaponName|AttackRoll|DamageRoll
- * - SPELL|CharacterName|SpellName|CastingRoll|Effect
- * - ROLL|CharacterName|SkillName|RollResult|Modifier
+ * - INITIATIVE:CharacterName:Total:Details (preferred) or INITIATIVE|CharacterName|Total|d20|DEX|LuckDice (legacy)
+ * - ATTACK:CharacterName:WeaponName:AttackRoll:DamageRoll (preferred) or ATTACK|... (legacy)
+ * - SPELL:CharacterName:SpellName:CastingRoll:Effect:MPCost (preferred) or SPELL|... (legacy)
+ * - ROLL:CharacterName:SkillName:RollResult:Modifier (preferred) or ROLL|... (legacy)
  * 
  * COMBAT MANAGEMENT WORKFLOW:
  * ===========================
@@ -101,26 +101,57 @@ function endCombatEncounter() {
 
 /**
  * Processes INITIATIVE command from V4-network player
- * Format: INITIATIVE|CharacterName|Total|d20|DEX|LuckDice
+ * Format: INITIATIVE:CharacterName:Total:Details
  * 
  * @param {string} commandData - Raw command string
  */
 function processInitiativeCommand(commandData) {
-    const parts = commandData.split('|');
-    
-    if (parts.length < 6) {
-        console.error('Invalid INITIATIVE command format:', commandData);
-        return;
+    // Handle both old pipe format and new colon format
+    let parts;
+    if (commandData.includes('|')) {
+        // Old format: INITIATIVE|CharacterName|Total|d20|DEX|LuckDice
+        parts = commandData.split('|');
+        if (parts.length < 6) {
+            console.error('Invalid INITIATIVE command format (pipe):', commandData);
+            return;
+        }
+    } else {
+        // New format: INITIATIVE:CharacterName:Total:Details
+        parts = commandData.split(':');
+        if (parts.length < 4) {
+            console.error('Invalid INITIATIVE command format (colon):', commandData);
+            return;
+        }
     }
     
     const initiativeData = {
         character: parts[1],
         total: parseInt(parts[2]),
-        d20: parseInt(parts[3]),
-        dexModifier: parseInt(parts[4]),
-        luckDice: parts[5] ? parts[5].split(',').map(d => parseInt(d)) : [],
+        d20: 0, // Will be extracted from details
+        dexModifier: 0, // Will be extracted from details
+        luckDice: [],
+        details: parts[3] || '',
         timestamp: Date.now()
     };
+    
+    // Parse details if available (format: "d20(12) + DEX(10) + luck(8) = 30")
+    if (parts.length > 3 && parts[3]) {
+        const details = parts[3];
+        const d20Match = details.match(/d20\((\d+)\)/);
+        const dexMatch = details.match(/DEX\(([+-]?\d+)\)/);
+        const luckMatch = details.match(/luck\((\d+)\)/);
+        
+        if (d20Match) initiativeData.d20 = parseInt(d20Match[1]);
+        if (dexMatch) initiativeData.dexModifier = parseInt(dexMatch[1]);
+        if (luckMatch) initiativeData.luckDice = [parseInt(luckMatch[1])];
+    }
+    
+    // Handle old pipe format fields
+    if (commandData.includes('|') && parts.length >= 6) {
+        initiativeData.d20 = parseInt(parts[3]) || 0;
+        initiativeData.dexModifier = parseInt(parts[4]) || 0;
+        initiativeData.luckDice = parts[5] ? parts[5].split(',').map(d => parseInt(d)) : [];
+    }
     
     // Add to initiative order (or update if character already exists)
     addToInitiativeOrder(initiativeData);
@@ -325,7 +356,13 @@ function updateCombatStatusBar() {
  * @param {string} commandData - Raw command string
  */
 function processAttackCommand(commandData) {
-    const parts = commandData.split('|');
+    // Handle both colon and pipe formats
+    let parts;
+    if (commandData.includes(':')) {
+        parts = commandData.split(':');
+    } else {
+        parts = commandData.split('|');
+    }
     
     if (parts.length < 5) {
         console.error('Invalid ATTACK command format:', commandData);
@@ -363,12 +400,18 @@ function processAttackCommand(commandData) {
 
 /**
  * Processes SPELL command from V4-network player
- * Format: SPELL|CharacterName|SpellName|AttackRoll|DamageRoll|MPCost
+ * Format: SPELL:CharacterName:SpellName:AttackRoll:DamageRoll:MPCost
  * 
  * @param {string} commandData - Raw command string
  */
 function processSpellCommand(commandData) {
-    const parts = commandData.split('|');
+    // Handle both colon and pipe formats
+    let parts;
+    if (commandData.includes(':')) {
+        parts = commandData.split(':');
+    } else {
+        parts = commandData.split('|');
+    }
     
     if (parts.length < 6) {
         console.error('Invalid SPELL command format:', commandData);
@@ -407,12 +450,18 @@ function processSpellCommand(commandData) {
 
 /**
  * Processes ROLL command from V4-network player
- * Format: ROLL|CharacterName|SkillName|Result|Stat
+ * Format: ROLL:CharacterName:SkillName:Result:Stat
  * 
  * @param {string} commandData - Raw command string
  */
 function processRollCommand(commandData) {
-    const parts = commandData.split('|');
+    // Handle both colon and pipe formats
+    let parts;
+    if (commandData.includes(':')) {
+        parts = commandData.split(':');
+    } else {
+        parts = commandData.split('|');
+    }
     
     if (parts.length < 5) {
         console.error('Invalid ROLL command format:', commandData);
@@ -673,12 +722,12 @@ function processCombatCommand(message) {
         return false;
     }
     
-    // Check if message starts with a combat command
-    const commandPrefixes = ['INITIATIVE|', 'ATTACK|', 'SPELL|', 'ROLL|'];
+    // Check if message starts with a combat command (support both : and | formats)
+    const commandPrefixes = ['INITIATIVE:', 'ATTACK:', 'SPELL:', 'ROLL:', 'INITIATIVE|', 'ATTACK|', 'SPELL|', 'ROLL|'];
     
     for (const prefix of commandPrefixes) {
         if (message.startsWith(prefix)) {
-            const commandType = prefix.replace('|', '');
+            const commandType = prefix.replace(/[:|]/, '');
             
             try {
                 switch (commandType) {
@@ -788,35 +837,50 @@ if (typeof window !== 'undefined') {
  * Starts combat and prompts players for initiative
  */
 function startCombatInitiative() {
-    // Check if an enemy is selected
-    if (!currentEnemy) {
-        alert('Please select an enemy before starting combat.');
+    // Check if there are any combatants (enemies or players)
+    if (combatEnemies.length === 0 && combatPlayers.length === 0) {
+        alert('Please add enemies to combat before starting.');
         return;
     }
     
-    startCombatEncounter();
+    // Start the unified combat system
+    startVisualCombat();
     
-    // Auto-roll enemy initiative
-    rollEnemyInitiative();
+    // Also trigger traditional combat if an enemy is selected
+    if (currentEnemy) {
+        startCombatEncounter();
+        rollEnemyInitiative();
+    }
     
     // Update UI state
     updateInitiativeDisplay();
     updateEnemyDisplay();
     
-    // Update combat status
+    // Update compact status bar
     const combatActiveStatus = document.getElementById('combat-active-status');
     const combatRound = document.getElementById('combat-round');
     if (combatActiveStatus) combatActiveStatus.textContent = 'Yes';
-    if (combatRound) combatRound.textContent = '1';
+    if (combatRound) combatRound.textContent = CombatState.round;
     
     // Send prompt to all players through chat
-    if (typeof sendChatMessage === 'function') {
-        sendChatMessage(`📢 Combat vs ${currentEnemy.name} has begun! All players, please roll initiative using your DEX attribute button.`);
+    const enemyList = combatEnemies.length > 0 ? 
+        combatEnemies.map(e => e.name).join(', ') : 
+        (currentEnemy ? currentEnemy.name : 'unknown enemies');
+    
+    const broadcastMessage = `📢 Combat vs ${enemyList} has begun! All players, please roll initiative using your DEX attribute button.`;
+    
+    // Try multiple broadcast methods
+    if (typeof sendChatMessageAsync === 'function') {
+        sendChatMessageAsync(broadcastMessage);
+    } else if (typeof sendChatMessage === 'function') {
+        sendChatMessage(broadcastMessage);
+    } else if (window.supabaseChat && typeof window.supabaseChat.sendChatMessage === 'function') {
+        window.supabaseChat.sendChatMessage(broadcastMessage);
     } else {
-        console.log(`Chat not available - would send: Combat vs ${currentEnemy.name} has begun! All players, please roll initiative using your DEX attribute button.`);
+        console.log(`Chat not available - would send: ${broadcastMessage}`);
     }
     
-    console.log(`🎲 Combat initiative phase started vs ${currentEnemy.name} - waiting for player rolls`);
+    console.log(`🎲 Visual combat initiative phase started vs ${enemyList} - waiting for player rolls`);
 }
 
 /**
@@ -824,14 +888,45 @@ function startCombatInitiative() {
  */
 function clearInitiative() {
     if (confirm('Clear all initiative data and reset combat?')) {
+        // End both visual and traditional combat
+        endVisualCombat();
         endCombatEncounter();
+        
+        // Clear visual combat data
+        combatEnemies = [];
+        combatPlayers = [];
+        currentEnemyData = null;
+        
+        // Update displays
         updateInitiativeDisplay();
-        console.log('🧹 Initiative tracker cleared');
+        updateArena();
+        updateEnemyChips();
+        
+        // Reset status bar
+        const combatActiveStatus = document.getElementById('combat-active-status');
+        const combatRound = document.getElementById('combat-round');
+        const currentTurnName = document.getElementById('current-turn-name');
+        if (combatActiveStatus) combatActiveStatus.textContent = 'No';
+        if (combatRound) combatRound.textContent = '0';
+        if (currentTurnName) currentTurnName.textContent = '-';
+        
+        // Reset button visibility
+        const startBtn = document.getElementById('start-combat-btn');
+        const nextBtn = document.getElementById('next-turn-btn');
+        const clearBtn = document.getElementById('clear-initiative-btn');
+        const turnOrderBtn = document.getElementById('announce-turn-btn');
+        
+        if (startBtn) startBtn.style.display = 'inline-block';
+        if (turnOrderBtn) turnOrderBtn.style.display = 'none';
+        if (nextBtn) nextBtn.style.display = 'none';
+        if (clearBtn) clearBtn.style.display = 'none';
+        
+        console.log('🧹 Visual combat system cleared');
         
         // Also clear combat log
         const combatLog = document.getElementById('combat-log');
         if (combatLog) {
-            combatLog.innerHTML = '<div class="log-entry">⚔️ Combat system ready - select an enemy to begin</div>';
+            combatLog.innerHTML = '<div class="log-entry">⚔️ Combat system ready - add enemies to begin</div>';
         }
     }
 }
@@ -866,6 +961,13 @@ function startTurnOrder() {
  * Advances to the next turn in initiative order
  */
 function advanceTurn() {
+    // Use visual combat system if active
+    if (CombatState.isActive) {
+        nextTurn();
+        return;
+    }
+    
+    // Fallback to traditional system
     if (!CombatState.turnStarted || CombatState.initiativeOrder.length === 0) {
         return;
     }
@@ -925,8 +1027,33 @@ if (typeof window !== 'undefined') {
     window.processQueuedAction = processQueuedAction;
     window.selectEnemy = selectEnemy;
     
+    // Visual Combat Manager Functions
+    window.loadEnemiesForLevel = loadEnemiesForLevel;
+    window.loadEnemyAttacks = loadEnemyAttacks;
+    window.addEnemyToCombat = addEnemyToCombat;
+    window.removeEnemyFromCombat = removeEnemyFromCombat;
+    window.startVisualCombat = startVisualCombat;
+    window.endVisualCombat = endVisualCombat;
+    window.nextTurn = nextTurn;
+    window.updateEnemyAttack = updateEnemyAttack;
+    window.executeEnemyAttack = executeEnemyAttack;
+    window.applyDamageToEnemy = applyDamageToEnemy;
+    window.applyDamageToPlayer = applyDamageToPlayer;
+    window.setPlayerStatus = setPlayerStatus;
+    window.clearAllEnemies = clearAllEnemies;
+    window.announceTurnOrder = announceTurnOrder;
+    window.checkAndAnnounceTurnOrder = checkAndAnnounceTurnOrder;
+    
+    // Debug function to manually test player addition
+    window.debugAddPlayer = function(playerName, initiative) {
+        console.log(`🔧 DEBUG: Manually adding player ${playerName} with initiative ${initiative}`);
+        window.addToInitiativeTracker(playerName, initiative, `Debug roll`);
+    };
+    
     // Bridge function for supabase-chat.js compatibility
     window.addToInitiativeTracker = function(playerName, roll, details) {
+        console.log(`🎯 addToInitiativeTracker called: ${playerName}, ${roll}, ${details}`);
+        
         // Convert to our format and add to initiative order
         const initiativeData = {
             character: playerName,
@@ -938,8 +1065,65 @@ if (typeof window !== 'undefined') {
             timestamp: Date.now()
         };
         
+        // Add to traditional system
         addToInitiativeOrder(initiativeData);
         updateInitiativeDisplay();
+        
+        // Add to visual combat system if active OR if enemies have been added
+        if (CombatState.isActive || combatEnemies.length > 0 || document.getElementById('start-combat-btn')?.style.display === 'none') {
+            console.log(`🎯 Adding ${playerName} to visual combat system`);
+            
+            // Get real player data from connected players
+            let playerData = null;
+            if (typeof getConnectedPlayersList === 'function') {
+                const connectedPlayers = getConnectedPlayersList();
+                playerData = connectedPlayers.find(p => p.name === playerName || p.character_name === playerName);
+                console.log(`🎯 Found player data:`, playerData);
+            }
+            
+            // Check if player already exists
+            const existingPlayerIndex = combatPlayers.findIndex(p => p.name === playerName);
+            
+            if (existingPlayerIndex >= 0) {
+                // Update existing player's initiative
+                combatPlayers[existingPlayerIndex].initiative = roll;
+                console.log(`🎯 Updated existing player ${playerName} initiative to ${roll}`);
+            } else {
+                // Create player with real data or defaults
+                const charData = playerData?.character_data || {};
+                const stats = charData.stats || {};
+                
+                const player = {
+                    id: `player_${playerName.replace(/\s+/g, '_')}`,
+                    name: playerName,
+                    hp: stats.hitpoints || stats.current_hp || playerData?.hp || 30,
+                    maxHp: stats.hitpoints || stats.max_hp || playerData?.max_hp || 30,
+                    ac: stats.armor_class || playerData?.ac || 12,
+                    initiative: roll,
+                    status: 'waiting',
+                    type: 'player',
+                    dex_modifier: stats.dexterity_modifier || playerData?.dex_modifier || 0,
+                    str_modifier: stats.strength_modifier || 0,
+                    level: charData.level || stats.level || 1,
+                    // Handle avatar - can be URL or emoji
+                    avatar: charData.avatar_url || playerData?.avatar_url || stats.avatar || '👤',
+                    // Additional character info
+                    class: charData.character_class || charData.class || 'Adventurer',
+                    background: charData.background || ''
+                };
+                combatPlayers.push(player);
+                console.log(`🎯 Added new player to visual combat:`, player);
+            }
+            
+            // Update visual display
+            updateArena();
+            console.log(`🎯 Updated arena. Current players:`, combatPlayers.length, `enemies:`, combatEnemies.length);
+            
+            // Check if we should announce turn order now
+            checkAndAnnounceTurnOrder();
+        } else {
+            console.log(`🎯 Visual combat not active and no enemies - player not added to arena`);
+        }
         
         console.log(`📊 Added ${playerName} to initiative tracker: ${roll}`);
     };
@@ -1331,14 +1515,27 @@ function createCombatantCard(combatant, position) {
     }
     
     const hpPercent = (combatant.hp / combatant.maxHp) * 100;
-    const avatar = combatant.type === 'player' ? 
-        (combatant.avatar || '👤') : 
-        getEnemyAvatar(combatant.name);
+    
+    // Handle avatar - could be emoji, URL, or default
+    let avatarElement;
+    if (combatant.type === 'player') {
+        const avatar = combatant.avatar || '👤';
+        if (avatar.startsWith('http') || avatar.startsWith('/')) {
+            // URL avatar
+            avatarElement = `<img src="${avatar}" alt="${combatant.name}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">`;
+        } else {
+            // Emoji or text avatar
+            avatarElement = avatar;
+        }
+    } else {
+        // Enemy emoji avatar
+        avatarElement = getEnemyAvatar(combatant.name);
+    }
     
     card.innerHTML = `
         <div class="status-indicator status-${combatant.status}">${combatant.status}</div>
         <div class="card-header">
-            <div class="avatar">${avatar}</div>
+            <div class="avatar">${avatarElement}</div>
             <div class="combatant-info">
                 <h4 class="combatant-name">${combatant.name}</h4>
                 <div class="combatant-stats">
@@ -1518,18 +1715,86 @@ function setPlayerStatus(playerId, status) {
  * Roll initiative for all combatants
  */
 function rollAllInitiative() {
+    console.log('🎲 Rolling initiative for all combatants...');
+    
     // Roll for enemies
     combatEnemies.forEach(enemy => {
-        enemy.initiative = rollD20() + (enemy.stats?.dex_modifier || 0);
+        const initiative = rollD20() + (enemy.stats?.dex_modifier || 0);
+        enemy.initiative = initiative;
+        console.log(`🎲 ${enemy.name} rolled initiative: ${initiative}`);
     });
     
-    // Roll for players
+    // Roll for players (only if they haven't rolled yet)
     combatPlayers.forEach(player => {
-        player.initiative = rollD20() + (player.dex_modifier || 0);
+        if (!player.initiative || player.initiative === 0) {
+            player.initiative = rollD20() + (player.dex_modifier || 0);
+            console.log(`🎲 ${player.name} auto-rolled initiative: ${player.initiative}`);
+        }
     });
     
     updateArena();
-    console.log('Rolled initiative for all combatants');
+    
+    // DON'T auto-announce turn order yet - wait for players to roll manually
+    console.log('🎲 Initiative rolled for enemies. Waiting for players to roll manually...');
+}
+
+/**
+ * Check if all expected players have rolled initiative and announce turn order
+ * This should be called after each player rolls
+ */
+function checkAndAnnounceTurnOrder() {
+    // Only check if we have enemies (combat has been started)
+    if (combatEnemies.length === 0) return;
+    
+    // Get connected players count (minus storyteller)
+    const connectedPlayers = typeof getConnectedPlayersList === 'function' ? getConnectedPlayersList() : [];
+    const storytellerName = window.currentCharacterName || 'StoryTeller';
+    const expectedPlayerCount = connectedPlayers.filter(p => 
+        p.name !== storytellerName && 
+        p.character_name !== storytellerName
+    ).length;
+    
+    console.log(`🎯 Expected players: ${expectedPlayerCount}, Players with initiative: ${combatPlayers.length}`);
+    
+    // Check if all expected players have rolled initiative
+    const playersWithInitiative = combatPlayers.filter(p => p.initiative && p.initiative > 0);
+    
+    if (expectedPlayerCount > 0 && playersWithInitiative.length >= expectedPlayerCount) {
+        console.log('🎯 All expected players have rolled initiative. Announcing turn order in 2 seconds...');
+        setTimeout(() => {
+            announceTurnOrder();
+        }, 2000);
+    } else if (playersWithInitiative.length > 0) {
+        console.log(`🎯 ${playersWithInitiative.length}/${expectedPlayerCount} players have rolled initiative. Waiting for more...`);
+    } else {
+        console.log('🎯 Still waiting for players to roll initiative...');
+    }
+}
+
+/**
+ * Announce the current turn order to all players
+ */
+function announceTurnOrder() {
+    const allCombatants = [...combatPlayers, ...combatEnemies]
+        .filter(c => c.status !== 'defeated' && c.status !== 'unconscious')
+        .sort((a, b) => b.initiative - a.initiative);
+    
+    if (allCombatants.length === 0) return;
+    
+    const turnOrderText = allCombatants
+        .map((c, index) => `${index + 1}. ${c.name} (${c.initiative})`)
+        .join('\n');
+    
+    const message = `⚔️ **Turn Order:**\n${turnOrderText}\n\n🎯 ${allCombatants[0].name} goes first!`;
+    
+    // Send to chat
+    if (typeof sendChatMessageAsync === 'function') {
+        sendChatMessageAsync(message);
+    } else if (typeof sendChatMessage === 'function') {
+        sendChatMessage(message);
+    }
+    
+    console.log('🎯 Turn order announced:', message);
 }
 
 /**
@@ -1547,8 +1812,16 @@ function startVisualCombat() {
     CombatState.currentTurnIndex = 0;
     CombatState.round = 1;
     
-    document.getElementById('start-combat-btn').style.display = 'none';
-    document.getElementById('end-combat-btn').style.display = 'inline-block';
+    // Update button visibility
+    const startBtn = document.getElementById('start-combat-btn');
+    const nextBtn = document.getElementById('next-turn-btn');
+    const clearBtn = document.getElementById('clear-initiative-btn');
+    const turnOrderBtn = document.getElementById('announce-turn-btn');
+    
+    if (startBtn) startBtn.style.display = 'none';
+    if (turnOrderBtn) turnOrderBtn.style.display = 'inline-block';
+    if (nextBtn) nextBtn.style.display = 'inline-block';
+    if (clearBtn) clearBtn.style.display = 'inline-block';
     
     updateArena();
     updateCombatStatus();
@@ -1575,8 +1848,14 @@ function endVisualCombat() {
         }
     });
     
-    document.getElementById('start-combat-btn').style.display = 'inline-block';
-    document.getElementById('end-combat-btn').style.display = 'none';
+    // Update button visibility
+    const startBtn = document.getElementById('start-combat-btn');
+    const nextBtn = document.getElementById('next-turn-btn');
+    const clearBtn = document.getElementById('clear-initiative-btn');
+    
+    if (startBtn) startBtn.style.display = 'inline-block';
+    if (nextBtn) nextBtn.style.display = 'none';
+    if (clearBtn) clearBtn.style.display = 'none';
     
     updateArena();
     updateCombatStatus();
@@ -1630,25 +1909,34 @@ function nextTurn() {
  * Update combat status display
  */
 function updateCombatStatus() {
-    const statusElement = document.querySelector('.combat-status-text');
-    if (!statusElement) return;
+    // Update compact status bar elements
+    const combatActiveStatus = document.getElementById('combat-active-status');
+    const combatRound = document.getElementById('combat-round');
+    const currentTurnName = document.getElementById('current-turn-name');
     
     if (!CombatState.isActive) {
-        statusElement.textContent = 'Combat Inactive';
+        if (combatActiveStatus) combatActiveStatus.textContent = 'No';
+        if (combatRound) combatRound.textContent = '0';
+        if (currentTurnName) currentTurnName.textContent = '-';
         return;
     }
     
+    // Update basic status
+    if (combatActiveStatus) combatActiveStatus.textContent = 'Yes';
+    if (combatRound) combatRound.textContent = CombatState.round;
+    
+    // Find current combatant
     const allCombatants = [...combatPlayers, ...combatEnemies]
         .filter(c => c.status !== 'defeated' && c.status !== 'unconscious')
         .sort((a, b) => b.initiative - a.initiative);
     
     if (allCombatants.length === 0) {
-        statusElement.textContent = 'No Active Combatants';
+        if (currentTurnName) currentTurnName.textContent = 'No Active Combatants';
         return;
     }
     
     const currentCombatant = allCombatants[CombatState.currentTurnIndex];
-    statusElement.textContent = `Round ${CombatState.round} | ${currentCombatant.name}'s Turn`;
+    if (currentTurnName) currentTurnName.textContent = currentCombatant.name;
 }
 
 /**

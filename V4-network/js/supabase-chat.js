@@ -1873,6 +1873,21 @@ function processPlayerSpell(data, playerName) {
 function displayChatMessage(message) {
     console.log('🔍 DEBUG - displayChatMessage called with:', message);
     
+    // Check for combat start messages and show notification
+    if (message.message_text && message.message_text.includes('📢 Combat') && message.message_text.includes('begun')) {
+        // Show prominent combat notification
+        if (typeof showNotification === 'function') {
+            showNotification('combat', '⚔️ Combat Started!', 
+                'Roll initiative using your DEX button', 
+                'Click DEX attribute to join combat');
+        }
+        
+        // Set combat mode active (if function exists)
+        if (typeof setCombatMode === 'function') {
+            setCombatMode(true);
+        }
+    }
+    
     // Use the main page's addChatMessage function for consistency
     if (window.addChatMessage) {
         let messageType = 'player';

@@ -1790,7 +1790,10 @@ function processInitiativeCommand(commandText, playerName) {
     
     // If there's an initiative tracker in the Story Teller interface, update it
     if (typeof addToInitiativeTracker === 'function') {
+        console.log(`🎯 Calling addToInitiativeTracker for ${initiativePlayerName} with roll ${roll}`);
         addToInitiativeTracker(initiativePlayerName, parseInt(roll), details);
+    } else {
+        console.error('🚨 addToInitiativeTracker function not found!');
     }
     
     // Log the initiative roll

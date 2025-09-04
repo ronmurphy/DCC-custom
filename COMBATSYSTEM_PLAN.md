@@ -17,14 +17,50 @@ This document tracks the complete implementation of the DCC combat system across
 - **PHASE 1.2**: Unified combat manager with initiative tracker ✅✅🧪
 - **ACTION QUEUE SYSTEM**: Players can attack anytime, actions processed on their turn ✅✅🧪
 - **STREAMLINED UI**: Single panel handles initiative, turn order, and action buffering ✅✅🧪
+- **COMMAND FORMAT COMPATIBILITY**: Support for both colon (:) and pipe (|) formats ✅✅
+- **PLAYER DATA INTEGRATION**: Full character sheet data from IndexDB for HP, AC, avatars ✅✅
+- **AUTOMATIC COMBAT START**: Detects when all connected players have rolled initiative ✅✅
 
 **⏳ NEXT PHASE:**
 - **TESTING**: Test the new unified combat manager with real V4-network connections
 - **PHASE 1.3**: Turn order display refinements
-- **PHASE 2.4**: Action buffer polish and enemy action integrationn complete  
+- **PHASE 2.4**: Action buffer polish and enemy action integration
+
+**🛠️ RECENT FIXES APPLIED (2025-09-04):**
+- ✅ Fixed INITIATIVE command format to accept colon-separated commands
+- ✅ Fixed ROLL command format parsing for both : and | formats  
+- ✅ Fixed ATTACK and SPELL command format parsing
+- ✅ Enhanced player data integration using full character sheets from IndexDB
+- ✅ Added automatic combat start detection based on connected player count
+- ✅ Fixed turn order announcement timing (waits for all players, 2-second delay)
+- ✅ Enhanced player cards with real HP, AC, level, class, avatar data
+- ✅ Added support for both URL and emoji avatarsn complete  
 - ✅ **Tested**: Working as intended
 
 **RULE**: Create new files when possible. Avoid modifying existing code to prevent breaking functionality.
+
+---
+
+### Issues Resolved in Latest Update:
+
+**Command Format Compatibility:**
+- Fixed INITIATIVE command parsing - now accepts `INITIATIVE:PlayerName:Total:Details` format
+- Fixed ROLL command parsing - now accepts `ROLL:PlayerName:SkillName:Result:Stat` format  
+- Fixed ATTACK command parsing - now accepts `ATTACK:PlayerName:WeaponName:AttackRoll:DamageRoll` format
+- Fixed SPELL command parsing - now accepts `SPELL:PlayerName:SpellName:CastingRoll:Effect:MPCost` format
+- All commands maintain backward compatibility with pipe (|) format
+
+**Player Data Integration:**
+- Enhanced addToInitiativeTracker to use complete character sheet data from IndexDB
+- Player cards now show real HP, AC, level, class, and background from character sheets
+- Avatar support for both URL images and emoji characters
+- Automatic fallback to default values if character data unavailable
+
+**Automatic Combat Flow:**
+- Combat start detection based on connected player count (minus storyteller)
+- Turn order announcement waits until all expected players have rolled initiative
+- 2-second delay before announcing turn order to allow processing
+- Better logging to track player addition and initiative detection
 
 ---
 
