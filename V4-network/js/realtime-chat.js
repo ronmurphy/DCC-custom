@@ -424,6 +424,54 @@ function quickRoll() {
     }
 }
 
+function rollInitiative() {
+    // Get current character
+    if (!characterManager.currentCharacterId) {
+        showNotification('No character selected!', 'error');
+        return;
+    }
+    
+    const currentCharacter = characterManager.characters.find(
+        char => char.id === characterManager.currentCharacterId
+    );
+    
+    if (!currentCharacter) {
+        showNotification('Character not found!', 'error');
+        return;
+    }
+    
+    // Get character stats
+    const dexterity = currentCharacter.stats?.dexterity || 0;
+    const level = currentCharacter.level || 1;
+    const characterName = currentCharacter.name || 'Unknown';
+    
+    // Calculate luck dice count (1d10 per 10 levels, rounded up)
+    const luckDiceCount = Math.ceil(level / 10);
+    
+    // Roll d20 for initiative
+    const d20Roll = Math.floor(Math.random() * 20) + 1;
+    
+    // Roll luck dice
+    let luckTotal = 0;
+    const luckRolls = [];
+    for (let i = 0; i < luckDiceCount; i++) {
+        const luckRoll = Math.floor(Math.random() * 10) + 1;
+        luckRolls.push(luckRoll);
+        luckTotal += luckRoll;
+    }
+    
+    // Calculate total initiative
+    const totalInitiative = d20Roll + dexterity + luckTotal;
+    
+    // Format luck rolls display
+    const luckDisplay = luckDiceCount > 0 ? ` + luck(${luckRolls.join('+')})` : '';
+    const rollDetails = `d20(${d20Roll}) + DEX(${dexterity})${luckDisplay} = ${totalInitiative}`;
+    
+    // Send initiative to chat as a command string
+    const commandString = `INITIATIVE:${characterName}:${totalInitiative}:${rollDetails}`;
+    sendChatMessage(commandString);
+}
+
 function quickSpell() {
     const spellName = prompt('Spell name:') || 'spell';
     const attackRoll = prompt('Attack roll (if applicable):');

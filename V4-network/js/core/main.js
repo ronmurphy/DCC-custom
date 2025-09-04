@@ -2785,6 +2785,15 @@ function castSpell(spellId) {
         `Cost: ${spellData.cost} MP`,
         `${spellData.results.length > 0 ? spellData.results.join('<br>') : 'Spell cast successfully!'}<br>MP Remaining: ${character.currentMagicPoints}/${character.magicPoints}`);
 
+    // Send spell to chat if in combat mode
+    if (isInCombatMode() && typeof sendChatMessage === 'function') {
+        const characterName = character.name || 'Unknown';
+        const attackRoll = toHitRoll ? toHitRoll.total : null;
+        const damage = totalDamage || 0;
+        const commandString = `SPELL:${characterName}:${attackRoll || 'auto'}:${damage}:${spell.name}:${spell.cost}`;
+        sendChatMessage(commandString);
+    }
+
     updateMagicTabDisplay();
     updateCharacterDisplay();
     updateRollHistoryDisplay();
@@ -3433,6 +3442,12 @@ function rollToHit(attackStat, isCrit = false) {
 }
 
 function rollAttribute(statName, statValue) {
+    // Check if this is DEX and we're in combat mode for initiative
+    if (statName.toLowerCase() === 'dexterity' && isInCombatMode()) {
+        rollInitiativeForDexterity(statValue);
+        return;
+    }
+    
     const config = getDiceConfiguration(character.level);
     const diceRolls = rollDice(config.diceCount, config.diceType);
     const diceTotal = diceRolls.reduce((sum, roll) => sum + roll, 0);
@@ -3460,6 +3475,77 @@ function rollAttribute(statName, statValue) {
         `Total: ${rollData.finalTotal}`,
         `Dice: [${diceDisplay}] = ${rollData.diceTotal}<br>+ Level Bonus: ${rollData.levelBonus}<br>+ ${rollData.type} Bonus: ${rollData.statBonus}`);
 
+    updateRollHistoryDisplay();
+}
+
+// ========================================
+// COMBAT MODE DETECTION & INITIATIVE
+// ========================================
+
+function isInCombatMode() {
+    // Check if we're connected to a game session (indicating potential combat)
+    if (typeof window.supabaseChat !== 'undefined' && window.supabaseChat.isConnected) {
+        return true; // For now, always consider connected = potential combat
+    }
+    return false;
+}
+
+function rollInitiativeForDexterity(dexterity) {
+    // Get character level for luck calculation
+    const level = character.level || 1;
+    const characterName = character.name || 'Unknown';
+    
+    // Calculate luck dice count (1d10 per 10 levels, rounded up)
+    const luckDiceCount = Math.ceil(level / 10);
+    
+    // Roll d20 for initiative
+    const d20Roll = Math.floor(Math.random() * 20) + 1;
+    
+    // Roll luck dice
+    let luckTotal = 0;
+    const luckRolls = [];
+    for (let i = 0; i < luckDiceCount; i++) {
+        const luckRoll = Math.floor(Math.random() * 10) + 1;
+        luckRolls.push(luckRoll);
+        luckTotal += luckRoll;
+    }
+    
+    // Calculate total initiative
+    const totalInitiative = d20Roll + dexterity + luckTotal;
+    
+    // Format luck rolls display
+    const luckDisplay = luckDiceCount > 0 ? ` + luck(${luckRolls.join('+')})` : '';
+    const rollDetails = `d20(${d20Roll}) + DEX(${dexterity})${luckDisplay} = ${totalInitiative}`;
+    
+    // Add to roll history
+    const rollData = {
+        type: 'Initiative',
+        name: 'Initiative Roll',
+        diceRolls: [d20Roll, ...luckRolls],
+        diceTotal: d20Roll + luckTotal,
+        levelBonus: 0,
+        statBonus: dexterity,
+        finalTotal: totalInitiative,
+        config: { luckDiceCount, luckRolls, details: rollDetails },
+        timestamp: new Date().toLocaleTimeString()
+    };
+
+    character.rollHistory.unshift(rollData);
+    if (character.rollHistory.length > 50) {
+        character.rollHistory = character.rollHistory.slice(0, 50);
+    }
+    
+    // Show initiative notification
+    showNotification('roll', '🎲 Initiative Roll',
+        `Total: ${totalInitiative}`,
+        rollDetails);
+    
+    // Send to chat if connected
+    if (typeof sendChatMessage === 'function') {
+        const commandString = `INITIATIVE:${characterName}:${totalInitiative}:${rollDetails}`;
+        sendChatMessage(commandString);
+    }
+    
     updateRollHistoryDisplay();
 }
 
@@ -3491,6 +3577,13 @@ function rollSkill(skillName, statName, statValue) {
     showNotification('roll', `${rollData.type} Roll: ${rollData.name}`,
         `Total: ${rollData.finalTotal}`,
         `Dice: [${diceDisplay}] = ${rollData.diceTotal}<br>+ Level Bonus: ${rollData.levelBonus}<br>+ ${rollData.type} Bonus: ${rollData.statBonus}`);
+
+    // Send skill roll to chat if in combat mode (useful for things like stealth, athletics, etc.)
+    if (isInCombatMode() && typeof sendChatMessage === 'function') {
+        const characterName = character.name || 'Unknown';
+        const commandString = `ROLL:${characterName}:${skillName}:${rollData.finalTotal}:${rollData.stat}`;
+        sendChatMessage(commandString);
+    }
 
     updateRollHistoryDisplay();
 }
@@ -3671,6 +3764,13 @@ function rollWeaponDamage(weaponId) {
         `To Hit: d10(${toHitRoll.d10Roll}) + ${statUsed.charAt(0).toUpperCase() + statUsed.slice(1)}(${toHitRoll.statBonus}) + Lv(${toHitRoll.levelBonus})${equipmentBonuses.toHit > 0 ? ` + Equipment(${equipmentBonuses.toHit})` : ''} = ${toHitRoll.total}<br>` +
         `Damage: d${weaponData.diceType}(${weaponData.damageRoll}) + ${weaponData.statUsed.charAt(0).toUpperCase() + weaponData.statUsed.slice(1)}(${weaponData.statBonus})${equipmentBonuses.damage > 0 ? ` + Equipment(${equipmentBonuses.damage})` : ''}${toHitRoll.isCrit ? ' + Crit(5)' : ''}<br>` +
         `${weaponData.weaponSize} ${weaponData.isRanged ? 'Ranged' : 'Melee'} Weapon${equipmentBonusText}`);
+
+    // Send attack to chat if in combat mode
+    if (isInCombatMode() && typeof sendChatMessage === 'function') {
+        const characterName = character.name || 'Unknown';
+        const commandString = `ATTACK:${characterName}:${toHitRoll.total}:${weaponData.totalDamage}:${weapon.name}`;
+        sendChatMessage(commandString);
+    }
 
     updateRollHistoryDisplay();
 }

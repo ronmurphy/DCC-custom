@@ -104,22 +104,54 @@ When your **Job and Class both boost the same attribute**, that attribute gets s
 
 ## ⚔️ **Combat System**
 
-### **Attack Rolls**
-- **Melee Weapons**: d20 + STR modifier + weapon bonus
-- **Ranged Weapons**: d20 + DEX modifier + weapon bonus  
-- **Target Number**: Usually 10-15 depending on opponent
+### **Universal Luck System** 🍀
+The core of DCC combat is the **Luck System** - a dynamic mechanic that scales with character progression:
+
+#### **Luck Dice Formula**
+- **Every 10 levels**: Gain +1d10 to your luck pool
+- **Level 1-9**: 1d10 luck
+- **Level 10-19**: 2d10 luck  
+- **Level 20-29**: 3d10 luck
+- **Level 30+**: 4d10+ luck (for legendary heroes!)
+
+#### **To-Hit Resolution**
+Combat uses **opposed rolls** rather than static target numbers:
+
+1. **Attacker rolls**: Weapon dice + Attribute + Luck dice
+   - **Melee**: d20 + STR + weapon bonus + luck (Xd10)
+   - **Ranged**: d20 + DEX + weapon bonus + luck (Xd10)
+
+2. **Defender rolls**: Defense + Attribute + Luck dice  
+   - **Defense roll**: d20 + DEX + armor bonus + luck (Xd10)
+
+3. **Hit Resolution**: If attacker's total is **+3 or higher** than defender's total → HIT!
+   - **Example**: Attacker rolls 18, Defender rolls 14 → 18-14=4 → HIT! 
+   - **Example**: Attacker rolls 16, Defender rolls 15 → 16-15=1 → MISS!
+
+### **Initiative System** ⚡
+Turn order is determined by **DEX + Luck**:
+- **Roll**: d20 + DEX + luck dice (Xd10)
+- **Highest total goes first**, then descending order
+- **Ties**: Highest DEX wins, then highest level
 
 ### **Damage System**
 - **Light Weapons**: d4 + attribute modifier
 - **Medium Weapons**: d6 + attribute modifier
 - **Heavy Weapons**: d8 + attribute modifier
 - **Two-Handed**: Some weapons require both hands but deal more damage
+- **Critical Hits**: When you beat defender by 10+, roll damage twice!
 
 ### **Defense & Health**
 - **Health Points**: CON + Character Level
 - **Magic Points**: WIS + INT  
-- **Armor Class**: Base 10 + armor bonuses + DEX modifier
+- **Armor Bonus**: Adds to defense roll (not static AC)
 - **Equipment Bonuses**: Achievements can enhance weapon/armor effectiveness
+
+### **Why This System Rocks** 🎸
+- **Scales Naturally**: High-level fights stay exciting with more luck dice
+- **No Inflation**: No need for +50 weapons at high levels
+- **Dramatic Swings**: Luck can turn the tide at any moment
+- **Balanced Chaos**: Skill matters, but fortune favors the bold!
 
 ---
 
