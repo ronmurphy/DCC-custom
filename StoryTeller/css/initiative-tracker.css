@@ -1,0 +1,435 @@
+/* =====================================================================
+   UNIFIED COMBAT MANAGER STYLES
+   For StoryTeller Combat Panel - Phase 1.2 Implementation
+   ===================================================================== */
+
+.initiative-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.initiative-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.initiative-header h5 {
+    color: white;
+    margin: 0;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 18px;
+}
+
+.initiative-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.start-combat-btn {
+    background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+}
+
+.start-combat-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 184, 148, 0.3);
+}
+
+.start-combat-btn:disabled {
+    background: #95a5a6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.clear-initiative-btn {
+    background: linear-gradient(135deg, #ff7675 0%, #d63031 100%);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 14px;
+}
+
+.clear-initiative-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 118, 117, 0.3);
+}
+
+.next-turn-btn {
+    background: linear-gradient(135deg, #fdcb6e 0%, #e17055 100%);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+}
+
+.next-turn-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(253, 203, 110, 0.3);
+}
+
+.next-turn-btn:disabled {
+    background: #95a5a6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Combat Status Bar */
+.combat-status-bar {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+}
+
+.status-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.status-label {
+    color: #666;
+    font-weight: 500;
+}
+
+.status-value {
+    color: #2c3e50;
+    font-weight: 600;
+    background: #ecf0f1;
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+/* Main Combat Display */
+.initiative-tracker {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 6px;
+    min-height: 200px;
+    position: relative;
+    overflow: hidden;
+}
+
+.initiative-tracker.empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    color: #666;
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.initiative-tracker.empty h6 {
+    margin: 8px 0;
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.initiative-tracker.collecting {
+    border: 2px dashed #00b894;
+    background: rgba(0, 184, 148, 0.05);
+}
+
+.initiative-tracker.collecting::before {
+    content: "⏳ Collecting initiative rolls...";
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    background: #00b894;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    animation: pulse 2s infinite;
+}
+
+.initiative-tracker.active::before {
+    content: "⚔️ Combat Active";
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    background: #e17055;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+/* Combat Participants List */
+.combat-list {
+    padding: 12px;
+}
+
+.combat-participant {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    margin-bottom: 6px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.combat-participant:last-child {
+    margin-bottom: 0;
+}
+
+.combat-participant.current-turn {
+    background: linear-gradient(135deg, #fdcb6e 0%, #e17055 100%);
+    color: white;
+    border-left-color: #e17055;
+    font-weight: 600;
+    transform: scale(1.02);
+    box-shadow: 0 2px 8px rgba(253, 203, 110, 0.4);
+}
+
+.combat-participant.player {
+    border-left-color: #667eea;
+}
+
+.combat-participant.enemy {
+    border-left-color: #ff7675;
+}
+
+.combat-participant.has-action {
+    background: rgba(0, 184, 148, 0.1);
+    border-left-color: #00b894;
+    border-left-width: 6px;
+}
+
+.combat-participant.current-turn.has-action {
+    background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
+    border-left-color: #00a085;
+}
+
+/* Participant Info */
+.participant-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.participant-rank {
+    background: #34495e;
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    min-width: 28px;
+}
+
+.combat-participant.current-turn .participant-rank {
+    background: #e17055;
+    animation: glow 2s infinite;
+}
+
+@keyframes glow {
+    0%, 100% { box-shadow: 0 0 5px rgba(225, 112, 85, 0.5); }
+    50% { box-shadow: 0 0 15px rgba(225, 112, 85, 0.8); }
+}
+
+.participant-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.participant-name {
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 2px;
+}
+
+.participant-stats {
+    font-size: 12px;
+    color: #666;
+    display: flex;
+    gap: 8px;
+}
+
+.combat-participant.current-turn .participant-stats {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Action Status */
+.action-status {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    min-width: 120px;
+}
+
+.action-indicator {
+    font-size: 12px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: 500;
+    text-align: center;
+}
+
+.action-indicator.waiting {
+    background: #95a5a6;
+    color: white;
+}
+
+.action-indicator.queued {
+    background: #f39c12;
+    color: white;
+    animation: blink 1.5s infinite;
+}
+
+.action-indicator.ready {
+    background: #00b894;
+    color: white;
+    animation: pulse-green 1s infinite;
+}
+
+@keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0.5; }
+}
+
+@keyframes pulse-green {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.action-preview {
+    font-size: 11px;
+    color: #666;
+    max-width: 120px;
+    text-align: right;
+    line-height: 1.2;
+    margin-top: 2px;
+}
+
+.combat-participant.current-turn .action-preview {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Process Action Button */
+.process-action-btn {
+    background: #00b894;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 2px;
+}
+
+.process-action-btn:hover {
+    background: #00a085;
+    transform: translateY(-1px);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .initiative-header {
+        flex-direction: column;
+        gap: 8px;
+        align-items: stretch;
+    }
+    
+    .initiative-controls {
+        justify-content: center;
+    }
+    
+    .combat-status-bar {
+        flex-direction: column;
+        gap: 4px;
+    }
+    
+    .combat-participant {
+        padding: 8px 10px;
+    }
+    
+    .participant-details {
+        min-width: 0;
+    }
+    
+    .action-status {
+        min-width: 80px;
+    }
+    
+    .action-preview {
+        max-width: 80px;
+        font-size: 10px;
+    }
+    
+    .participant-stats {
+        flex-direction: column;
+        gap: 2px;
+    }
+}
+
+/* Animation for new entries */
+.combat-participant.new-entry {
+    animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}

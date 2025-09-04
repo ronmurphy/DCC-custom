@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="css/enhanced_chat_effects.css">
     <link rel="stylesheet" href="css/map.css">
     <link rel="stylesheet" href="css/combat.css">
+    <link rel="stylesheet" href="css/initiative-tracker.css">
     <link rel="stylesheet" href="css/storyTellerPlayersPanel.css">
     <link rel="stylesheet" href="css/character-modal.css">
     <link rel="stylesheet" href="css/player-chips.css">
@@ -2675,6 +2676,7 @@
         }
     </script>
     <script src="js/supabase-chat.js"></script>
+    <script src="js/combatSystem-ST.js"></script>
     <script src="js/map-sharing.js"></script>
     <script src="js/player-data-parser.js"></script>
     <script src="js/supabase-config.js"></script>
@@ -3337,6 +3339,56 @@
                                         <i class="material-icons">stop</i>
                                         End Combat
                                     </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Combat Management Hub -->
+                            <div class="initiative-section">
+                                <div class="initiative-header">
+                                    <h5>
+                                        <i class="ra ra-crossed-swords"></i>
+                                        Combat Manager
+                                    </h5>
+                                    <div class="initiative-controls">
+                                        <button class="start-combat-btn" onclick="startCombatInitiative()" id="start-combat-btn">
+                                            <i class="ra ra-horn-call"></i>
+                                            Start Combat
+                                        </button>
+                                        <button class="clear-initiative-btn" onclick="clearInitiative()" id="clear-initiative-btn" style="display: none;">
+                                            <i class="material-icons">restart_alt</i>
+                                            Reset
+                                        </button>
+                                        <button class="next-turn-btn" onclick="advanceTurn()" id="next-turn-btn" style="display: none;">
+                                            <i class="material-icons">skip_next</i>
+                                            Next Turn
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Combat Status Bar -->
+                                <div class="combat-status-bar" id="combat-status-bar" style="display: none;">
+                                    <div class="status-item">
+                                        <span class="status-label">Current Turn:</span>
+                                        <span class="status-value" id="current-turn-name">-</span>
+                                    </div>
+                                    <div class="status-item">
+                                        <span class="status-label">Round:</span>
+                                        <span class="status-value" id="combat-round-display">1</span>
+                                    </div>
+                                    <div class="status-item">
+                                        <span class="status-label">Queued Actions:</span>
+                                        <span class="status-value" id="queued-count">0</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Main Combat Display -->
+                                <div class="initiative-tracker empty" id="initiative-tracker">
+                                    <div class="empty-state">
+                                        <i class="ra ra-lightning-bolt" style="font-size: 32px; color: #bdc3c7; margin-bottom: 12px;"></i>
+                                        <h6>Ready for Combat</h6>
+                                        <p>Click "Start Combat" to begin collecting initiative rolls</p>
+                                        <p style="font-size: 11px; color: #95a5a6;">Players will use their DEX attribute button to roll initiative</p>
+                                    </div>
                                 </div>
                             </div>
                             
