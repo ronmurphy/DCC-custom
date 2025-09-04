@@ -541,6 +541,13 @@ function updateCombatStatus() {
 function populatePlayerNames() {
     // Get player names from character sync or previous entries
     const datalist = document.getElementById('player-names');
+    
+    // Handle case where datalist doesn't exist in streamlined UI
+    if (!datalist) {
+        console.log('Player names datalist not found - using streamlined combat UI');
+        return;
+    }
+    
     datalist.innerHTML = '';
     
     // Add names from recent combat log

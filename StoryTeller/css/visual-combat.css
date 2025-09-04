@@ -212,13 +212,8 @@
 .initiative-arena {
     background: var(--bg-card);
     min-height: 300px;
-    max-height: 70vh; /* Limit height for scrolling */
     position: relative;
     padding: 16px;
-    overflow-y: auto; /* Enable vertical scrolling */
-    overflow-x: hidden; /* Prevent horizontal overflow */
-    scroll-behavior: smooth; /* Smooth mouse wheel scrolling */
-    -webkit-overflow-scrolling: touch; /* Smooth touch scrolling on iOS */
 }
 
 .arena-empty {
@@ -255,8 +250,6 @@
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 12px;
     padding: 8px;
-    /* Optimize for smooth scrolling with many cards */
-    contain: layout style;
 }
 
 /* Combatant Cards */
@@ -529,8 +522,6 @@
     
     .initiative-arena {
         padding: 12px;
-        /* Reduce max height on mobile for better usability */
-        max-height: 60vh;
     }
     
     .combatant-card {
@@ -540,60 +531,5 @@
     .action-controls {
         flex-direction: column;
         gap: 4px;
-    }
-}
-
-/* ===============================================
-   SCROLLBAR STYLING & TOUCH OPTIMIZATION
-   =============================================== */
-
-/* Custom Scrollbar for Initiative Arena */
-.initiative-arena::-webkit-scrollbar {
-    width: 8px;
-}
-
-.initiative-arena::-webkit-scrollbar-track {
-    background: var(--bg-secondary);
-    border-radius: 4px;
-}
-
-.initiative-arena::-webkit-scrollbar-thumb {
-    background: var(--primary);
-    border-radius: 4px;
-    transition: background 0.2s ease;
-}
-
-.initiative-arena::-webkit-scrollbar-thumb:hover {
-    background: var(--primary-dark);
-}
-
-/* Firefox Scrollbar */
-.initiative-arena {
-    scrollbar-width: thin;
-    scrollbar-color: var(--primary) var(--bg-secondary);
-}
-
-/* Touch Optimization */
-@media (hover: none) and (pointer: coarse) {
-    /* Touch devices - make scrolling more responsive */
-    .initiative-arena {
-        -webkit-overflow-scrolling: touch;
-        /* Add momentum scrolling */
-        overscroll-behavior: contain;
-        /* Prevent bounce on iOS */
-        -webkit-overscroll-behavior: contain;
-    }
-    
-    /* Larger touch targets for mobile */
-    .combatant-card {
-        min-height: 120px;
-        touch-action: manipulation;
-    }
-    
-    /* Improve touch responsiveness for buttons */
-    .action-btn, .btn-compact, .enemy-chip .remove {
-        touch-action: manipulation;
-        min-height: 44px;
-        min-width: 44px;
     }
 }

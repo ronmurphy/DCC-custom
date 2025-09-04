@@ -3315,166 +3315,69 @@
                 
                 case 'combat':
                     return `
-                        <div class="combat-panel">
-                            <!-- Combat Header with Status -->
-                            <div class="combat-header">
-                                <h4>
-                                    <i class="ra ra-crossed-swords"></i>
-                                    Combat Manager
-                                </h4>
-                                <div class="combat-status-bar">
-                                    <div class="status-item">
-                                        <span class="status-label">Active:</span>
-                                        <span class="status-value" id="combat-active-status">No</span>
-                                    </div>
-                                    <div class="status-item">
-                                        <span class="status-label">Round:</span>
-                                        <span class="status-value" id="combat-round">0</span>
-                                    </div>
-                                    <div class="status-item">
-                                        <span class="status-label">Enemy:</span>
-                                        <span class="status-value" id="current-enemy-name">None</span>
-                                    </div>
-                                    <button class="action-btn danger end-combat-btn" onclick="endCombat()" style="display: none;">
-                                        <i class="material-icons">stop</i>
-                                        End Combat
+                        <div class="visual-combat-manager">
+                            <!-- Ultra-Compact Header -->
+                            <div class="combat-status-bar">
+                                <div class="status-inline">
+                                    <span class="combat-icon">🗡️</span>
+                                    <span>Combat</span>
+                                    <span class="divider">|</span>
+                                    <span>Active: <strong id="combat-active-status">No</strong></span>
+                                    <span class="divider">|</span>
+                                    <span>Round: <strong id="combat-round">0</strong></span>
+                                    <span class="divider">|</span>
+                                    <span>Turn: <strong id="current-turn-name">-</strong></span>
+                                </div>
+                                <div class="combat-controls-inline">
+                                    <button class="btn-compact start-combat" onclick="startCombatInitiative()" id="start-combat-btn">Start</button>
+                                    <button class="btn-compact next-turn" onclick="advanceTurn()" id="next-turn-btn" style="display: none;">Next</button>
+                                    <button class="btn-compact clear-combat" onclick="clearInitiative()" id="clear-initiative-btn" style="display: none;">Reset</button>
+                                </div>
+                            </div>
+
+                            <!-- Enemy Builder Section -->
+                            <div class="enemy-builder">
+                                <div class="builder-row">
+                                    <select id="level-selector" class="level-select" onchange="loadEnemiesForLevel(this.value)">
+                                        <option value="">Select Level...</option>
+                                        ${Array.from({length: 30}, (_, i) => `<option value="floor_${i+1}">Level ${i+1}</option>`).join('')}
+                                    </select>
+                                    <select id="enemy-selector" class="enemy-select" disabled onchange="loadEnemyAttacks(this.value)">
+                                        <option value="">Choose Enemy...</option>
+                                    </select>
+                                    <select id="enemy-attack-selector" class="attack-select" disabled>
+                                        <option value="">Default Attack</option>
+                                    </select>
+                                    <button class="btn-add-enemy" onclick="addEnemyToCombat()" disabled id="add-enemy-btn">
+                                        <span class="icon">+</span> Add Enemy
                                     </button>
                                 </div>
-                            </div>
-                            
-                            <!-- Combat Management Hub -->
-                            <div class="initiative-section">
-                                <div class="initiative-header">
-                                    <h5>
-                                        <i class="ra ra-crossed-swords"></i>
-                                        Combat Manager
-                                    </h5>
-                                    <div class="initiative-controls">
-                                        <button class="start-combat-btn" onclick="startCombatInitiative()" id="start-combat-btn">
-                                            <i class="ra ra-horn-call"></i>
-                                            Start Combat
-                                        </button>
-                                        <button class="clear-initiative-btn" onclick="clearInitiative()" id="clear-initiative-btn" style="display: none;">
-                                            <i class="material-icons">restart_alt</i>
-                                            Reset
-                                        </button>
-                                        <button class="next-turn-btn" onclick="advanceTurn()" id="next-turn-btn" style="display: none;">
-                                            <i class="material-icons">skip_next</i>
-                                            Next Turn
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                <!-- Combat Status Bar -->
-                                <div class="combat-status-bar" id="combat-status-bar" style="display: none;">
-                                    <div class="status-item">
-                                        <span class="status-label">Current Turn:</span>
-                                        <span class="status-value" id="current-turn-name">-</span>
-                                    </div>
-                                    <div class="status-item">
-                                        <span class="status-label">Round:</span>
-                                        <span class="status-value" id="combat-round-display">1</span>
-                                    </div>
-                                    <div class="status-item">
-                                        <span class="status-label">Queued Actions:</span>
-                                        <span class="status-value" id="queued-count">0</span>
-                                    </div>
-                                </div>
-                                
-                                <!-- Main Combat Display -->
-                                <div class="initiative-tracker empty" id="initiative-tracker">
-                                    <div class="empty-state">
-                                        <i class="ra ra-lightning-bolt" style="font-size: 32px; color: #bdc3c7; margin-bottom: 12px;"></i>
-                                        <h6>Ready for Combat</h6>
-                                        <p>Click "Start Combat" to begin collecting initiative rolls</p>
-                                        <p style="font-size: 11px; color: #95a5a6;">Players will use their DEX attribute button to roll initiative</p>
-                                    </div>
+                                <div class="current-enemies" id="current-enemies">
+                                    <!-- Enemy chips will appear here -->
                                 </div>
                             </div>
-                            
-                            <!-- Two Column Layout -->
-                            <div class="combat-container">
-                                <!-- Left Column - Enemy Management -->
-                                <div class="enemy-management-column">
-                                    <div class="enemy-management-header">
-                                        <h5>Enemy Selection</h5>
-                                        <div class="enemy-controls">
-                                            <select id="floor-select" class="form-select">
-                                                <option value="">Loading floors...</option>
-                                            </select>
-                                            <button class="action-btn primary" onclick="showAvailableEnemies()">
-                                                <i class="ra ra-monster-skull"></i>
-                                                Browse
-                                            </button>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Enemy Grid -->
-                                    <div class="enemy-selection" id="enemy-selection">
-                                        <div class="enemy-grid" id="enemy-grid">
-                                            <div class="enemy-placeholder">
-                                                <i class="ra ra-monster-skull"></i>
-                                                <p>Select a floor above to see available enemies</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Current Enemy Display -->
-                                    <div class="current-enemy-section" id="current-enemy-section" style="display: none;">
-                                        <h5>Current Enemy</h5>
-                                        <div class="current-enemy-display" id="current-enemy-display"></div>
-                                    </div>
+
+                            <!-- Visual Initiative Tracker -->
+                            <div class="initiative-arena" id="initiative-arena">
+                                <div class="arena-empty" id="arena-empty">
+                                    <div class="empty-icon">⚔️</div>
+                                    <h3>Ready for Battle</h3>
+                                    <p>Add enemies above, then start combat.<br>Players will roll initiative using their DEX buttons.</p>
                                 </div>
-                                
-                                <!-- Right Column - Combat Actions & Log -->
-                                <div class="combat-actions-column">
-                                    <!-- Attack Resolution -->
-                                    <div class="attack-resolution-section">
-                                        <h5>Player Attack Resolution</h5>
-                                        <div class="attack-input-layout">
-                                            <div class="attack-row">
-                                                <div class="input-group">
-                                                    <label>Player</label>
-                                                    <input type="text" id="attacking-player" placeholder="Player name..." list="player-names">
-                                                    <datalist id="player-names"></datalist>
-                                                </div>
-                                                <div class="input-group">
-                                                    <label>Attack Roll</label>
-                                                    <input type="number" id="attack-roll" placeholder="d20 + mods" min="1" max="50">
-                                                </div>
-                                            </div>
-                                            <div class="attack-row">
-                                                <div class="input-group">
-                                                    <label>Damage</label>
-                                                    <input type="number" id="damage-roll" placeholder="Total damage" min="0">
-                                                </div>
-                                                <div class="input-group resolve-group">
-                                                    <button class="resolve-btn action-btn success" onclick="resolvePlayerAttack()">
-                                                        <i class="ra ra-sword"></i>
-                                                        Resolve Attack
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="quick-help">
-                                            💡 Enter player name, total attack roll (d20 + modifiers), and damage to resolve against enemy AC
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Combat Log -->
-                                    <div class="combat-log-section">
-                                        <div class="log-header">
-                                            <h5>📜 Combat Log</h5>
-                                            <div class="log-controls">
-                                                <button class="small-btn" onclick="clearCombatLog()">Clear</button>
-                                                <button class="small-btn" onclick="exportCombatLog()">Export</button>
-                                            </div>
-                                        </div>
-                                        <div class="combat-log" id="combat-log">
-                                            <div class="log-entry">⚔️ Combat system ready - select an enemy to begin</div>
-                                        </div>
-                                    </div>
+                                <div class="combatants-grid" id="combatants-grid" style="display: none;">
+                                    <!-- Player and enemy cards will appear here -->
                                 </div>
+                            </div>
+
+                            <!-- Hidden compatibility elements -->
+                            <div style="display: none;">
+                                <span id="current-enemy-name">-</span>
+                                <span id="enemy-hp">0</span>
+                                <span id="enemy-max-hp">0</span>
+                                <span id="enemy-ac">10</span>
+                                <div id="initiative-list"></div>
+                                <div id="action-queue"></div>
+                                <div id="combat-log"></div>
                             </div>
                         </div>
                     `;

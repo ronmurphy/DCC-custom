@@ -788,19 +788,35 @@ if (typeof window !== 'undefined') {
  * Starts combat and prompts players for initiative
  */
 function startCombatInitiative() {
+    // Check if an enemy is selected
+    if (!currentEnemy) {
+        alert('Please select an enemy before starting combat.');
+        return;
+    }
+    
     startCombatEncounter();
+    
+    // Auto-roll enemy initiative
+    rollEnemyInitiative();
     
     // Update UI state
     updateInitiativeDisplay();
+    updateEnemyDisplay();
+    
+    // Update combat status
+    const combatActiveStatus = document.getElementById('combat-active-status');
+    const combatRound = document.getElementById('combat-round');
+    if (combatActiveStatus) combatActiveStatus.textContent = 'Yes';
+    if (combatRound) combatRound.textContent = '1';
     
     // Send prompt to all players through chat
     if (typeof sendChatMessage === 'function') {
-        sendChatMessage('📢 Combat has begun! All players, please roll initiative using your DEX attribute button.');
+        sendChatMessage(`📢 Combat vs ${currentEnemy.name} has begun! All players, please roll initiative using your DEX attribute button.`);
     } else {
-        console.log('Chat not available - would send: Combat has begun! All players, please roll initiative using your DEX attribute button.');
+        console.log(`Chat not available - would send: Combat vs ${currentEnemy.name} has begun! All players, please roll initiative using your DEX attribute button.`);
     }
     
-    console.log('🎲 Combat initiative phase started - waiting for player rolls');
+    console.log(`🎲 Combat initiative phase started vs ${currentEnemy.name} - waiting for player rolls`);
 }
 
 /**
@@ -907,6 +923,7 @@ if (typeof window !== 'undefined') {
     window.startTurnOrder = startTurnOrder;
     window.advanceTurn = advanceTurn;
     window.processQueuedAction = processQueuedAction;
+    window.selectEnemy = selectEnemy;
     
     // Bridge function for supabase-chat.js compatibility
     window.addToInitiativeTracker = function(playerName, roll, details) {
@@ -927,3 +944,749 @@ if (typeof window !== 'undefined') {
         console.log(`📊 Added ${playerName} to initiative tracker: ${roll}`);
     };
 }
+
+// =============================================================================
+// ENEMY MANAGEMENT SYSTEM
+// =============================================================================
+
+/**
+ * Basic enemy database - this could be loaded from JSON in the future
+ */
+const EnemyDatabase = {
+    'goblin-warrior': {
+        name: 'Goblin Warrior',
+        hp: 12,
+        maxHp: 12,
+        ac: 13,
+        dex: 2,
+        level: 2
+    },
+    'orc-raider': {
+        name: 'Orc Raider',
+        hp: 18,
+        maxHp: 18,
+        ac: 14,
+        dex: 1,
+        level: 3
+    },
+    'skeleton-archer': {
+        name: 'Skeleton Archer',
+        hp: 8,
+        maxHp: 8,
+        ac: 12,
+        dex: 3,
+        level: 1
+    },
+    'kobold-scout': {
+        name: 'Kobold Scout',
+        hp: 6,
+        maxHp: 6,
+        ac: 11,
+        dex: 4,
+        level: 1
+    },
+    'dire-wolf': {
+        name: 'Dire Wolf',
+        hp: 22,
+        maxHp: 22,
+        ac: 12,
+        dex: 3,
+        level: 4
+    }
+};
+
+let currentEnemy = null;
+
+/**
+ * Populates the enemy selector dropdown
+ */
+function populateEnemySelector() {
+    const selector = document.getElementById('enemy-selector');
+    if (!selector) return;
+    
+    // Clear existing options except the first
+    selector.innerHTML = '<option value="">Select Enemy...</option>';
+    
+    // Add enemies from database
+    Object.keys(EnemyDatabase).forEach(enemyId => {
+        const enemy = EnemyDatabase[enemyId];
+        const option = document.createElement('option');
+        option.value = enemyId;
+        option.textContent = `${enemy.name} (HP: ${enemy.hp}, AC: ${enemy.ac})`;
+        selector.appendChild(option);
+    });
+}
+
+/**
+ * Handles enemy selection
+ */
+function selectEnemy(enemyId) {
+    if (!enemyId) {
+        currentEnemy = null;
+        updateEnemyDisplay();
+        return;
+    }
+    
+    const enemy = EnemyDatabase[enemyId];
+    if (!enemy) {
+        console.error('Enemy not found:', enemyId);
+        return;
+    }
+    
+    currentEnemy = { ...enemy, id: enemyId };
+    updateEnemyDisplay();
+    
+    console.log('Selected enemy:', currentEnemy);
+}
+
+/**
+ * Updates the enemy stats display
+ */
+function updateEnemyDisplay() {
+    const enemyStats = document.getElementById('enemy-stats');
+    const enemyName = document.getElementById('current-enemy-name');
+    const enemyHp = document.getElementById('enemy-hp');
+    const enemyMaxHp = document.getElementById('enemy-max-hp');
+    const enemyAc = document.getElementById('enemy-ac');
+    const combatActiveStatus = document.getElementById('combat-active-status');
+    
+    if (currentEnemy) {
+        if (enemyStats) enemyStats.style.display = 'inline';
+        if (enemyName) enemyName.textContent = currentEnemy.name;
+        if (enemyHp) enemyHp.textContent = currentEnemy.hp;
+        if (enemyMaxHp) enemyMaxHp.textContent = currentEnemy.maxHp;
+        if (enemyAc) enemyAc.textContent = currentEnemy.ac;
+        
+        // Update combat status to show enemy selected
+        if (combatActiveStatus && !CombatState.isActive) {
+            combatActiveStatus.textContent = 'Ready';
+        }
+    } else {
+        if (enemyStats) enemyStats.style.display = 'none';
+        if (enemyName) enemyName.textContent = 'None';
+        if (enemyHp) enemyHp.textContent = '0';
+        if (enemyMaxHp) enemyMaxHp.textContent = '0';
+        if (enemyAc) enemyAc.textContent = '10';
+        
+        // Update combat status
+        if (combatActiveStatus && !CombatState.isActive) {
+            combatActiveStatus.textContent = 'No';
+        }
+    }
+}
+
+/**
+ * Auto-rolls initiative for the current enemy when combat starts
+ */
+function rollEnemyInitiative() {
+    if (!currentEnemy) return null;
+    
+    // Calculate luck dice based on enemy level
+    const luckDiceCount = Math.ceil(currentEnemy.level / 10);
+    const luckDice = [];
+    let luckTotal = 0;
+    
+    for (let i = 0; i < luckDiceCount; i++) {
+        const roll = Math.floor(Math.random() * 10) + 1;
+        luckDice.push(roll);
+        luckTotal += roll;
+    }
+    
+    // Roll d20 + DEX + luck
+    const d20 = Math.floor(Math.random() * 20) + 1;
+    const total = d20 + currentEnemy.dex + luckTotal;
+    
+    const enemyInitiative = {
+        character: currentEnemy.name,
+        total: total,
+        d20: d20,
+        dexModifier: currentEnemy.dex,
+        luckDice: luckDice,
+        timestamp: Date.now(),
+        isEnemy: true
+    };
+    
+    addToInitiativeOrder(enemyInitiative);
+    
+    console.log(`🎲 ${currentEnemy.name} rolled initiative: ${total} (d20:${d20} + DEX:${currentEnemy.dex} + luck:${luckTotal})`);
+    return enemyInitiative;
+}
+
+// Initialize enemy selector when the script loads
+if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            populateEnemySelector();
+            updateEnemyDisplay();
+        }, 100);
+    });
+}
+
+// =============================================================================
+// VISUAL COMBAT MANAGER FUNCTIONS
+// =============================================================================
+
+let currentEnemyData = null;
+let combatEnemies = [];
+let combatPlayers = [];
+
+/**
+ * Load enemies for selected level
+ */
+async function loadEnemiesForLevel(levelKey) {
+    if (!levelKey) {
+        const enemySelector = document.getElementById('enemy-selector');
+        enemySelector.innerHTML = '<option value="">Choose Enemy...</option>';
+        enemySelector.disabled = true;
+        return;
+    }
+
+    try {
+        const response = await fetch('/StoryTeller/data/enemies.json');
+        const enemyData = await response.json();
+        
+        const levelData = enemyData[levelKey];
+        if (!levelData || !levelData.enemies) {
+            console.warn(`No enemies found for ${levelKey}`);
+            return;
+        }
+
+        const enemySelector = document.getElementById('enemy-selector');
+        enemySelector.innerHTML = '<option value="">Choose Enemy...</option>';
+        
+        Object.keys(levelData.enemies).forEach(enemyKey => {
+            const enemy = levelData.enemies[enemyKey];
+            const option = document.createElement('option');
+            option.value = enemyKey;
+            option.textContent = `${enemy.name} (Lvl ${enemy.level})`;
+            option.dataset.floor = levelKey;
+            enemySelector.appendChild(option);
+        });
+        
+        enemySelector.disabled = false;
+        currentEnemyData = levelData.enemies;
+        
+    } catch (error) {
+        console.error('Error loading enemies:', error);
+    }
+}
+
+/**
+ * Load attacks for selected enemy
+ */
+function loadEnemyAttacks(enemyKey) {
+    const attackSelector = document.getElementById('enemy-attack-selector');
+    const addButton = document.getElementById('add-enemy-btn');
+    
+    if (!enemyKey || !currentEnemyData) {
+        attackSelector.innerHTML = '<option value="">Default Attack</option>';
+        attackSelector.disabled = true;
+        addButton.disabled = true;
+        return;
+    }
+
+    const enemy = currentEnemyData[enemyKey];
+    if (!enemy || !enemy.attacks) {
+        attackSelector.innerHTML = '<option value="">Default Attack</option>';
+        attackSelector.disabled = true;
+        addButton.disabled = true;
+        return;
+    }
+
+    attackSelector.innerHTML = '<option value="">Default Attack</option>';
+    
+    enemy.attacks.forEach((attack, index) => {
+        const option = document.createElement('option');
+        option.value = index;
+        option.textContent = `${attack.name} (${attack.damage})`;
+        attackSelector.appendChild(option);
+    });
+    
+    attackSelector.disabled = false;
+    addButton.disabled = false;
+}
+
+/**
+ * Add enemy to combat
+ */
+function addEnemyToCombat() {
+    const levelSelector = document.getElementById('level-selector');
+    const enemySelector = document.getElementById('enemy-selector');
+    const attackSelector = document.getElementById('enemy-attack-selector');
+    
+    const levelKey = levelSelector.value;
+    const enemyKey = enemySelector.value;
+    const attackIndex = attackSelector.value;
+    
+    if (!levelKey || !enemyKey || !currentEnemyData) return;
+    
+    const enemyTemplate = currentEnemyData[enemyKey];
+    if (!enemyTemplate) return;
+    
+    // Create unique enemy instance
+    const enemyId = `${enemyKey}_${Date.now()}`;
+    const enemy = {
+        id: enemyId,
+        name: enemyTemplate.name,
+        level: enemyTemplate.level,
+        hp: enemyTemplate.hp,
+        maxHp: enemyTemplate.hp,
+        ac: enemyTemplate.ac,
+        attacks: enemyTemplate.attacks,
+        selectedAttack: attackIndex ? parseInt(attackIndex) : 0,
+        stats: enemyTemplate.stats,
+        initiative: 0,
+        status: 'waiting'
+    };
+    
+    combatEnemies.push(enemy);
+    updateEnemyChips();
+    updateArena();
+    
+    console.log(`Added ${enemy.name} to combat`, enemy);
+}
+
+/**
+ * Remove enemy from combat
+ */
+function removeEnemyFromCombat(enemyId) {
+    combatEnemies = combatEnemies.filter(e => e.id !== enemyId);
+    updateEnemyChips();
+    updateArena();
+}
+
+/**
+ * Update enemy chips display
+ */
+function updateEnemyChips() {
+    const container = document.getElementById('current-enemies');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    combatEnemies.forEach(enemy => {
+        const chip = document.createElement('div');
+        chip.className = 'enemy-chip';
+        chip.innerHTML = `
+            <span class="name">${enemy.name}</span>
+            <span class="level">L${enemy.level}</span>
+            <button class="remove" onclick="removeEnemyFromCombat('${enemy.id}')" title="Remove">×</button>
+        `;
+        container.appendChild(chip);
+    });
+}
+
+/**
+ * Update the main arena display
+ */
+function updateArena() {
+    const emptyState = document.getElementById('arena-empty');
+    const combatantsGrid = document.getElementById('combatants-grid');
+    
+    if (!emptyState || !combatantsGrid) return;
+    
+    const hasCombatants = combatEnemies.length > 0 || combatPlayers.length > 0;
+    
+    if (hasCombatants) {
+        emptyState.style.display = 'none';
+        combatantsGrid.style.display = 'grid';
+        renderCombatants();
+    } else {
+        emptyState.style.display = 'block';
+        combatantsGrid.style.display = 'none';
+    }
+}
+
+/**
+ * Render combatant cards
+ */
+function renderCombatants() {
+    const grid = document.getElementById('combatants-grid');
+    if (!grid) return;
+    
+    grid.innerHTML = '';
+    
+    // Combine and sort by initiative
+    const allCombatants = [
+        ...combatPlayers.map(p => ({...p, type: 'player'})),
+        ...combatEnemies.map(e => ({...e, type: 'enemy'}))
+    ].sort((a, b) => b.initiative - a.initiative);
+    
+    allCombatants.forEach((combatant, index) => {
+        const card = createCombatantCard(combatant, index);
+        grid.appendChild(card);
+    });
+}
+
+/**
+ * Create a combatant card
+ */
+function createCombatantCard(combatant, position) {
+    const card = document.createElement('div');
+    card.className = `combatant-card ${combatant.type}`;
+    card.id = `card-${combatant.id}`;
+    
+    if (CombatState.isActive && position === CombatState.currentTurnIndex) {
+        card.classList.add('current-turn');
+    }
+    
+    const hpPercent = (combatant.hp / combatant.maxHp) * 100;
+    const avatar = combatant.type === 'player' ? 
+        (combatant.avatar || '👤') : 
+        getEnemyAvatar(combatant.name);
+    
+    card.innerHTML = `
+        <div class="status-indicator status-${combatant.status}">${combatant.status}</div>
+        <div class="card-header">
+            <div class="avatar">${avatar}</div>
+            <div class="combatant-info">
+                <h4 class="combatant-name">${combatant.name}</h4>
+                <div class="combatant-stats">
+                    <span>AC: ${combatant.ac}</span>
+                    ${combatant.level ? `<span>Lvl: ${combatant.level}</span>` : ''}
+                </div>
+            </div>
+            <div class="initiative-badge">${combatant.initiative}</div>
+        </div>
+        <div class="hp-container">
+            <div class="hp-bar">
+                <div class="hp-fill" style="width: ${hpPercent}%"></div>
+            </div>
+            <div class="hp-text">
+                <span>HP: ${combatant.hp}/${combatant.maxHp}</span>
+                <span>${Math.round(hpPercent)}%</span>
+            </div>
+        </div>
+        ${combatant.type === 'enemy' ? createEnemyControls(combatant) : createPlayerControls(combatant)}
+    `;
+    
+    return card;
+}
+
+/**
+ * Create enemy-specific controls
+ */
+function createEnemyControls(enemy) {
+    if (!enemy.attacks || enemy.attacks.length === 0) {
+        return '<div class="action-controls"><span class="no-attacks">No attacks available</span></div>';
+    }
+    
+    const attackOptions = enemy.attacks.map((attack, index) => 
+        `<option value="${index}" ${index === enemy.selectedAttack ? 'selected' : ''}>
+            ${attack.name} (${attack.damage})
+        </option>`
+    ).join('');
+    
+    return `
+        <select class="attack-dropdown" onchange="updateEnemyAttack('${enemy.id}', this.value)">
+            ${attackOptions}
+        </select>
+        <div class="action-controls">
+            <button class="action-btn" onclick="executeEnemyAttack('${enemy.id}')">Attack</button>
+            <button class="action-btn" onclick="applyDamageToEnemy('${enemy.id}')">Damage</button>
+        </div>
+    `;
+}
+
+/**
+ * Create player-specific controls
+ */
+function createPlayerControls(player) {
+    return `
+        <div class="action-controls">
+            <button class="action-btn" onclick="setPlayerStatus('${player.id}', 'ready')">Ready</button>
+            <button class="action-btn" onclick="setPlayerStatus('${player.id}', 'waiting')">Wait</button>
+            <button class="action-btn" onclick="applyDamageToPlayer('${player.id}')">Damage</button>
+        </div>
+    `;
+}
+
+/**
+ * Get emoji avatar for enemy type
+ */
+function getEnemyAvatar(name) {
+    const lowerName = name.toLowerCase();
+    if (lowerName.includes('goblin')) return '👹';
+    if (lowerName.includes('rat')) return '🐀';
+    if (lowerName.includes('orc')) return '👺';
+    if (lowerName.includes('skeleton')) return '💀';
+    if (lowerName.includes('kobold')) return '🦎';
+    if (lowerName.includes('wolf')) return '🐺';
+    if (lowerName.includes('dragon')) return '🐉';
+    if (lowerName.includes('spider')) return '🕷️';
+    return '👹'; // Default monster emoji
+}
+
+/**
+ * Update enemy's selected attack
+ */
+function updateEnemyAttack(enemyId, attackIndex) {
+    const enemy = combatEnemies.find(e => e.id === enemyId);
+    if (enemy) {
+        enemy.selectedAttack = parseInt(attackIndex);
+        console.log(`Updated ${enemy.name} attack to: ${enemy.attacks[attackIndex].name}`);
+    }
+}
+
+/**
+ * Execute enemy attack
+ */
+function executeEnemyAttack(enemyId) {
+    const enemy = combatEnemies.find(e => e.id === enemyId);
+    if (!enemy || !enemy.attacks || enemy.attacks.length === 0) return;
+    
+    const attack = enemy.attacks[enemy.selectedAttack];
+    if (!attack) return;
+    
+    const roll = rollD20();
+    const message = `${enemy.name} attacks with ${attack.name}! Roll: ${roll}`;
+    
+    // Add to chat if available
+    if (typeof addToChatLog === 'function') {
+        addToChatLog(message, 'system');
+    } else {
+        console.log(message);
+    }
+    
+    enemy.status = 'acted';
+    updateArena();
+}
+
+/**
+ * Apply damage to enemy
+ */
+function applyDamageToEnemy(enemyId) {
+    const damage = prompt('Enter damage amount:');
+    if (!damage || isNaN(damage)) return;
+    
+    const enemy = combatEnemies.find(e => e.id === enemyId);
+    if (!enemy) return;
+    
+    const damageAmount = parseInt(damage);
+    enemy.hp = Math.max(0, enemy.hp - damageAmount);
+    
+    if (enemy.hp === 0) {
+        enemy.status = 'defeated';
+        const message = `${enemy.name} has been defeated!`;
+        if (typeof addToChatLog === 'function') {
+            addToChatLog(message, 'system');
+        }
+    }
+    
+    updateArena();
+    console.log(`Applied ${damageAmount} damage to ${enemy.name}`);
+}
+
+/**
+ * Apply damage to player
+ */
+function applyDamageToPlayer(playerId) {
+    const damage = prompt('Enter damage amount:');
+    if (!damage || isNaN(damage)) return;
+    
+    const player = combatPlayers.find(p => p.id === playerId);
+    if (!player) return;
+    
+    const damageAmount = parseInt(damage);
+    player.hp = Math.max(0, player.hp - damageAmount);
+    
+    if (player.hp === 0) {
+        player.status = 'unconscious';
+        const message = `${player.name} has fallen unconscious!`;
+        if (typeof addToChatLog === 'function') {
+            addToChatLog(message, 'system');
+        }
+    }
+    
+    updateArena();
+    console.log(`Applied ${damageAmount} damage to ${player.name}`);
+}
+
+/**
+ * Set player status
+ */
+function setPlayerStatus(playerId, status) {
+    const player = combatPlayers.find(p => p.id === playerId);
+    if (player) {
+        player.status = status;
+        updateArena();
+        console.log(`Set ${player.name} status to: ${status}`);
+    }
+}
+
+/**
+ * Roll initiative for all combatants
+ */
+function rollAllInitiative() {
+    // Roll for enemies
+    combatEnemies.forEach(enemy => {
+        enemy.initiative = rollD20() + (enemy.stats?.dex_modifier || 0);
+    });
+    
+    // Roll for players
+    combatPlayers.forEach(player => {
+        player.initiative = rollD20() + (player.dex_modifier || 0);
+    });
+    
+    updateArena();
+    console.log('Rolled initiative for all combatants');
+}
+
+/**
+ * Start visual combat
+ */
+function startVisualCombat() {
+    if (combatEnemies.length === 0 && combatPlayers.length === 0) {
+        alert('Add combatants before starting combat!');
+        return;
+    }
+    
+    rollAllInitiative();
+    
+    CombatState.isActive = true;
+    CombatState.currentTurnIndex = 0;
+    CombatState.round = 1;
+    
+    document.getElementById('start-combat-btn').style.display = 'none';
+    document.getElementById('end-combat-btn').style.display = 'inline-block';
+    
+    updateArena();
+    updateCombatStatus();
+    
+    const message = 'Combat has begun! Initiative rolled.';
+    if (typeof addToChatLog === 'function') {
+        addToChatLog(message, 'system');
+    }
+    console.log(message);
+}
+
+/**
+ * End visual combat
+ */
+function endVisualCombat() {
+    CombatState.isActive = false;
+    CombatState.currentTurnIndex = 0;
+    CombatState.round = 1;
+    
+    // Reset all statuses
+    [...combatEnemies, ...combatPlayers].forEach(combatant => {
+        if (combatant.status !== 'defeated' && combatant.status !== 'unconscious') {
+            combatant.status = 'waiting';
+        }
+    });
+    
+    document.getElementById('start-combat-btn').style.display = 'inline-block';
+    document.getElementById('end-combat-btn').style.display = 'none';
+    
+    updateArena();
+    updateCombatStatus();
+    
+    const message = 'Combat has ended.';
+    if (typeof addToChatLog === 'function') {
+        addToChatLog(message, 'system');
+    }
+    console.log(message);
+}
+
+/**
+ * Next turn in combat
+ */
+function nextTurn() {
+    if (!CombatState.isActive) return;
+    
+    const allCombatants = [...combatPlayers, ...combatEnemies]
+        .filter(c => c.status !== 'defeated' && c.status !== 'unconscious')
+        .sort((a, b) => b.initiative - a.initiative);
+    
+    if (allCombatants.length === 0) {
+        endVisualCombat();
+        return;
+    }
+    
+    CombatState.currentTurnIndex = (CombatState.currentTurnIndex + 1) % allCombatants.length;
+    
+    if (CombatState.currentTurnIndex === 0) {
+        CombatState.round++;
+        // Reset statuses for new round
+        [...combatEnemies, ...combatPlayers].forEach(combatant => {
+            if (combatant.status === 'acted') {
+                combatant.status = 'waiting';
+            }
+        });
+    }
+    
+    updateArena();
+    updateCombatStatus();
+    
+    const currentCombatant = allCombatants[CombatState.currentTurnIndex];
+    const message = `Round ${CombatState.round}: ${currentCombatant.name}'s turn`;
+    if (typeof addToChatLog === 'function') {
+        addToChatLog(message, 'system');
+    }
+    console.log(message);
+}
+
+/**
+ * Update combat status display
+ */
+function updateCombatStatus() {
+    const statusElement = document.querySelector('.combat-status-text');
+    if (!statusElement) return;
+    
+    if (!CombatState.isActive) {
+        statusElement.textContent = 'Combat Inactive';
+        return;
+    }
+    
+    const allCombatants = [...combatPlayers, ...combatEnemies]
+        .filter(c => c.status !== 'defeated' && c.status !== 'unconscious')
+        .sort((a, b) => b.initiative - a.initiative);
+    
+    if (allCombatants.length === 0) {
+        statusElement.textContent = 'No Active Combatants';
+        return;
+    }
+    
+    const currentCombatant = allCombatants[CombatState.currentTurnIndex];
+    statusElement.textContent = `Round ${CombatState.round} | ${currentCombatant.name}'s Turn`;
+}
+
+/**
+ * Clear all enemies from combat
+ */
+function clearAllEnemies() {
+    if (confirm('Remove all enemies from combat?')) {
+        combatEnemies = [];
+        updateEnemyChips();
+        updateArena();
+    }
+}
+
+/**
+ * Utility function for D20 rolls
+ */
+function rollD20() {
+    return Math.floor(Math.random() * 20) + 1;
+}
+
+// Initialize visual combat when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Set up level selector change handler
+    const levelSelector = document.getElementById('level-selector');
+    if (levelSelector) {
+        levelSelector.addEventListener('change', function() {
+            loadEnemiesForLevel(this.value);
+        });
+    }
+    
+    // Set up enemy selector change handler
+    const enemySelector = document.getElementById('enemy-selector');
+    if (enemySelector) {
+        enemySelector.addEventListener('change', function() {
+            loadEnemyAttacks(this.value);
+        });
+    }
+    
+    // Initial arena update
+    updateArena();
+});
