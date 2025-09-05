@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emoji Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #333;
+            border-radius: 8px;
+        }
+        .emoji-display {
+            font-size: 2em;
+            margin: 10px 0;
+        }
+        .code-display {
+            font-family: monospace;
+            background: #333;
+            padding: 5px;
+            border-radius: 4px;
+        }
+        button {
+            background: #444;
+            color: white;
+            border: 1px solid #666;
+            padding: 8px 16px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Emoji System Test</h1>
+    
+    <div class="test-section">
+        <h2>📋 Direct Unicode Display Test</h2>
+        <p>These should display as proper emojis:</p>
+        <div class="emoji-display">
+            ⚔️ 🛡️ 🎲 💥 💢 🔥 ✨ 🔮 💰 💀 ❄️ ☠️ ❤️ ⭐ 😊
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔧 EmojiProcessor Test</h2>
+        <p>Input: <input type="text" id="testInput" value=":boom: :spell: :treasure: :skull:" style="background: #333; color: white; border: 1px solid #666; padding: 5px; margin: 5px;"></p>
+        <button onclick="testEmojiProcessor()">Process Emojis</button>
+        <div id="processedOutput" style="margin-top: 10px; padding: 10px; background: #333; border-radius: 4px;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📝 Popular Emojis Array Test</h2>
+        <div id="popularEmojisTest"></div>
+    </div>
+
+    <script src="V4-network/js/modules/emojiProcessor.js"></script>
+    <script>
+        function testEmojiProcessor() {
+            const input = document.getElementById('testInput').value;
+            const output = document.getElementById('processedOutput');
+            
+            if (window.emojiProcessor) {
+                const processed = window.emojiProcessor.processMessage(input);
+                output.innerHTML = `
+                    <strong>Input:</strong> <span class="code-display">${input}</span><br>
+                    <strong>Output:</strong> <span style="font-size: 1.5em;">${processed}</span>
+                `;
+            } else {
+                output.innerHTML = '<span style="color: red;">❌ EmojiProcessor not loaded</span>';
+            }
+        }
+
+        function testPopularEmojis() {
+            const testEmojis = [
+                { emoji: '⚔️', code: ':sword:' },
+                { emoji: '🛡️', code: ':shield:' },
+                { emoji: '🎲', code: ':dice:' },
+                { emoji: '💥', code: ':boom:' },
+                { emoji: '💢', code: ':fumble:' },
+                { emoji: '🔥', code: ':fire:' },
+                { emoji: '✨', code: ':mp:' },
+                { emoji: '🔮', code: ':spell:' },
+                { emoji: '💰', code: ':treasure:' },
+                { emoji: '💀', code: ':skull:' },
+                { emoji: '❄️', code: ':ice:' },
+                { emoji: '☠️', code: ':poison:' }
+            ];
+
+            const container = document.getElementById('popularEmojisTest');
+            let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">';
+            
+            testEmojis.forEach(item => {
+                const isValidUnicode = item.emoji !== '�' && item.emoji.length > 0;
+                const status = isValidUnicode ? '✅' : '❌';
+                const bgColor = isValidUnicode ? '#1a4a1a' : '#4a1a1a';
+                
+                html += `
+                    <div style="background: ${bgColor}; padding: 10px; border-radius: 4px; border: 1px solid #666;">
+                        <div style="font-size: 1.5em;">${status} ${item.emoji}</div>
+                        <div class="code-display">${item.code}</div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // Run tests when page loads
+        window.addEventListener('load', () => {
+            console.log('🧪 Starting emoji tests...');
+            testPopularEmojis();
+            
+            setTimeout(() => {
+                testEmojiProcessor();
+            }, 500);
+        });
+    </script>
+</body>
+</html>

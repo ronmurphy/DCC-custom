@@ -4,11 +4,11 @@
  */
 
 // Store reference to original function if it exists
-const originalShowSheetEffects = window.showSheetEffects;
+const originalShowSheetChatEffects = window.showSheetChatEffects;
 
 // Enhanced mobile chat picker for V4-network
-function showSheetEffects() {
-    console.log('📱 Opening mobile chat picker');
+function showSheetChatEffects() {
+    console.log('📱 Opening mobile chat picker (V4-network)');
     
     // Initialize the chat picker manager if not already done
     if (!window.chatPickerManager) {
@@ -24,6 +24,10 @@ function showSheetEffects() {
     const input = document.getElementById(inputId);
     if (!input) {
         console.warn(`Chat input not found: ${inputId}`);
+        // Fallback to original function if it exists
+        if (originalShowSheetChatEffects) {
+            return originalShowSheetChatEffects();
+        }
         return;
     }
     
@@ -60,7 +64,7 @@ function showSheetEffects() {
 }
 
 // Override the global function
-window.showSheetEffects = showSheetEffects;
+window.showSheetChatEffects = showSheetChatEffects;
 
 // V4-network-specific initialization
 document.addEventListener('DOMContentLoaded', () => {
