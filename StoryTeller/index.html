@@ -2426,9 +2426,9 @@
                 <button class="tab-selector quick-connect-btn" onclick="quickConnectToggle()" id="quick-connect-btn" title="Quick Connect">
                     <i class="material-icons">flash_on</i>
                 </button>
-                <!-- Temporary Map Sync Test Button -->
-                <button class="tab-selector" onclick="initializeMapSyncManually()" title="Test Map Sync" style="margin-left: 5px; background: #FF9800;">
-                    <i class="material-icons">map</i>
+                <!-- Fullscreen Toggle Button -->
+                <button class="tab-selector" onclick="toggleFullscreen()" title="Toggle Fullscreen" style="margin-left: 5px; background: #4CAF50;">
+                    <i class="material-icons" id="fullscreen-icon">fullscreen</i>
                 </button>
             </div>
         </div>
@@ -5750,56 +5750,47 @@ ALTER TABLE game_sessions ENABLE ROW LEVEL SECURITY;
             }
         }
 
-        // Manual Map Sync Initialization (for debugging)
-        async function initializeMapSyncManually() {
-            if (!window.currentGameSession) {
-                addChatMessage('❌ Please connect to Supabase first', 'system');
-                return;
-            }
+        // Fullscreen Toggle Function
+        function toggleFullscreen() {
+            const fullscreenIcon = document.getElementById('fullscreen-icon');
             
-            const sessionCode = window.currentGameSession.sessionCode;
-            // The correct Supabase client is in the global supabase variable (not window.supabase)
-            // But it might be scoped to supabase-chat.js, so let's try multiple approaches
-            const supabaseClient = window.supabaseClient || 
-                                  (typeof supabase !== 'undefined' && supabase?.from ? supabase : null) ||
-                                  (window.supabase?.createClient ? null : window.supabase);
-            
-            console.log('🔍 Manual map sync init - sessionCode:', sessionCode);
-            console.log('🔍 Manual map sync init - supabaseClient available:', !!supabaseClient);
-            console.log('🔍 Available Supabase objects:', {
-                'window.supabaseClient': !!window.supabaseClient,
-                'window.supabase': !!window.supabase,
-                'global supabase': typeof supabase !== 'undefined',
-                'global supabase has from': typeof supabase !== 'undefined' && typeof supabase?.from === 'function'
-            });
-            
-            // Debug the actual Supabase client object
-            console.log('🔍 Supabase client details:', {
-                'type': typeof supabaseClient,
-                'has from method': typeof supabaseClient?.from === 'function',
-                'has auth property': !!supabaseClient?.auth,
-                'constructor name': supabaseClient?.constructor?.name,
-                'methods': supabaseClient ? Object.getOwnPropertyNames(supabaseClient).slice(0, 10) : 'none'
-            });
-            
-            if (window.mapSync && window.mapSync.initialize) {
-                try {
-                    const result = await window.mapSync.initialize(sessionCode, supabaseClient);
-                    if (result) {
-                        addChatMessage('🗺️ Map synchronization manually initialized!', 'system');
-                        console.log('✅ Manual map sync initialization successful');
-                    } else {
-                        addChatMessage('❌ Manual map sync initialization failed', 'system');
-                        console.log('❌ Manual map sync initialization failed');
-                    }
-                } catch (error) {
-                    addChatMessage(`❌ Map sync error: ${error.message}`, 'system');
-                    console.error('❌ Manual map sync error:', error);
-                }
+            if (!document.fullscreenElement) {
+                // Enter fullscreen
+                document.documentElement.requestFullscreen()
+                    .then(() => {
+                        console.log('✅ Entered fullscreen mode');
+                        fullscreenIcon.textContent = 'fullscreen_exit';
+                        addChatMessage('� Entered fullscreen mode', 'system');
+                    })
+                    .catch(err => {
+                        console.warn('❌ Could not enter fullscreen:', err);
+                        addChatMessage('❌ Fullscreen not supported or denied', 'system');
+                    });
             } else {
-                addChatMessage('❌ Map sync system not available', 'system');
+                // Exit fullscreen
+                document.exitFullscreen()
+                    .then(() => {
+                        console.log('✅ Exited fullscreen mode');
+                        fullscreenIcon.textContent = 'fullscreen';
+                        addChatMessage('🖥️ Exited fullscreen mode', 'system');
+                    })
+                    .catch(err => {
+                        console.warn('❌ Could not exit fullscreen:', err);
+                    });
             }
         }
+
+        // Listen for fullscreen changes (including F11 key or browser controls)
+        document.addEventListener('fullscreenchange', function() {
+            const fullscreenIcon = document.getElementById('fullscreen-icon');
+            if (fullscreenIcon) {
+                if (document.fullscreenElement) {
+                    fullscreenIcon.textContent = 'fullscreen_exit';
+                } else {
+                    fullscreenIcon.textContent = 'fullscreen';
+                }
+            }
+        });
         
         // ⚠️⚠️⚠️ CRITICAL SUPABASE URL CONFIGURATION - DO NOT ALTER ⚠️⚠️⚠️
         // For Brad, David, Manus, Claude, Copilot, and EVERYONE:

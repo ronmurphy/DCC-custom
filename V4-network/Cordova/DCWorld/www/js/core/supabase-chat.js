@@ -1716,6 +1716,62 @@ async function handleIncomingMessage(message) {
         return;
     }
     
+    // Check if this is a DLCHAR command (Download Character)
+    if (message.message_type === 'chat' && 
+        (message.message_text.startsWith('DLCHAR:') || message.message_text.startsWith('/dlchar:'))) {
+        console.log('📥 Detected DLCHAR command in chat:', message.message_text);
+        
+        // Process the DLCHAR command using the chatCommandParser
+        if (window.chatCommandParser) {
+            try {
+                const result = await window.chatCommandParser.processMessage(message.message_text, message.player_name);
+                if (result && result.success) {
+                    console.log('✅ DLCHAR command processed successfully:', result.details?.characterName);
+                    
+                    // Display success message in chat
+                    const successMessage = {
+                        player_name: 'Character System',
+                        message_text: result.message,
+                        message_type: 'system',
+                        is_storyteller: true,
+                        created_at: new Date().toISOString()
+                    };
+                    displayChatMessage(successMessage);
+                } else {
+                    console.warn('❌ DLCHAR command processing failed:', result);
+                    
+                    // Display error message in chat
+                    const errorMessage = {
+                        player_name: 'Character System',
+                        message_text: `❌ ${result?.error || 'Character download failed'}`,
+                        message_type: 'system',
+                        is_storyteller: true,
+                        created_at: new Date().toISOString()
+                    };
+                    displayChatMessage(errorMessage);
+                }
+            } catch (error) {
+                console.error('❌ Error processing DLCHAR command:', error);
+                
+                // Display error message in chat
+                const errorMessage = {
+                    player_name: 'Character System',
+                    message_text: `❌ Character download error: ${error.message}`,
+                    message_type: 'system',
+                    is_storyteller: true,
+                    created_at: new Date().toISOString()
+                };
+                displayChatMessage(errorMessage);
+            }
+        } else {
+            console.warn('❌ ChatCommandParser not available for DLCHAR!');
+        }
+        
+        console.log('🔇 DLCHAR command processed, returning early to hide from chat');
+        // Don't display the raw command in chat
+        return;
+    }
+    
     // Always display normal messages in chat
     displayChatMessage(message);
     

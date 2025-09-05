@@ -243,7 +243,7 @@ class StoryTellerBridge {
 
 // Override existing export function to include StoryTeller sending
 const originalExportCharacterFromManager = window.exportCharacterFromManager;
-function exportCharacterFromManager(characterId) {
+window.exportCharacterFromManager = function(characterId) {
     // Call original export function
     if (originalExportCharacterFromManager) {
         originalExportCharacterFromManager(characterId);
@@ -253,11 +253,11 @@ function exportCharacterFromManager(characterId) {
     if (window.storyTellerBridge) {
         window.storyTellerBridge.sendCharacterToStoryTeller(characterId);
     }
-}
+};
 
 // Override bulk export function
 const originalExportAllCharacters = window.exportAllCharacters;
-function exportAllCharacters() {
+window.exportAllCharacters = function() {
     // Call original export function
     if (originalExportAllCharacters) {
         originalExportAllCharacters();
@@ -267,7 +267,7 @@ function exportAllCharacters() {
     if (window.storyTellerBridge) {
         window.storyTellerBridge.sendAllCharactersToStoryTeller();
     }
-}
+};
 
 // ========================================
 // GLOBAL INITIALIZATION

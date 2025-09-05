@@ -15,9 +15,17 @@
   "cordova": {
     "platforms": [
       "android"
-    ]
+    ],
+    "plugins": {
+      "cordova-plugin-file": {
+        "ANDROIDX_WEBKIT_VERSION": "1.4.0"
+      },
+      "cordova-plugin-android-permissions": {}
+    }
   },
   "devDependencies": {
-    "cordova-android": "^14.0.1"
+    "cordova-android": "^14.0.1",
+    "cordova-plugin-android-permissions": "^1.1.5",
+    "cordova-plugin-file": "^8.1.3"
   }
 }

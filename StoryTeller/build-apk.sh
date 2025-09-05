@@ -34,9 +34,9 @@ if [ ! -d "platforms/android" ]; then
 fi
 
 # Build the APK using gradle directly to ensure APK format
-echo "🔨 Building APK (using gradle assembleRelease)..."
+echo "🔨 Building APK (using gradle assembleDebug)..."
 cd platforms/android
-./gradlew assembleRelease
+./gradlew assembleDebug
 
 # Check if build was successful
 if [ $? -ne 0 ]; then
@@ -48,7 +48,7 @@ fi
 cd "$CORDOVA_DIR"
 
 # Find the generated APK
-APK_SOURCE=$(find platforms/android -name "*-release*.apk" -type f | head -1)
+APK_SOURCE=$(find platforms/android -name "*-debug*.apk" -type f | head -1)
 
 if [ -z "$APK_SOURCE" ]; then
     echo "❌ No APK file found after build!"

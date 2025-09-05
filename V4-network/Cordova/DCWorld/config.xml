@@ -15,6 +15,14 @@
     <allow-intent href="http://*/*" />
     <allow-intent href="https://*/*" />
 
+    <!-- Allow external navigation for GitHub and other services -->
+    <allow-navigation href="https://*.github.com"/>
+    <allow-navigation href="https://*.githubusercontent.com"/>
+    <allow-navigation href="https://*.supabase.co"/>
+
+    <!-- Access permissions -->
+    <access origin="*"/>
+
     <!-- Android platform assets -->
     <platform name="android">
         <!-- App icons (still valid) -->

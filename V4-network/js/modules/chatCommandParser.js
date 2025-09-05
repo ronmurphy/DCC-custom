@@ -23,7 +23,9 @@ class ChatCommandParser {
             STAT: /^STAT:([^:]+):([^:]+):([+-]?\d+)$/i,
             NOTE: /^NOTE:([^:]+):(.+)$/i,
             CLEAN: /^CLEAN:([^:]+):?(.*)$/i,
-            AVATAR_URL: /^AVATAR_URL:([^:]+):(.+)$/i
+            AVATAR_URL: /^AVATAR_URL:([^:]+):(.+)$/i,
+            DLCHAR: /^DLCHAR:([^:]+):(.+)$/i,
+            DLCHAR_SLASH: /^\/dlchar:(.+)$/i  // Alternative format: /dlchar:URL
         };
         
         // Active players (should be populated from session)
@@ -141,13 +143,22 @@ class ChatCommandParser {
     async executeCommand(commandType, match, senderName) {
         const playerName = match[1];
         
-        // CLEAN and AVATAR_URL commands don't require a player to be registered
+        // CLEAN, AVATAR_URL, and DLCHAR commands don't require a player to be registered
         if (commandType === 'CLEAN') {
             return await this.handleCleanCommand(playerName, match[2], senderName);
         }
         
         if (commandType === 'AVATAR_URL') {
             return await this.handleAvatarUrlCommand(playerName, match[2], senderName);
+        }
+        
+        if (commandType === 'DLCHAR') {
+            return await this.handleDlcharCommand(playerName, match[2], senderName);
+        }
+        
+        if (commandType === 'DLCHAR_SLASH') {
+            // For /dlchar:URL format, use sender name as player name
+            return await this.handleDlcharCommand(senderName, match[1], senderName);
         }
         
         const player = this.getPlayer(playerName);
@@ -756,6 +767,131 @@ class ChatCommandParser {
     }
 
     /**
+     * Handle DLCHAR command - Download character from GitHub URL and import it
+     * @param {string} targetPlayer - Player name (ignored for this command)
+     * @param {string} charUrl - GitHub raw URL to character file
+     * @param {string} senderName - Who sent the command
+     */
+    async handleDlcharCommand(targetPlayer, charUrl, senderName) {
+        console.log(`📥 DLCHAR command received from ${senderName} for URL:`, charUrl);
+        
+        try {
+            // Validate URL format
+            if (!charUrl.includes('github') && !charUrl.includes('githubusercontent')) {
+                throw new Error('URL must be from GitHub (raw.githubusercontent.com or github.com)');
+            }
+            
+            // Convert GitHub URL to raw format if needed
+            let rawUrl = charUrl;
+            if (charUrl.includes('github.com') && !charUrl.includes('raw.githubusercontent.com')) {
+                rawUrl = charUrl.replace('github.com', 'raw.githubusercontent.com')
+                               .replace('/blob/', '/');
+            }
+            
+            console.log(`🔄 Fetching character from: ${rawUrl}`);
+            
+            // Fetch the character file
+            const response = await fetch(rawUrl);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch character file: ${response.status} ${response.statusText}`);
+            }
+            
+            const characterData = await response.text();
+            console.log(`✅ Downloaded character data (${characterData.length} characters)`);
+            
+            // Determine file type from URL
+            const isJsonFile = rawUrl.toLowerCase().endsWith('.json');
+            const isDcwFile = rawUrl.toLowerCase().endsWith('.dcw');
+            
+            if (!isJsonFile && !isDcwFile) {
+                throw new Error('Character file must be .json or .dcw format');
+            }
+            
+            // Parse character data
+            let characterJson;
+            if (isJsonFile) {
+                try {
+                    characterJson = JSON.parse(characterData);
+                } catch (parseError) {
+                    throw new Error('Invalid JSON format in character file');
+                }
+            } else {
+                // For .dcw files, assume they contain JSON
+                try {
+                    characterJson = JSON.parse(characterData);
+                } catch (parseError) {
+                    throw new Error('Invalid format in .dcw file (expected JSON)');
+                }
+            }
+            
+            // Extract character name for display
+            const characterName = characterJson.name || characterJson.character_name || 'Unknown Character';
+            
+            // Store character data in a temporary location for import
+            const tempCharacterKey = `temp_character_${Date.now()}`;
+            localStorage.setItem(tempCharacterKey, JSON.stringify(characterJson));
+            
+            // Trigger character import if we have a character manager
+            if (window.addCharacterToManager && typeof window.addCharacterToManager === 'function') {
+                console.log(`🎭 Importing character: ${characterName}`);
+                const importResult = window.addCharacterToManager(characterJson);
+                
+                if (importResult) {
+                    // Refresh character grid if the function exists
+                    if (window.renderCharacterGrid && typeof window.renderCharacterGrid === 'function') {
+                        window.renderCharacterGrid();
+                    }
+                    
+                    return {
+                        success: true,
+                        command: 'DLCHAR',
+                        message: `Character "${characterName}" downloaded and imported successfully!`,
+                        targetPlayer: targetPlayer,
+                        sender: senderName,
+                        details: {
+                            characterName: characterName,
+                            url: charUrl,
+                            fileType: isJsonFile ? 'JSON' : 'DCW'
+                        }
+                    };
+                } else {
+                    throw new Error(`Character import failed: Unable to add character to manager`);
+                }
+            } else {
+                // Character manager not available - store for manual import
+                console.log(`📦 Character stored for manual import: ${tempCharacterKey}`);
+                
+                return {
+                    success: true,
+                    command: 'DLCHAR',
+                    message: `Character "${characterName}" downloaded successfully! Please import manually from the character manager.`,
+                    targetPlayer: targetPlayer,
+                    sender: senderName,
+                    details: {
+                        characterName: characterName,
+                        url: charUrl,
+                        fileType: isJsonFile ? 'JSON' : 'DCW',
+                        tempKey: tempCharacterKey
+                    }
+                };
+            }
+            
+        } catch (error) {
+            console.error('❌ DLCHAR command failed:', error);
+            return {
+                success: false,
+                command: 'DLCHAR',
+                error: `Character download failed: ${error.message}`,
+                targetPlayer: targetPlayer,
+                sender: senderName,
+                details: {
+                    url: charUrl
+                }
+            };
+        }
+    }
+
+    /**
      * Update player chip avatar with actual image
      * @param {string} playerName - Player name
      * @param {string} avatarUrl - Avatar URL
@@ -840,7 +976,8 @@ class ChatCommandParser {
             { command: 'STAT:PlayerName:stat_name:modifier', description: 'Modify player stat' },
             { command: 'CLEAN:session:old', description: 'Remove messages older than 7 days (storyteller only)' },
             { command: 'CLEAN:session:all', description: 'Remove ALL session messages (storyteller only)' },
-            { command: 'AVATAR_URL:PlayerName:url', description: 'Update player avatar (silent command)' }
+            { command: 'AVATAR_URL:PlayerName:url', description: 'Update player avatar (silent command)' },
+            { command: 'DLCHAR:PlayerName:github_url', description: 'Download and import character from GitHub URL' }
         ];
     }
 

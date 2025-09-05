@@ -34,8 +34,8 @@ if [ ! -d "platforms/android" ]; then
 fi
 
 # Build the APK
-echo "🔨 Building APK (release mode)..."
-cordova build android --release
+echo "🔨 Building Android APK..."
+cordova build android
 
 # Check if build was successful
 if [ $? -ne 0 ]; then
