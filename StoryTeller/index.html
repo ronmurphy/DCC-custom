@@ -940,6 +940,26 @@
             display: flex;
             flex-direction: column;
             height: 100%;
+            overflow: hidden; /* Prevent overall scrolling */
+        }
+
+        /* Ensure proper chat layout on small screens */
+        @media (max-height: 800px) {
+            .chat-interface {
+                height: 100%;
+                max-height: 100vh;
+            }
+            
+            /* Reduce padding and margins for smaller screens */
+            .chat-toolbar {
+                padding: 4px 8px !important;
+                min-height: 28px !important;
+            }
+            
+            .player-chips-area {
+                padding: 4px 8px;
+                min-height: auto;
+            }
         }
 
         .chat-error {
@@ -973,6 +993,31 @@
             flex-shrink: 0;
         }
 
+        /* Responsive chat height for low-resolution displays */
+        @media (max-height: 900px) {
+            .chat-messages {
+                height: calc(100vh - 240px);
+                max-height: calc(100vh - 240px);
+                min-height: 180px;
+            }
+        }
+
+        @media (max-height: 800px) {
+            .chat-messages {
+                height: calc(100vh - 200px);
+                max-height: calc(100vh - 200px);
+                min-height: 150px;
+            }
+        }
+
+        @media (max-height: 700px) {
+            .chat-messages {
+                height: calc(100vh - 180px);
+                max-height: calc(100vh - 180px);
+                min-height: 120px;
+            }
+        }
+
         .chat-message {
             margin-bottom: 6px; /* Reduced from var(--grid-gap) */
             padding: 8px; /* Reduced from calc(var(--padding-base) * 0.6) */
@@ -1004,6 +1049,28 @@
             border-top: 1px solid #e9ecef;
             min-height: calc(var(--input-height) + 16px); /* Adjusted for smaller padding */
             /* margin-top: var(--grid-gap); */
+            flex-shrink: 0; /* Prevent input area from shrinking */
+            position: sticky; /* Keep input area visible */
+            bottom: 0;
+            z-index: 10;
+        }
+
+        /* Responsive adjustments for chat input on small screens */
+        @media (max-height: 800px) {
+            .chat-input-area {
+                padding: 6px;
+                min-height: calc(var(--input-height) + 12px);
+            }
+            
+            .chat-input {
+                padding: calc(var(--padding-base) * 0.6);
+                font-size: calc(var(--base-font-size) * 0.9);
+            }
+            
+            .send-btn {
+                padding: calc(var(--button-padding) * 0.8);
+                font-size: calc(var(--base-font-size) * 0.9);
+            }
         }
 
         .chat-input {

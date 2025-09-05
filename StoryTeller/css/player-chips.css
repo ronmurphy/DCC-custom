@@ -11,7 +11,34 @@
     flex: 1;
     overflow-y: auto;
     /* Use viewport height minus toolbar + player-chips + input + padding */
-    max-height: calc(100vh - 380px);
+    max-height: calc(100vh - 320px);
+}
+
+/* Responsive adjustments for low-resolution displays */
+@media (max-height: 900px) {
+    .chat-interface .chat-messages {
+        max-height: calc(100vh - 280px);
+    }
+}
+
+@media (max-height: 800px) {
+    .chat-interface .chat-messages {
+        max-height: calc(100vh - 240px);
+    }
+    
+    .player-chips-area {
+        padding: 8px !important;
+    }
+}
+
+@media (max-height: 700px) {
+    .chat-interface .chat-messages {
+        max-height: calc(100vh - 200px);
+    }
+    
+    .player-chips-area {
+        padding: 6px !important;
+    }
 }
 
 .chat-interface .chat-toolbar,
