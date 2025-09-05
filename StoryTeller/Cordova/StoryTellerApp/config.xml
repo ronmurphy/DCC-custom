@@ -1,0 +1,54 @@
+<?xml version='1.0' encoding='utf-8'?>
+<widget id="com.ronmurphy.storyteller" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+    <name>StoryTeller RPG</name>
+    <description>A tabletop RPG storytelling and campaign management app</description>
+    <author email="dev@ronmurphy.com" href="https://github.com/ronmurphy/DCC-custom">
+        Ron Murphy
+    </author>
+    <content src="index.html" />
+
+    <!-- Allow navigation -->
+    <allow-intent href="http://*/*" />
+    <allow-intent href="https://*/*" />
+
+    <!-- Allow external navigation for Supabase and other services -->
+    <allow-navigation href="https://*.supabase.co" />
+    <allow-navigation href="https://*.github.io" />
+
+    <!-- Access permissions -->
+    <access origin="*" />
+
+    <!-- Android platform assets -->
+    <platform name="android">
+        <!-- App icons (using V4-network icons temporarily) -->
+        <icon src="res/android/icon-36.png" density="ldpi" />
+        <icon src="res/android/icon-48.png" density="mdpi" />
+        <icon src="res/android/icon-72.png" density="hdpi" />
+        <icon src="res/android/icon-96.png" density="xhdpi" />
+        <icon src="res/android/icon-144.png" density="xxhdpi" />
+        <icon src="res/android/icon-192.png" density="xxxhdpi" />
+
+        <!-- Splash screen -->
+        <preference name="AndroidWindowSplashScreenAnimatedIcon" value="res/android/splash.png" />
+        <preference name="AndroidWindowSplashScreenBackground" value="#1a1a2e" />
+        
+        <!-- Target API levels -->
+        <preference name="android-targetSdkVersion" value="33" />
+        <preference name="android-compileSdkVersion" value="35" />
+        
+        <!-- Allow cleartext traffic for local development -->
+        <preference name="AndroidCleartextTraffic" value="true" />
+        
+        <!-- Keep screen on during gameplay -->
+        <preference name="KeepRunning" value="true" />
+        
+        <!-- Fullscreen preferences for immersive gameplay -->
+        <preference name="Fullscreen" value="false" />
+        <preference name="StatusBarOverlaysWebView" value="false" />
+        <preference name="StatusBarBackgroundColor" value="#1a1a2e" />
+    </platform>
+
+    <!-- Plugins -->
+    <plugin name="cordova-plugin-whitelist" spec="~1.3.4" />
+
+</widget>

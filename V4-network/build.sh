@@ -8,7 +8,6 @@ echo "🏗️  Starting Cordova Android build..."
 CORDOVA_DIR="/home/brad/Documents/DCC-custom/V4-network/Cordova/DCWorld"
 BUILD_DIR="$CORDOVA_DIR/builds"
 V4_APKS_DIR="/home/brad/Documents/DCC-custom/V4-network/APKs"
-APK_SOURCE="$CORDOVA_DIR/platforms/android/app/build/outputs/apk/debug/app-debug.apk"
 
 # Check if Cordova directory exists
 if [ ! -d "$CORDOVA_DIR" ]; then
@@ -29,44 +28,69 @@ echo "📍 Building in: $(pwd)"
 echo "🧹 Cleaning previous build..."
 cordova clean android
 
-echo "🔨 Building Android APK..."
+echo "🔨 Building Android app..."
 if cordova build android; then
     echo "✅ Build successful!"
     
-    # Check if APK was created
-    if [ -f "$APK_SOURCE" ]; then
-        # Create timestamped filename
-        TIMESTAMP=$(date +%Y%m%d-%H%M)
-        APK_DEST="$BUILD_DIR/dcc-sheet-$TIMESTAMP.apk"
-        V4_APK_DEST="$V4_APKS_DIR/dcc-sheet-$TIMESTAMP.apk"
-        
-        # Copy APK to both locations
-        cp "$APK_SOURCE" "$APK_DEST"
-        cp "$APK_SOURCE" "$V4_APK_DEST"
-        
-        # Get file size for display
-        APK_SIZE=$(du -h "$APK_DEST" | cut -f1)
-        
-        echo "📱 APK copied to:"
-        echo "   📁 Cordova builds: builds/dcc-sheet-$TIMESTAMP.apk ($APK_SIZE)"
-        echo "   📁 V4-network APKs: APKs/dcc-sheet-$TIMESTAMP.apk ($APK_SIZE)"
+    # Find the generated APK or AAB file
+    APK_FILE=$(find platforms/android -name "*.apk" -type f | head -1)
+    AAB_FILE=$(find platforms/android -name "*.aab" -type f | head -1)
+    
+    if [ -n "$APK_FILE" ]; then
+        echo "📱 Found APK file: $APK_FILE"
+        BUILD_SOURCE="$APK_FILE"
+        FILE_EXT="apk"
+        FILE_TYPE="APK"
+    elif [ -n "$AAB_FILE" ]; then
+        echo "📱 Found AAB file: $AAB_FILE"
+        BUILD_SOURCE="$AAB_FILE"
+        FILE_EXT="aab"
+        FILE_TYPE="AAB"
+    else
+        echo "❌ Error: No APK or AAB file found after build!"
+        echo "🔍 Looking for build outputs..."
+        find platforms/android -name "*.apk" -o -name "*.aab" -type f
+        exit 1
+    fi
+    
+    # Create timestamped filename
+    TIMESTAMP=$(date +%Y%m%d-%H%M)
+    BUILD_DEST="$BUILD_DIR/dcc-sheet-$TIMESTAMP.$FILE_EXT"
+    V4_BUILD_DEST="$V4_APKS_DIR/dcc-sheet-$TIMESTAMP.$FILE_EXT"
+    
+    # Copy build file to both locations
+    cp "$BUILD_SOURCE" "$BUILD_DEST"
+    cp "$BUILD_SOURCE" "$V4_BUILD_DEST"
+    
+    # Get file size for display
+    BUILD_SIZE=$(du -h "$BUILD_DEST" | cut -f1)
+    
+    echo "📱 $FILE_TYPE copied to:"
+    echo "   📁 Cordova builds: builds/dcc-sheet-$TIMESTAMP.$FILE_EXT ($BUILD_SIZE)"
+    echo "   📁 V4-network APKs: APKs/dcc-sheet-$TIMESTAMP.$FILE_EXT ($BUILD_SIZE)"
+    
+    if [ "$FILE_EXT" = "apk" ]; then
         echo "🎉 Build complete! APK ready for testing."
+    else
+        echo "🎉 Build complete! AAB ready for Play Store upload."
+        echo "   💡 For testing, consider using build-apk.sh to generate APK format"
+    fi
         
         # List recent builds
         echo ""
         echo "📋 Recent builds in Cordova:"
-        ls -lt "$BUILD_DIR"/*.apk | head -3 | while read -r line; do
+        ls -lt "$BUILD_DIR"/*.{apk,aab} 2>/dev/null | head -3 | while read -r line; do
             echo "   $line"
         done
         
         echo ""
         echo "📋 Recent builds in V4-network:"
-        ls -lt "$V4_APKS_DIR"/*.apk | head -3 | while read -r line; do
+        ls -lt "$V4_APKS_DIR"/*.{apk,aab} 2>/dev/null | head -3 | while read -r line; do
             echo "   $line"
         done
         
     else
-        echo "❌ Error: APK file not found at $APK_SOURCE"
+        echo "❌ Error: Build file not found!"
         exit 1
     fi
 else
