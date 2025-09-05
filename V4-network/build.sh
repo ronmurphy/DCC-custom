@@ -75,24 +75,20 @@ if cordova build android; then
         echo "🎉 Build complete! AAB ready for Play Store upload."
         echo "   💡 For testing, consider using build-apk.sh to generate APK format"
     fi
-        
-        # List recent builds
-        echo ""
-        echo "📋 Recent builds in Cordova:"
-        ls -lt "$BUILD_DIR"/*.{apk,aab} 2>/dev/null | head -3 | while read -r line; do
-            echo "   $line"
-        done
-        
-        echo ""
-        echo "📋 Recent builds in V4-network:"
-        ls -lt "$V4_APKS_DIR"/*.{apk,aab} 2>/dev/null | head -3 | while read -r line; do
-            echo "   $line"
-        done
-        
-    else
-        echo "❌ Error: Build file not found!"
-        exit 1
-    fi
+    
+    # List recent builds
+    echo ""
+    echo "📋 Recent builds in Cordova:"
+    ls -lt "$BUILD_DIR"/*.{apk,aab} 2>/dev/null | head -3 | while read -r line; do
+        echo "   $line"
+    done
+    
+    echo ""
+    echo "📋 Recent builds in V4-network:"
+    ls -lt "$V4_APKS_DIR"/*.{apk,aab} 2>/dev/null | head -3 | while read -r line; do
+        echo "   $line"
+    done
+
 else
     echo "❌ Build failed! Check the error messages above."
     exit 1

@@ -102,6 +102,37 @@
         .material-icons:empty:after {
             display: none !important;
         }
+        
+        /* Chat button styles for character cards */
+        .card-action-btn.chat-btn {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 16px;
+            margin: 0 2px;
+            line-height: 1;
+            padding: 0;
+            min-height: 32px;
+            max-height: 32px;
+        }
+        
+        .card-action-btn.chat-btn:hover {
+            background: linear-gradient(135deg, #45a049, #3d8b40);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+        }
+        
+        .card-action-btn.chat-btn:active {
+            transform: translateY(0);
+        }
     </style>
 
     <!-- Custom CSS -->
@@ -1279,7 +1310,7 @@
                         <div class="chat-input-container">
                             <div class="chat-tools">
                                 <button class="chat-tool-btn" onclick="showChatPicker()" title="Chat Effects & Emojis">
-                                    <span>💬</span>
+                                    💬
                                     <span>Effects</span>
                                 </button>
                             </div>
@@ -1837,7 +1868,7 @@
             </div>
             <div class="modal-body">
                 <div class="command-center-modal-content">
-                    <!-- Connected Players -->
+                    <!-- Connected Players - COMMENTED OUT (replaced by player-chips-area)
                     <div class="player-selector">
                         <h5>Connected Players</h5>
                         <div class="player-list" id="modal-connected-players">
@@ -1852,6 +1883,7 @@
                             </div>
                         </div>
                     </div>
+                    -->
                     
                     <!-- Quick Tools -->
                     <div class="quick-tools" style="margin-top: 20px;">
@@ -1894,14 +1926,14 @@
     </div>
 
     <!-- Scripts -->
-    <script src="advancedStorageManager.js"></script>
-    <script src="storageMigration.js"></script>
-    <script src="main.js"></script>
-    <script src="character-manager.js"></script>
-    <script src="v4CharacterSyncManager.js"></script>
-    <script src="storyTellerBridge.js"></script>
-    <script src="cache-manager.js"></script>
-    <script src="qr.js"></script>
+    <script src="js/core/advancedStorageManager.js"></script>
+    <script src="js/core/storageMigration.js"></script>
+    <script src="js/core/main.js"></script>
+    <script src="js/core/character-manager.js"></script>
+    <script src="js/core/v4CharacterSyncManager.js"></script>
+    <script src="js/core/storyTellerBridge.js"></script>
+    <script src="js/core/cache-manager.js"></script>
+    <script src="js/core/qr.js"></script>
     <script src="js/character-storage-diagnostic.js"></script>
     
     <script>
@@ -2161,10 +2193,10 @@
         });
     </script>
 
-    <script src="skills.js"></script>
-    <script src="improvements.js"></script>
-    <script src="achievements.js"></script>
-    <script src="levelSystem.js"></script>
+    <script src="js/core/skills.js"></script>
+    <script src="js/core/improvements.js"></script>
+    <script src="js/core/achievements.js"></script>
+    <script src="js/core/levelSystem.js"></script>
     <!-- <script src="debug-dcc.js"></script> -->
     <script>
         // PWA Service Worker Registration - DISABLED TO PREVENT CACHING ISSUES
@@ -2221,8 +2253,8 @@
 
     <!-- Network Integration Scripts -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <script src="supabaseUrlEncoder.js"></script>
-    <script src="supabase-config.js"></script>
+    <script src="js/core/supabaseUrlEncoder.js"></script>
+    <script src="js/core/supabase-config.js"></script>
     
     <!-- Essential modules for chat system -->
     <script src="js/modules/dccMechanics.js"></script>
@@ -2246,7 +2278,13 @@
     <script src="js/modules/chatEffectsManager.js"></script>
     <script src="js/modules/emojiProcessor.js"></script>
     
-    <script src="supabase-chat.js"></script>
+    <!-- Shared Chat Picker System -->
+    <script src="../shared-modules/chatPickerManager.js"></script>
+    <script src="../shared-modules/v4NetworkChatPickerIntegration.js"></script>
+    
+    <script src="js/core/supabase-chat.js"></script>
+    <!-- OLD PubNub system disabled - using Supabase instead -->
+    <!-- <script src="js/realtime-chat.js"></script> -->
     
     <!-- Network Integration Functions -->
     <script>
@@ -2262,6 +2300,177 @@
         }
         window.setNetworkPlayerName = setNetworkPlayerName;
 
+        // ========================================
+        // CONNECTION URL STORAGE MANAGEMENT
+        // ========================================
+        
+        /**
+         * Save connection URL to both localStorage and IndexedDB
+         * @param {string} url - The connection URL to save
+         */
+        async function saveConnectionUrl(url) {
+            if (!url) return;
+            
+            try {
+                // Save to localStorage for immediate access
+                localStorage.setItem('lastConnectionUrl', url);
+                console.log('💾 Connection URL saved to localStorage:', url);
+                
+                // Save to IndexedDB for persistent backup
+                if (window.advancedStorageManager) {
+                    await window.advancedStorageManager.setItem('lastConnectionUrl', url);
+                    console.log('💾 Connection URL saved to IndexedDB:', url);
+                }
+            } catch (error) {
+                console.error('❌ Failed to save connection URL:', error);
+            }
+        }
+        
+        /**
+         * Get connection URL with fallback from localStorage to IndexedDB
+         * @returns {Promise<string|null>} The connection URL or null if not found
+         */
+        async function getConnectionUrl() {
+            try {
+                // Try localStorage first (faster)
+                let url = localStorage.getItem('lastConnectionUrl');
+                if (url) {
+                    // Check if localStorage has corrupted JSON format
+                    if (url.startsWith('{"compressed":') && url.includes('"data":"')) {
+                        console.log('� Detected corrupted JSON in localStorage, cleaning up...');
+                        url = cleanupCorruptedUrl(url);
+                        if (url) {
+                            // Re-save the cleaned URL
+                            await saveConnectionUrl(url);
+                            console.log('�📡 Cleaned and re-saved URL from localStorage:', url);
+                            return url;
+                        }
+                    } else {
+                        console.log('📡 Connection URL loaded from localStorage:', url);
+                        return url;
+                    }
+                }
+                
+                // Fallback to IndexedDB
+                if (window.advancedStorageManager) {
+                    const indexedData = await window.advancedStorageManager.getItem('lastConnectionUrl');
+                    if (indexedData) {
+                        console.log('🔍 Raw IndexedDB data:', indexedData);
+                        
+                        // Handle various data formats from IndexedDB
+                        let url;
+                        
+                        if (typeof indexedData === 'string') {
+                            // Check if it's corrupted JSON string
+                            if (indexedData.startsWith('{"compressed":') && indexedData.includes('"data":"')) {
+                                console.log('🔧 Detected corrupted JSON in IndexedDB string, cleaning up...');
+                                url = cleanupCorruptedUrl(indexedData);
+                            } else {
+                                // Already a clean string
+                                url = indexedData;
+                            }
+                        } else if (indexedData && typeof indexedData === 'object') {
+                            if (indexedData.compressed !== undefined && indexedData.data !== undefined) {
+                                // Handle compressed format: {"compressed":false,"data":"\"actual-url\""}
+                                url = indexedData.data;
+                                console.log('🔍 Extracted data property:', url);
+                                
+                                // Remove extra JSON quotes if present
+                                if (typeof url === 'string') {
+                                    if (url.startsWith('"') && url.endsWith('"')) {
+                                        url = url.slice(1, -1);
+                                        console.log('🔍 Removed JSON quotes:', url);
+                                    }
+                                }
+                            } else {
+                                // Try to extract URL from object properties
+                                console.warn('⚠️ Unexpected IndexedDB object format:', indexedData);
+                                url = indexedData.url || indexedData.value || indexedData.lastConnectionUrl;
+                            }
+                        } else {
+                            console.warn('⚠️ Unexpected IndexedDB data type:', typeof indexedData, indexedData);
+                            return null;
+                        }
+                        
+                        // Final validation and cleanup
+                        if (url && typeof url === 'string') {
+                            // Check if it's still corrupted JSON
+                            if (url.startsWith('{"compressed":') && url.includes('"data":"')) {
+                                console.log('🔧 Detected corrupted JSON in extracted URL, cleaning up...');
+                                url = cleanupCorruptedUrl(url);
+                            }
+                            
+                            // Validate the final URL format
+                            if (url && (url.includes('.sc?s=') || url.includes('supabase'))) {
+                                console.log('📡 Connection URL loaded from IndexedDB:', url);
+                                // Re-save both to localStorage and IndexedDB to fix corruption
+                                await saveConnectionUrl(url);
+                                console.log('🔧 Re-saved cleaned URL to both storages');
+                                return url;
+                            } else {
+                                console.warn('⚠️ Invalid URL format after cleanup:', url);
+                                return null;
+                            }
+                        }
+                    }
+                }
+                
+                console.log('📡 No saved connection URL found');
+                return null;
+            } catch (error) {
+                console.error('❌ Failed to get connection URL:', error);
+                console.error('Error details:', error.message, error.stack);
+                return null;
+            }
+        }
+        
+        /**
+         * Clean up corrupted JSON format and extract the actual URL
+         * @param {string} corruptedUrl - The corrupted JSON string
+         * @returns {string|null} The cleaned URL or null if extraction fails
+         */
+        function cleanupCorruptedUrl(corruptedUrl) {
+            try {
+                console.log('🧹 Cleaning corrupted URL:', corruptedUrl);
+                
+                // Handle format: {"compressed":false,"data":"\"skddvbmxzeprvxfslhlk.sc?s=BRADTEST\""}
+                if (corruptedUrl.startsWith('{"compressed":') && corruptedUrl.includes('"data":"')) {
+                    // Parse the JSON
+                    const parsed = JSON.parse(corruptedUrl);
+                    if (parsed && parsed.data) {
+                        let cleanUrl = parsed.data;
+                        
+                        // Remove extra JSON quotes if present
+                        if (typeof cleanUrl === 'string' && cleanUrl.startsWith('"') && cleanUrl.endsWith('"')) {
+                            cleanUrl = cleanUrl.slice(1, -1);
+                        }
+                        
+                        console.log('🧹 Cleaned URL result:', cleanUrl);
+                        return cleanUrl;
+                    }
+                }
+                
+                // If above doesn't work, try regex extraction
+                const match = corruptedUrl.match(/"data":"\\?"([^"\\]+(?:\\.[^"\\]*)*)"\\?"/);
+                if (match && match[1]) {
+                    const cleanUrl = match[1].replace(/\\"/g, '"');
+                    console.log('🧹 Regex extracted URL:', cleanUrl);
+                    return cleanUrl;
+                }
+                
+                console.warn('⚠️ Could not clean corrupted URL');
+                return null;
+            } catch (error) {
+                console.error('❌ Error cleaning corrupted URL:', error);
+                return null;
+            }
+        }
+        
+        // Make functions available globally
+        window.saveConnectionUrl = saveConnectionUrl;
+        window.getConnectionUrl = getConnectionUrl;
+        window.cleanupCorruptedUrl = cleanupCorruptedUrl;
+
         // Show creation tab (called by New Character button)
         function showCreationTab() {
             const creationTab = document.querySelector('[data-tab="creation"]');
@@ -2274,7 +2483,7 @@
         window.showCreationTab = showCreationTab;
 
         // Initialize network integration when page loads
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             console.log('🌐 V4-Network: Initializing network features...');
             
             // Check for session code in URL first
@@ -2283,12 +2492,22 @@
             
             if (sessionFromUrl) {
                 document.getElementById('session-code-input').value = sessionFromUrl;
+                // Also populate the sheet session input
+                const sheetSessionInput = document.getElementById('sheet-session-input');
+                if (sheetSessionInput) {
+                    sheetSessionInput.value = sessionFromUrl;
+                }
                 console.log('📎 Session code found in URL:', sessionFromUrl);
             } else {
-                // Load last saved connection URL
-                const lastUrl = localStorage.getItem('lastConnectionUrl');
+                // Load last saved connection URL with IndexedDB fallback
+                const lastUrl = await getConnectionUrl();
                 if (lastUrl) {
                     document.getElementById('session-code-input').value = lastUrl;
+                    // Also populate the sheet session input
+                    const sheetSessionInput = document.getElementById('sheet-session-input');
+                    if (sheetSessionInput) {
+                        sheetSessionInput.value = lastUrl;
+                    }
                     console.log('📎 Loaded saved connection URL:', lastUrl);
                 }
             }
@@ -2434,6 +2653,12 @@
         }
 
         function syncModalPlayerList() {
+            // DEPRECATED: The modal player list has been replaced by player-chips-area
+            // This function is kept for compatibility but no longer performs any actions
+            console.log('📝 syncModalPlayerList called but modal player list is deprecated');
+            return;
+            
+            /*
             const originalPlayerList = document.getElementById('connected-players');
             const modalPlayerList = document.getElementById('modal-connected-players');
             
@@ -2448,6 +2673,7 @@
                     modalSelfName.textContent = originalSelfName.textContent;
                 }
             }
+            */
         }
 
         // Close modal when clicking outside of it
@@ -2526,6 +2752,7 @@
                 openChatBottomSheet();
             }
         }
+        window.toggleChatBottomSheet = toggleChatBottomSheet;
 
         function openChatBottomSheet() {
             const sheet = document.getElementById('chat-bottom-sheet');
@@ -2689,9 +2916,9 @@
         }
 
         function showSheetChatEffects() {
-            // Mobile-optimized chat picker modal
+            // Mobile-optimized chat picker modal with exact bottom sheet design
             if (!window.emojiProcessor || !window.chatEffectsManager) {
-                alert('Chat effects: Try :crit:, :sparkle:, :fire:, :lightning:, :glow:, :pulse:, or :bounce: in your messages!');
+                alert('Chat effects: Try :crit:, :sparkle:, :fire:, :lightning:, :glow:, :throb:, or :bounce: in your messages!');
                 return;
             }
             
@@ -2699,56 +2926,53 @@
             const effectsData = window.chatEffectsManager.effects;
             const inputId = 'sheet-chat-input';
             
-            // Create mobile modal
+            // Create effects modal with identical bottom sheet structure
             const modal = document.createElement('div');
-            modal.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0, 0, 0, 0.5);
-                display: flex;
-                align-items: flex-end;
-                justify-content: center;
-                z-index: 10000;
-                padding: 0;
-            `;
+            modal.className = 'chat-bottom-sheet chat-effects-modal';
+            modal.id = 'chat-effects-modal';
+            modal.style.zIndex = '3000'; // Higher than chat modal
             
-            // Create mobile picker content
-            const picker = document.createElement('div');
-            picker.style.cssText = `
-                background: var(--bg-primary);
-                border-radius: 16px 16px 0 0;
-                padding: 20px;
-                width: 100%;
-                max-height: 70vh;
-                overflow-y: auto;
-                box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
-                border: 1px solid var(--border-color);
-                color: var(--text-primary);
-                position: relative;
-                animation: slideUp 0.3s ease-out;
-            `;
-            
-            // Add slide-up animation
-            const style = document.createElement('style');
-            style.textContent = `
-                @keyframes slideUp {
-                    from { transform: translateY(100%); }
-                    to { transform: translateY(0); }
-                }
-            `;
-            document.head.appendChild(style);
-            
-            let pickerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid var(--border-color);">
-                    <h4 style="margin: 0; color: var(--text-primary); font-size: 1.2em;">💬 Chat Picker</h4>
-                    <button onclick="this.closest('.mobile-chat-modal').remove()" 
-                            style="background: none; border: none; font-size: 1.8em; cursor: pointer; color: var(--text-secondary); padding: 4px;"
-                            title="Close">×</button>
+            modal.innerHTML = `
+                <div class="bottom-sheet-backdrop" onclick="document.getElementById('chat-effects-modal').remove()"></div>
+                <div class="bottom-sheet-content" style="height: 60vh; max-height: 500px;">
+                    <!-- Drag Handle -->
+                    <div class="bottom-sheet-handle">
+                        <div class="handle-bar"></div>
+                    </div>
+                    
+                    <!-- Bottom Sheet Header -->
+                    <div class="bottom-sheet-header">
+                        <div class="sheet-tabs-container">
+                            <h4 style="margin: 0; color: var(--text-primary); font-size: 1.2em; display: flex; align-items: center; gap: 8px;">
+                                ✨ Chat Effects
+                            </h4>
+                        </div>
+                        <div class="sheet-controls">
+                            <button class="sheet-control-btn" onclick="document.getElementById('chat-effects-modal').remove()" title="Close effects">
+                                <span class="material-icons">close</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Effects Content -->
+                    <div class="sheet-tab-content" style="flex: 1; overflow-y: auto; padding: 16px;">
+                        <div id="effects-content-area">
+                            <!-- Content will be populated by JavaScript -->
+                        </div>
+                    </div>
                 </div>
-                
+            `;
+            
+            // Add to document
+            document.body.appendChild(modal);
+            
+            // Apply the open state immediately
+            modal.classList.add('open');
+            
+            // Populate effects content
+            const contentArea = document.getElementById('effects-content-area');
+            
+            let contentHTML = `
                 <!-- Quick Access Row -->
                 <div style="margin-bottom: 20px;">
                     <h5 style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 0.9em; font-weight: 600;">⚡ Quick Effects</h5>
@@ -2762,13 +2986,13 @@
                 { command: ':sparkle:', name: 'Magic', icon: '✨' },
                 { command: ':lightning:', name: 'Thunder', icon: '⚡' },
                 { command: ':glow:', name: 'Glow', icon: '🌟' },
-                { command: ':pulse:', name: 'Pulse', icon: '💓' },
+                { command: ':throb:', name: 'Throb', icon: '💓' },
                 { command: ':bounce:', name: 'Bounce', icon: '🏀' },
                 { command: ':divine:', name: 'Divine', icon: '😇' }
             ];
             
             quickEffects.forEach(effect => {
-                pickerHTML += `
+                contentHTML += `
                     <button onclick="insertMobileText('${inputId}', '${effect.command}')" 
                             style="
                                 background: var(--bg-secondary);
@@ -2781,15 +3005,15 @@
                                 display: flex;
                                 flex-direction: column;
                                 align-items: center;
-                                gap: 4px;
+                                justify-content: center;
                                 color: var(--text-primary);
-                                text-align: center;
                                 min-height: 60px;
+                                gap: 4px;
                             "
-                            ontouchstart="this.style.background='var(--accent-color)'; this.style.color='white'; this.style.transform='scale(0.95)';"
-                            ontouchend="setTimeout(() => { this.style.background='var(--bg-secondary)'; this.style.color='var(--text-primary)'; this.style.transform='scale(1)'; }, 150);"
-                            onmousedown="this.style.background='var(--accent-color)'; this.style.color='white'; this.style.transform='scale(0.95)';"
-                            onmouseup="this.style.background='var(--bg-secondary)'; this.style.color='var(--text-primary)'; this.style.transform='scale(1)';"
+                            ontouchstart="this.style.background='var(--accent-color)'; this.style.transform='scale(0.95)';"
+                            ontouchend="setTimeout(() => { this.style.background='var(--bg-secondary)'; this.style.transform='scale(1)'; }, 150);"
+                            onmousedown="this.style.background='var(--accent-color)'; this.style.transform='scale(0.95)';"
+                            onmouseup="this.style.background='var(--bg-secondary)'; this.style.transform='scale(1)';"
                             title="${effect.command}">
                         <span style="font-size: 1.2em;">${effect.icon}</span>
                         <span style="font-size: 0.7em; font-weight: 600;">${effect.name}</span>
@@ -2797,48 +3021,49 @@
                 `;
             });
             
-            pickerHTML += `
+            contentHTML += `
                     </div>
                 </div>
                 
                 <!-- Emojis Section -->
                 <div style="margin-bottom: 20px;">
-                    <h5 style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 0.9em; font-weight: 600;">😊 Popular Emojis</h5>
-                    <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px;">
+                    <h5 style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 0.9em; font-weight: 600;">😊 Gaming Emojis (Tap to Add)</h5>
+                    <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; max-width: 100%;">
             `;
             
-            // Popular emojis for gaming
+            // Popular emojis for gaming - COMPACT MOBILE VERSION  
             const popularEmojis = [
                 { emoji: '⚔️', code: ':sword:' },
                 { emoji: '🛡️', code: ':shield:' },
-                { emoji: '🏹', code: ':bow:' },
-                { emoji: '🪄', code: ':magic_wand:' },
-                { emoji: '💎', code: ':gem:' },
-                { emoji: '🏆', code: ':trophy:' },
-                { emoji: '💀', code: ':skull:' },
-                { emoji: '👑', code: ':crown:' },
-                { emoji: '🎯', code: ':target:' },
-                { emoji: '🧿', code: ':eye:' },
+                { emoji: '🎲', code: ':dice:' },
+                { emoji: "💰", code: ":treasure:" },
+                { emoji: '✨', code: ':mp:' },
+                { emoji: '🔥', code: ':fire:' },
+                { emoji: "💀", code: ":skull:" },
+                { emoji: "💥", code: ":fumble:" },
+                { emoji: '❄️', code: ':ice:' },
+                { emoji: '☠️', code: ':poison:' },
                 { emoji: '⭐', code: ':star:' },
-                { emoji: '🌙', code: ':moon:' }
+                { emoji: '❤️', code: '<3' }
             ];
             
             popularEmojis.forEach(emoji => {
-                pickerHTML += `
+                contentHTML += `
                     <button onclick="insertMobileText('${inputId}', '${emoji.code}')" 
                             style="
                                 background: var(--bg-secondary);
                                 border: 1px solid var(--border-color);
-                                border-radius: 8px;
-                                padding: 12px;
+                                border-radius: 6px;
+                                padding: 8px;
                                 cursor: pointer;
-                                font-size: 1.5em;
+                                font-size: 1.3em;
                                 transition: all 0.2s;
                                 display: flex;
                                 align-items: center;
                                 justify-content: center;
                                 color: var(--text-primary);
-                                min-height: 50px;
+                                min-height: 44px;
+                                aspect-ratio: 1;
                             "
                             ontouchstart="this.style.background='var(--accent-color)'; this.style.transform='scale(0.9)';"
                             ontouchend="setTimeout(() => { this.style.background='var(--bg-secondary)'; this.style.transform='scale(1)'; }, 150);"
@@ -2850,7 +3075,7 @@
                 `;
             });
             
-            pickerHTML += `
+            contentHTML += `
                     </div>
                 </div>
                 
@@ -2862,13 +3087,13 @@
             
             const quickCombos = [
                 { combo: ':crit: :big: ', text: 'MASSIVE DAMAGE!', desc: 'Critical Hit' },
-                { combo: ':fire: :pulse: ', text: 'Burning Strike!', desc: 'Fire Attack' },
+                { combo: ':fire: :throb: ', text: 'Burning Throb!', desc: 'Fire Attack' },
                 { combo: ':sparkle: :glow: ', text: 'Magic Spell!', desc: 'Magical Effect' },
                 { combo: ':lightning: :fast: ', text: 'Quick Strike!', desc: 'Lightning Attack' }
             ];
             
             quickCombos.forEach(combo => {
-                pickerHTML += `
+                contentHTML += `
                     <button onclick="insertMobileText('${inputId}', '${combo.combo}')" 
                             style="
                                 background: var(--bg-secondary);
@@ -2896,7 +3121,7 @@
                 `;
             });
             
-            pickerHTML += `
+            contentHTML += `
                     </div>
                 </div>
                 
@@ -2909,10 +3134,8 @@
                 </div>
             `;
             
-            picker.innerHTML = pickerHTML;
-            modal.className = 'mobile-chat-modal';
-            modal.appendChild(picker);
-            document.body.appendChild(modal);
+            // Set the content
+            contentArea.innerHTML = contentHTML;
             
             // Close on outside click
             modal.addEventListener('click', (e) => {
@@ -2934,8 +3157,14 @@
                 input.setSelectionRange(cursorPos + text.length + 1, cursorPos + text.length + 1);
                 input.focus();
                 
-                // Close the modal
+                // Enable send button if this is the sheet input
+                if (inputId === 'sheet-chat-input') {
+                    toggleSheetSendButton();
+                }
+                
+                // Close the modal (handle both old and new modal classes)
                 document.querySelector('.mobile-chat-modal')?.remove();
+                document.querySelector('.chat-effects-modal')?.remove();
             }
         }
 
@@ -3009,6 +3238,7 @@
             
             console.log(`📋 Switched to ${tabName} tab`);
         }
+        window.switchChatTab = switchChatTab;
 
         // ========================================
         // CHAT ROLL HISTORY FUNCTIONS  
@@ -3294,8 +3524,11 @@
         // Function to update connected players list (called by supabase-chat.js)
         function updateConnectedPlayers(players = []) {
             console.log('🔍 Updating connected players:', players);
+            console.log('🔍 ChatCommandParser available:', !!window.chatCommandParser);
             
-            // Update Command Center player list
+            // DEPRECATED: The old connected-players list has been replaced by player-chips-area
+            // Legacy code commented out below:
+            /*
             const playerList = document.getElementById('connected-players');
             if (playerList) {
                 // Clear existing players except self
@@ -3337,22 +3570,59 @@
                     }
                 });
             }
+            */
             
             // Update Bottom Sheet player chips
             const playerChipsScroll = document.querySelector('.player-chips-scroll');
             if (playerChipsScroll) {
-                // Keep the self chip
-                const selfChip = playerChipsScroll.querySelector('.player-chip.self');
-                
-                // Clear all chips except self
-                playerChipsScroll.innerHTML = '';
+                // Update the self chip with current player info and avatar
+                let selfChip = playerChipsScroll.querySelector('.player-chip.self');
                 if (selfChip) {
-                    playerChipsScroll.appendChild(selfChip);
+                    // Update self chip with current player name and avatar
+                    const currentPlayerName = window.networkPlayerName || 'You';
+                    const nameElement = selfChip.querySelector('.chip-name');
+                    if (nameElement) {
+                        nameElement.textContent = currentPlayerName;
+                    }
+                    
+                    // Check if we have an avatar for the current player
+                    const avatarElement = selfChip.querySelector('.chip-avatar');
+                    if (avatarElement) {
+                        const chatParser = window.chatCommandParser;
+                        const cachedAvatarUrl = chatParser?.getCachedAvatarUrl?.(currentPlayerName);
+                        
+                        if (cachedAvatarUrl) {
+                            avatarElement.innerHTML = `<img src="${cachedAvatarUrl}" alt="${currentPlayerName}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" onerror="this.parentElement.innerHTML='👤'">`;
+                        } else {
+                            // Try to get avatar from current character data
+                            const characterData = getCurrentCharacterData();
+                            if (characterData?.personal?.avatarUrl) {
+                                avatarElement.innerHTML = `<img src="${characterData.personal.avatarUrl}" alt="${currentPlayerName}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" onerror="this.parentElement.innerHTML='👤'">`;
+                                
+                                // Cache it for future use
+                                if (chatParser && typeof chatParser.handleAvatarUrlCommand === 'function') {
+                                    chatParser.handleAvatarUrlCommand(currentPlayerName, characterData.personal.avatarUrl, 'self');
+                                }
+                            } else {
+                                avatarElement.innerHTML = '👤';
+                            }
+                        }
+                    }
                 }
                 
+                // Clear other chips but keep self
+                const allChips = Array.from(playerChipsScroll.children);
+                allChips.forEach(chip => {
+                    if (!chip.classList.contains('self')) {
+                        chip.remove();
+                    }
+                });
+                
                 // Add player chips for connected players
+                console.log('🔍 Creating chips for connected players:', players);
                 players.forEach(player => {
                     if (player.name && player.name !== networkPlayerName && player.name !== 'System' && player.name !== 'Heartbeat') {
+                        console.log(`🔍 Creating chip for player: ${player.name}`);
                         const chipDiv = document.createElement('div');
                         chipDiv.className = 'player-chip';
                         
@@ -3360,8 +3630,23 @@
                             chipDiv.classList.add('storyteller');
                         }
                         
+                        // Check for cached avatar URL
+                        let avatarContent;
+                        const chatParser = window.chatCommandParser;
+                        const cachedAvatarUrl = chatParser?.getCachedAvatarUrl?.(player.name);
+                        
+                        console.log(`🔍 Cached avatar URL for ${player.name}:`, cachedAvatarUrl);
+                        
+                        if (cachedAvatarUrl) {
+                            avatarContent = `<img src="${cachedAvatarUrl}" alt="${player.name}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" onerror="this.parentElement.innerHTML='${player.is_storyteller ? '👑' : '⚔️'}'">`;
+                            console.log(`✅ Using cached avatar for ${player.name}`);
+                        } else {
+                            avatarContent = player.is_storyteller ? '👑' : '⚔️';
+                            console.log(`🔍 No cached avatar for ${player.name}, using default: ${avatarContent}`);
+                        }
+                        
                         chipDiv.innerHTML = `
-                            <div class="chip-avatar">${player.is_storyteller ? '👑' : '⚔️'}</div>
+                            <div class="chip-avatar">${avatarContent}</div>
                             <span class="chip-name">${player.name}</span>
                         `;
                         
@@ -3404,6 +3689,34 @@
             console.log(`✅ Player list updated: ${players.length} players found`);
         }
 
+        // Helper function to get current character data (similar to qr.js)
+        function getCurrentCharacterData() {
+            // Try different ways to get current character data
+            
+            // First check if the global character object exists (main.js)
+            if (typeof character !== 'undefined' && character) {
+                return character;
+            }
+            
+            if (window.currentCharacter) {
+                return window.currentCharacter;
+            }
+            
+            if (window.character) {
+                return window.character;
+            }
+            
+            // Try to get from character manager
+            if (window.characterManager && window.characterManager.currentCharacterId && window.characterManager.characters) {
+                const currentChar = characterManager.characters.find(
+                    char => char.id === characterManager.currentCharacterId
+                );
+                if (currentChar) return currentChar;
+            }
+            
+            return null;
+        }
+
         // Make updateConnectedPlayers globally available for supabase-chat.js
         window.updateConnectedPlayers = updateConnectedPlayers;
 
@@ -3411,7 +3724,7 @@
         function setupPlayerClickHandlers() {
             const playerList = document.getElementById('connected-players');
             if (!playerList) {
-                console.error('🐛 Player list not found for click handlers');
+                console.log('� Connected players list not found - player click handlers not needed');
                 return;
             }
             
@@ -4113,7 +4426,7 @@
             const randomEffect = joinEffects[Math.floor(Math.random() * joinEffects.length)];
             const randomMessage = joinMessages[Math.floor(Math.random() * joinMessages.length)];
             
-            // Create the announcement message with proper format: :effect: emoji message  
+            // Create the announcement message with proper format: PlayerName: :effect: emoji message
             const announcement = `:${randomEffect}: ${randomEmoji} ${randomMessage}`;
             
             try {
@@ -4204,7 +4517,7 @@
                         currentSessionCode = sessionCode;
                         
                         // Store the original connection URL for future reference
-                        localStorage.setItem('lastConnectionUrl', connectionUrl);
+                        await saveConnectionUrl(connectionUrl);
                         
                         // Keep the original URL in the input field for easy reconnection
                         document.getElementById('session-code-input').value = connectionUrl;
@@ -4521,13 +4834,13 @@
                     <div class="sheet-chat-input">
                         <div class="chat-tools-row">
                             <button class="chat-tool-btn" onclick="showSheetChatEffects()" title="Chat Effects">
-                                <span>✨</span>
+                                ✨
                             </button>
                             <button class="chat-tool-btn" onclick="showSheetImageUpload()" title="Upload Image">
-                                <span>📷</span>
+                                📷
                             </button>
                             <button class="chat-tool-btn" onclick="showSheetPlayers()" title="Send Note">
-                                <span>📝</span>
+                                📝
                             </button>
                         </div>
                         <div class="input-row">
@@ -4555,9 +4868,53 @@
                         </div>
                     </div>
                 </div>
-            </div>
         </div>
     </div>
+</div>
+
+<script>
+// Initialize Chat Command Parser
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize the chat command parser for handling avatar URLs and other commands
+    if (typeof ChatCommandParser !== 'undefined') {
+        window.chatCommandParser = new ChatCommandParser();
+        console.log('✅ ChatCommandParser initialized');
+    } else {
+        console.warn('⚠️ ChatCommandParser class not found');
+    }
+});
+
+// Function to update self chip avatar manually (called when character changes)
+function updateSelfChipAvatar() {
+    const selfChip = document.querySelector('.player-chip.self');
+    if (!selfChip) return;
+    
+    const currentPlayerName = window.networkPlayerName || 'You';
+    const characterData = getCurrentCharacterData();
+    
+    if (characterData?.personal?.avatarUrl) {
+        const avatarElement = selfChip.querySelector('.chip-avatar');
+        if (avatarElement) {
+            avatarElement.innerHTML = `<img src="${characterData.personal.avatarUrl}" alt="${currentPlayerName}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" onerror="this.parentElement.innerHTML='👤'">`;
+            
+            // Cache it for future use
+            if (window.chatCommandParser && typeof window.chatCommandParser.handleAvatarUrlCommand === 'function') {
+                window.chatCommandParser.handleAvatarUrlCommand(currentPlayerName, characterData.personal.avatarUrl, 'self');
+            }
+        }
+        
+        // Update name as well
+        const nameElement = selfChip.querySelector('.chip-name');
+        if (nameElement) {
+            nameElement.textContent = currentPlayerName;
+        }
+    }
+}
+
+// Make it globally available
+window.updateSelfChipAvatar = updateSelfChipAvatar;
+</script>
+
 </body>
 
 </html>

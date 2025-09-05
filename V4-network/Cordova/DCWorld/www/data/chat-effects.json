@@ -9,11 +9,11 @@
         "duration": "1s",
         "cycles": 3
       },
-      "pulse": {
-        "name": "Pulse",
+      "throb": {
+        "name": "Throb",
         "class": "chat-pulse", 
-        "description": "Gentle scaling pulse",
-        "command": ":pulse:",
+        "description": "Gentle scaling pulse (renamed from pulse to avoid :p: emoji conflict)",
+        "command": ":throb:",
         "duration": "1s",
         "cycles": 3
       },

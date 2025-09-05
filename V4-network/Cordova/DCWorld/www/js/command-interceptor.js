@@ -76,7 +76,9 @@ function initializeCommandInterceptor() {
     // Initialize command parser if available
     if (typeof ChatCommandParser !== 'undefined') {
         commandParser = new ChatCommandParser();
-        console.log('✅ Command Parser initialized');
+        // Make it globally available
+        window.chatCommandParser = commandParser;
+        console.log('✅ Command Parser initialized and made globally available');
     } else {
         console.warn('⚠️ ChatCommandParser not available - commands will pass through unprocessed');
     }
@@ -129,7 +131,7 @@ async function interceptChatMessage(message) {
  */
 function isCommandMessage(messageText) {
     // Look for patterns like: COMMAND:PlayerName or COMMAND:PlayerName:parameters
-    const commandPattern = /^(LOOT|ACHIEVEMENT|LEVELUP|ITEM|SKILL|EXP|GOLD|HEALTH|STAT|NOTE|CLEAN):[^:]+/;
+    const commandPattern = /^(LOOT|ACHIEVEMENT|LEVELUP|ITEM|SKILL|EXP|GOLD|HEALTH|STAT|NOTE|CLEAN|AVATAR_URL):[^:]+/;
     // Also check for special silent commands
     const silentCommandPattern = /^\/refreshmap$|^\/sendmap$|^\/github:/;
     // Also check for map sync messages that should be hidden
@@ -313,6 +315,30 @@ async function processCommandMessage(message) {
             console.error('❌ Could not extract image URL from message:', messageText);
             return message; // Display as regular message if parsing fails
         }
+    }
+    
+    // Handle AVATAR_URL commands silently - these should not display in chat
+    if (messageText.startsWith('AVATAR_URL:')) {
+        console.log('🎭 Command Interceptor: Processing AVATAR_URL command silently');
+        
+        // Process the command with the ChatCommandParser if available
+        if (commandParser) {
+            try {
+                const result = await commandParser.processMessage(messageText, message.player_name);
+                if (result && result.success) {
+                    console.log('✅ Command Interceptor: AVATAR_URL processed successfully');
+                } else {
+                    console.warn('❌ Command Interceptor: AVATAR_URL processing failed:', result);
+                }
+            } catch (error) {
+                console.error('❌ Command Interceptor: Error processing AVATAR_URL:', error);
+            }
+        } else {
+            console.warn('❌ Command Interceptor: ChatCommandParser not available for AVATAR_URL');
+        }
+        
+        // Return null to suppress display in chat
+        return null;
     }
     
     // If this is the StoryTeller interface, don't process commands - let them display normally

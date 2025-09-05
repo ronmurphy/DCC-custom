@@ -5138,3 +5138,79 @@ body.sidebar-open {
     align-items: center;
     gap: 8px;
 }
+
+/* ========================================
+   QUICK ACTION BUTTONS (CHAT PANEL)
+   ======================================== */
+.quick-action-btn {
+    background: var(--bg-card);
+    border: 2px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+.quick-action-btn:hover {
+    border-color: var(--primary);
+    background: var(--bg-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.quick-action-btn i {
+    font-size: 16px;
+}
+
+/* Specific button types */
+.quick-action-btn.initiative-btn {
+    border-color: #6366f1;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05));
+}
+
+.quick-action-btn.initiative-btn:hover {
+    border-color: #4f46e5;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(99, 102, 241, 0.1));
+    color: #6366f1;
+}
+
+.quick-action-btn.attack-btn {
+    border-color: #dc2626;
+    background: linear-gradient(135deg, rgba(220, 38, 38, 0.1), rgba(220, 38, 38, 0.05));
+}
+
+.quick-action-btn.attack-btn:hover {
+    border-color: #b91c1c;
+    background: linear-gradient(135deg, rgba(220, 38, 38, 0.2), rgba(220, 38, 38, 0.1));
+    color: #dc2626;
+}
+
+.quick-action-btn.roll-btn {
+    border-color: #059669;
+    background: linear-gradient(135deg, rgba(5, 150, 105, 0.1), rgba(5, 150, 105, 0.05));
+}
+
+.quick-action-btn.roll-btn:hover {
+    border-color: #047857;
+    background: linear-gradient(135deg, rgba(5, 150, 105, 0.2), rgba(5, 150, 105, 0.1));
+    color: #059669;
+}
+
+.quick-action-btn.spell-btn {
+    border-color: #7c3aed;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(124, 58, 237, 0.05));
+}
+
+.quick-action-btn.spell-btn:hover {
+    border-color: #6d28d9;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(124, 58, 237, 0.1));
+    color: #7c3aed;
+}
