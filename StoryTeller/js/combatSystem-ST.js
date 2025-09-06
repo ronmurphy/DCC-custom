@@ -1050,6 +1050,50 @@ if (typeof window !== 'undefined') {
         window.addToInitiativeTracker(playerName, initiative, `Debug roll`);
     };
     
+    // Debug function to test arena directly
+    window.debugTestArena = function() {
+        console.log('🔧 DEBUG: Testing arena directly');
+        console.log('🔧 Current combatPlayers:', combatPlayers);
+        console.log('🔧 Current combatEnemies:', combatEnemies);
+        
+        // Add a test player directly to the array
+        if (combatPlayers.length === 0) {
+            combatPlayers.push({
+                id: 'test_player',
+                name: 'Test Player',
+                hp: 25,
+                maxHp: 30,
+                ac: 14,
+                initiative: 15,
+                status: 'waiting',
+                type: 'player',
+                avatar: '🧙‍♂️',
+                level: 3,
+                class: 'Wizard'
+            });
+            console.log('🔧 Added test player to combatPlayers array');
+        }
+        
+        // Add a test enemy if none exist
+        if (combatEnemies.length === 0) {
+            combatEnemies.push({
+                id: 'test_goblin',
+                name: 'Test Goblin',
+                hp: 8,
+                maxHp: 12,
+                ac: 13,
+                initiative: 12,
+                status: 'waiting',
+                type: 'enemy',
+                level: 1
+            });
+            console.log('🔧 Added test enemy to combatEnemies array');
+        }
+        
+        updateArena();
+        console.log('🔧 Arena update called');
+    };
+    
     // Bridge function for supabase-chat.js compatibility
     window.addToInitiativeTracker = function(playerName, roll, details) {
         console.log(`🎯 addToInitiativeTracker called: ${playerName}, ${roll}, ${details}`);
@@ -1464,20 +1508,30 @@ function updateEnemyChips() {
  * Update the main arena display
  */
 function updateArena() {
+    console.log(`🏟️ updateArena called - Players: ${combatPlayers.length}, Enemies: ${combatEnemies.length}`);
+    
     const emptyState = document.getElementById('arena-empty');
     const combatantsGrid = document.getElementById('combatants-grid');
     
-    if (!emptyState || !combatantsGrid) return;
+    console.log(`🏟️ DOM elements found - emptyState: ${!!emptyState}, combatantsGrid: ${!!combatantsGrid}`);
+    
+    if (!emptyState || !combatantsGrid) {
+        console.error('🚨 Missing DOM elements for arena update!');
+        return;
+    }
     
     const hasCombatants = combatEnemies.length > 0 || combatPlayers.length > 0;
+    console.log(`🏟️ Has combatants: ${hasCombatants} (players: ${combatPlayers.length}, enemies: ${combatEnemies.length})`);
     
     if (hasCombatants) {
         emptyState.style.display = 'none';
         combatantsGrid.style.display = 'grid';
+        console.log(`🏟️ Showing grid, calling renderCombatants()`);
         renderCombatants();
     } else {
         emptyState.style.display = 'block';
         combatantsGrid.style.display = 'none';
+        console.log(`🏟️ Showing empty state`);
     }
 }
 
@@ -1485,9 +1539,14 @@ function updateArena() {
  * Render combatant cards
  */
 function renderCombatants() {
+    console.log(`🎨 renderCombatants called`);
     const grid = document.getElementById('combatants-grid');
-    if (!grid) return;
+    if (!grid) {
+        console.error('🚨 No combatants-grid element found!');
+        return;
+    }
     
+    console.log(`🎨 Grid element found, clearing content`);
     grid.innerHTML = '';
     
     // Combine and sort by initiative
@@ -1496,10 +1555,16 @@ function renderCombatants() {
         ...combatEnemies.map(e => ({...e, type: 'enemy'}))
     ].sort((a, b) => b.initiative - a.initiative);
     
+    console.log(`🎨 Total combatants to render: ${allCombatants.length}`, allCombatants);
+    
     allCombatants.forEach((combatant, index) => {
+        console.log(`🎨 Creating card for ${combatant.name} (${combatant.type})`);
         const card = createCombatantCard(combatant, index);
         grid.appendChild(card);
+        console.log(`🎨 Card added to grid for ${combatant.name}`);
     });
+    
+    console.log(`🎨 Render complete. Grid has ${grid.children.length} children`);
 }
 
 /**
