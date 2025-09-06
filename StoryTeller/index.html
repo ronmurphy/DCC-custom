@@ -4247,10 +4247,10 @@
 • CLEAN:session:old - Remove old messages (7+ days)
 • CLEAN:session:all - Remove ALL messages (⚠️ Dangerous!)
 
-**💡 TIP:** Select a player by Shift+clicking their chip, then use command buttons above!
+**💡 TIP:** Select a player by clicking their chip, then use command buttons above!
             `.trim();
             
-            addChatMessage(commandsList, 'system');
+            addChatMessage(commandsList, 'system', 'System', true); // Skip emoji processing
         }
 
         // Helper function to get the active chat messages container
@@ -4785,20 +4785,22 @@
             insertText(inputId, effectCommand);
         }
 
-        function addChatMessage(message, type = 'storyteller', playerName = 'Storyteller') {
+        function addChatMessage(message, type = 'storyteller', playerName = 'Storyteller', skipEmojiProcessing = false) {
             const messageEl = document.createElement('div');
             messageEl.className = `chat-message ${type}`;
             
-            console.log('🔍 addChatMessage called with:', { message, type, playerName });
+            console.log('🔍 addChatMessage called with:', { message, type, playerName, skipEmojiProcessing });
             console.log('🔍 chatEffectsManager available:', !!window.chatEffectsManager);
             
-            // Process message for emojis first
+            // Process message for emojis first (unless explicitly skipped)
             let processedMessage = message;
-            if (window.emojiProcessor) {
+            if (!skipEmojiProcessing && window.emojiProcessor) {
                 processedMessage = window.emojiProcessor.processMessage(processedMessage);
                 if (processedMessage !== message) {
                     console.log(`🎭 Emoji converted: "${message}" → "${processedMessage}"`);
                 }
+            } else if (skipEmojiProcessing) {
+                console.log('🚫 Skipping emoji processing as requested');
             }
             
             // Then process message for chat effects
