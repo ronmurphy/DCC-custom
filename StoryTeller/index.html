@@ -21,7 +21,8 @@
     <link rel="stylesheet" href="css/initiative-tracker.css">
     <link rel="stylesheet" href="css/storyTellerPlayersPanel.css">
     <link rel="stylesheet" href="css/character-modal.css">
-    <link rel="stylesheet" href="css/player-chips.css">
+    <link rel="stylesheet" href="css/player-chips-fixed.css">
+    <link rel="stylesheet" href="css/player-chips-selection.css">
     <!-- end ported css -->
 
     <style>
@@ -152,6 +153,18 @@
         .dark-theme .command-category {
             background: var(--bg-secondary);
             border-color: var(--border-color);
+        }
+
+        .dark-theme .selected-player-display {
+            background: rgba(var(--primary-rgb), 0.1);
+        }
+
+        .dark-theme .selected-player-name {
+            color: var(--accent-color);
+        }
+
+        .dark-theme .selected-player-name.no-selection {
+            color: var(--text-secondary);
         }
 
         .dark-theme .chat-input {
@@ -825,6 +838,36 @@
         }
 
         .command-note small {
+            color: #6c757d;
+            font-size: 0.8em;
+        }
+
+        /* Selected Player Display (inside command-category) */
+        .selected-player-display {
+            padding: 8px;
+            background: rgba(var(--primary-rgb), 0.05);
+            border-radius: 4px;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .selected-player-name {
+            font-weight: 600;
+            color: var(--primary-color);
+            font-size: calc(var(--base-font-size) * 1.05);
+        }
+
+        .selected-player-name.no-selection {
+            color: #6c757d;
+            font-style: italic;
+            font-weight: normal;
+        }
+
+        .selection-hint {
+            text-align: center;
+        }
+
+        .selection-hint small {
             color: #6c757d;
             font-size: 0.8em;
         }
@@ -2455,6 +2498,22 @@
                     <!-- Commands Interface -->
                     <div class="command-interface">
                         <div class="command-categories">
+                            <!-- Player Selection for Commands -->
+                            <div class="command-category">
+                                <div class="category-header">
+                                    <i class="ra ra-player"></i>
+                                    Selected Player
+                                </div>
+                                <div class="category-content">
+                                    <div class="selected-player-display" id="selected-player-display">
+                                        <span class="selected-player-name no-selection">Click on a player chip to select them</span>
+                                    </div>
+                                    <div class="selection-hint">
+                                        <small>💡 Click any player chip below the chat to select them</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <!-- Loot Commands -->
                             <div class="command-category">
                                 <div class="category-header">
@@ -2559,6 +2618,9 @@
                                 </div>
                                 <div class="category-content">
                                     <div class="command-grid">
+                                        <button class="command-btn" onclick="executeCommand('commandlist')">
+                                            📋 Command List
+                                        </button>
                                         <button class="command-btn" onclick="executeCommand('rest')">
                                             😴 Rest
                                         </button>
@@ -2570,6 +2632,21 @@
                                         </button>
                                         <button class="command-btn warning" onclick="executeCommand('catastrophe')">
                                             🌪️ Catastrophe
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Player Interaction -->
+                            <div class="command-category">
+                                <div class="category-header">
+                                    <i class="ra ra-speech-bubbles"></i>
+                                    Interact
+                                </div>
+                                <div class="category-content">
+                                    <div class="command-grid">
+                                        <button class="command-btn" onclick="executeCommand('note')">
+                                            📝 Send Note
                                         </button>
                                     </div>
                                 </div>
@@ -3999,11 +4076,44 @@
             }
         }
 
+        function selectPlayerForCommands(playerName, chipElement) {
+            console.log('🔍 selectPlayerForCommands called for:', playerName);
+            selectedPlayer = playerName;
+            
+            // Update UI - remove selection from all chips
+            document.querySelectorAll('.player-chip').forEach(chip => {
+                chip.classList.remove('selected');
+            });
+            
+            // Add selection to clicked chip
+            if (chipElement) {
+                chipElement.classList.add('selected');
+                console.log('🔍 Added selected class to chip for:', playerName);
+            }
+            
+            // Update the command panel indicator
+            const selectedPlayerDisplay = document.getElementById('selected-player-display');
+            if (selectedPlayerDisplay) {
+                selectedPlayerDisplay.innerHTML = `<span class="selected-player-name">${playerName}</span>`;
+                console.log('🔍 Updated selected player display to:', playerName);
+            }
+            
+            // Show confirmation message
+            addChatMessage(`✅ Selected ${playerName} for commands`, 'system');
+        }
+
         function executeCommand(command, parameter = '') {
             // Clean commands don't require a player selection
             if (command !== 'clean' && !selectedPlayer) {
-                addChatMessage('Please select a player first!', 'system');
-                return;
+                // Try to get selected player from chips
+                const selectedChip = document.querySelector('.player-chip.selected');
+                if (selectedChip) {
+                    const chipName = selectedChip.querySelector('.chip-name');
+                    selectedPlayer = chipName ? chipName.textContent : null;
+                } else {
+                    addChatMessage('Please select a player first by clicking on their chip!', 'system');
+                    return;
+                }
             }
             
             let commandText = '';
@@ -4050,6 +4160,18 @@
                     commandText = `ACHIEVEMENT:${selectedPlayer}:heroic_deed`;
                     emoji = '🦸';
                     break;
+                case 'note':
+                    // Open note dialog for selected player - doesn't send a chat command
+                    if (selectedPlayer && typeof showNoteInput === 'function') {
+                        showNoteInput(selectedPlayer);
+                    } else {
+                        addChatMessage('Please select a player first!', 'system');
+                    }
+                    return; // Don't send a chat command
+                case 'commandlist':
+                    // Show list of all available commands - doesn't need a player
+                    showCommandList();
+                    return; // Don't send a chat command
                 case 'clean':
                     // Special handling for clean commands - doesn't need a player
                     if (parameter === 'old') {
@@ -4086,6 +4208,49 @@
                 // Fallback if chat system not ready
                 addChatMessage(`⚠️ Chat system not connected. Command would be: ${commandText}`, 'system');
             }
+        }
+
+        // Show a list of all available commands in the chat
+        function showCommandList() {
+            const commandsList = `
+🎮 **STORYTELLER COMMANDS** 📋
+
+**💰 LOOT & REWARDS**
+• LOOT:PlayerName:handful_gold - Give gold to player
+• LOOT:PlayerName:treasure_chest - Give treasure to player  
+• LOOT:PlayerName:magic_item - Give magic item to player
+• LOOT:PlayerName:weapon - Give weapon to player
+
+**⚔️ CHARACTER GROWTH**
+• LEVELUP:PlayerName - Level up player
+• ACHIEVEMENT:PlayerName:creative_killer - Give achievement
+• SKILL:PlayerName:SkillName:Points - Train skill
+• EXP:PlayerName:Amount - Give experience points
+
+**🩹 HEALTH & STATUS**
+• HEALTH:PlayerName:Amount - Heal (+) or damage (-) player
+• STAT:PlayerName:StatName:Amount - Boost player stat
+• CONDITION:PlayerName:Effect - Apply condition/effect
+
+**⚡ QUICK ACTIONS**
+• REST:PlayerName - Player takes a rest
+• ACHIEVEMENT:PlayerName:murder_hobo - Murder hobo achievement
+• ACHIEVEMENT:PlayerName:heroic_deed - Heroic deed achievement
+• CATASTROPHE:PlayerName - Something catastrophic happens
+
+**💬 CHAT COMMANDS**
+• DLCHAR:PlayerName:URL - Download character from GitHub
+• AVATARURL:PlayerName:URL - Set player avatar
+• NOTE:PlayerName:Message - Send private note
+
+**🧹 MANAGEMENT**
+• CLEAN:session:old - Remove old messages (7+ days)
+• CLEAN:session:all - Remove ALL messages (⚠️ Dangerous!)
+
+**💡 TIP:** Select a player by Shift+clicking their chip, then use command buttons above!
+            `.trim();
+            
+            addChatMessage(commandsList, 'system');
         }
 
         // Helper function to get the active chat messages container
@@ -4794,6 +4959,38 @@
                             }
                         }
                     }
+                    
+                    // Add click handling to self chip for command selection
+                    if (!selfChip.hasAttribute('data-click-handler-added')) {
+                        selfChip.addEventListener('click', (e) => {
+                            console.log('🔍 Self chip clicked');
+                            
+                            // Prevent any default behavior or event bubbling
+                            e.preventDefault();
+                            e.stopPropagation();
+                            
+                            // Provide haptic feedback on supported devices
+                            if (navigator.vibrate) {
+                                navigator.vibrate(50);
+                            }
+                            
+                            // Visual feedback animation
+                            selfChip.style.transform = 'scale(0.95)';
+                            setTimeout(() => {
+                                selfChip.style.transform = '';
+                            }, 150);
+                            
+                            // Always select for commands since you can't send notes to yourself
+                            const currentPlayerName = window.currentPlayerName || 'You';
+                            console.log('🔍 Calling selectPlayerForCommands for self:', currentPlayerName);
+                            selectPlayerForCommands(currentPlayerName, selfChip);
+                        });
+                        
+                        // Update title
+                        selfChip.title = 'Click to select yourself for commands';
+                        selfChip.style.cursor = 'pointer';
+                        selfChip.setAttribute('data-click-handler-added', 'true');
+                    }
                 }
                 
                 // Clear other chips but keep self
@@ -4836,8 +5033,14 @@
                             <span class="chip-name">${player.name}</span>
                         `;
                         
-                        // Add click event for sending notes
+                        // Add click event for player interaction (selection only)
                         chipDiv.addEventListener('click', (e) => {
+                            console.log('🔍 Player chip clicked:', player.name);
+                            
+                            // Prevent any default behavior or event bubbling
+                            e.preventDefault();
+                            e.stopPropagation();
+                            
                             // Provide haptic feedback on supported devices
                             if (navigator.vibrate) {
                                 navigator.vibrate(50); // Short vibration
@@ -4849,7 +5052,19 @@
                                 chipDiv.style.transform = '';
                             }, 150);
                             
-                            showNoteInput(player.name);
+                            // Select player for commands (simplified behavior)
+                            console.log('🔍 Calling selectPlayerForCommands for:', player.name);
+                            selectPlayerForCommands(player.name, chipDiv);
+                            
+                            /* COMMENTED OUT: Old dual-mode behavior
+                            // Check if shift key is held for command selection mode
+                            if (e.shiftKey) {
+                                selectPlayerForCommands(player.name, chipDiv);
+                            } else {
+                                // Default behavior: send note
+                                showNoteInput(player.name);
+                            }
+                            */
                         });
                         
                         // Add touch event handlers for better mobile experience
@@ -4863,7 +5078,7 @@
                         
                         // Add visual feedback for clickable chips
                         chipDiv.style.cursor = 'pointer';
-                        chipDiv.title = `Send a private note to ${player.name}`;
+                        chipDiv.title = `Click to select ${player.name} for commands`;
                         
                         playerChipsScroll.appendChild(chipDiv);
                     }
