@@ -3272,7 +3272,22 @@
                                 <strong style="color: #333; font-size: 1em;">From: ${note.from}</strong>
                                 <small style="color: #666; font-size: 0.85em;">${time}</small>
                             </div>
-                            <div style="color: #444; line-height: 1.4; font-size: 0.95em;">${messageContent}</div>
+                            <div style="color: #444; line-height: 1.4; font-size: 0.95em; margin-bottom: 12px;">${messageContent}</div>
+                            <div style="text-align: right; padding-top: 8px; border-top: 1px solid #e8e8e8;">
+                                <button onclick="replyToNote('${note.from.replace(/'/g, "\\'")}', '${note.id}')" style="
+                                    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+                                    color: white;
+                                    border: none;
+                                    padding: 6px 12px;
+                                    border-radius: 4px;
+                                    cursor: pointer;
+                                    font-size: 0.85em;
+                                    transition: transform 0.2s, box-shadow 0.2s;
+                                    box-shadow: 0 1px 4px rgba(40, 167, 69, 0.3);
+                                " onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 2px 8px rgba(40, 167, 69, 0.4)'" 
+                                   onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 1px 4px rgba(40, 167, 69, 0.3)'" 
+                                   title="Reply to ${note.from}">💬 Reply</button>
+                            </div>
                         </div>
                     `;
                 });
@@ -3362,6 +3377,12 @@
                 updateNotificationIcon();
                 updatePrivateMessagesPanel();
                 
+                // Auto-save after deletion
+                if (typeof saveNotesToCharacterSilent === 'function') {
+                    saveNotesToCharacterSilent();
+                    console.log('💾 Auto-saved after note deletion');
+                }
+                
                 // Update the modal content
                 const noteDiv = buttonElement.closest('div[style*="border: 1px solid #e0e0e0"]');
                 if (noteDiv) {
@@ -3377,6 +3398,25 @@
                     saveCharacterData();
                 }
             }
+        }
+
+        function replyToNote(senderName, noteId) {
+            console.log('💬 Replying to note from:', senderName);
+            
+            // Close the Your Notes modal first
+            closeYourNotesModal();
+            
+            // Small delay to let the modal close, then open the send note modal
+            setTimeout(() => {
+                // Use the correct function name: showNoteInput
+                if (typeof showNoteInput === 'function') {
+                    showNoteInput(senderName);
+                } else {
+                    console.warn('showNoteInput function not found. Cannot open reply modal.');
+                    // Fallback: show an alert
+                    alert(`Reply feature requires connection to session. Target: ${senderName}`);
+                }
+            }, 150);
         }
 
         // Enable input monitoring for send button
@@ -3983,6 +4023,12 @@
             console.log('🐛 Note added to receivedNotes array. Total notes:', receivedNotes.length);
             updateNotificationIcon();
             updatePrivateMessagesPanel();
+            
+            // Auto-save received notes to character data
+            if (typeof saveNotesToCharacterSilent === 'function') {
+                saveNotesToCharacterSilent();
+                console.log('💾 Auto-saved received notes to character data');
+            }
             
             // Show popup notification for received note
             if (typeof showNotification === 'function') {

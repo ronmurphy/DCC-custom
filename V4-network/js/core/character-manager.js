@@ -690,6 +690,23 @@ function loadCharacterFromManager(characterId) {
     if (typeof character !== 'undefined') {
         Object.assign(character, charData);
         
+        // Load received notes from character data
+        if (character.notes && character.notes.receivedNotes && Array.isArray(character.notes.receivedNotes)) {
+            if (typeof receivedNotes !== 'undefined') {
+                receivedNotes.length = 0; // Clear current array
+                receivedNotes.push(...character.notes.receivedNotes); // Load saved notes
+                console.log('📥 Loaded', receivedNotes.length, 'private notes from character data');
+                
+                // Update the private messages display
+                if (typeof updatePrivateMessagesPanel === 'function') {
+                    updatePrivateMessagesPanel();
+                }
+                if (typeof updateNotificationIcon === 'function') {
+                    updateNotificationIcon();
+                }
+            }
+        }
+        
         // Set network player name for chat
         if (typeof window.setNetworkPlayerName === 'function') {
             window.setNetworkPlayerName(character.name || 'Unknown Player');
@@ -1185,6 +1202,12 @@ function saveNotesToCharacterSilent() {
                 character.notes[noteType] = element.value || '';
             }
         });
+        
+        // Save received private notes to character data
+        if (typeof receivedNotes !== 'undefined' && Array.isArray(receivedNotes)) {
+            character.notes.receivedNotes = receivedNotes;
+            console.log('💾 Saved', receivedNotes.length, 'private notes to character data');
+        }
     }
 }
 
