@@ -3189,11 +3189,193 @@
         }
 
         function showSheetPlayers() {
-            // Show command center modal for player selection
-            if (typeof showCommandCenterModal === 'function') {
-                showCommandCenterModal();
+            // Show Your Notes modal instead of the old command center
+            showYourNotesModal();
+        }
+
+        function showYourNotesModal() {
+            // Create modal overlay
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.7);
+                z-index: 10000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+                box-sizing: border-box;
+            `;
+
+            // Create modal content
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                background: white;
+                border-radius: 12px;
+                padding: 24px;
+                max-width: 600px;
+                width: 100%;
+                max-height: 80vh;
+                overflow-y: auto;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                position: relative;
+            `;
+
+            // Get private messages content using the same logic as updatePrivateMessagesPanel
+            let notesContent = '';
+            if (receivedNotes.length === 0) {
+                notesContent = `
+                    <div style="text-align: center; color: #8a8a8a; padding: 40px 20px;">
+                        <i class="material-icons" style="font-size: 3em; margin-bottom: 16px; display: block;">mail_outline</i>
+                        <h4 style="margin: 0 0 8px 0; color: #666;">No private notes yet!</h4>
+                        <p style="margin: 0; font-size: 0.9em;">You'll receive private notes here when other players or the storyteller send them to you.</p>
+                    </div>
+                `;
             } else {
-                alert('Connect to a session to see other players for sending notes.');
+                // Build messages HTML using the same format as updatePrivateMessagesPanel
+                receivedNotes.forEach((note, index) => {
+                    const time = new Date(note.timestamp).toLocaleString();
+                    let messageContent = note.message;
+                    
+                    // Process image markup in notes (same as existing function)
+                    if (messageContent && messageContent.includes('🖼️ [IMAGE:')) {
+                        messageContent = messageContent.replace(/🖼️ \[IMAGE:(https?:\/\/[^\]]+)\]/g, (match, imageUrl) => {
+                            return `<br><div style="text-align: center; margin: 12px 0;"><img src="${imageUrl}" style="max-width: 100%; max-height: 150px; border-radius: 6px; border: 1px solid #ddd; cursor: pointer;" onclick="if(window.chatImageSystem && window.chatImageSystem.openImageModal) { window.chatImageSystem.openImageModal('${imageUrl}', '${note.from}'); } else { window.open('${imageUrl}', '_blank'); }" title="Click to view full size"><br><small style="color: #666; font-style: italic;">Click image to view full size</small></div>`;
+                        });
+                    }
+                    
+                    notesContent += `
+                        <div style="border: 1px solid #e0e0e0; border-radius: 6px; padding: 12px; margin-bottom: 12px; background: #f9f9f9; position: relative;">
+                            <button onclick="deleteNoteFromModal('${note.id}', this)" style="
+                                position: absolute;
+                                top: 8px;
+                                right: 8px;
+                                background: #e74c3c;
+                                color: white;
+                                border: none;
+                                border-radius: 50%;
+                                width: 22px;
+                                height: 22px;
+                                cursor: pointer;
+                                font-size: 12px;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                opacity: 0.7;
+                                transition: opacity 0.2s;
+                            " onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'" title="Delete note">×</button>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-right: 30px;">
+                                <strong style="color: #333; font-size: 1em;">From: ${note.from}</strong>
+                                <small style="color: #666; font-size: 0.85em;">${time}</small>
+                            </div>
+                            <div style="color: #444; line-height: 1.4; font-size: 0.95em;">${messageContent}</div>
+                        </div>
+                    `;
+                });
+            }
+
+            modal.innerHTML = `
+                <div style="text-align: center; margin-bottom: 24px;">
+                    <h3 style="margin: 0 0 8px 0; color: #333; font-size: 1.3em;">📝 Your Notes</h3>
+                    <p style="margin: 0; color: #666; font-size: 0.9em;">Private messages and notes sent to you</p>
+                    ${receivedNotes.length > 0 ? `<p style="margin: 8px 0 0 0; color: #666; font-size: 0.85em;">${receivedNotes.length} note${receivedNotes.length === 1 ? '' : 's'}</p>` : ''}
+                </div>
+                
+                <div id="modal-notes-container" style="max-height: 400px; overflow-y: auto; margin-bottom: 20px;">
+                    ${notesContent}
+                </div>
+                
+                <div style="display: flex; gap: 12px; justify-content: flex-end; padding-top: 16px; border-top: 1px solid #e0e0e0;">
+                    <button onclick="refreshNotesModal()" style="
+                        background: #6c757d; 
+                        color: white; 
+                        border: none; 
+                        padding: 10px 16px; 
+                        border-radius: 6px; 
+                        cursor: pointer;
+                        font-size: 14px;
+                        transition: background 0.2s;
+                    " onmouseover="this.style.background='#5a6268'" onmouseout="this.style.background='#6c757d'">🔄 Refresh</button>
+                    
+                    <button onclick="closeYourNotesModal()" style="
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                        color: white; 
+                        border: none; 
+                        padding: 10px 20px; 
+                        border-radius: 6px; 
+                        cursor: pointer;
+                        font-size: 14px;
+                        transition: transform 0.2s, box-shadow 0.2s;
+                        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+                    " onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='translateY(0)'">Close</button>
+                </div>
+            `;
+
+            // Add click outside to close
+            overlay.addEventListener('click', function(e) {
+                if (e.target === overlay) {
+                    closeYourNotesModal();
+                }
+            });
+
+            // Store reference for other functions
+            window.yourNotesModal = {
+                overlay: overlay,
+                modal: modal
+            };
+
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+
+            // Focus on modal for keyboard accessibility
+            modal.focus();
+        }
+
+        function closeYourNotesModal() {
+            if (window.yourNotesModal && window.yourNotesModal.overlay) {
+                document.body.removeChild(window.yourNotesModal.overlay);
+                window.yourNotesModal = null;
+            }
+        }
+
+        function refreshNotesModal() {
+            // TODO: For real-time updates, this is where we would implement live refresh
+            // For now, just close and reopen the modal to get latest data
+            closeYourNotesModal();
+            setTimeout(() => showYourNotesModal(), 100);
+        }
+
+        function deleteNoteFromModal(noteId, buttonElement) {
+            console.log('🗑️ Deleting note from modal:', noteId);
+            
+            // Remove from array (same logic as existing deleteNote function)
+            const index = receivedNotes.findIndex(note => note.id === noteId);
+            if (index !== -1) {
+                receivedNotes.splice(index, 1);
+                console.log('🗑️ Note deleted. Remaining notes:', receivedNotes.length);
+                
+                // Update the main panel
+                updateNotificationIcon();
+                updatePrivateMessagesPanel();
+                
+                // Update the modal content
+                const noteDiv = buttonElement.closest('div[style*="border: 1px solid #e0e0e0"]');
+                if (noteDiv) {
+                    noteDiv.style.opacity = '0';
+                    noteDiv.style.transform = 'translateX(-20px)';
+                    setTimeout(() => {
+                        refreshNotesModal(); // Refresh the modal to show updated content
+                    }, 200);
+                }
+                
+                // Save to IndexedDB (same as existing function)
+                if (typeof saveCharacterData === 'function') {
+                    saveCharacterData();
+                }
             }
         }
 
@@ -4839,7 +5021,7 @@
                             <button class="chat-tool-btn" onclick="showSheetImageUpload()" title="Upload Image">
                                 📷
                             </button>
-                            <button class="chat-tool-btn" onclick="showSheetPlayers()" title="Send Note">
+                            <button class="chat-tool-btn" onclick="showSheetPlayers()" title="Your Notes">
                                 📝
                             </button>
                         </div>
