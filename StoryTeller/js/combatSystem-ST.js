@@ -2248,6 +2248,7 @@ if (typeof window !== 'undefined') {
     window.announceTurnOrder = announceTurnOrder;
     window.checkAndAnnounceTurnOrder = checkAndAnnounceTurnOrder;
     window.executeEnemyAttack = executeEnemyAttack;
+    window.executeEnemyAttackWithTarget = executeEnemyAttackWithTarget;
     window.getHpBarColor = getHpBarColor;
     window.getHpStatusClass = getHpStatusClass;
     window.checkCombatEnd = checkCombatEnd;
@@ -2924,7 +2925,7 @@ function createEnemyControls(enemy) {
                 ${targetDropdown}
             </div>
             <div class="action-controls">
-                <button class="action-btn" onclick="executeEnemyAttack('${enemy.id}')">Attack</button>
+                <button class="action-btn" onclick="executeEnemyAttackWithTarget('${enemy.id}')">Attack</button>
                 <button class="action-btn" onclick="applyDamageToEnemy('${enemy.id}')">Damage</button>
             </div>
         </div>
@@ -2987,38 +2988,7 @@ function updateEnemyTarget(enemyId, targetId) {
     }
 }
 
-/**
- * Execute enemy attack
- */
-function executeEnemyAttack(enemyId) {
-    const enemy = combatEnemies.find(e => e.id === enemyId);
-    if (!enemy || !enemy.attacks || enemy.attacks.length === 0) return;
-    
-    const attack = enemy.attacks[enemy.selectedAttack];
-    if (!attack) return;
-    
-    // Get target information
-    const targetPlayer = enemy.targetId ? combatPlayers.find(p => p.id === enemy.targetId) : null;
-    const targetText = targetPlayer ? ` targeting ${targetPlayer.name}` : '';
-    
-    const roll = rollD20();
-    const message = `⚔️ ${enemy.name} attacks with ${attack.name}${targetText}! Attack Roll: ${roll} (Damage: ${attack.damage})`;
-    
-    // Add to chat if available
-    if (typeof addToChatLog === 'function') {
-        addToChatLog(message, 'system');
-    } else {
-        console.log(message);
-    }
-    
-    // Also send to combat chat if available
-    if (typeof sendChatMessageAsync === 'function') {
-        sendChatMessageAsync(message);
-    }
-    
-    enemy.status = 'acted';
-    updateArena();
-}
+// Removed duplicate executeEnemyAttack function - using the complete one at line 802
 
 /**
  * Apply damage to enemy
@@ -3047,6 +3017,35 @@ function applyDamageToEnemy(enemyId) {
     
     updateArena();
     console.log(`Applied ${damageAmount} damage to ${enemy.name}`);
+}
+
+/**
+ * Helper function for manual enemy attacks - gets target from enemy's targetId
+ */
+function executeEnemyAttackWithTarget(enemyId) {
+    const enemy = combatEnemies.find(e => e.id === enemyId);
+    if (!enemy) {
+        console.error(`Enemy ${enemyId} not found`);
+        return;
+    }
+    
+    // Get target from enemy's targetId
+    let targetId = enemy.targetId;
+    
+    // If no target set, find first available player
+    if (!targetId) {
+        const target = combatPlayers.find(p => p.status !== 'defeated' && p.hp > 0);
+        if (target) {
+            targetId = target.id;
+            enemy.targetId = targetId; // Remember this target
+        } else {
+            addCombatLogEntry(`⚠️ **${enemy.name}** has no valid targets!`, 'system');
+            return;
+        }
+    }
+    
+    // Call the real function with both parameters
+    executeEnemyAttack(enemyId, targetId);
 }
 
 /**
