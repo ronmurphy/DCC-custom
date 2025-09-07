@@ -383,18 +383,47 @@ function processAttackCommand(commandData) {
         parts = commandData.split('|');
     }
     
-    if (parts.length < 5) {
+    // Handle different V4-network format: ATTACK:Testificate:26:13:Pistol
+    // vs expected format: ATTACK:Testificate:Pistol:13:DamageRoll
+    let attackData;
+    
+    if (parts.length >= 5) {
+        // Check if parts[2] is a number (V4-network format)
+        if (!isNaN(parseInt(parts[2]))) {
+            // V4-network format: ATTACK:Testificate:TotalDamage:AttackRoll:WeaponName
+            attackData = {
+                character: parts[1],
+                weapon: parts[4] || 'Weapon',
+                attackRoll: parseInt(parts[3]),
+                damageRoll: parseInt(parts[2]), // Total damage in V4 format
+                timestamp: Date.now()
+            };
+            console.log('🔧 DEBUG: Using V4-network attack format:', attackData);
+        } else {
+            // Expected format: ATTACK:Testificate:Pistol:13:DamageRoll
+            attackData = {
+                character: parts[1],
+                weapon: parts[2],
+                attackRoll: parseInt(parts[3]),
+                damageRoll: parseInt(parts[4]),
+                timestamp: Date.now()
+            };
+            console.log('🔧 DEBUG: Using standard attack format:', attackData);
+        }
+    } else if (parts.length >= 4) {
+        // Fallback for 4-part format
+        attackData = {
+            character: parts[1],
+            weapon: parts[2] || 'Weapon',
+            attackRoll: parseInt(parts[3]),
+            damageRoll: parseInt(parts[3]), // Use attack roll as damage if no damage specified
+            timestamp: Date.now()
+        };
+        console.log('🔧 DEBUG: Using fallback attack format:', attackData);
+    } else {
         console.error('Invalid ATTACK command format:', commandData);
         return;
     }
-    
-    const attackData = {
-        character: parts[1],
-        weapon: parts[2],
-        attackRoll: parseInt(parts[3]),
-        damageRoll: parseInt(parts[4]),
-        timestamp: Date.now()
-    };
     
     // Check if it's this character's turn
     if (CombatState.turnStarted && isCurrentTurn(attackData.character)) {
@@ -591,7 +620,65 @@ function processQueuedAction(characterName) {
  * Processes an attack action immediately
  */
 function processAttackAction(attackData) {
-    const message = `⚔️ **${attackData.character}** attacks with **${attackData.weapon}**: Attack roll **${attackData.attackRoll}**, Damage **${attackData.damageRoll}**`;
+    let message = `⚔️ **${attackData.character}** attacks with **${attackData.weapon}**: Attack roll **${attackData.attackRoll}**, Damage **${attackData.damageRoll}**`;
+    
+    // Try to apply damage to enemies in visual combat system
+    let damageApplied = false;
+    
+    // Look for enemies to damage
+    if (typeof combatEnemies !== 'undefined' && Array.isArray(combatEnemies)) {
+        for (let enemy of combatEnemies) {
+            if (enemy.status !== 'defeated' && enemy.status !== 'unconscious') {
+                // Apply damage to the first available enemy (in real game, player would choose target)
+                const oldHp = enemy.hp;
+                enemy.hp = Math.max(0, enemy.hp - attackData.damageRoll);
+                
+                message += ` → **${enemy.name}** takes ${attackData.damageRoll} damage! (${oldHp} → ${enemy.hp} HP)`;
+                
+                // Check if enemy is defeated
+                if (enemy.hp <= 0) {
+                    enemy.status = 'defeated';
+                    message += ` **${enemy.name} is defeated!**`;
+                }
+                
+                damageApplied = true;
+                console.log(`💥 Applied ${attackData.damageRoll} damage to ${enemy.name}: ${oldHp} → ${enemy.hp} HP`);
+                
+                // Update visual display
+                if (typeof updateArena === 'function') {
+                    updateArena();
+                }
+                
+                break; // Only damage one enemy for now
+            }
+        }
+    }
+    
+    // If no enemy found in visual combat, try traditional enemy system
+    if (!damageApplied && typeof currentEnemy !== 'undefined' && currentEnemy && currentEnemy.hp) {
+        const oldHp = currentEnemy.hp;
+        currentEnemy.hp = Math.max(0, currentEnemy.hp - attackData.damageRoll);
+        
+        message += ` → **${currentEnemy.name}** takes ${attackData.damageRoll} damage! (${oldHp} → ${currentEnemy.hp} HP)`;
+        
+        if (currentEnemy.hp <= 0) {
+            message += ` **${currentEnemy.name} is defeated!**`;
+        }
+        
+        damageApplied = true;
+        console.log(`💥 Applied ${attackData.damageRoll} damage to ${currentEnemy.name}: ${oldHp} → ${currentEnemy.hp} HP`);
+        
+        // Update enemy display
+        if (typeof updateEnemyDisplay === 'function') {
+            updateEnemyDisplay();
+        }
+    }
+    
+    if (!damageApplied) {
+        message += ` (No valid target found)`;
+        console.log('⚠️ No valid enemy target found for damage application');
+    }
+    
     addCombatLogEntry(message, 'attack');
     console.log('Attack processed:', attackData);
 }
@@ -600,7 +687,58 @@ function processAttackAction(attackData) {
  * Processes a spell action immediately
  */
 function processSpellAction(spellData) {
-    const message = `✨ **${spellData.character}** casts **${spellData.spell}**: Attack roll **${spellData.attackRoll}**, Damage **${spellData.damageRoll}**, MP Cost **${spellData.mpCost}**`;
+    let message = `✨ **${spellData.character}** casts **${spellData.spell}**: Attack roll **${spellData.attackRoll}**, Damage **${spellData.damageRoll}**, MP Cost **${spellData.mpCost}**`;
+    
+    // Try to apply damage to enemies if this is a damage spell
+    let damageApplied = false;
+    
+    if (spellData.damageRoll > 0) {
+        // Look for enemies to damage in visual combat system
+        if (typeof combatEnemies !== 'undefined' && Array.isArray(combatEnemies)) {
+            for (let enemy of combatEnemies) {
+                if (enemy.status !== 'defeated' && enemy.status !== 'unconscious') {
+                    const oldHp = enemy.hp;
+                    enemy.hp = Math.max(0, enemy.hp - spellData.damageRoll);
+                    
+                    message += ` → **${enemy.name}** takes ${spellData.damageRoll} magical damage! (${oldHp} → ${enemy.hp} HP)`;
+                    
+                    if (enemy.hp <= 0) {
+                        enemy.status = 'defeated';
+                        message += ` **${enemy.name} is defeated!**`;
+                    }
+                    
+                    damageApplied = true;
+                    console.log(`✨ Applied ${spellData.damageRoll} magical damage to ${enemy.name}: ${oldHp} → ${enemy.hp} HP`);
+                    
+                    if (typeof updateArena === 'function') {
+                        updateArena();
+                    }
+                    
+                    break;
+                }
+            }
+        }
+        
+        // Try traditional enemy system if no visual enemy found
+        if (!damageApplied && typeof currentEnemy !== 'undefined' && currentEnemy && currentEnemy.hp) {
+            const oldHp = currentEnemy.hp;
+            currentEnemy.hp = Math.max(0, currentEnemy.hp - spellData.damageRoll);
+            
+            message += ` → **${currentEnemy.name}** takes ${spellData.damageRoll} magical damage! (${oldHp} → ${currentEnemy.hp} HP)`;
+            
+            if (currentEnemy.hp <= 0) {
+                message += ` **${currentEnemy.name} is defeated!**`;
+            }
+            
+            damageApplied = true;
+            console.log(`✨ Applied ${spellData.damageRoll} magical damage to ${currentEnemy.name}: ${oldHp} → ${currentEnemy.hp} HP`);
+            
+            if (typeof updateEnemyDisplay === 'function') {
+                updateEnemyDisplay();
+            }
+        }
+    }
+    
     addCombatLogEntry(message, 'spell');
     console.log('Spell processed:', spellData);
 }
@@ -979,17 +1117,25 @@ function startTurnOrder() {
     CombatState.currentTurnIndex = 0;
     CombatState.currentRound = 1;
     
+    // Update both initiative display and visual combat arena
     updateInitiativeDisplay();
+    updateArena(); // Refresh arena to show turn indicators
     
     const currentCharacter = CombatState.initiativeOrder[0];
     addCombatLogEntry(`🎯 Turn order established! ${currentCharacter.character} goes first.`, 'system');
     
-    // Send turn notification through chat
-    if (typeof sendChatMessage === 'function') {
-        sendChatMessage(`⚡ Turn order locked! ${currentCharacter.character}, it's your turn!`);
+    // Send turn notification through chat with enhanced messaging
+    if (typeof sendChatMessageAsync === 'function') {
+        sendChatMessageAsync(`⚡ **Turn order locked!** ${currentCharacter.character}, it's your turn! Use your attack, spell, or skill buttons.`);
+    } else if (typeof sendChatMessage === 'function') {
+        sendChatMessage(`⚡ **Turn order locked!** ${currentCharacter.character}, it's your turn! Use your attack, spell, or skill buttons.`);
     }
     
+    // Update arena to highlight current turn
+    highlightCurrentTurn();
+    
     console.log('🎯 Turn order started:', CombatState.initiativeOrder.map(e => e.character));
+    console.log(`🎯 Current turn: ${currentCharacter.character} (index ${CombatState.currentTurnIndex})`);
 }
 
 /**
@@ -1030,8 +1176,38 @@ function advanceTurn() {
 }
 
 /**
- * Updates combat state when a new initiative entry is added
+ * Highlights the current turn character in the visual arena
  */
+function highlightCurrentTurn() {
+    if (!CombatState.turnStarted || CombatState.initiativeOrder.length === 0) {
+        return;
+    }
+    
+    const currentCharacter = CombatState.initiativeOrder[CombatState.currentTurnIndex];
+    if (!currentCharacter) return;
+    
+    // Find the character in combat arrays and mark as current turn
+    const playerIndex = combatPlayers.findIndex(p => p.name === currentCharacter.character);
+    const enemyIndex = combatEnemies.findIndex(e => e.name === currentCharacter.character);
+    
+    // Reset all turn statuses
+    combatPlayers.forEach(p => p.isCurrentTurn = false);
+    combatEnemies.forEach(e => e.isCurrentTurn = false);
+    
+    // Set current turn
+    if (playerIndex >= 0) {
+        combatPlayers[playerIndex].isCurrentTurn = true;
+        combatPlayers[playerIndex].status = 'active';
+        console.log(`🎯 Highlighted ${currentCharacter.character} as current turn (player)`);
+    } else if (enemyIndex >= 0) {
+        combatEnemies[enemyIndex].isCurrentTurn = true;
+        combatEnemies[enemyIndex].status = 'active';
+        console.log(`🎯 Highlighted ${currentCharacter.character} as current turn (enemy)`);
+    }
+    
+    // Update arena display
+    updateArena();
+}
 function addToInitiativeOrder(initiativeData) {
     // Remove existing entry for this character (if any)
     CombatState.initiativeOrder = CombatState.initiativeOrder.filter(
@@ -2373,6 +2549,365 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Initial arena update
+    // Initialize display
     updateArena();
+    updateEnemyChips();
 });
+
+// =============================================================================
+// TURN-BASED ACTION PROCESSING - Phase 2
+// =============================================================================
+
+/**
+ * Processes combat action commands (ATTACK, SPELL, ROLL) during active turns
+ */
+function processCombatAction(command, playerName, details) {
+    if (!CombatState.turnStarted) {
+        console.log(`⚠️ Combat action ignored - combat not active: ${command} from ${playerName}`);
+        return;
+    }
+    
+    // Check if it's this player's turn
+    const currentCharacter = CombatState.initiativeOrder[CombatState.currentTurnIndex];
+    if (!currentCharacter || currentCharacter.character !== playerName) {
+        console.log(`⚠️ Out of turn action from ${playerName} - current turn: ${currentCharacter?.character || 'none'}`);
+        sendChatMessageAsync(`${playerName}, it's not your turn yet! Current turn: ${currentCharacter?.character || 'Unknown'}`);
+        return;
+    }
+    
+    console.log(`🎲 Processing ${command} action from ${playerName}:`, details);
+    
+    switch (command) {
+        case 'ATTACK':
+            processAttackActionImmediate(playerName, details);
+            break;
+        case 'SPELL':
+            processSpellActionImmediate(playerName, details);
+            break;
+        case 'ROLL':
+            processRollActionImmediate(playerName, details);
+            break;
+        default:
+            console.log(`⚠️ Unknown combat action: ${command}`);
+    }
+}
+
+/**
+ * Processes an attack action during combat
+ */
+function processAttackActionImmediate(playerName, details) {
+    // Extract attack details (damage, target, etc.)
+    const attackInfo = parseActionDetails(details);
+    console.log(`⚔️ ${playerName} attacks:`, attackInfo);
+    
+    // Apply damage to target if specified
+    if (attackInfo.target && attackInfo.damage) {
+        applyDamage(attackInfo.target, attackInfo.damage, playerName);
+    }
+    
+    // Announce the attack
+    const message = attackInfo.target ? 
+        `${playerName} attacks ${attackInfo.target} for ${attackInfo.damage || '?'} damage!` :
+        `${playerName} makes an attack roll!`;
+    
+    sendChatMessageAsync(message);
+    
+    // Mark action taken and potentially advance turn
+    markActionTaken(playerName);
+}
+
+/**
+ * Processes a spell action during combat
+ */
+function processSpellActionImmediate(playerName, details) {
+    const spellInfo = parseActionDetails(details);
+    console.log(`✨ ${playerName} casts spell:`, spellInfo);
+    
+    // Apply spell effects
+    if (spellInfo.target && spellInfo.damage) {
+        applyDamage(spellInfo.target, spellInfo.damage, playerName);
+    } else if (spellInfo.healing && spellInfo.target) {
+        applyHealing(spellInfo.target, spellInfo.healing, playerName);
+    }
+    
+    // Announce the spell
+    const message = spellInfo.spell ? 
+        `${playerName} casts ${spellInfo.spell}!` :
+        `${playerName} casts a spell!`;
+    
+    sendChatMessageAsync(message);
+    
+    // Mark action taken
+    markActionTaken(playerName);
+}
+
+/**
+ * Processes a skill/ability roll during combat
+ */
+function processRollActionImmediate(playerName, details) {
+    const rollInfo = parseActionDetails(details);
+    console.log(`🎲 ${playerName} makes roll:`, rollInfo);
+    
+    // Announce the roll
+    const message = rollInfo.skill ? 
+        `${playerName} rolls ${rollInfo.skill}!` :
+        `${playerName} makes a roll!`;
+    
+    sendChatMessageAsync(message);
+    
+    // Skill rolls don't always end turn (DM decision)
+    // markActionTaken(playerName);
+}
+
+/**
+ * Parses action details from command text
+ */
+function parseActionDetails(details) {
+    const info = {};
+    
+    // Look for common patterns
+    const damageMatch = details.match(/(\d+)\s*(?:damage|dmg|hp)/i);
+    const targetMatch = details.match(/(?:target|to|against|vs)\s*([a-zA-Z]+)/i);
+    const spellMatch = details.match(/(?:spell|cast)\s*([a-zA-Z\s]+)/i);
+    const skillMatch = details.match(/(?:skill|roll)\s*([a-zA-Z\s]+)/i);
+    const healMatch = details.match(/(?:heal|healing)\s*(\d+)/i);
+    
+    if (damageMatch) info.damage = parseInt(damageMatch[1]);
+    if (targetMatch) info.target = targetMatch[1];
+    if (spellMatch) info.spell = spellMatch[1].trim();
+    if (skillMatch) info.skill = skillMatch[1].trim();
+    if (healMatch) info.healing = parseInt(healMatch[1]);
+    
+    return info;
+}
+
+/**
+ * Applies damage to a target (enemy or player)
+ */
+function applyDamage(targetName, damage, attacker) {
+    console.log(`💥 Applying ${damage} damage to ${targetName} from ${attacker}`);
+    
+    // Find target in enemies first
+    const enemyIndex = combatEnemies.findIndex(e => 
+        e.name.toLowerCase().includes(targetName.toLowerCase()) ||
+        targetName.toLowerCase().includes(e.name.toLowerCase())
+    );
+    
+    if (enemyIndex >= 0) {
+        const enemy = combatEnemies[enemyIndex];
+        const oldHp = enemy.hp || enemy.maxHP || 100;
+        const newHp = Math.max(0, oldHp - damage);
+        
+        enemy.hp = newHp;
+        
+        console.log(`🩸 ${enemy.name} HP: ${oldHp} → ${newHp}`);
+        sendChatMessageAsync(`${enemy.name} takes ${damage} damage! HP: ${newHp}/${enemy.maxHP || 100}`);
+        
+        // Check if enemy is defeated
+        if (newHp <= 0) {
+            enemy.status = 'defeated';
+            sendChatMessageAsync(`💀 ${enemy.name} has been defeated!`);
+        }
+        
+        updateArena();
+        return;
+    }
+    
+    // Check players
+    const playerIndex = combatPlayers.findIndex(p => 
+        p.name.toLowerCase().includes(targetName.toLowerCase()) ||
+        targetName.toLowerCase().includes(p.name.toLowerCase())
+    );
+    
+    if (playerIndex >= 0) {
+        const player = combatPlayers[playerIndex];
+        console.log(`🩸 ${player.name} takes ${damage} damage`);
+        sendChatMessageAsync(`${player.name} takes ${damage} damage!`);
+        updateArena();
+        return;
+    }
+    
+    console.log(`⚠️ Target not found: ${targetName}`);
+    sendChatMessageAsync(`Target "${targetName}" not found in combat.`);
+}
+
+/**
+ * Applies healing to a target
+ */
+function applyHealing(targetName, healing, caster) {
+    console.log(`💚 Applying ${healing} healing to ${targetName} from ${caster}`);
+    
+    // Similar logic to damage but for healing
+    const playerIndex = combatPlayers.findIndex(p => 
+        p.name.toLowerCase().includes(targetName.toLowerCase()) ||
+        targetName.toLowerCase().includes(p.name.toLowerCase())
+    );
+    
+    if (playerIndex >= 0) {
+        console.log(`💚 ${targetName} healed for ${healing}`);
+        sendChatMessageAsync(`${targetName} healed for ${healing} HP!`);
+        updateArena();
+    }
+}
+
+/**
+ * Marks that a character has taken their action
+ */
+function markActionTaken(playerName) {
+    const currentCharacter = CombatState.initiativeOrder[CombatState.currentTurnIndex];
+    if (currentCharacter && currentCharacter.character === playerName) {
+        currentCharacter.actionTaken = true;
+        console.log(`✅ ${playerName} has taken their action`);
+        
+        // Update visual status
+        const playerIndex = combatPlayers.findIndex(p => p.name === playerName);
+        if (playerIndex >= 0) {
+            combatPlayers[playerIndex].status = 'action-taken';
+        }
+        
+        updateArena();
+        
+        // Suggest advancing turn
+        sendChatMessageAsync(`${playerName} has taken their action. Click "Next Turn" to continue.`);
+    }
+}
+
+/**
+ * Advances to the next turn with enhanced messaging and visual updates
+ */
+function advanceToNextTurn() {
+    if (!CombatState.turnStarted || CombatState.initiativeOrder.length === 0) {
+        console.log('⚠️ Cannot advance turn - combat not active or no initiative order');
+        return;
+    }
+    
+    // Clear action taken status for current character
+    const currentCharacter = CombatState.initiativeOrder[CombatState.currentTurnIndex];
+    if (currentCharacter) {
+        currentCharacter.actionTaken = false;
+        
+        // Update player visual status
+        const playerIndex = combatPlayers.findIndex(p => p.name === currentCharacter.character);
+        if (playerIndex >= 0) {
+            combatPlayers[playerIndex].status = 'waiting';
+            combatPlayers[playerIndex].isCurrentTurn = false;
+        }
+    }
+    
+    // Advance turn index
+    CombatState.currentTurnIndex++;
+    
+    // Check if we've completed a round
+    if (CombatState.currentTurnIndex >= CombatState.initiativeOrder.length) {
+        CombatState.currentTurnIndex = 0;
+        CombatState.currentRound++;
+        
+        console.log(`🔄 Round ${CombatState.currentRound} begins!`);
+        sendChatMessageAsync(`🔄 **Round ${CombatState.currentRound}** begins!`);
+    }
+    
+    // Get new current character
+    const nextCharacter = CombatState.initiativeOrder[CombatState.currentTurnIndex];
+    if (nextCharacter) {
+        console.log(`👆 ${nextCharacter.character}'s turn! (Turn ${CombatState.currentTurnIndex + 1})`);
+        
+        // Enhanced turn announcement
+        const turnMessage = `👆 **${nextCharacter.character}**, it's your turn! Use your attack, spell, or skill buttons.`;
+        sendChatMessageAsync(turnMessage);
+        
+        // Update arena to show current turn highlighting
+        highlightCurrentTurn();
+        
+        // Refresh arena display
+        updateArena();
+    }
+    
+    // Update initiative display
+    updateInitiativeDisplay();
+}
+
+// =============================================================================
+// UI INTEGRATION FUNCTIONS - Phase 2
+// =============================================================================
+
+/**
+ * Initializes UI event listeners for combat controls
+ */
+function initializeCombatUI() {
+    // Next Turn button
+    const nextTurnBtn = document.getElementById('next-turn-btn');
+    if (nextTurnBtn) {
+        nextTurnBtn.addEventListener('click', advanceToNextTurn);
+    }
+    
+    // Clear Initiative button
+    const clearBtn = document.getElementById('clear-initiative-btn');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearInitiative);
+    }
+    
+    // Start Combat button
+    const startBtn = document.getElementById('start-combat-btn');
+    if (startBtn) {
+        startBtn.addEventListener('click', startCombatInitiative);
+    }
+}
+
+/**
+ * Clears all initiative data
+ */
+function clearInitiative() {
+    CombatState.initiativeOrder = [];
+    CombatState.turnStarted = false;
+    CombatState.currentTurnIndex = 0;
+    CombatState.currentRound = 1;
+    
+    // Clear visual combat manager
+    combatPlayers.length = 0;
+    combatEnemies.length = 0;
+    
+    updateInitiativeDisplay();
+    updateArena();
+    
+    console.log('🗑️ Initiative cleared');
+    sendChatMessageAsync('Initiative tracker cleared.');
+}
+
+// Initialize UI when document loads
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeCombatUI);
+} else {
+    initializeCombatUI();
+}
+
+// =============================================================================
+// EXPORT FOR INTEGRATION - Phase 2
+// =============================================================================
+
+// Make combat functions available globally for integration
+window.CombatSystem = {
+    // Phase 1 Functions
+    processInitiativeCommand,
+    processAttackCommand,
+    processSpellCommand,
+    processRollCommand,
+    processCombatCommand,
+    startCombatInitiative,
+    endCombatEncounter,
+    nextTurn: advanceToNextTurn,
+    previousTurn,
+    clearInitiative,
+    getCombatState: () => CombatState,
+    
+    // Phase 2 Functions - Turn-based Action Processing
+    processCombatAction,
+    processAttackActionImmediate,
+    processSpellActionImmediate,
+    processRollActionImmediate,
+    parseActionDetails,
+    applyDamage,
+    applyHealing,
+    markActionTaken,
+    advanceToNextTurn,
+    highlightCurrentTurn
+};
