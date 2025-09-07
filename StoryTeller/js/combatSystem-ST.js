@@ -1147,11 +1147,24 @@ function endCombatForPlayer(playerName, outcome = '') {
 function isStorytellerName(playerName) {
     if (!playerName) return false;
     
-    // Get storyteller name from the settings input field
+    // FIRST: Check the connected players list for the is_storyteller flag (most reliable)
+    if (typeof getConnectedPlayersList === 'function') {
+        const connectedPlayers = getConnectedPlayersList();
+        const playerRecord = connectedPlayers.find(p => 
+            p.name === playerName || p.character_name === playerName
+        );
+        
+        if (playerRecord && playerRecord.is_storyteller === true) {
+            console.log(`🎯 DEBUG: ${playerName} identified as storyteller via is_storyteller flag`);
+            return true;
+        }
+    }
+    
+    // FALLBACK: Check name patterns (for cases where connected players isn't available)
     const storytellerNameInput = document.getElementById('storyteller-name');
     const storytellerName = storytellerNameInput?.value || window.currentCharacterName || window.playerName || 'StoryTeller';
     
-    console.log(`🎯 DEBUG: isStorytellerName check - "${playerName}" vs storyteller "${storytellerName}"`);
+    console.log(`🎯 DEBUG: isStorytellerName fallback check - "${playerName}" vs storyteller "${storytellerName}"`);
     
     // Check various common storyteller identifiers
     const lowerName = playerName.toLowerCase();
@@ -1203,6 +1216,18 @@ function autoAddPlayerToCombat(playerName, initiative) {
         const charData = playerData?.character_data || {};
         const stats = charData.stats || {};
         
+        // Try to get cached avatar URL (this is already working great!)
+        let avatarUrl = charData.avatar_url || playerData?.avatar_url || stats.avatar;
+        
+        // Check if there's a cached avatar URL available (like we saw with Testificate)
+        if (typeof window.getCachedAvatarUrl === 'function') {
+            const cachedAvatar = window.getCachedAvatarUrl(playerName);
+            if (cachedAvatar) {
+                avatarUrl = cachedAvatar;
+                console.log(`🎨 Using cached avatar URL for ${playerName}: ${cachedAvatar}`);
+            }
+        }
+        
         const player = {
             id: `player_${playerName.replace(/\s+/g, '_')}`,
             name: playerName,
@@ -1215,8 +1240,8 @@ function autoAddPlayerToCombat(playerName, initiative) {
             dex_modifier: stats.dexterity_modifier || playerData?.dex_modifier || 0,
             str_modifier: stats.strength_modifier || 0,
             level: charData.level || stats.level || 1,
-            // Handle avatar - can be URL or emoji
-            avatar: charData.avatar_url || playerData?.avatar_url || stats.avatar || '👤',
+            // Use the cached avatar URL instead of emoji fallback
+            avatar: avatarUrl || '👤',
             // Additional character info
             class: charData.character_class || charData.class || 'Adventurer',
             background: charData.background || ''
