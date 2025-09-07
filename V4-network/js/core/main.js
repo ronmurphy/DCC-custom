@@ -3442,10 +3442,17 @@ function rollToHit(attackStat, isCrit = false) {
 }
 
 function rollAttribute(statName, statValue) {
+    console.log(`🎯 rollAttribute called: ${statName}, value: ${statValue}`);
+    console.log(`🎯 isInCombatMode(): ${isInCombatMode()}`);
+    console.log(`🎯 window.combatModeActive: ${window.combatModeActive}`);
+    
     // Check if this is DEX and we're in combat mode for initiative
     if (statName.toLowerCase() === 'dexterity' && isInCombatMode()) {
+        console.log(`🎯 DEX + Combat Mode detected - rolling initiative!`);
         rollInitiativeForDexterity(statValue);
         return;
+    } else {
+        console.log(`🎯 Normal attribute roll (not DEX+combat)`);
     }
     
     const config = getDiceConfiguration(character.level);
@@ -3483,19 +3490,29 @@ function rollAttribute(statName, statValue) {
 // ========================================
 
 function isInCombatMode() {
-    // Check if we're connected to a game session (indicating potential combat)
+    // Check if combat has been explicitly started by StoryTeller
+    if (typeof window.combatModeActive !== 'undefined') {
+        return window.combatModeActive;
+    }
+    
+    // Fallback: Check if we're connected to a game session
     if (typeof window.supabaseChat !== 'undefined' && 
         typeof window.supabaseChat.isConnected === 'function' && 
         window.supabaseChat.isConnected()) {
-        return true; // For now, always consider connected = potential combat
+        // But default to false - only true combat when explicitly started
+        return false;
     }
     return false;
 }
 
 function rollInitiativeForDexterity(dexterity) {
+    console.log('🎲 rollInitiativeForDexterity called with dexterity:', dexterity);
+    
     // Get character level for luck calculation
     const level = character.level || 1;
     const characterName = character.name || 'Unknown';
+    
+    console.log(`🎲 Character: ${characterName}, Level: ${level}, DEX: ${dexterity}`);
     
     // Calculate luck dice count (1d10 per 10 levels, rounded up)
     const luckDiceCount = Math.ceil(level / 10);
@@ -3545,10 +3562,110 @@ function rollInitiativeForDexterity(dexterity) {
     // Send to chat if connected
     if (typeof sendChatMessage === 'function') {
         const commandString = `INITIATIVE:${characterName}:${totalInitiative}:${rollDetails}`;
+        console.log('🎲 Sending initiative command to chat:', commandString);
         sendChatMessage(commandString);
+        console.log('🎲 Initiative command sent!');
+    } else {
+        console.error('🎲 sendChatMessage function not available!');
     }
     
     updateRollHistoryDisplay();
+}
+
+/**
+ * Handle combat start command from StoryTeller
+ */
+function handleCombatStart() {
+    console.log('🚨 handleCombatStart called!');
+    window.combatModeActive = true;
+    console.log('⚔️ Combat mode activated - DEX button will now roll initiative');
+    console.log('⚔️ window.combatModeActive is now:', window.combatModeActive);
+    
+    // Show notification to player
+    showNotification('combat', '⚔️ Combat Started!', 
+        'Click your DEX attribute to roll initiative', 
+        'The StoryTeller has initiated combat');
+}
+
+/**
+ * Handle combat stop command from StoryTeller
+ */
+function handleCombatStop() {
+    window.combatModeActive = false;
+    console.log('🏁 Combat mode deactivated - DEX button back to normal attribute roll');
+    
+    // Show notification to player
+    showNotification('combat', '🏁 Combat Ended', 
+        'You can now rest and recover', 
+        'Combat has concluded');
+}
+
+/**
+ * Process combat-related commands received via chat
+ * This should be called by the chat message processor
+ */
+function processCombatCommand(message) {
+    console.log('🔍 processCombatCommand called with:', message);
+    
+    if (typeof message !== 'string') {
+        console.log('🔍 Message is not a string, returning false');
+        return false;
+    }
+    
+    if (message.startsWith('COMBAT_START:')) {
+        console.log('🔍 COMBAT_START detected, parsing target...');
+        
+        // Parse target from COMBAT_START:TARGET:message format
+        const parts = message.split(':');
+        if (parts.length >= 2) {
+            const target = parts[1];
+            const currentPlayerName = window.networkPlayerName || window.playerName || '';
+            
+            console.log('🔍 Combat command target:', target);
+            console.log('🔍 Current player name:', currentPlayerName);
+            
+            // Check if this command is for us (ALL or our specific name)
+            if (target === 'ALL' || target === currentPlayerName) {
+                console.log('🔍 ✅ Command is for us, calling handleCombatStart()');
+                handleCombatStart();
+                return true;
+            } else {
+                console.log('🔍 ❌ Command not for us, ignoring');
+                return false;
+            }
+        } else {
+            console.log('🔍 ⚠️ Invalid COMBAT_START format, no target found');
+            return false;
+        }
+    } else if (message.startsWith('COMBAT_STOP:') || message.startsWith('COMBAT_END:')) {
+        console.log('🔍 COMBAT_STOP/END detected, parsing target...');
+        
+        // Parse target from COMBAT_STOP:TARGET:message or COMBAT_END:TARGET:message format
+        const parts = message.split(':');
+        if (parts.length >= 2) {
+            const target = parts[1];
+            const currentPlayerName = window.networkPlayerName || window.playerName || '';
+            
+            console.log('🔍 Combat stop/end command target:', target);
+            console.log('🔍 Current player name:', currentPlayerName);
+            
+            // Check if this command is for us (ALL or our specific name)
+            if (target === 'ALL' || target === currentPlayerName) {
+                console.log('🔍 ✅ Stop/End command is for us, calling handleCombatStop()');
+                handleCombatStop();
+                return true;
+            } else {
+                console.log('🔍 ❌ Stop/End command not for us, ignoring');
+                return false;
+            }
+        } else {
+            console.log('🔍 ⚠️ Invalid COMBAT_STOP/END format, no target found');
+            return false;
+        }
+    }
+    
+    console.log('🔍 No combat command match found');
+    return false;
 }
 
 function rollSkill(skillName, statName, statValue) {
@@ -6088,6 +6205,9 @@ function closeAchievementsModal() {
     }
     console.log('Achievements modal closed');
 }
+
+// Make combat command processor globally available
+window.processCombatCommand = processCombatCommand;
 
 // Initialize when page loads
 window.addEventListener('DOMContentLoaded', initializeCharacterSheet);

@@ -80,6 +80,22 @@ function startCombatEncounter() {
  * Resets all combat state
  */
 function endCombatEncounter() {
+    // Broadcast combat stop to all connected players
+    const combatStopCommand = 'COMBAT_STOP:ALL:Combat ended by StoryTeller';
+    console.log('🔧 DEBUG: About to send combat stop command:', combatStopCommand);
+    
+    if (typeof sendChatMessageAsync === 'function') {
+        console.log('🔧 DEBUG: Using sendChatMessageAsync for stop');
+        sendChatMessageAsync(combatStopCommand);
+        console.log('📡 Combat stop broadcasted to all players (async)');
+    } else if (typeof sendChatMessage === 'function') {
+        console.log('🔧 DEBUG: Using sendChatMessage for stop - this may not work as expected');
+        sendChatMessage(combatStopCommand);
+        console.log('📡 Combat stop broadcasted to all players');
+    } else {
+        console.error('🔧 DEBUG: No sendChatMessage function available for stop!');
+    }
+    
     CombatState.isActive = false;
     CombatState.turnStarted = false;
     CombatState.currentTurn = 0;
@@ -843,6 +859,22 @@ function startCombatInitiative() {
         return;
     }
     
+    // Broadcast combat start to all connected players
+    const combatStartCommand = 'COMBAT_START:ALL:Combat initiated by StoryTeller';
+    console.log('🔧 DEBUG: About to send combat command:', combatStartCommand);
+    
+    if (typeof sendChatMessageAsync === 'function') {
+        console.log('🔧 DEBUG: Using sendChatMessageAsync');
+        sendChatMessageAsync(combatStartCommand);
+        console.log('📡 Combat start broadcasted to all players (async)');
+    } else if (typeof sendChatMessage === 'function') {
+        console.log('🔧 DEBUG: Using sendChatMessage - this may not work as expected');
+        sendChatMessage(combatStartCommand);
+        console.log('📡 Combat start broadcasted to all players');
+    } else {
+        console.error('🔧 DEBUG: No sendChatMessage function available!');
+    }
+    
     // Start the unified combat system
     startVisualCombat();
     
@@ -1018,6 +1050,92 @@ function addToInitiativeOrder(initiativeData) {
     }, 500);
 }
 
+/**
+ * Starts combat for a specific player (for split party situations)
+ * @param {string} playerName - Name of the player to start combat for
+ * @param {string} enemyDescription - Optional description of what they're fighting
+ */
+function startCombatForPlayer(playerName, enemyDescription = '') {
+    if (!playerName) {
+        console.error('Player name required for individual combat start');
+        return;
+    }
+    
+    const message = enemyDescription ? 
+        `Combat vs ${enemyDescription} initiated for ${playerName}` :
+        `Combat initiated for ${playerName}`;
+    
+    // Broadcast combat start to specific player
+    const combatStartCommand = `COMBAT_START:${playerName}:${message}`;
+    console.log('🔧 DEBUG: About to send individual combat start command:', combatStartCommand);
+    
+    if (typeof sendChatMessageAsync === 'function') {
+        console.log('🔧 DEBUG: Using sendChatMessageAsync for individual start');
+        sendChatMessageAsync(combatStartCommand);
+        console.log(`📡 Combat start broadcasted to ${playerName} (async)`);
+    } else if (typeof sendChatMessage === 'function') {
+        console.log('🔧 DEBUG: Using sendChatMessage for individual start - this may not work as expected');
+        sendChatMessage(combatStartCommand);
+        console.log(`📡 Combat start broadcasted to ${playerName}`);
+    } else {
+        console.error('🔧 DEBUG: No sendChatMessage function available for individual start!');
+    }
+    
+    // Also send a general notification to the storyteller
+    const broadcastMessage = `⚔️ ${playerName} has entered combat${enemyDescription ? ` vs ${enemyDescription}` : ''}! They should roll initiative.`;
+    
+    if (typeof sendChatMessageAsync === 'function') {
+        sendChatMessageAsync(broadcastMessage);
+    } else if (typeof sendChatMessage === 'function') {
+        sendChatMessage(broadcastMessage);
+    }
+    
+    console.log(`🎲 Individual combat started for ${playerName}${enemyDescription ? ` vs ${enemyDescription}` : ''}`);
+}
+
+/**
+ * Ends combat for a specific player (for split party situations)
+ * @param {string} playerName - Name of the player to end combat for
+ * @param {string} outcome - Optional outcome description
+ */
+function endCombatForPlayer(playerName, outcome = '') {
+    if (!playerName) {
+        console.error('Player name required for individual combat end');
+        return;
+    }
+    
+    const message = outcome ? 
+        `Combat ended for ${playerName}: ${outcome}` :
+        `Combat ended for ${playerName}`;
+    
+    // Broadcast combat end to specific player
+    const combatEndCommand = `COMBAT_END:${playerName}:${message}`;
+    console.log('🔧 DEBUG: About to send individual combat end command:', combatEndCommand);
+    
+    if (typeof sendChatMessageAsync === 'function') {
+        console.log('🔧 DEBUG: Using sendChatMessageAsync for individual end');
+        sendChatMessageAsync(combatEndCommand);
+        console.log(`📡 Combat end broadcasted to ${playerName} (async)`);
+    } else if (typeof sendChatMessage === 'function') {
+        console.log('🔧 DEBUG: Using sendChatMessage for individual end - this may not work as expected');
+        sendChatMessage(combatEndCommand);
+        console.log(`📡 Combat end broadcasted to ${playerName}`);
+    } else {
+        console.error('🔧 DEBUG: No sendChatMessage function available for individual end!');
+    }
+    
+    // Also send a general notification to the storyteller
+    const broadcastMessage = `🏁 ${playerName}'s combat has ended${outcome ? `: ${outcome}` : ''}.`;
+    
+    if (typeof sendChatMessageAsync === 'function') {
+        sendChatMessageAsync(broadcastMessage);
+    } else if (typeof sendChatMessage === 'function') {
+        sendChatMessage(broadcastMessage);
+    }
+    
+    console.log(`🏁 Individual combat ended for ${playerName}${outcome ? `: ${outcome}` : ''}`);
+}
+
 // Make functions available globally for onclick handlers
 if (typeof window !== 'undefined') {
     window.startCombatInitiative = startCombatInitiative;
@@ -1026,6 +1144,10 @@ if (typeof window !== 'undefined') {
     window.advanceTurn = advanceTurn;
     window.processQueuedAction = processQueuedAction;
     window.selectEnemy = selectEnemy;
+    
+    // Combat command helpers for individual player management
+    window.startCombatForPlayer = startCombatForPlayer;
+    window.endCombatForPlayer = endCombatForPlayer;
     
     // Visual Combat Manager Functions
     window.loadEnemiesForLevel = loadEnemiesForLevel;

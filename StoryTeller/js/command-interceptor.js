@@ -129,7 +129,7 @@ async function interceptChatMessage(message) {
  */
 function isCommandMessage(messageText) {
     // Look for patterns like: COMMAND:PlayerName or COMMAND:PlayerName:parameters
-    const commandPattern = /^(LOOT|ACHIEVEMENT|LEVELUP|ITEM|SKILL|EXP|GOLD|HEALTH|STAT|NOTE|CLEAN):[^:]+/;
+    const commandPattern = /^(LOOT|ACHIEVEMENT|LEVELUP|ITEM|SKILL|EXP|GOLD|HEALTH|STAT|NOTE|CLEAN|COMBAT_START|COMBAT_STOP|COMBAT_END):[^:]+/;
     // Also check for special silent commands
     const silentCommandPattern = /^\/refreshmap$|^\/sendmap$|^\/github:/;
     // Also check for map sync messages that should be hidden
@@ -467,6 +467,13 @@ async function generatePersonalResult(command, parameters, message) {
         case 'CLEAN':
             // For players, just show a generic cleanup message
             return `🧹 The storyteller performed database maintenance`;
+        case 'COMBAT_START':
+            // Notify player that combat has started
+            return `⚔️ **Combat has begun!** Use your DEX attribute to roll initiative.`;
+        case 'COMBAT_STOP':
+        case 'COMBAT_END':
+            // Notify player that combat has ended
+            return `🏁 **Combat has ended.** You can now rest and recover.`;
         default:
             return `You received: ${command}${parameters ? ' - ' + parameters : ''}`;
     }
@@ -498,6 +505,11 @@ function generateStorytelleroResult(command, targetPlayer, parameters) {
             return `📋 ${targetPlayer} ${parseInt(parameters) > 0 ? 'gained' : 'lost'} ${Math.abs(parseInt(parameters))} gold`;
         case 'NOTE':
             return `📋 Note sent to ${targetPlayer}`;
+        case 'COMBAT_START':
+            return `📋 Combat initiated - waiting for ${targetPlayer} to roll initiative`;
+        case 'COMBAT_STOP':
+        case 'COMBAT_END':
+            return `📋 Combat ended for ${targetPlayer}`;
         default:
             return `📋 ${targetPlayer} received ${command}: ${parameters}`;
     }
@@ -518,6 +530,11 @@ function generateGenericResult(command, targetPlayer, parameters) {
             return `📝 Notes are being passed`;
         case 'CLEAN':
             return `🧹 Database maintenance performed`;
+        case 'COMBAT_START':
+            return `⚔️ Combat has begun`;
+        case 'COMBAT_STOP':
+        case 'COMBAT_END':
+            return `🏁 Combat has ended`;
         default:
             return `${targetPlayer} received a ${command.toLowerCase()}`;
     }

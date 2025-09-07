@@ -1618,12 +1618,14 @@ async function handleIncomingMessage(message) {
     }
     
     // Add specific debugging for all messages to help diagnose AVATAR_URL issue
-    console.log('📨 Incoming message structure:');
-    console.log('   - message_type:', message.message_type);
-    console.log('   - message_text:', message.message_text);
-    console.log('   - player_name:', message.player_name);
-    console.log('   - is_storyteller:', message.is_storyteller);
-    console.log('   - startsWith AVATAR_URL check:', message.message_text?.startsWith('AVATAR_URL:'));
+    if (message.message_text && !message.message_text.startsWith('HEARTBEAT')) {
+        console.log('📨 Incoming message structure:');
+        console.log('   - message_type:', message.message_type);
+        console.log('   - message_text:', message.message_text);
+        console.log('   - player_name:', message.player_name);
+        console.log('   - is_storyteller:', message.is_storyteller);
+        console.log('   - startsWith AVATAR_URL check:', message.message_text?.startsWith('AVATAR_URL:'));
+    }
     
     // Filter out heartbeat messages (don't display them)
     if (message.message_type === 'heartbeat' || message.player_name === 'Heartbeat') {
@@ -1646,6 +1648,28 @@ async function handleIncomingMessage(message) {
                 console.log('🔇 Character sync command processed silently');
                 return; // Don't display in chat
             }
+        }
+    }
+    
+    // Check if this is a COMBAT command
+    if (message.message_type === 'chat' && (message.message_text.startsWith('COMBAT_START:') || message.message_text.startsWith('COMBAT_STOP:') || message.message_text.startsWith('COMBAT_END:'))) {
+        console.log('⚔️ Detected COMBAT command in chat:', message.message_text);
+        console.log('⚔️ processCombatCommand function type:', typeof processCombatCommand);
+        
+        // Process combat command
+        if (typeof processCombatCommand === 'function') {
+            console.log('⚔️ Calling processCombatCommand...');
+            const handled = processCombatCommand(message.message_text);
+            
+            if (handled) {
+                console.log('⚔️ Combat command processed');
+                // Let the command continue to be displayed via the command interceptor
+                // Don't return here - let it go through normal processing
+            } else {
+                console.log('⚔️ Combat command NOT handled');
+            }
+        } else {
+            console.warn('⚔️ processCombatCommand function not available');
         }
     }
     
