@@ -179,14 +179,14 @@ function startCombatEncounter() {
 function endCombatEncounter() {
     // Broadcast combat stop to all connected players
     const combatStopCommand = 'COMBAT_STOP:ALL:Combat ended by StoryTeller';
-    console.log('🔧 DEBUG: About to send combat stop command:', combatStopCommand);
+    // console.log('🔧 DEBUG: About to send combat stop command:', combatStopCommand);
     
     if (typeof sendChatMessageAsync === 'function') {
-        console.log('🔧 DEBUG: Using sendChatMessageAsync for stop');
+        // console.log('🔧 DEBUG: Using sendChatMessageAsync for stop');
         sendChatMessageAsync(combatStopCommand);
         console.log('📡 Combat stop broadcasted to all players (async)');
     } else if (typeof sendChatMessage === 'function') {
-        console.log('🔧 DEBUG: Using sendChatMessage for stop - this may not work as expected');
+        // console.log('🔧 DEBUG: Using sendChatMessage for stop - this may not work as expected');
         sendChatMessage(combatStopCommand);
         console.log('📡 Combat stop broadcasted to all players');
     } else {
@@ -328,7 +328,7 @@ function updateInitiativeDisplay() {
     
     if (!initiativeContainer) return;
     
-    console.log('Updating combat display:', CombatState);
+    // console.log('Updating combat display:', CombatState);
     
     if (CombatState.initiativeOrder.length === 0) {
         // Empty state
@@ -522,7 +522,7 @@ function processAttackCommand(commandData) {
                 damageRoll: parseInt(parts[2]), // Total damage in V4 format
                 timestamp: Date.now()
             };
-            console.log('🔧 DEBUG: Using V4-network attack format:', attackData);
+            // console.log('🔧 DEBUG: Using V4-network attack format:', attackData);
         } else {
             // Expected format: ATTACK:Testificate:Pistol:13:DamageRoll
             attackData = {
@@ -532,7 +532,7 @@ function processAttackCommand(commandData) {
                 damageRoll: parseInt(parts[4]),
                 timestamp: Date.now()
             };
-            console.log('🔧 DEBUG: Using standard attack format:', attackData);
+            // console.log('🔧 DEBUG: Using standard attack format:', attackData);
         }
     } else if (parts.length >= 4) {
         // Fallback for 4-part format
@@ -543,7 +543,7 @@ function processAttackCommand(commandData) {
             damageRoll: parseInt(parts[3]), // Use attack roll as damage if no damage specified
             timestamp: Date.now()
         };
-        console.log('🔧 DEBUG: Using fallback attack format:', attackData);
+        // console.log('🔧 DEBUG: Using fallback attack format:', attackData);
     } else {
         console.error('Invalid ATTACK command format:', commandData);
         return;
@@ -685,7 +685,7 @@ function queueAction(actionData) {
     // Add new action
     CombatState.actionQueue.push(actionData);
     
-    console.log(`Queued action for ${actionData.character}:`, actionData);
+    // console.log(`Queued action for ${actionData.character}:`, actionData);
 }
 
 /**
@@ -713,7 +713,7 @@ function isCurrentTurn(characterName) {
 function processQueuedAction(characterName) {
     const queuedAction = getQueuedAction(characterName);
     if (!queuedAction) {
-        console.log(`No queued action found for ${characterName}`);
+        // console.log(`No queued action found for ${characterName}`);
         return;
     }
     
@@ -925,6 +925,19 @@ function processAttackAction(attackData) {
                     enemy.status = 'defeated';
                     message += ` 💀 **${attackData.character}** ${getRandomPhrase('kill')} **${enemy.name}**!`;
                     
+                    console.log(`🔍 ENEMY KILL DEBUG: About to remove enemy "${enemy.name}" from initiative`);
+                    console.log(`🔍 Current initiative order:`, CombatState.initiativeOrder.map(e => e.character));
+                    
+                    // Remove defeated enemy from initiative order to fix turn advancement
+                    removeCharacterInitiative(enemy.name);
+                    
+                    // ALSO remove enemy from visual combatEnemies array so it disappears from arena
+                    const enemyIndex = combatEnemies.findIndex(e => e.name === enemy.name);
+                    if (enemyIndex >= 0) {
+                        console.log(`🏟️ Removing ${enemy.name} from combatEnemies array at index ${enemyIndex}`);
+                        combatEnemies.splice(enemyIndex, 1);
+                    }
+                    
                     // Track kill for loot distribution
                     if (!playerKillTracker[attackData.character]) {
                         playerKillTracker[attackData.character] = [];
@@ -934,6 +947,14 @@ function processAttackAction(attackData) {
                         enemyType: enemy.type || 'unknown',
                         enemyData: enemy.originalData || null // Store original enemy data for loot
                     });
+                    
+                    // ADVANCE TURN after enemy defeat (since auto-advance is disabled)
+                    console.log(`🔍 TURN ADVANCE: Enemy defeated, advancing turn...`);
+                    setTimeout(() => {
+                        if (CombatState.turnStarted) {
+                            nextTurn();
+                        }
+                    }, 1000); // Short delay to let messages display
                     
                     // Check if all enemies are defeated
                     checkCombatEnd();
@@ -962,6 +983,10 @@ function processAttackAction(attackData) {
         
         if (currentEnemy.hp <= 0) {
             message += ` 💀 **${attackData.character}** ${getRandomPhrase('kill')} **${currentEnemy.name}**!`;
+            
+            // Remove defeated enemy from initiative order to fix turn advancement
+            removeCharacterInitiative(currentEnemy.name);
+            
             checkCombatEnd();
         }
         
@@ -980,14 +1005,14 @@ function processAttackAction(attackData) {
     }
     
     addCombatLogEntry(message, 'attack');
-    console.log('Attack processed:', attackData);
     
-    // Auto-advance turn after action
-    setTimeout(() => {
-        if (CombatState.turnStarted) {
-            advanceTurn();
-        }
-    }, 1500);
+    console.log('🔍 ATTACK DEBUG: Auto-advance disabled for testing');
+    // Auto-advance turn after action - TEMPORARILY DISABLED FOR DEBUGGING
+    // setTimeout(() => {
+    //     if (CombatState.turnStarted) {
+    //         advanceTurn();
+    //     }
+    // }, 1500);
 }
 
 /**
@@ -1023,6 +1048,9 @@ function processSpellAction(spellData) {
                     if (enemy.hp <= 0) {
                         enemy.status = 'defeated';
                         message += ` 💀 **${spellData.character}** ${getRandomPhrase('kill')} **${enemy.name}** with magic!`;
+                        
+                        // Remove defeated enemy from initiative order to fix turn advancement
+                        removeCharacterInitiative(enemy.name);
                         
                         // Track kill for loot distribution
                         if (!playerKillTracker[spellData.character]) {
@@ -1073,7 +1101,7 @@ function processSpellAction(spellData) {
     }
     
     addCombatLogEntry(message, 'spell');
-    console.log('Spell processed:', spellData);
+    // console.log('Spell processed:', spellData);
     
     // Auto-advance turn after action
     setTimeout(() => {
@@ -1469,14 +1497,21 @@ function showCombatStats() {
  * Advances to the next turn in combat
  */
 function nextTurn() {
+    console.log(`🔍 NEXT TURN DEBUG: Called`);
+    console.log(`🔍 Combat active: ${CombatState.isActive}, Initiative order length: ${CombatState.initiativeOrder.length}`);
+    console.log(`🔍 Current turn index before increment: ${CombatState.currentTurnIndex}`);
+    console.log(`🔍 Initiative order:`, CombatState.initiativeOrder.map(e => e.character));
+    
     if (!CombatState.isActive || CombatState.initiativeOrder.length === 0) {
         return;
     }
     
     CombatState.currentTurnIndex++;
+    console.log(`🔍 Current turn index after increment: ${CombatState.currentTurnIndex}`);
     
     // Check if we've completed a round
     if (CombatState.currentTurnIndex >= CombatState.initiativeOrder.length) {
+        console.log(`🔍 Round complete! Resetting to 0 and starting round ${CombatState.currentRound + 1}`);
         CombatState.currentTurnIndex = 0;
         CombatState.currentRound++;
         
@@ -1490,6 +1525,7 @@ function nextTurn() {
     
     // Announce current turn
     const currentCharacter = CombatState.initiativeOrder[CombatState.currentTurnIndex];
+    console.log(`🔍 Current character: ${currentCharacter?.character}`);
     if (currentCharacter) {
         addCombatLogEntry(`👆 **${currentCharacter.character}'s** turn!`, 'system');
         
@@ -1634,16 +1670,48 @@ function getInitiativeOrderText() {
  * @param {string} characterName - Name of character to remove
  */
 function removeCharacterInitiative(characterName) {
+    console.log(`🔍 REMOVE CHARACTER DEBUG: Removing ${characterName}`);
+    console.log(`🔍 Before removal - Initiative order:`, CombatState.initiativeOrder.map(e => e.character));
+    console.log(`🔍 Before removal - Current turn index: ${CombatState.currentTurnIndex}`);
+    
+    const removedIndex = CombatState.initiativeOrder.findIndex(entry => entry.character === characterName);
+    
+    if (removedIndex === -1) {
+        console.warn(`Character ${characterName} not found in initiative order`);
+        return;
+    }
+    
+    console.log(`🔍 Character ${characterName} found at index ${removedIndex}`);
+    
     CombatState.initiativeOrder = CombatState.initiativeOrder.filter(
         entry => entry.character !== characterName
     );
     
-    // Adjust current turn if necessary
-    if (CombatState.currentTurn >= CombatState.initiativeOrder.length) {
-        CombatState.currentTurn = 0;
+    console.log(`🔍 After removal - Initiative order:`, CombatState.initiativeOrder.map(e => e.character));
+    
+    // Adjust current turn index based on where the removed character was
+    if (removedIndex < CombatState.currentTurnIndex) {
+        // Someone before current turn was removed, shift index back
+        CombatState.currentTurnIndex--;
+        console.log(`🔍 Removed before current turn, adjusted index to: ${CombatState.currentTurnIndex}`);
+    } else if (removedIndex === CombatState.currentTurnIndex) {
+        // Current turn character was removed - DON'T change index
+        // The next person in line will get their turn when nextTurn() is called
+        // Just make sure we're not out of bounds
+        if (CombatState.currentTurnIndex >= CombatState.initiativeOrder.length) {
+            CombatState.currentTurnIndex = CombatState.initiativeOrder.length - 1;
+            console.log(`🔍 Current turn removed and out of bounds, adjusted index to: ${CombatState.currentTurnIndex}`);
+        } else {
+            console.log(`🔍 Current turn removed, keeping index at: ${CombatState.currentTurnIndex}`);
+        }
+    } else {
+        console.log(`🔍 Removed after current turn, no adjustment needed. Index stays: ${CombatState.currentTurnIndex}`);
     }
     
+    console.log(`🔍 Final state - Index: ${CombatState.currentTurnIndex}, Next character: ${CombatState.initiativeOrder[CombatState.currentTurnIndex]?.character}`);
+    
     updateInitiativeDisplay();
+    highlightCurrentTurn(); // Update visual indicators
     addCombatLogEntry(`❌ Removed **${characterName}** from initiative order.`, 'system');
 }
 
@@ -2736,10 +2804,10 @@ function renderCombatants() {
     console.log(`🎨 Total combatants to render: ${allCombatants.length}`, allCombatants);
     
     allCombatants.forEach((combatant, index) => {
-        console.log(`🎨 Creating card for ${combatant.name} (${combatant.type})`);
+        // console.log(`🎨 Creating card for ${combatant.name} (${combatant.type})`);
         const card = createCombatantCard(combatant, index);
         grid.appendChild(card);
-        console.log(`🎨 Card added to grid for ${combatant.name}`);
+        // console.log(`🎨 Card added to grid for ${combatant.name}`);
     });
     
     console.log(`🎨 Render complete. Grid has ${grid.children.length} children`);
@@ -2967,6 +3035,10 @@ function applyDamageToEnemy(enemyId) {
     
     if (enemy.hp === 0) {
         enemy.status = 'defeated';
+        
+        // Remove defeated enemy from initiative order to fix turn advancement
+        removeCharacterInitiative(enemy.name);
+        
         const message = `${enemy.name} has been defeated!`;
         if (typeof addToChatLog === 'function') {
             addToChatLog(message, 'system');
@@ -3020,11 +3092,24 @@ function setPlayerStatus(playerId, status) {
 function rollAllInitiative() {
     console.log('🎲 Rolling initiative for all combatants...');
     
-    // Roll for enemies
+    // Roll for enemies AND add them to initiative order
     combatEnemies.forEach(enemy => {
         const initiative = rollD20() + (enemy.stats?.dex_modifier || 0);
         enemy.initiative = initiative;
         console.log(`🎲 ${enemy.name} rolled initiative: ${initiative}`);
+        
+        // ADD ENEMY TO INITIATIVE ORDER - this was missing!
+        const enemyInitiative = {
+            character: enemy.name,
+            total: initiative,
+            d20: 0, // We don't track the individual d20 roll for enemies
+            dexModifier: enemy.stats?.dex_modifier || 0,
+            luckDice: [],
+            timestamp: Date.now(),
+            isEnemy: true
+        };
+        addToInitiativeOrder(enemyInitiative);
+        console.log(`🎯 Added ${enemy.name} to initiative order with ${initiative}`);
     });
     
     // Roll for players (only if they haven't rolled yet)
@@ -3032,10 +3117,27 @@ function rollAllInitiative() {
         if (!player.initiative || player.initiative === 0) {
             player.initiative = rollD20() + (player.dex_modifier || 0);
             console.log(`🎲 ${player.name} auto-rolled initiative: ${player.initiative}`);
+            
+            // ADD PLAYER TO INITIATIVE ORDER if not already there
+            const existingPlayer = CombatState.initiativeOrder.find(entry => entry.character === player.name);
+            if (!existingPlayer) {
+                const playerInitiative = {
+                    character: player.name,
+                    total: player.initiative,
+                    d20: 0,
+                    dexModifier: player.dex_modifier || 0,
+                    luckDice: [],
+                    timestamp: Date.now(),
+                    isEnemy: false
+                };
+                addToInitiativeOrder(playerInitiative);
+                console.log(`🎯 Added ${player.name} to initiative order with ${player.initiative}`);
+            }
         }
     });
     
     updateArena();
+    updateInitiativeDisplay(); // Update the initiative display too
     
     // DON'T auto-announce turn order yet - wait for players to roll manually
     console.log('🎲 Initiative rolled for enemies. Waiting for players to roll manually...');
@@ -3186,44 +3288,6 @@ function endVisualCombat() {
     updateCombatStatus();
     
     const message = 'Combat has ended.';
-    if (typeof addToChatLog === 'function') {
-        addToChatLog(message, 'system');
-    }
-    console.log(message);
-}
-
-/**
- * Next turn in combat
- */
-function nextTurn() {
-    if (!CombatState.isActive) return;
-    
-    const allCombatants = [...combatPlayers, ...combatEnemies]
-        .filter(c => c.status !== 'defeated' && c.status !== 'unconscious')
-        .sort((a, b) => b.initiative - a.initiative);
-    
-    if (allCombatants.length === 0) {
-        endVisualCombat();
-        return;
-    }
-    
-    CombatState.currentTurnIndex = (CombatState.currentTurnIndex + 1) % allCombatants.length;
-    
-    if (CombatState.currentTurnIndex === 0) {
-        CombatState.round++;
-        // Reset statuses for new round
-        [...combatEnemies, ...combatPlayers].forEach(combatant => {
-            if (combatant.status === 'acted') {
-                combatant.status = 'waiting';
-            }
-        });
-    }
-    
-    updateArena();
-    updateCombatStatus();
-    
-    const currentCombatant = allCombatants[CombatState.currentTurnIndex];
-    const message = `Round ${CombatState.round}: ${currentCombatant.name}'s turn`;
     if (typeof addToChatLog === 'function') {
         addToChatLog(message, 'system');
     }
@@ -3457,6 +3521,13 @@ function applyDamage(targetName, damage, attacker) {
         // Check if enemy is defeated
         if (newHp <= 0) {
             enemy.status = 'defeated';
+            
+            console.log(`🔍 APPLY DAMAGE KILL DEBUG: Enemy "${enemy.name}" defeated`);
+            console.log(`🔍 About to call removeCharacterInitiative("${enemy.name}")`);
+            
+            // Remove defeated enemy from initiative order to fix turn advancement
+            removeCharacterInitiative(enemy.name);
+            
             sendChatMessageAsync(`💀 ${enemy.name} has been defeated!`);
         }
         

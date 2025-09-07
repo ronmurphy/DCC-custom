@@ -2802,7 +2802,8 @@
     <script src="js/PlayerPositionTracker.js"></script>
     <script src="js/StorytellerIntegration.js"></script>
     <!-- End Map Sync -->
-    <script src="js/combat-manager-enhanced.js"></script>
+    <!-- DISABLED: Enhanced combat system conflicts with combatSystem-ST.js -->
+    <!-- <script src="js/combat-manager-enhanced.js"></script> -->
     <script>
         // Enhanced stub for updateConnectedPlayers to prevent errors during loading
         // This will be replaced by the full function defined later in the HTML
@@ -6481,9 +6482,9 @@ Notes: ${npc.notes || 'None'}`;
             }
         }
 
-        function nextTurn() {
-            addChatMessage('🔄 Next turn...', 'system');
-        }
+        // function nextTurn() {
+        //     addChatMessage('🔄 Next turn...', 'system');
+        // }
 
         function endCombat() {
             addChatMessage('🛡️ Combat ended!', 'system');
