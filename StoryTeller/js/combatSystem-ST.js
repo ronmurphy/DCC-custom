@@ -184,6 +184,9 @@ function processInitiativeCommand(commandData) {
     
     // Update initiative display
     updateInitiativeDisplay();
+    
+    // 🎯 NEW: Auto-add player to visual combat manager
+    autoAddPlayerToCombat(initiativeData.character, initiativeData.total);
 }
 
 /**
@@ -1136,6 +1139,103 @@ function endCombatForPlayer(playerName, outcome = '') {
     console.log(`🏁 Individual combat ended for ${playerName}${outcome ? `: ${outcome}` : ''}`);
 }
 
+/**
+ * Helper function to check if a player name belongs to the storyteller
+ * @param {string} playerName - Name to check
+ * @returns {boolean} True if this is the storyteller
+ */
+function isStorytellerName(playerName) {
+    if (!playerName) return false;
+    
+    // Get storyteller name from the settings input field
+    const storytellerNameInput = document.getElementById('storyteller-name');
+    const storytellerName = storytellerNameInput?.value || window.currentCharacterName || window.playerName || 'StoryTeller';
+    
+    console.log(`🎯 DEBUG: isStorytellerName check - "${playerName}" vs storyteller "${storytellerName}"`);
+    
+    // Check various common storyteller identifiers
+    const lowerName = playerName.toLowerCase();
+    return playerName === storytellerName ||
+           lowerName.includes('storyteller') ||
+           lowerName.includes('session master') ||
+           lowerName.includes('dungeon master') ||
+           lowerName === 'dm' ||
+           lowerName === 'gm' ||
+           lowerName === storytellerName?.toLowerCase();
+}
+
+/**
+ * Auto-adds a player to the visual combat manager when they roll initiative
+ * This is called automatically from processInitiativeCommand
+ */
+function autoAddPlayerToCombat(playerName, initiative) {
+    console.log(`🎯 autoAddPlayerToCombat called: ${playerName}, initiative: ${initiative}`);
+    
+    // Don't add the storyteller to combat - they manage enemies instead
+    if (isStorytellerName(playerName)) {
+        console.log(`🎯 Skipping auto-add for storyteller: ${playerName}`);
+        return;
+    }
+    
+    // Only add if we have enemies in combat or combat is active
+    if (combatEnemies.length === 0 && !CombatState.isActive) {
+        console.log(`🎯 No enemies in combat and combat not active - skipping auto-add for ${playerName}`);
+        return;
+    }
+    
+    // Check if player already exists in combat
+    const existingPlayerIndex = combatPlayers.findIndex(p => p.name === playerName);
+    
+    if (existingPlayerIndex >= 0) {
+        // Update existing player's initiative
+        combatPlayers[existingPlayerIndex].initiative = initiative;
+        console.log(`🎯 Updated existing player ${playerName} initiative to ${initiative}`);
+    } else {
+        // Get real player data from connected players if available
+        let playerData = null;
+        if (typeof getConnectedPlayersList === 'function') {
+            const connectedPlayers = getConnectedPlayersList();
+            playerData = connectedPlayers.find(p => p.name === playerName || p.character_name === playerName);
+            console.log(`🎯 Found connected player data for ${playerName}:`, playerData);
+        }
+        
+        // Create player with real data or defaults
+        const charData = playerData?.character_data || {};
+        const stats = charData.stats || {};
+        
+        const player = {
+            id: `player_${playerName.replace(/\s+/g, '_')}`,
+            name: playerName,
+            hp: stats.hitpoints || stats.current_hp || playerData?.hp || 30,
+            maxHp: stats.hitpoints || stats.max_hp || playerData?.max_hp || 30,
+            ac: stats.armor_class || playerData?.ac || 12,
+            initiative: initiative,
+            status: 'waiting',
+            type: 'player',
+            dex_modifier: stats.dexterity_modifier || playerData?.dex_modifier || 0,
+            str_modifier: stats.strength_modifier || 0,
+            level: charData.level || stats.level || 1,
+            // Handle avatar - can be URL or emoji
+            avatar: charData.avatar_url || playerData?.avatar_url || stats.avatar || '👤',
+            // Additional character info
+            class: charData.character_class || charData.class || 'Adventurer',
+            background: charData.background || ''
+        };
+        
+        combatPlayers.push(player);
+        console.log(`🎯 Auto-added new player to visual combat:`, player);
+    }
+    
+    // Update visual display
+    updateArena();
+    console.log(`🎯 Updated arena after auto-add. Current players: ${combatPlayers.length}, enemies: ${combatEnemies.length}`);
+    
+    // Check if we should announce turn order now
+    if (typeof checkAndAnnounceTurnOrder === 'function') {
+        checkAndAnnounceTurnOrder();
+    }
+}
+
 // Make functions available globally for onclick handlers
 if (typeof window !== 'undefined') {
     window.startCombatInitiative = startCombatInitiative;
@@ -1144,6 +1244,12 @@ if (typeof window !== 'undefined') {
     window.advanceTurn = advanceTurn;
     window.processQueuedAction = processQueuedAction;
     window.selectEnemy = selectEnemy;
+    
+    // Auto-add player function
+    window.autoAddPlayerToCombat = autoAddPlayerToCombat;
+    
+    // Helper functions
+    window.isStorytellerName = isStorytellerName;
     
     // Combat command helpers for individual player management
     window.startCombatForPlayer = startCombatForPlayer;
@@ -1158,6 +1264,7 @@ if (typeof window !== 'undefined') {
     window.endVisualCombat = endVisualCombat;
     window.nextTurn = nextTurn;
     window.updateEnemyAttack = updateEnemyAttack;
+    window.updateEnemyTarget = updateEnemyTarget;
     window.executeEnemyAttack = executeEnemyAttack;
     window.applyDamageToEnemy = applyDamageToEnemy;
     window.applyDamageToPlayer = applyDamageToPlayer;
@@ -1231,9 +1338,15 @@ if (typeof window !== 'undefined') {
             timestamp: Date.now()
         };
         
-        // Add to traditional system
+        // Add to traditional system (always add to initiative display, even storyteller)
         addToInitiativeOrder(initiativeData);
         updateInitiativeDisplay();
+        
+        // Skip visual combat addition if this is the storyteller
+        if (isStorytellerName(playerName)) {
+            console.log(`🎯 Skipping visual combat addition for storyteller: ${playerName}`);
+            return;
+        }
         
         // Add to visual combat system if active OR if enemies have been added
         if (CombatState.isActive || combatEnemies.length > 0 || document.getElementById('start-combat-btn')?.style.display === 'none') {
@@ -1719,6 +1832,15 @@ function createCombatantCard(combatant, position) {
         avatarElement = getEnemyAvatar(combatant.name);
     }
     
+    // Get targeting info for enemies
+    let targetingIndicator = '';
+    if (combatant.type === 'enemy' && combatant.targetId) {
+        const targetPlayer = combatPlayers.find(p => p.id === combatant.targetId);
+        if (targetPlayer) {
+            targetingIndicator = `<div class="targeting-indicator">🎯 → ${targetPlayer.name}</div>`;
+        }
+    }
+    
     card.innerHTML = `
         <div class="status-indicator status-${combatant.status}">${combatant.status}</div>
         <div class="card-header">
@@ -1732,6 +1854,7 @@ function createCombatantCard(combatant, position) {
             </div>
             <div class="initiative-badge">${combatant.initiative}</div>
         </div>
+        ${targetingIndicator}
         <div class="hp-container">
             <div class="hp-bar">
                 <div class="hp-fill" style="width: ${hpPercent}%"></div>
@@ -1761,13 +1884,36 @@ function createEnemyControls(enemy) {
         </option>`
     ).join('');
     
-    return `
-        <select class="attack-dropdown" onchange="updateEnemyAttack('${enemy.id}', this.value)">
-            ${attackOptions}
+    // Create target options from current players in combat
+    const targetOptions = combatPlayers.map(player => 
+        `<option value="${player.id}" ${player.id === enemy.targetId ? 'selected' : ''}>
+            ${player.name}
+        </option>`
+    ).join('');
+    
+    const targetDropdown = combatPlayers.length > 0 ? `
+        <select class="target-dropdown" onchange="updateEnemyTarget('${enemy.id}', this.value)">
+            <option value="">Select Target...</option>
+            ${targetOptions}
         </select>
-        <div class="action-controls">
-            <button class="action-btn" onclick="executeEnemyAttack('${enemy.id}')">Attack</button>
-            <button class="action-btn" onclick="applyDamageToEnemy('${enemy.id}')">Damage</button>
+    ` : '<span class="no-targets">No players in combat</span>';
+    
+    return `
+        <div class="enemy-controls">
+            <div class="control-row">
+                <label>Attack:</label>
+                <select class="attack-dropdown" onchange="updateEnemyAttack('${enemy.id}', this.value)">
+                    ${attackOptions}
+                </select>
+            </div>
+            <div class="control-row">
+                <label>Target:</label>
+                ${targetDropdown}
+            </div>
+            <div class="action-controls">
+                <button class="action-btn" onclick="executeEnemyAttack('${enemy.id}')">Attack</button>
+                <button class="action-btn" onclick="applyDamageToEnemy('${enemy.id}')">Damage</button>
+            </div>
         </div>
     `;
 }
@@ -1813,6 +1959,22 @@ function updateEnemyAttack(enemyId, attackIndex) {
 }
 
 /**
+ * Update enemy's selected target
+ */
+function updateEnemyTarget(enemyId, targetId) {
+    const enemy = combatEnemies.find(e => e.id === enemyId);
+    if (enemy) {
+        enemy.targetId = targetId;
+        const targetPlayer = combatPlayers.find(p => p.id === targetId);
+        const targetName = targetPlayer ? targetPlayer.name : 'No target';
+        console.log(`🎯 Updated ${enemy.name} target to: ${targetName}`);
+        
+        // Update the arena display to show the targeting
+        updateArena();
+    }
+}
+
+/**
  * Execute enemy attack
  */
 function executeEnemyAttack(enemyId) {
@@ -1822,14 +1984,23 @@ function executeEnemyAttack(enemyId) {
     const attack = enemy.attacks[enemy.selectedAttack];
     if (!attack) return;
     
+    // Get target information
+    const targetPlayer = enemy.targetId ? combatPlayers.find(p => p.id === enemy.targetId) : null;
+    const targetText = targetPlayer ? ` targeting ${targetPlayer.name}` : '';
+    
     const roll = rollD20();
-    const message = `${enemy.name} attacks with ${attack.name}! Roll: ${roll}`;
+    const message = `⚔️ ${enemy.name} attacks with ${attack.name}${targetText}! Attack Roll: ${roll} (Damage: ${attack.damage})`;
     
     // Add to chat if available
     if (typeof addToChatLog === 'function') {
         addToChatLog(message, 'system');
     } else {
         console.log(message);
+    }
+    
+    // Also send to combat chat if available
+    if (typeof sendChatMessageAsync === 'function') {
+        sendChatMessageAsync(message);
     }
     
     enemy.status = 'acted';
@@ -1935,13 +2106,28 @@ function checkAndAnnounceTurnOrder() {
     
     // Get connected players count (minus storyteller)
     const connectedPlayers = typeof getConnectedPlayersList === 'function' ? getConnectedPlayersList() : [];
-    const storytellerName = window.currentCharacterName || 'StoryTeller';
-    const expectedPlayerCount = connectedPlayers.filter(p => 
-        p.name !== storytellerName && 
-        p.character_name !== storytellerName
-    ).length;
+    
+    // Get storyteller name from the settings input field
+    const storytellerNameInput = document.getElementById('storyteller-name');
+    const storytellerName = storytellerNameInput?.value || window.currentCharacterName || window.playerName || 'StoryTeller' || 'Storyteller';
+    
+    console.log(`🎯 DEBUG: Storyteller name detected as: "${storytellerName}"`);
+    console.log(`🎯 DEBUG: Connected players:`, connectedPlayers.map(p => `${p.name} (char: ${p.character_name || 'none'}) [storyteller: ${p.is_storyteller || false}]`));
+    
+    // Helper function to check if a player is the storyteller
+    const isStorytellerPlayer = (player) => {
+        return player.name === storytellerName || 
+               player.character_name === storytellerName ||
+               player.is_storyteller === true ||
+               player.name.toLowerCase().includes('storyteller') ||
+               player.name.toLowerCase().includes('session master');
+    };
+    
+    const expectedPlayerCount = connectedPlayers.filter(p => !isStorytellerPlayer(p)).length;
     
     console.log(`🎯 Expected players: ${expectedPlayerCount}, Players with initiative: ${combatPlayers.length}`);
+    console.log(`🎯 DEBUG: Non-storyteller connected players:`, connectedPlayers.filter(p => !isStorytellerPlayer(p)).map(p => p.name));
+    console.log(`🎯 DEBUG: Players in combat with initiative:`, combatPlayers.map(p => `${p.name} (${p.initiative})`));
     
     // Check if all expected players have rolled initiative
     const playersWithInitiative = combatPlayers.filter(p => p.initiative && p.initiative > 0);
