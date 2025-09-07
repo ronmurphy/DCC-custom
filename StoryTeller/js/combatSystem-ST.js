@@ -117,6 +117,27 @@ function injectCombatStyles() {
             100% { box-shadow: 0 0 15px rgba(52, 152, 219, 0.8); }
         }
         
+        .waiting-for-action {
+            background: linear-gradient(45deg, #f39c12, #e67e22);
+            border-radius: 8px;
+            padding: 8px;
+            text-align: center;
+            animation: pulse 2s infinite;
+        }
+        
+        .waiting-indicator {
+            font-weight: bold;
+            color: white;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+        
+        .action-timer {
+            font-size: 10px;
+            color: #fff;
+            opacity: 0.8;
+        }
+        
         .targeting-indicator {
             font-size: 10px;
             color: #e74c3c;
@@ -145,7 +166,14 @@ const CombatState = {
     initiativeOrder: [],
     actionQueue: [], // New: stores queued actions for each player
     combatLog: [],
-    round: 1
+    round: 1,
+    autoEnemyAttacks: true, // New: toggle for automatic enemy attacks
+    waitingForPlayerAction: false,
+    playerActionTimeout: null,
+    playerActionTimeoutDuration: 30000, // 30 seconds
+    // Spam protection
+    lastActionTime: {}, // Track last action time per player
+    actionCooldown: 2000 // 2-second cooldown between actions
 };
 
 /**
@@ -489,6 +517,31 @@ function updateCombatStatusBar() {
 }
 
 // =============================================================================
+// SPAM PROTECTION
+// =============================================================================
+
+/**
+ * Checks if a player is sending actions too quickly
+ * @param {string} playerName - Name of the player
+ * @returns {boolean} True if action should be blocked due to spam
+ */
+function isSpamming(playerName) {
+    const now = Date.now();
+    const lastAction = CombatState.lastActionTime[playerName] || 0;
+    const timeSinceLastAction = now - lastAction;
+    
+    if (timeSinceLastAction < CombatState.actionCooldown) {
+        const remainingCooldown = Math.ceil((CombatState.actionCooldown - timeSinceLastAction) / 1000);
+        addCombatLogEntry(`⏳ **${playerName}** please wait ${remainingCooldown} seconds before sending another action.`, 'system');
+        return true;
+    }
+    
+    // Update last action time
+    CombatState.lastActionTime[playerName] = now;
+    return false;
+}
+
+// =============================================================================
 // COMBAT ACTION PROCESSING
 // =============================================================================
 
@@ -549,22 +602,38 @@ function processAttackCommand(commandData) {
         return;
     }
     
+    // Check for spam
+    if (isSpamming(attackData.character)) {
+        return;
+    }
+    
     // Check if it's this character's turn
     if (CombatState.turnStarted && isCurrentTurn(attackData.character)) {
+        // Check if player has already acted this turn
+        const actingCharacter = CombatState.initiativeOrder.find(char => char.character === attackData.character);
+        if (actingCharacter && actingCharacter.hasActed) {
+            addCombatLogEntry(`🛑 **${attackData.character}** already acted this round! Action ignored.`, 'system');
+            return;
+        }
+        
         // Process immediately
         processAttackAction(attackData);
     } else {
-        // Queue the action
+        // Check if they already have a queued action
+        const existingQueue = getQueuedAction(attackData.character);
+        if (existingQueue) {
+            addCombatLogEntry(`⚠️ **${attackData.character}** action updated: **${attackData.weapon}** (Attack: ${attackData.attackRoll}, Damage: ${attackData.damageRoll})`, 'system');
+        } else {
+            addCombatLogEntry(`⏳ **${attackData.character}** queued attack with **${attackData.weapon}**: Attack roll **${attackData.attackRoll}**, Damage **${attackData.damageRoll}** (waiting for turn)`, 'system');
+        }
+        
+        // Queue the action (this will replace any existing queued action)
         queueAction({
             character: attackData.character,
             type: 'ATTACK',
             data: attackData,
             preview: `${attackData.weapon} (${attackData.attackRoll}/${attackData.damageRoll})`
         });
-        
-        // Format display message for chat
-        const message = `⏳ **${attackData.character}** queued attack with **${attackData.weapon}**: Attack roll **${attackData.attackRoll}**, Damage **${attackData.damageRoll}** (waiting for turn)`;
-        addCombatLogEntry(message, 'attack-queued');
     }
     
     updateInitiativeDisplay();
@@ -599,22 +668,38 @@ function processSpellCommand(commandData) {
         timestamp: Date.now()
     };
     
+    // Check for spam
+    if (isSpamming(spellData.character)) {
+        return;
+    }
+    
     // Check if it's this character's turn
     if (CombatState.turnStarted && isCurrentTurn(spellData.character)) {
+        // Check if player has already acted this turn
+        const actingCharacter = CombatState.initiativeOrder.find(char => char.character === spellData.character);
+        if (actingCharacter && actingCharacter.hasActed) {
+            addCombatLogEntry(`🛑 **${spellData.character}** already acted this round! Action ignored.`, 'system');
+            return;
+        }
+        
         // Process immediately
         processSpellAction(spellData);
     } else {
-        // Queue the action
+        // Check if they already have a queued action
+        const existingQueue = getQueuedAction(spellData.character);
+        if (existingQueue) {
+            addCombatLogEntry(`⚠️ **${spellData.character}** action updated: **${spellData.spell}** (Attack: ${spellData.attackRoll}, Damage: ${spellData.damageRoll}, MP: ${spellData.mpCost})`, 'system');
+        } else {
+            addCombatLogEntry(`⏳ **${spellData.character}** queued spell **${spellData.spell}**: Attack roll **${spellData.attackRoll}**, Damage **${spellData.damageRoll}**, MP Cost **${spellData.mpCost}** (waiting for turn)`, 'system');
+        }
+        
+        // Queue the action (this will replace any existing queued action)
         queueAction({
             character: spellData.character,
             type: 'SPELL',
             data: spellData,
             preview: `${spellData.spell} (${spellData.attackRoll}/${spellData.damageRoll}) ${spellData.mpCost}MP`
         });
-        
-        // Format display message for chat
-        const message = `⏳ **${spellData.character}** queued spell **${spellData.spell}**: Attack roll **${spellData.attackRoll}**, Damage **${spellData.damageRoll}**, MP Cost **${spellData.mpCost}** (waiting for turn)`;
-        addCombatLogEntry(message, 'spell-queued');
     }
     
     updateInitiativeDisplay();
@@ -648,22 +733,38 @@ function processRollCommand(commandData) {
         timestamp: Date.now()
     };
     
+    // Check for spam
+    if (isSpamming(rollData.character)) {
+        return;
+    }
+    
     // Check if it's this character's turn
     if (CombatState.turnStarted && isCurrentTurn(rollData.character)) {
+        // Check if player has already acted this turn
+        const actingCharacter = CombatState.initiativeOrder.find(char => char.character === rollData.character);
+        if (actingCharacter && actingCharacter.hasActed) {
+            addCombatLogEntry(`🛑 **${rollData.character}** already acted this round! Action ignored.`, 'system');
+            return;
+        }
+        
         // Process immediately
         processRollAction(rollData);
     } else {
-        // Queue the action
+        // Check if they already have a queued action
+        const existingQueue = getQueuedAction(rollData.character);
+        if (existingQueue) {
+            addCombatLogEntry(`⚠️ **${rollData.character}** action updated: **${rollData.skill}** (${rollData.stat}): **${rollData.result}**`, 'system');
+        } else {
+            addCombatLogEntry(`⏳ **${rollData.character}** queued skill check **${rollData.skill}** (${rollData.stat}): **${rollData.result}** (waiting for turn)`, 'system');
+        }
+        
+        // Queue the action (this will replace any existing queued action)
         queueAction({
             character: rollData.character,
             type: 'SKILL',
             data: rollData,
             preview: `${rollData.skill} (${rollData.result})`
         });
-        
-        // Format display message for chat
-        const message = `⏳ **${rollData.character}** queued skill check **${rollData.skill}** (${rollData.stat}): **${rollData.result}** (waiting for turn)`;
-        addCombatLogEntry(message, 'skill-queued');
     }
     
     updateInitiativeDisplay();
@@ -797,43 +898,110 @@ function applyDamageToPlayer(playerName, damage, source = 'enemy') {
 }
 
 /**
- * Simulates enemy attack with miss chance
+ * Simulates enemy attack with proper dropdown selection and dice parsing
  */
 function executeEnemyAttack(enemyId, targetPlayerId) {
     const enemy = combatEnemies.find(e => e.id === enemyId);
     const target = combatPlayers.find(p => p.id === targetPlayerId);
     
     if (!enemy || !target || enemy.status === 'defeated') {
+        console.log(`🔧 DEBUG: executeEnemyAttack early return - Enemy: ${!!enemy}, Target: ${!!target}, Enemy defeated: ${enemy?.status === 'defeated'}`);
         return;
+    }
+    
+    // Ensure enemy has a selected attack - if null or 0, pick a random attack with dice notation
+    if (enemy.selectedAttack === null || enemy.selectedAttack === undefined || enemy.selectedAttack === 0) {
+        console.log(`🔧 DEBUG: Enemy ${enemy.name} has no specific attack selected, auto-selecting...`);
+        
+        // Find attacks with dice notation (contains 'd')
+        const validAttacks = enemy.attacks.filter(attack => 
+            attack.damage && attack.damage.includes('d')
+        );
+        
+        if (validAttacks.length > 0) {
+            // Pick a random valid attack
+            const randomAttack = validAttacks[Math.floor(Math.random() * validAttacks.length)];
+            enemy.selectedAttack = enemy.attacks.indexOf(randomAttack);
+            console.log(`🔧 DEBUG: Auto-selected random attack "${randomAttack.name}" (${randomAttack.damage}) for ${enemy.name}`);
+        } else {
+            // Fallback to first attack if no dice attacks found
+            enemy.selectedAttack = 0;
+            console.log(`🔧 DEBUG: No dice attacks found, using first attack for ${enemy.name}`);
+        }
     }
     
     const attack = enemy.attacks[enemy.selectedAttack];
     if (!attack) {
-        addCombatLogEntry(`⚠️ **${enemy.name}** has no selected attack!`, 'system');
+        addCombatLogEntry(`⚠️ **${enemy.name}** has no available attacks!`, 'system');
+        console.log(`🔧 DEBUG: No attack found for ${enemy.name} at index ${enemy.selectedAttack}`);
         return;
     }
     
-    // Simple attack roll vs AC (d20 + attack bonus vs target AC)
+    // Additional validation: ensure the selected attack has dice notation
+    if (!attack.damage || !attack.damage.includes('d')) {
+        console.log(`🔧 DEBUG: Selected attack "${attack.name}" has no dice notation (${attack.damage}), re-selecting...`);
+        
+        // Find attacks with dice notation (contains 'd')
+        const validAttacks = enemy.attacks.filter(att => 
+            att.damage && att.damage.includes('d')
+        );
+        
+        if (validAttacks.length > 0) {
+            // Pick a random valid attack
+            const randomAttack = validAttacks[Math.floor(Math.random() * validAttacks.length)];
+            enemy.selectedAttack = enemy.attacks.indexOf(randomAttack);
+            console.log(`🔧 DEBUG: Re-selected random dice attack "${randomAttack.name}" (${randomAttack.damage}) for ${enemy.name}`);
+            // Update the attack reference
+            const newAttack = enemy.attacks[enemy.selectedAttack];
+            Object.assign(attack, newAttack);
+        } else {
+            addCombatLogEntry(`⚠️ **${enemy.name}** has no dice-based attacks available!`, 'system');
+            console.log(`🔧 DEBUG: No valid dice attacks found for ${enemy.name}`);
+            return;
+        }
+    }
+    
+    console.log(`🔧 DEBUG: ${enemy.name} using attack: ${attack.name} (${attack.damage})`);
+    
+    // Simple attack roll vs AC (like the original system)
     const attackRoll = Math.floor(Math.random() * 20) + 1;
-    const attackBonus = Math.floor(enemy.level / 2) + 2; // Simple bonus
+    const attackBonus = Math.floor(enemy.level / 2) + 2; // Simple bonus based on level
     const totalAttack = attackRoll + attackBonus;
     
     if (totalAttack >= target.ac) {
-        // Hit! Parse damage
-        const damageMatch = attack.damage.match(/(\d+)d(\d+)(?:\+(\d+))?/);
+        // Hit! Parse and roll damage from dice notation in dropdown
         let damage = 0;
+        let damageBreakdown = '';
         
+        // Parse damage like "2d6+4" or "1d10+4" from the dropdown selection
+        const damageMatch = attack.damage.match(/(\d+)d(\d+)(?:\+(\d+))?/);
         if (damageMatch) {
             const [, numDice, dieSize, bonus] = damageMatch;
+            const diceRolls = [];
+            
             for (let i = 0; i < parseInt(numDice); i++) {
-                damage += Math.floor(Math.random() * parseInt(dieSize)) + 1;
+                const roll = Math.floor(Math.random() * parseInt(dieSize)) + 1;
+                diceRolls.push(roll);
+                damage += roll;
             }
-            if (bonus) damage += parseInt(bonus);
+            
+            const bonusValue = bonus ? parseInt(bonus) : 0;
+            damage += bonusValue;
+            
+            damageBreakdown = `${attack.damage} → [${diceRolls.join('+')}]`;
+            if (bonusValue > 0) damageBreakdown += `+${bonusValue}`;
+            damageBreakdown += ` = ${damage}`;
         } else {
-            damage = Math.floor(Math.random() * 6) + 1; // Default d6
+            // Fallback if can't parse dice notation
+            damage = Math.floor(Math.random() * 6) + 1;
+            damageBreakdown = `[d6] = ${damage}`;
         }
         
-        const message = `⚔️ **${enemy.name}** ${getRandomPhrase('hit')} **${target.name}** with ${attack.name} (roll: ${attackRoll}+${attackBonus}=${totalAttack} vs AC ${target.ac})`;
+        // Create combat message showing the selected attack and dice roll
+        const message = `⚔️ **${enemy.name}** ${getRandomPhrase('hit')} **${target.name}** with **${attack.name}**!\n` +
+                       `🎲 Attack: d20:${attackRoll}+${attackBonus} = ${totalAttack} vs AC ${target.ac} → HIT!\n` +
+                       `💥 Damage: ${damageBreakdown}`;
+        
         addCombatLogEntry(message, 'enemy-attack');
         
         // Apply damage
@@ -841,12 +1009,14 @@ function executeEnemyAttack(enemyId, targetPlayerId) {
         
     } else {
         // Miss!
-        const message = `⚔️ **${enemy.name}** ${getRandomPhrase('miss')} **${target.name}** with ${attack.name} (roll: ${attackRoll}+${attackBonus}=${totalAttack} vs AC ${target.ac})`;
+        const message = `❌ **${enemy.name}** ${getRandomPhrase('miss')} **${target.name}** with **${attack.name}**\n` +
+                       `🎲 Attack: d20:${attackRoll}+${attackBonus} = ${totalAttack} vs AC ${target.ac} → MISS!`;
+        
         addCombatLogEntry(message, 'enemy-miss');
     }
     
     // Mark enemy as having acted
-    const actingEnemy = CombatState.initiativeOrder.find(char => char.character === enemy.name);
+    const actingEnemy = CombatState.initiativeOrder.find(char => char.uniqueId === enemy.id);
     if (actingEnemy) {
         actingEnemy.hasActed = true;
     }
@@ -893,6 +1063,9 @@ function getRandomPhrase(category) {
  * Processes an attack action immediately
  */
 function processAttackAction(attackData) {
+    // Cancel player action timer since they took an action
+    cancelPlayerActionTimer(attackData.character);
+    
     // Check if player has already acted this turn (one action per turn)
     const actingCharacter = CombatState.initiativeOrder.find(char => char.character === attackData.character);
     if (actingCharacter && actingCharacter.hasActed) {
@@ -928,8 +1101,8 @@ function processAttackAction(attackData) {
                     console.log(`🔍 ENEMY KILL DEBUG: About to remove enemy "${enemy.name}" from initiative`);
                     console.log(`🔍 Current initiative order:`, CombatState.initiativeOrder.map(e => e.character));
                     
-                    // Remove defeated enemy from initiative order to fix turn advancement
-                    removeCharacterInitiative(enemy.name);
+                    // Remove defeated enemy from initiative order using their unique ID
+                    removeEnemyFromInitiative(enemy.id);
                     
                     // ALSO remove enemy from visual combatEnemies array so it disappears from arena
                     const enemyIndex = combatEnemies.findIndex(e => e.name === enemy.name);
@@ -1006,19 +1179,21 @@ function processAttackAction(attackData) {
     
     addCombatLogEntry(message, 'attack');
     
-    console.log('🔍 ATTACK DEBUG: Auto-advance disabled for testing');
-    // Auto-advance turn after action - TEMPORARILY DISABLED FOR DEBUGGING
-    // setTimeout(() => {
-    //     if (CombatState.turnStarted) {
-    //         advanceTurn();
-    //     }
-    // }, 1500);
+    // Auto-advance turn after action (only if not waiting for player)
+    setTimeout(() => {
+        if (CombatState.turnStarted && !CombatState.waitingForPlayerAction) {
+            advanceTurn();
+        }
+    }, 1500);
 }
 
 /**
  * Processes a spell action immediately
  */
 function processSpellAction(spellData) {
+    // Cancel player action timer since they took an action
+    cancelPlayerActionTimer(spellData.character);
+    
     // Check if player has already acted this turn
     const actingCharacter = CombatState.initiativeOrder.find(char => char.character === spellData.character);
     if (actingCharacter && actingCharacter.hasActed) {
@@ -1049,8 +1224,8 @@ function processSpellAction(spellData) {
                         enemy.status = 'defeated';
                         message += ` 💀 **${spellData.character}** ${getRandomPhrase('kill')} **${enemy.name}** with magic!`;
                         
-                        // Remove defeated enemy from initiative order to fix turn advancement
-                        removeCharacterInitiative(enemy.name);
+                        // Remove defeated enemy from initiative order using their unique ID
+                        removeEnemyFromInitiative(enemy.id);
                         
                         // Track kill for loot distribution
                         if (!playerKillTracker[spellData.character]) {
@@ -1103,9 +1278,9 @@ function processSpellAction(spellData) {
     addCombatLogEntry(message, 'spell');
     // console.log('Spell processed:', spellData);
     
-    // Auto-advance turn after action
+    // Auto-advance turn after action (only if not waiting for player)
     setTimeout(() => {
-        if (CombatState.turnStarted) {
+        if (CombatState.turnStarted && !CombatState.waitingForPlayerAction) {
             advanceTurn();
         }
     }, 1500);
@@ -1115,6 +1290,9 @@ function processSpellAction(spellData) {
  * Processes a skill roll action immediately
  */
 function processRollAction(rollData) {
+    // Cancel player action timer since they took an action
+    cancelPlayerActionTimer(rollData.character);
+    
     // Check if player has already acted this turn
     const actingCharacter = CombatState.initiativeOrder.find(char => char.character === rollData.character);
     if (actingCharacter && actingCharacter.hasActed) {
@@ -1143,9 +1321,9 @@ function processRollAction(rollData) {
     addCombatLogEntry(message, 'skill');
     console.log('Skill roll processed:', rollData);
     
-    // Auto-advance turn after action
+    // Auto-advance turn after action (only if not waiting for player)
     setTimeout(() => {
-        if (CombatState.turnStarted) {
+        if (CombatState.turnStarted && !CombatState.waitingForPlayerAction) {
             advanceTurn();
         }
     }, 1500);
@@ -1494,6 +1672,74 @@ function showCombatStats() {
 }
 
 /**
+ * Starts a timer waiting for player action
+ * @param {string} playerName - Name of the player whose turn it is
+ */
+function startPlayerActionTimer(playerName) {
+    // Clear any existing timer
+    if (CombatState.playerActionTimeout) {
+        clearTimeout(CombatState.playerActionTimeout);
+    }
+    
+    CombatState.waitingForPlayerAction = true;
+    console.log(`⏰ Starting 30-second timer for ${playerName}'s action`);
+    
+    // Add visual indicator to the player
+    const playerInCombat = combatPlayers.find(p => p.name === playerName);
+    if (playerInCombat) {
+        playerInCombat.waitingForAction = true;
+        updateArena(); // Update visual display
+    }
+    
+    // Send notification to the player
+    const message = `⏰ **${playerName}**, it's your turn! You have 30 seconds to take an action (attack, spell, or skill roll).`;
+    addCombatLogEntry(message, 'system');
+    
+    // Set timeout for 30 seconds
+    CombatState.playerActionTimeout = setTimeout(() => {
+        console.log(`⏰ Player ${playerName} action timer expired - auto-advancing turn`);
+        addCombatLogEntry(`⏰ **${playerName}** took too long - turn skipped!`, 'system');
+        
+        // Clear waiting state
+        CombatState.waitingForPlayerAction = false;
+        if (playerInCombat) {
+            playerInCombat.waitingForAction = false;
+        }
+        
+        // Auto-advance to next turn
+        setTimeout(() => advanceTurn(), 1000);
+    }, CombatState.playerActionTimeoutDuration);
+}
+
+/**
+ * Cancels player action timer (called when player takes action)
+ * @param {string} playerName - Name of the player who acted
+ */
+function cancelPlayerActionTimer(playerName) {
+    if (CombatState.playerActionTimeout) {
+        clearTimeout(CombatState.playerActionTimeout);
+        CombatState.playerActionTimeout = null;
+    }
+    
+    CombatState.waitingForPlayerAction = false;
+    console.log(`✅ Player ${playerName} action received - canceling timer`);
+    
+    // Clear visual indicator
+    const playerInCombat = combatPlayers.find(p => p.name === playerName);
+    if (playerInCombat) {
+        playerInCombat.waitingForAction = false;
+        updateArena(); // Update visual display
+    }
+    
+    // Advance turn after player takes action
+    setTimeout(() => {
+        if (CombatState.turnStarted) {
+            advanceTurn();
+        }
+    }, 1500);
+}
+
+/**
  * Advances to the next turn in combat
  */
 function nextTurn() {
@@ -1503,6 +1749,7 @@ function nextTurn() {
     console.log(`🔍 Initiative order:`, CombatState.initiativeOrder.map(e => e.character));
     
     if (!CombatState.isActive || CombatState.initiativeOrder.length === 0) {
+        console.log(`🔍 Early return - combat not active or no initiative order`);
         return;
     }
     
@@ -1525,36 +1772,58 @@ function nextTurn() {
     
     // Announce current turn
     const currentCharacter = CombatState.initiativeOrder[CombatState.currentTurnIndex];
-    console.log(`🔍 Current character: ${currentCharacter?.character}`);
+    console.log(`🔍 Current character after turn advance: ${currentCharacter?.character} at index ${CombatState.currentTurnIndex}`);
+    
     if (currentCharacter) {
         addCombatLogEntry(`👆 **${currentCharacter.character}'s** turn!`, 'system');
         
-        // Check if it's an enemy's turn and auto-attack
-        const isEnemy = currentCharacter.character.toLowerCase().includes('rat') ||
-                       currentCharacter.character.toLowerCase().includes('goblin') ||
-                       currentCharacter.character.toLowerCase().includes('orc') ||
-                       currentCharacter.character.toLowerCase().includes('skeleton') ||
-                       currentCharacter.character.toLowerCase().includes('enemy');
+        // Check if it's an enemy's turn by looking in combatEnemies array
+        const enemy = combatEnemies.find(e => e.name === currentCharacter.character || e.id === currentCharacter.uniqueId);
+        const isEnemy = !!enemy;
         
-        if (isEnemy) {
-            // Find the enemy and auto-attack after a short delay
+        console.log(`🔍 Is enemy turn: ${isEnemy}, Auto enemy attacks: ${CombatState.autoEnemyAttacks}`);
+        
+        if (isEnemy && CombatState.autoEnemyAttacks) {
+            // Auto-attack after a short delay
             setTimeout(() => {
-                const enemy = combatEnemies.find(e => e.name === currentCharacter.character);
                 if (enemy && enemy.status !== 'defeated') {
                     // Find a target (first alive player)
                     const target = combatPlayers.find(p => p.status !== 'defeated' && p.hp > 0);
                     if (target && enemy.attacks && enemy.attacks.length > 0) {
                         // Set target and execute attack
                         enemy.targetId = target.id;
+                        console.log(`🔍 Enemy ${enemy.name} auto-attacking ${target.name}`);
                         executeEnemyAttack(enemy.id, target.id);
                     } else {
                         // No valid target or attacks, skip turn
                         addCombatLogEntry(`⚠️ **${enemy.name}** has no valid targets or attacks!`, 'system');
                         setTimeout(() => advanceTurn(), 1000);
                     }
+                } else {
+                    console.log(`🔍 Enemy ${currentCharacter.character} not found or defeated, advancing turn`);
+                    setTimeout(() => advanceTurn(), 1000);
                 }
             }, 1000); // 1 second delay for enemy to "think"
+        } else if (isEnemy && !CombatState.autoEnemyAttacks) {
+            // Manual mode - just announce it's the enemy's turn
+            addCombatLogEntry(`🎮 **Manual Mode**: ${currentCharacter.character} awaits your command!`, 'system');
+        } else if (!isEnemy) {
+            // It's a player's turn - check for queued actions first
+            console.log(`🎯 Player turn: ${currentCharacter.character} - checking for queued actions`);
+            
+            const queuedAction = getQueuedAction(currentCharacter.character);
+            if (queuedAction) {
+                // Process queued action immediately instead of waiting
+                console.log(`🎯 Found queued action for ${currentCharacter.character}, processing immediately`);
+                processQueuedAction(currentCharacter.character);
+            } else {
+                // No queued action, start timer and wait for player input
+                console.log(`🎯 No queued action for ${currentCharacter.character}, starting timer`);
+                startPlayerActionTimer(currentCharacter.character);
+            }
         }
+    } else {
+        console.log(`🔍 WARNING: No current character found at index ${CombatState.currentTurnIndex}`);
     }
     
     // Update UI
@@ -1665,7 +1934,61 @@ function getInitiativeOrderText() {
 }
 
 /**
- * Clears initiative for a specific character
+ * Removes an enemy from initiative by their unique ID
+ * 
+ * @param {string} enemyId - Unique ID of the enemy to remove
+ */
+function removeEnemyFromInitiative(enemyId) {
+    console.log(`🔍 REMOVE ENEMY DEBUG: Removing enemy with ID ${enemyId}`);
+    console.log(`🔍 Before removal - Initiative order:`, CombatState.initiativeOrder.map(e => `${e.character} (id: ${e.uniqueId || 'none'})`));
+    console.log(`🔍 Before removal - Current turn index: ${CombatState.currentTurnIndex}`);
+    
+    const removedIndex = CombatState.initiativeOrder.findIndex(entry => entry.uniqueId === enemyId);
+    
+    if (removedIndex === -1) {
+        console.warn(`Enemy with ID ${enemyId} not found in initiative order`);
+        return;
+    }
+    
+    const removedCharacter = CombatState.initiativeOrder[removedIndex];
+    console.log(`🔍 Enemy ${removedCharacter.character} found at index ${removedIndex}`);
+    
+    // Remove the character from initiative order
+    CombatState.initiativeOrder = CombatState.initiativeOrder.filter(
+        entry => entry.uniqueId !== enemyId
+    );
+    
+    console.log(`🔍 After removal - Initiative order:`, CombatState.initiativeOrder.map(e => e.character));
+    
+    // Adjust current turn index based on where the removed character was
+    if (removedIndex < CombatState.currentTurnIndex) {
+        // Someone before current turn was removed, shift index back
+        CombatState.currentTurnIndex--;
+        console.log(`🔍 Removed before current turn, adjusted index to: ${CombatState.currentTurnIndex}`);
+    } else if (removedIndex === CombatState.currentTurnIndex) {
+        // Current turn character was removed
+        // Keep the same index (next character will be at this position)
+        // But make sure we're not out of bounds
+        if (CombatState.currentTurnIndex >= CombatState.initiativeOrder.length) {
+            CombatState.currentTurnIndex = 0; // Wrap to beginning if needed
+            console.log(`🔍 Current turn removed and out of bounds, wrapped to index: ${CombatState.currentTurnIndex}`);
+        } else {
+            console.log(`🔍 Current turn removed, keeping index at: ${CombatState.currentTurnIndex}`);
+        }
+    } else {
+        // Someone after current turn was removed - no index adjustment needed
+        console.log(`🔍 Removed after current turn, no adjustment needed. Index stays: ${CombatState.currentTurnIndex}`);
+    }
+    
+    console.log(`🔍 Final state - Index: ${CombatState.currentTurnIndex}, Next character: ${CombatState.initiativeOrder[CombatState.currentTurnIndex]?.character}`);
+    
+    updateInitiativeDisplay();
+    highlightCurrentTurn(); // Update visual indicators
+    addCombatLogEntry(`❌ Removed **${removedCharacter.displayName || removedCharacter.character}** from initiative order.`, 'system');
+}
+
+/**
+ * Clears initiative for a specific character (legacy function for players)
  * 
  * @param {string} characterName - Name of character to remove
  */
@@ -1683,6 +2006,7 @@ function removeCharacterInitiative(characterName) {
     
     console.log(`🔍 Character ${characterName} found at index ${removedIndex}`);
     
+    // Remove the character from initiative order
     CombatState.initiativeOrder = CombatState.initiativeOrder.filter(
         entry => entry.character !== characterName
     );
@@ -1695,16 +2019,17 @@ function removeCharacterInitiative(characterName) {
         CombatState.currentTurnIndex--;
         console.log(`🔍 Removed before current turn, adjusted index to: ${CombatState.currentTurnIndex}`);
     } else if (removedIndex === CombatState.currentTurnIndex) {
-        // Current turn character was removed - DON'T change index
-        // The next person in line will get their turn when nextTurn() is called
-        // Just make sure we're not out of bounds
+        // Current turn character was removed
+        // Keep the same index (next character will be at this position)
+        // But make sure we're not out of bounds
         if (CombatState.currentTurnIndex >= CombatState.initiativeOrder.length) {
-            CombatState.currentTurnIndex = CombatState.initiativeOrder.length - 1;
-            console.log(`🔍 Current turn removed and out of bounds, adjusted index to: ${CombatState.currentTurnIndex}`);
+            CombatState.currentTurnIndex = 0; // Wrap to beginning if needed
+            console.log(`🔍 Current turn removed and out of bounds, wrapped to index: ${CombatState.currentTurnIndex}`);
         } else {
             console.log(`🔍 Current turn removed, keeping index at: ${CombatState.currentTurnIndex}`);
         }
     } else {
+        // Someone after current turn was removed - no index adjustment needed
         console.log(`🔍 Removed after current turn, no adjustment needed. Index stays: ${CombatState.currentTurnIndex}`);
     }
     
@@ -1755,8 +2080,16 @@ if (typeof window !== 'undefined') {
         // Utility functions
         getInitiativeOrderText,
         removeCharacterInitiative,
+        removeEnemyFromInitiative,
         updateInitiativeDisplay,
-        addCombatLogEntry
+        addCombatLogEntry,
+        
+        // Player action timing
+        startPlayerActionTimer,
+        cancelPlayerActionTimer,
+        
+        // Enemy automation
+        toggleAutoEnemyAttacks
     };
 }
 
@@ -2211,6 +2544,36 @@ function autoAddPlayerToCombat(playerName, initiative) {
     }
 }
 
+/**
+ * Toggles automatic enemy attacks on/off
+ * @param {boolean} enabled - Optional: force to specific state, or toggle if undefined
+ * @returns {boolean} New state of auto attacks
+ */
+function toggleAutoEnemyAttacks(enabled) {
+    if (enabled === undefined) {
+        // Toggle current state
+        CombatState.autoEnemyAttacks = !CombatState.autoEnemyAttacks;
+    } else {
+        // Set to specific state
+        CombatState.autoEnemyAttacks = Boolean(enabled);
+    }
+    
+    const status = CombatState.autoEnemyAttacks ? 'ENABLED' : 'DISABLED';
+    const message = `🤖 **Auto Enemy Attacks:** ${status}`;
+    addCombatLogEntry(message, 'system');
+    
+    console.log(`🤖 Auto enemy attacks ${status.toLowerCase()}`);
+    return CombatState.autoEnemyAttacks;
+}
+
+/**
+ * Gets the current state of auto enemy attacks
+ * @returns {boolean} Current auto attack state
+ */
+function getAutoEnemyAttacksStatus() {
+    return CombatState.autoEnemyAttacks;
+}
+
 // Make functions available globally for onclick handlers
 if (typeof window !== 'undefined') {
     window.startCombatInitiative = startCombatInitiative;
@@ -2252,6 +2615,14 @@ if (typeof window !== 'undefined') {
     window.getHpBarColor = getHpBarColor;
     window.getHpStatusClass = getHpStatusClass;
     window.checkCombatEnd = checkCombatEnd;
+    
+    // Enemy automation toggle
+    window.toggleAutoEnemyAttacks = toggleAutoEnemyAttacks;
+    window.getAutoEnemyAttacksStatus = getAutoEnemyAttacksStatus;
+    
+    // Player action timing
+    window.startPlayerActionTimer = startPlayerActionTimer;
+    window.cancelPlayerActionTimer = cancelPlayerActionTimer;
     
     // Debug function to manually test player addition
     window.debugAddPlayer = function(playerName, initiative) {
@@ -2329,6 +2700,37 @@ if (typeof window !== 'undefined') {
             playersReady: playersWithInitiative.length,
             turnStarted: CombatState.turnStarted,
             readyToStart: nonStorytellerPlayers.length > 0 && playersWithInitiative.length >= nonStorytellerPlayers.length && !CombatState.turnStarted
+        };
+    };
+    
+    // Debug function to check combat state
+    window.debugCombatState = function() {
+        console.log('🔧 COMBAT STATE DEBUG:');
+        console.log(`   Combat active: ${CombatState.isActive}`);
+        console.log(`   Auto enemy attacks: ${CombatState.autoEnemyAttacks}`);
+        console.log(`   Current turn index: ${CombatState.currentTurnIndex}`);
+        console.log(`   Current character: ${CombatState.initiativeOrder[CombatState.currentTurnIndex]?.character}`);
+        console.log(`   Combat enemies: ${combatEnemies.length}`, combatEnemies.map(e => `${e.name} (${e.id})`));
+        console.log(`   Combat players: ${combatPlayers.length}`, combatPlayers.map(p => `${p.name} (${p.id})`));
+        console.log(`   Initiative order: ${CombatState.initiativeOrder.length}`, CombatState.initiativeOrder.map(e => e.character));
+        
+        // Show enemy attack details
+        combatEnemies.forEach(enemy => {
+            console.log(`   🐀 ${enemy.name} attacks:`, enemy.attacks.map((att, i) => `${i}: ${att.name} (${att.damage})`));
+            console.log(`   🐀 ${enemy.name} selectedAttack: ${enemy.selectedAttack}`);
+            if (enemy.selectedAttack !== null && enemy.attacks[enemy.selectedAttack]) {
+                const selectedAtt = enemy.attacks[enemy.selectedAttack];
+                console.log(`   🐀 ${enemy.name} will use: "${selectedAtt.name}" (${selectedAtt.damage})`);
+            }
+        });
+        
+        return {
+            isActive: CombatState.isActive,
+            autoEnemyAttacks: CombatState.autoEnemyAttacks,
+            currentTurnIndex: CombatState.currentTurnIndex,
+            currentCharacter: CombatState.initiativeOrder[CombatState.currentTurnIndex]?.character,
+            enemyCount: combatEnemies.length,
+            playerCount: combatPlayers.length
         };
     };
     
@@ -2421,94 +2823,32 @@ if (typeof window !== 'undefined') {
 // ENEMY MANAGEMENT SYSTEM
 // =============================================================================
 
-/**
- * Basic enemy database - this could be loaded from JSON in the future
- */
-const EnemyDatabase = {
-    'goblin-warrior': {
-        name: 'Goblin Warrior',
-        hp: 12,
-        maxHp: 12,
-        ac: 13,
-        dex: 2,
-        level: 2
-    },
-    'orc-raider': {
-        name: 'Orc Raider',
-        hp: 18,
-        maxHp: 18,
-        ac: 14,
-        dex: 1,
-        level: 3
-    },
-    'skeleton-archer': {
-        name: 'Skeleton Archer',
-        hp: 8,
-        maxHp: 8,
-        ac: 12,
-        dex: 3,
-        level: 1
-    },
-    'kobold-scout': {
-        name: 'Kobold Scout',
-        hp: 6,
-        maxHp: 6,
-        ac: 11,
-        dex: 4,
-        level: 1
-    },
-    'dire-wolf': {
-        name: 'Dire Wolf',
-        hp: 22,
-        maxHp: 22,
-        ac: 12,
-        dex: 3,
-        level: 4
-    }
-};
+// Legacy enemy database - REPLACED by enemies.json
+// This old system has been replaced by the JSON-based enemy loading system
+// All enemies are now loaded from /StoryTeller/data/enemies.json via loadEnemiesForLevel()
 
-let currentEnemy = null;
+let currentEnemy = null; // Still used by the legacy initiative system
 
 /**
- * Populates the enemy selector dropdown
+ * Legacy function - DEPRECATED 
+ * Enemies are now loaded from enemies.json via loadEnemiesForLevel()
+ * Keeping this function for backward compatibility but it's not used
  */
 function populateEnemySelector() {
-    const selector = document.getElementById('enemy-selector');
-    if (!selector) return;
-    
-    // Clear existing options except the first
-    selector.innerHTML = '<option value="">Select Enemy...</option>';
-    
-    // Add enemies from database
-    Object.keys(EnemyDatabase).forEach(enemyId => {
-        const enemy = EnemyDatabase[enemyId];
-        const option = document.createElement('option');
-        option.value = enemyId;
-        option.textContent = `${enemy.name} (HP: ${enemy.hp}, AC: ${enemy.ac})`;
-        selector.appendChild(option);
-    });
+    console.warn('populateEnemySelector() is deprecated. Use loadEnemiesForLevel() instead.');
+    // Function disabled - enemies now loaded from JSON
 }
 
 /**
- * Handles enemy selection
+ * Legacy function - DEPRECATED
+ * Enemies are now selected via the level->enemy cascade system
+ * This function is kept for backward compatibility but not recommended
  */
 function selectEnemy(enemyId) {
-    if (!enemyId) {
-        currentEnemy = null;
-        updateEnemyDisplay();
-        return;
-    }
-    
-    const enemy = EnemyDatabase[enemyId];
-    if (!enemy) {
-        console.error('Enemy not found:', enemyId);
-        return;
-    }
-    
-    currentEnemy = { ...enemy, id: enemyId };
+    console.warn('selectEnemy() is deprecated. Use the level->enemy selection system instead.');
+    // Legacy functionality disabled - use visual combat system instead
+    currentEnemy = null;
     updateEnemyDisplay();
-    
-    console.log('Selected enemy:', currentEnemy);
 }
 
 /**
@@ -2588,7 +2928,8 @@ function rollEnemyInitiative() {
 if (typeof document !== 'undefined') {
     document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => {
-            populateEnemySelector();
+            // Enemy selector will be populated when a level is selected
+            // via loadEnemiesForLevel() which loads from enemies.json
             updateEnemyDisplay();
         }, 100);
     });
@@ -2706,7 +3047,7 @@ function addEnemyToCombat() {
         maxHp: enemyTemplate.hp,
         ac: enemyTemplate.ac,
         attacks: enemyTemplate.attacks,
-        selectedAttack: attackIndex ? parseInt(attackIndex) : 0,
+        selectedAttack: attackIndex && attackIndex !== "" ? parseInt(attackIndex) : null, // null means "auto-select"
         stats: enemyTemplate.stats,
         initiative: 0,
         status: 'waiting',
@@ -2936,11 +3277,23 @@ function createEnemyControls(enemy) {
  * Create player-specific controls
  */
 function createPlayerControls(player) {
+    // Check if player is waiting for action
+    if (player.waitingForAction) {
+        return `
+            <div class="action-controls waiting-for-action">
+                <div class="waiting-indicator">⏰ Waiting for action...</div>
+                <div class="action-timer">30 seconds remaining</div>
+                <small>- Player -</small>
+            </div>
+        `;
+    }
+    
     return `
         <div class="action-controls">
             <button class="action-btn" onclick="setPlayerStatus('${player.id}', 'ready')">Ready</button>
             <button class="action-btn" onclick="setPlayerStatus('${player.id}', 'waiting')">Wait</button>
             <button class="action-btn" onclick="applyDamageToPlayer('${player.id}')">Damage</button>
+            <small>- Player -</small>
         </div>
     `;
 }
@@ -3006,8 +3359,8 @@ function applyDamageToEnemy(enemyId) {
     if (enemy.hp === 0) {
         enemy.status = 'defeated';
         
-        // Remove defeated enemy from initiative order to fix turn advancement
-        removeCharacterInitiative(enemy.name);
+        // Remove defeated enemy from initiative order using their unique ID
+        removeEnemyFromInitiative(enemy.id);
         
         const message = `${enemy.name} has been defeated!`;
         if (typeof addToChatLog === 'function') {
@@ -3097,9 +3450,11 @@ function rollAllInitiative() {
         enemy.initiative = initiative;
         console.log(`🎲 ${enemy.name} rolled initiative: ${initiative}`);
         
-        // ADD ENEMY TO INITIATIVE ORDER - this was missing!
+        // ADD ENEMY TO INITIATIVE ORDER with unique identifier
         const enemyInitiative = {
-            character: enemy.name,
+            character: `${enemy.name} (${enemy.id.split('_').pop()})`, // Use unique name with ID suffix
+            uniqueId: enemy.id, // Store the actual unique ID for lookups
+            displayName: enemy.name, // Store the display name
             total: initiative,
             d20: 0, // We don't track the individual d20 roll for enemies
             dexModifier: enemy.stats?.dex_modifier || 0,
@@ -3108,7 +3463,7 @@ function rollAllInitiative() {
             isEnemy: true
         };
         addToInitiativeOrder(enemyInitiative);
-        console.log(`🎯 Added ${enemy.name} to initiative order with ${initiative}`);
+        console.log(`🎯 Added ${enemy.name} (${enemy.id}) to initiative order with ${initiative}`);
     });
     
     // Roll for players (only if they haven't rolled yet)
@@ -3522,10 +3877,10 @@ function applyDamage(targetName, damage, attacker) {
             enemy.status = 'defeated';
             
             console.log(`🔍 APPLY DAMAGE KILL DEBUG: Enemy "${enemy.name}" defeated`);
-            console.log(`🔍 About to call removeCharacterInitiative("${enemy.name}")`);
+            console.log(`🔍 About to call removeEnemyFromInitiative("${enemy.id}")`);
             
-            // Remove defeated enemy from initiative order to fix turn advancement
-            removeCharacterInitiative(enemy.name);
+            // Remove defeated enemy from initiative order using their unique ID
+            removeEnemyFromInitiative(enemy.id);
             
             sendChatMessageAsync(`💀 ${enemy.name} has been defeated!`);
         }
