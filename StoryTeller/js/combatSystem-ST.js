@@ -161,6 +161,10 @@ function startCombatEncounter() {
     CombatState.initiativeOrder = [];
     CombatState.actionQueue = [];
 
+    // Initialize kill tracker for loot distribution
+    playerKillTracker = {};
+    console.log('🎯 Kill tracker initialized for combat');
+
     // Clear previous initiative display
     updateInitiativeDisplay();
 
@@ -196,6 +200,13 @@ function endCombatEncounter() {
     CombatState.currentRound = 1;
     CombatState.initiativeOrder = [];
     CombatState.actionQueue = [];
+
+    // Clear combat lists and reset for next encounter
+    combatEnemies = [];
+    combatPlayers = [];
+    playerKillTracker = {};
+    
+    console.log('🧹 Combat lists cleared and reset for next encounter');
 
     // Clear initiative display
     updateInitiativeDisplay();
@@ -914,6 +925,16 @@ function processAttackAction(attackData) {
                     enemy.status = 'defeated';
                     message += ` 💀 **${attackData.character}** ${getRandomPhrase('kill')} **${enemy.name}**!`;
                     
+                    // Track kill for loot distribution
+                    if (!playerKillTracker[attackData.character]) {
+                        playerKillTracker[attackData.character] = [];
+                    }
+                    playerKillTracker[attackData.character].push({
+                        enemyName: enemy.name,
+                        enemyType: enemy.type || 'unknown',
+                        enemyData: enemy.originalData || null // Store original enemy data for loot
+                    });
+                    
                     // Check if all enemies are defeated
                     checkCombatEnd();
                 }
@@ -1002,6 +1023,17 @@ function processSpellAction(spellData) {
                     if (enemy.hp <= 0) {
                         enemy.status = 'defeated';
                         message += ` 💀 **${spellData.character}** ${getRandomPhrase('kill')} **${enemy.name}** with magic!`;
+                        
+                        // Track kill for loot distribution
+                        if (!playerKillTracker[spellData.character]) {
+                            playerKillTracker[spellData.character] = [];
+                        }
+                        playerKillTracker[spellData.character].push({
+                            enemyName: enemy.name,
+                            enemyType: enemy.type || 'unknown',
+                            enemyData: enemy.originalData || null
+                        });
+                        
                         checkCombatEnd();
                     }
                     
@@ -1192,6 +1224,164 @@ function checkCombatEnd() {
 }
 
 /**
+ * Converts dice notation to descriptive loot terms
+ * @param {string} lootItem - The loot item (e.g., "1d4_coins", "2d6_coins")
+ * @returns {string} V4-network compatible loot type
+ */
+function convertDiceToDescription(lootItem) {
+    if (!lootItem.includes('d') || !lootItem.includes('_')) {
+        // Not a dice item, check if it needs mapping to V4-network types
+        return mapLootToV4Network(lootItem);
+    }
+    
+    const [diceNotation, itemType] = lootItem.split('_', 2);
+    const match = diceNotation.match(/(\d+)d(\d+)/);
+    
+    if (!match) return mapLootToV4Network(lootItem);
+    
+    const [, numDice, diceSize] = match;
+    const maxValue = parseInt(numDice) * parseInt(diceSize);
+    
+    // Map coins to V4-network gold types based on value
+    if (itemType === 'coins') {
+        if (maxValue <= 8) {
+            return 'small_pouch'; // 5-25 gold in V4-network
+        } else if (maxValue <= 25) {
+            return 'handful_gold'; // 10-50 gold in V4-network
+        } else {
+            return 'treasure_chest'; // 100-500 gold in V4-network
+        }
+    }
+    
+    // For non-coin items, try to map to appropriate V4-network types
+    return mapLootToV4Network(itemType);
+}
+
+/**
+ * Maps loot items to V4-network compatible types
+ * @param {string} lootItem - The loot item to map
+ * @returns {string} V4-network compatible loot type
+ */
+function mapLootToV4Network(lootItem) {
+    const lowerItem = lootItem.toLowerCase();
+    
+    // Weapon-like items
+    if (lowerItem.includes('weapon') || lowerItem.includes('sword') || 
+        lowerItem.includes('blade') || lowerItem.includes('club') || 
+        lowerItem.includes('staff') || lowerItem.includes('bow') ||
+        lowerItem.includes('pineapple_club') || lowerItem.includes('curved_blade') ||
+        lowerItem.includes('chieftain_blade') || lowerItem.includes('bone_sword')) {
+        return 'weapon';
+    }
+    
+    // Armor-like items
+    if (lowerItem.includes('armor') || lowerItem.includes('hide') || 
+        lowerItem.includes('rags') || lowerItem.includes('robes') ||
+        lowerItem.includes('leathery_rags') || lowerItem.includes('black_robes') ||
+        lowerItem.includes('tattered_armor')) {
+        return 'armor';
+    }
+    
+    // Potion-like items (essences, components, magical items)
+    if (lowerItem.includes('essence') || lowerItem.includes('component') || 
+        lowerItem.includes('potion') || lowerItem.includes('venom') ||
+        lowerItem.includes('plant_essence') || lowerItem.includes('spell_components') ||
+        lowerItem.includes('venom_sac') || lowerItem.includes('corruption_essence')) {
+        return 'potion';
+    }
+    
+    // Magic items (special/unique items)
+    if (lowerItem.includes('magic') || lowerItem.includes('tome') || 
+        lowerItem.includes('crystal') || lowerItem.includes('token') ||
+        lowerItem.includes('necromantic_tome') || lowerItem.includes('leadership_token') ||
+        lowerItem.includes('cave_crystals') || lowerItem.includes('engineering_tools')) {
+        return 'magic_item';
+    }
+    
+    // Default small items to small_pouch (low value)
+    return 'small_pouch';
+}
+
+/**
+ * Processes loot for a player based on their kills
+ * @param {string} playerName - Name of the player
+ * @param {Array} killList - List of enemies killed by this player
+ */
+async function processPlayerLoot(playerName, killList) {
+    if (!killList || killList.length === 0) return;
+    
+    for (const kill of killList) {
+        if (!kill.enemyData || !kill.enemyData.loot) continue;
+        
+        for (const lootItem of kill.enemyData.loot) {
+            const v4NetworkLootType = convertDiceToDescription(lootItem);
+            
+            // Create a more descriptive public message using the original item name
+            const publicLootName = lootItem.replace(/_/g, ' ').replace(/\d+d\d+/g, 'some');
+            
+            // Send LOOT command to the specific player
+            // Format: LOOT:PlayerName:LootType:Source
+            const lootCommand = `LOOT:${playerName}:${v4NetworkLootType}:${kill.enemyName}`;
+            
+            // Send to chat for public notification (use descriptive name)
+            const publicMessage = `💰 **${playerName}** found **${publicLootName}** from the defeated ${kill.enemyName}!`;
+            displayCombatMessage(publicMessage);
+            
+            // Send detailed loot command to player's V4-network
+            if (typeof sendChatMessageAsync === 'function') {
+                sendChatMessageAsync(lootCommand);
+                console.log(`🎁 Sent loot command: ${lootCommand} (original: ${lootItem})`);
+            } else if (typeof sendChatMessage === 'function') {
+                sendChatMessage(lootCommand);
+            }
+            
+            // Small delay between loot items
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+    }
+}
+
+/**
+ * Distributes loot to all players based on their kills
+ */
+async function distributeLoot() {
+    const lootMessages = [
+        "🎁 **Distributing loot from the battlefield...**",
+        "💰 **The spoils of victory are divided...**",
+        "🏆 **Claiming rewards from fallen enemies...**",
+        "⚔️ **Gathering trophies from the defeated...**"
+    ];
+    
+    const message = lootMessages[Math.floor(Math.random() * lootMessages.length)];
+    displayCombatMessage(message);
+    
+    console.log('🎁 Starting loot distribution, kill tracker:', playerKillTracker);
+    
+    // Wait a moment for the message to display
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Check if there are any kills to process
+    const totalKills = Object.values(playerKillTracker).reduce((sum, kills) => sum + kills.length, 0);
+    if (totalKills === 0) {
+        displayCombatMessage("🤷‍♂️ **No enemies were defeated - no loot to distribute.**");
+        return;
+    }
+    
+    // Process loot for each player
+    for (const [playerName, killList] of Object.entries(playerKillTracker)) {
+        if (killList.length > 0) {
+            console.log(`🎁 Processing loot for ${playerName}: ${killList.length} kills`);
+            await processPlayerLoot(playerName, killList);
+        }
+    }
+    
+    // Final message
+    setTimeout(() => {
+        displayCombatMessage("✨ **All loot has been distributed!**");
+    }, 2000);
+}
+
+/**
  * Ends combat with player victory
  */
 function endCombatWithVictory() {
@@ -1205,16 +1395,21 @@ function endCombatWithVictory() {
     const message = victoryMessages[Math.floor(Math.random() * victoryMessages.length)];
     addCombatLogEntry(message, 'victory');
     
+    // Distribute loot based on kills
+    setTimeout(async () => {
+        await distributeLoot();
+    }, 1000);
+    
     // Show combat stats
     setTimeout(() => {
         showCombatStats();
-    }, 2000);
+    }, 4000);
     
-    // End combat after stats
+    // End combat after stats and loot
     setTimeout(() => {
         endVisualCombat();
         endCombatEncounter();
-    }, 5000);
+    }, 7000);
 }
 
 /**
@@ -2029,8 +2224,11 @@ if (typeof window !== 'undefined') {
                 ac: 13,
                 initiative: 12,
                 status: 'waiting',
-                type: 'enemy',
-                level: 1
+                type: 'goblin_grunt',
+                level: 1,
+                originalData: {
+                    loot: ["goblin_ear", "pineapple_club", "small_coins"]
+                }
             });
             console.log('🔧 Added test enemy to combatEnemies array');
         }
@@ -2334,6 +2532,7 @@ if (typeof document !== 'undefined') {
 let currentEnemyData = null;
 let combatEnemies = [];
 let combatPlayers = [];
+let playerKillTracker = {}; // Track kills per player for loot distribution
 
 /**
  * Load enemies for selected level
@@ -2441,7 +2640,9 @@ function addEnemyToCombat() {
         selectedAttack: attackIndex ? parseInt(attackIndex) : 0,
         stats: enemyTemplate.stats,
         initiative: 0,
-        status: 'waiting'
+        status: 'waiting',
+        type: enemyKey, // Store enemy type for loot reference
+        originalData: enemyTemplate // Store full original data for loot
     };
     
     combatEnemies.push(enemy);
@@ -3429,6 +3630,43 @@ if (document.readyState === 'loading') {
 } else {
     initializeCombatUI();
 }
+
+// =============================================================================
+// TESTING AND DEBUGGING
+// =============================================================================
+
+/**
+ * Test function to verify loot conversion - can be called from console
+ */
+function testLootConversion() {
+    const testItems = [
+        "1d4_coins", "2d6_coins", "3d6_coins", "5d10_coins",
+        "rat_tail", "small_bones", "goblin_ear",
+        "1d8_coins", "2d8_coins", "4d6_coins",
+        "pineapple_club", "curved_blade", "bone_sword",
+        "leathery_rags", "black_robes", "tattered_armor",
+        "plant_essence", "spell_components", "venom_sac",
+        "necromantic_tome", "leadership_token", "cave_crystals"
+    ];
+    
+    console.log('🧪 Testing loot conversion to V4-network types:');
+    testItems.forEach(item => {
+        const converted = convertDiceToDescription(item);
+        console.log(`  ${item} → ${converted}`);
+    });
+    
+    console.log('\n📋 V4-network supported loot types:');
+    console.log('  - small_pouch (5-25 gold)');
+    console.log('  - handful_gold (10-50 gold)');
+    console.log('  - treasure_chest (100-500 gold)');
+    console.log('  - weapon (random weapon)');
+    console.log('  - armor (random armor)');
+    console.log('  - potion (random potion)');
+    console.log('  - magic_item (random magic item)');
+}
+
+// Make test function available globally
+window.testLootConversion = testLootConversion;
 
 // =============================================================================
 // EXPORT FOR INTEGRATION - Phase 2
