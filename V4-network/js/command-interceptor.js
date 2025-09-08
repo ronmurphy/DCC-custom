@@ -97,15 +97,20 @@ async function interceptChatMessage(message) {
         return;
     }
     
+    // Debug logging
+    console.log('🔍 interceptChatMessage called with:', message);
+    
     // Mark message as intercepted
     message._intercepted = true;
     
     // Check if this looks like a command
     if (message.message_text && isCommandMessage(message.message_text)) {
-        if (window.showDebug) console.log('🎯 Command detected:', message.message_text);
+        console.log('🎯 Command detected:', message.message_text);
         
         // Process the command and get the appropriate display version
         const processedMessage = await processCommandMessage(message);
+        
+        console.log('🎯 Processed message result:', processedMessage);
         
         // Only display if processedMessage is not null (silent commands return null)
         if (processedMessage !== null) {
@@ -117,6 +122,7 @@ async function interceptChatMessage(message) {
             }
         }
     } else {
+        console.log('📝 Regular message, displaying normally:', message.message_text);
         // Not a command - display normally
         if (originalDisplayChatMessage && typeof originalDisplayChatMessage === 'function') {
             originalDisplayChatMessage(message);
@@ -141,7 +147,10 @@ function isCommandMessage(messageText) {
     
     const isCommand = commandPattern.test(messageText) || silentCommandPattern.test(messageText) || mapSyncPattern.test(messageText) || imagePattern.test(messageText);
     
-    // Debug logging for NOTE commands
+    // Debug logging for LOOT and NOTE commands
+    if (messageText.startsWith('LOOT:')) {
+        console.log('🐛 LOOT command detected:', messageText, 'isCommand:', isCommand);
+    }
     if (messageText.startsWith('NOTE:')) {
         console.log('🐛 NOTE command detected:', messageText, 'isCommand:', isCommand);
     }
@@ -481,7 +490,7 @@ function generateStorytelleroResult(command, targetPlayer, parameters) {
 function generateGenericResult(command, targetPlayer, parameters) {
     switch (command) {
         case 'LOOT':
-            return `${targetPlayer} found some treasure`;
+            return `💰 ${targetPlayer} found some loot!`;
         case 'ACHIEVEMENT':
             return `${targetPlayer} accomplished something noteworthy`;
         case 'LEVELUP':
@@ -500,14 +509,20 @@ function generateGenericResult(command, targetPlayer, parameters) {
  * Uses the ChatCommandParser if available
  */
 async function generatePersonalLoot(lootType) {
+    console.log('🎁 generatePersonalLoot called with:', lootType);
+    
     if (!commandParser) {
-        return `💰 You found some ${lootType}!`;
+        console.log('🚫 No commandParser available, using fallback');
+        return `💰 You found some ${formatLootName(lootType)}!`;
     }
     
     try {
         // Ensure current player is registered (with minimal data for now)
         const currentPlayer = window.playerName;
+        console.log('🎮 Current player:', currentPlayer);
+        
         if (!commandParser.getPlayer(currentPlayer)) {
+            console.log('📝 Registering new player:', currentPlayer);
             // Register player with basic data structure
             commandParser.registerPlayer(currentPlayer, {
                 name: currentPlayer,
@@ -526,19 +541,73 @@ async function generatePersonalLoot(lootType) {
         }
         
         // Use the command parser to generate specific loot
-        const result = await commandParser.processMessage(`LOOT:${currentPlayer}:${lootType}`, 'StoryTeller');
+        const lootCommand = `LOOT:${currentPlayer}:${lootType}`;
+        console.log('🎁 Processing loot command:', lootCommand);
+        const result = await commandParser.processMessage(lootCommand, 'StoryTeller');
+        
+        console.log('🎁 Loot processing result:', result);
         
         if (result && result.success && result.message) {
-            // Extract just the loot part for the player
-            return `💰 ${result.message.replace(currentPlayer + ' ', 'You ')}`;
+            // Extract just the loot part for the player and make it more descriptive
+            let personalMessage = result.message.replace(currentPlayer + ' ', 'You ');
+            
+            // Enhance the message with better formatting
+            personalMessage = enhanceLootMessage(personalMessage, lootType, result);
+            
+            console.log('🎁 Final personal message:', personalMessage);
+            return personalMessage;
         } else {
             // Fallback to simple description
-            return `💰 You found some ${lootType}!`;
+            console.log('🚫 Loot processing failed, using fallback');
+            return `💰 You found ${formatLootName(lootType)}!`;
         }
     } catch (error) {
         console.warn('Error generating personal loot:', error);
-        return `💰 You found some ${lootType}!`;
+        return `💰 You found ${formatLootName(lootType)}!`;
     }
+}
+
+/**
+ * Format loot type names to be more readable
+ * @param {string} lootType - The loot type (e.g., "small_pouch", "handful_gold")
+ * @returns {string} Formatted name (e.g., "Small Pouch", "Handful of Gold")
+ */
+function formatLootName(lootType) {
+    const nameMap = {
+        'small_pouch': 'Small Pouch',
+        'handful_gold': 'Handful of Gold',
+        'small_bag': 'Small Bag',
+        'treasure_chest': 'Treasure Chest',
+        'magic_item': 'Magic Item',
+        'weapon': 'Weapon',
+        'armor': 'Armor',
+        'potion': 'Potion'
+    };
+    
+    return nameMap[lootType] || lootType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
+
+/**
+ * Enhance loot message with better descriptions
+ * @param {string} message - Original message
+ * @param {string} lootType - Type of loot
+ * @param {Object} result - Command result with details
+ * @returns {string} Enhanced message
+ */
+function enhanceLootMessage(message, lootType, result) {
+    // If we have gold awarded, format it nicely
+    if (result.goldAwarded && result.diceRolled) {
+        const lootName = formatLootName(lootType);
+        return `💰 You found ${lootName} (${result.goldAwarded} gold)${result.rollsDetail ? ` - Rolled ${result.diceRolled}: ${result.rollsDetail.join('+')}` : ''}!`;
+    }
+    
+    // If we have an item awarded, format it
+    if (result.itemAwarded) {
+        return `🎒 You found ${result.itemAwarded.name}!`;
+    }
+    
+    // Default to the original message but with formatting
+    return message;
 }
 
 /**

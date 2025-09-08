@@ -683,6 +683,10 @@ function switchCharSubTab(subTabName) {
 // NOTES SYSTEM
 // ========================================
 function loadNotesFromCharacter() {
+    // Ensure character has required inventory properties
+    if (!character.gold) character.gold = 0;
+    if (!character.inventory) character.inventory = [];
+    
     const noteFields = {
         'personal-notes': character.notes?.personal || '',
         'party-notes': character.notes?.party || '',
@@ -698,6 +702,16 @@ function loadNotesFromCharacter() {
             field.value = value;
         }
     });
+    
+    // Trigger inventory manager updates when character loads
+    if (window.inventoryManager) {
+        window.inventoryManager.updateGoldDisplay();
+        window.inventoryManager.updateTradeAreaDisplay();
+        window.inventoryManager.renderInventory();
+    }
+    
+    // Dispatch character loaded event
+    document.dispatchEvent(new CustomEvent('characterLoaded'));
 }
 
 
@@ -1048,6 +1062,7 @@ function createNewCharacter() {
         rollHistory: [],
         spells: [],
         inventory: [],
+        gold: 0,
         equipment: {
             mainHand: null,
             offHand: null,
@@ -5872,40 +5887,55 @@ function initializeCharacterSheet() {
         }
     });
 
-    // consumable healing items
-    document.getElementById('item-type').addEventListener('change', function () {
-        const healingContainer = document.getElementById('healing-consumable-container');
-        if (this.value === 'consumable') {
-            healingContainer.style.display = 'flex';
-        } else {
-            healingContainer.style.display = 'none';
-        }
-    });
+    // consumable healing items (check if element exists - may be commented out)
+    const itemTypeElement = document.getElementById('item-type');
+    if (itemTypeElement) {
+        itemTypeElement.addEventListener('change', function () {
+            const healingContainer = document.getElementById('healing-consumable-container');
+            if (healingContainer) {
+                if (this.value === 'consumable') {
+                    healingContainer.style.display = 'flex';
+                } else {
+                    healingContainer.style.display = 'none';
+                }
+            }
+        });
+    }
 
     // Enable/disable amount inputs based on type selection
-    document.getElementById('damage-type').addEventListener('change', function () {
-        const amountInput = document.getElementById('damage-amount');
-        if (this.value === 'fixed') {
-            amountInput.disabled = false;
-            amountInput.value = amountInput.value || '2';
-        } else {
-            amountInput.disabled = true;
-            amountInput.value = '0';
-        }
-        calculateSpellCost();
-    });
+    const damageTypeElement = document.getElementById('damage-type');
+    if (damageTypeElement) {
+        damageTypeElement.addEventListener('change', function () {
+            const amountInput = document.getElementById('damage-amount');
+            if (amountInput) {
+                if (this.value === 'fixed') {
+                    amountInput.disabled = false;
+                    amountInput.value = amountInput.value || '2';
+                } else {
+                    amountInput.disabled = true;
+                    amountInput.value = '0';
+                }
+                calculateSpellCost();
+            }
+        });
+    }
 
-    document.getElementById('healing-type').addEventListener('change', function () {
-        const amountInput = document.getElementById('healing-amount');
-        if (this.value === 'fixed') {
-            amountInput.disabled = false;
-            amountInput.value = amountInput.value || '2';
-        } else {
-            amountInput.disabled = true;
-            amountInput.value = '0';
-        }
-        calculateSpellCost();
-    });
+    const healingTypeElement = document.getElementById('healing-type');
+    if (healingTypeElement) {
+        healingTypeElement.addEventListener('change', function () {
+            const amountInput = document.getElementById('healing-amount');
+            if (amountInput) {
+                if (this.value === 'fixed') {
+                    amountInput.disabled = false;
+                    amountInput.value = amountInput.value || '2';
+                } else {
+                    amountInput.disabled = true;
+                    amountInput.value = '0';
+                }
+                calculateSpellCost();
+            }
+        });
+    }
 
     // Tab switching - supports both bottom tabs and sidebar tabs
     document.querySelectorAll('.tab-btn, .sidebar-tab').forEach(tab => {

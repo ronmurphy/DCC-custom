@@ -968,12 +968,50 @@
                         <div class="card-header">
                             <i class="ra ra-backpack"></i>
                             <h3>Inventory</h3>
+                            <div class="inventory-stats">
+                                <div class="gold-display">
+                                    <i class="ra ra-gold-bar"></i>
+                                    <span id="character-gold">0</span> GP
+                                </div>
+                            </div>
                         </div>
+                        
+                        <!-- Trade Area / Loot Section -->
+                        <div class="trade-area-section" id="trade-area-section">
+                            <div class="trade-header">
+                                <i class="ra ra-gem-pendant"></i>
+                                <h4>Recent Loot</h4>
+                                <button class="btn-small" onclick="transferTradeItems()">
+                                    Transfer to Inventory
+                                </button>
+                            </div>
+                            <div class="trade-grid" id="trade-grid">
+                                <div class="empty-state">
+                                    <i class="ra ra-death-skull"></i>
+                                    <p>Defeat enemies to earn loot!</p>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div class="inventory-grid" id="inventory-grid">
                             <!-- Items will be rendered here -->
+                            <div class="empty-state">
+                                <i class="ra ra-backpack"></i>
+                                <p>Your inventory is empty</p>
+                            </div>
                         </div>
 
-                        <!-- Add Item Form -->
+                        <!-- DCC Book Items Button -->
+                        <div class="dcc-templates-btn inventory-item" onclick="openDCCItemsModal()">
+                            <div style="text-align: center; padding: 20px; border: 2px dashed #ff6b35; background: rgba(255, 107, 53, 0.1); border-radius: 8px; cursor: pointer;">
+                                <i class="ra ra-book" style="font-size: 2em; color: #ff6b35; margin-bottom: 10px; display: block;"></i>
+                                <strong>📚 DCC Book Items</strong>
+                                <br><small>Click to add items from the books</small>
+                            </div>
+                        </div>
+
+                        <!-- Add Item Form - COMMENTED OUT FOR MODERNIZATION -->
+                        <!--
                         <div class="add-item-section">
                             <h4><i class="ra ra-anvil"></i> Create New Item</h4>
                             <div class="item-creator">
@@ -1018,6 +1056,32 @@
                                     <i class="ra ra-hammer"></i>
                                     Create Item
                                 </button>
+                            </div>
+                        </div>
+                        -->
+                        
+                        <!-- DCC Items Browser - Load from dcc-items.json -->
+                        <div class="dcc-items-section">
+                            <div class="card-header">
+                                <i class="ra ra-book"></i>
+                                <h4>DCC Equipment Catalog</h4>
+                                <button class="btn-small" onclick="toggleDCCItemsBrowser()">
+                                    Browse Items
+                                </button>
+                            </div>
+                            <div class="dcc-items-browser" id="dcc-items-browser" style="display: none;">
+                                <div class="items-filter">
+                                    <select id="dcc-category-filter">
+                                        <option value="all">All Categories</option>
+                                        <option value="weapons">Weapons</option>
+                                        <option value="armor">Armor</option>
+                                        <option value="equipment">Equipment</option>
+                                        <option value="adventuring_gear">Adventuring Gear</option>
+                                    </select>
+                                </div>
+                                <div class="dcc-items-grid" id="dcc-items-grid">
+                                    <!-- DCC items will be loaded here -->
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1598,6 +1662,37 @@
         </div>
     </div>
 
+    <!-- DCC Items Modal -->
+    <div id="dcc-items-modal" class="modal" style="display: none;">
+        <div class="modal-content dcc-items-modal-content">
+            <div class="modal-header">
+                <h3><i class="ra ra-book"></i> DCC Book Items</h3>
+                <button class="close-modal" onclick="closeDCCItemsModal()">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="dcc-items-filter-bar">
+                    <select id="dcc-modal-category-filter">
+                        <option value="all">All Categories</option>
+                        <option value="weapons">Weapons</option>
+                        <option value="armor">Armor</option>
+                        <option value="equipment">Equipment</option>
+                        <option value="adventuring_gear">Adventuring Gear</option>
+                    </select>
+                    <input type="text" id="dcc-items-search" placeholder="Search items...">
+                </div>
+                
+                <div class="dcc-items-modal-grid" id="dcc-items-modal-grid">
+                    <div class="loading-state">
+                        <i class="ra ra-spinning-sword"></i>
+                        <p>Loading DCC items...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Layout Selection Modal -->
     <div id="layout-selection-modal" class="modal" style="display: none;">
         <div class="modal-content layout-modal-content">
@@ -1926,7 +2021,6 @@
     </div>
 
     <!-- Scripts -->
-    <script src="js/core/advancedStorageManager.js"></script>
     <script src="js/core/storageMigration.js"></script>
     <script src="js/core/main.js"></script>
     <script src="js/core/character-manager.js"></script>
@@ -2262,6 +2356,10 @@
     <script src="js/modules/jsonDataLoader.js"></script>
     <script src="js/modules/dccUtilities.js"></script>
     <script src="js/modules/chatCommandParser.js"></script>
+    
+    <!-- Inventory and Storage System -->
+    <script src="js/modules/advancedStorageManager.js"></script>
+    <script src="js/modules/inventoryManager.js"></script>
     
     <!-- Image Hosting System -->
     <script src="js/githubTokenStorage.js"></script>
@@ -5109,6 +5207,18 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('✅ ChatCommandParser initialized');
     } else {
         console.warn('⚠️ ChatCommandParser class not found');
+    }
+    
+    // Initialize command interceptor for chat message processing
+    if (typeof initializeCommandInterceptor === 'function') {
+        const interceptorInitialized = initializeCommandInterceptor();
+        if (interceptorInitialized) {
+            console.log('✅ Command Interceptor initialized for V4-network');
+        } else {
+            console.warn('⚠️ Command Interceptor failed to initialize');
+        }
+    } else {
+        console.warn('⚠️ initializeCommandInterceptor function not found');
     }
 });
 

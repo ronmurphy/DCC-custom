@@ -14,7 +14,7 @@
         ],
         "special_abilities": ["Pack Tactics", "Disease Carrier", "Small Size"],
         "ac": 13,
-        "loot": ["rat_tail", "small_bones", "1d4_coins"],
+        "loot": ["rat_tail", "1d4_coins"],
         "ai_notes": "Infests every neighborhood, attacks in groups",
         "viewer_appeal": "Low - common vermin"
       },

@@ -54,6 +54,27 @@ class EmojiProcessor {
     }
     
     /**
+     * Check if message is a system command that should skip emoji processing
+     * @param {string} message - The message to check
+     * @returns {boolean} - True if message should skip emoji processing
+     */
+    isSystemCommand(message) {
+        const commandPrefixes = [
+            'LOOT:', 'ACHIEVEMENT:', 'LEVELUP:', 'ITEM:', 'SKILL:', 'EXP:',
+            'GOLD:', 'HEALTH:', 'STAT:', 'NOTE:', 'CLEAN:', 'AVATAR_URL:',
+            'DLCHAR:', 'MAP_SYNC:', '/dlchar:', '/github:', '/sendmap',
+            'INITIATIVE:', 'COMBAT:', 'ATTACK:', 'DAMAGE:', 'HEAL:',
+            'GRIND:', 'TRADE:', 'GUILD:', 'DUNGEON:'
+        ];
+        
+        // Also skip messages that start with system emojis (like combat stats)
+        const systemEmojiPrefixes = ['📊', '💰', '🎁', '⚔️', '🛡️', '💀', '🎯', '🎲', '🏆'];
+        
+        return commandPrefixes.some(prefix => message.startsWith(prefix)) ||
+               systemEmojiPrefixes.some(prefix => message.startsWith(prefix));
+    }
+
+    /**
      * Process a message and convert text emoticons to emojis
      * @param {string} message - The message to process
      * @returns {string} - Message with emojis converted
@@ -61,8 +82,9 @@ class EmojiProcessor {
     processMessage(message) {
         if (!message || typeof message !== 'string') return message;
         
-        // Skip emoji processing for AVATAR_URL commands to preserve URLs
-        if (message.startsWith('AVATAR_URL:')) {
+        // Skip emoji processing for system commands
+        if (this.isSystemCommand(message)) {
+            console.log('🚫 Skipping emoji processing for system command:', message.substring(0, 20) + '...');
             return message;
         }
         
@@ -70,10 +92,8 @@ class EmojiProcessor {
         if (message.includes('http://') || message.includes('https://')) {
             return message;
         }
-        
-        let processedMessage = message;
-        
-        // Sort by length (longest first) to avoid partial replacements
+
+        let processedMessage = message;        // Sort by length (longest first) to avoid partial replacements
         const sortedKeys = Object.keys(this.allMappings).sort((a, b) => b.length - a.length);
         
         // Replace each emoticon with its emoji

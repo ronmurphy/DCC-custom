@@ -435,8 +435,75 @@ class AdvancedStorageManager {
     }
 }
 
-// Create global instance
-window.advancedStorageManager = new AdvancedStorageManager();
+/**
+ * Store player loot in their trade area (IndexedDB)
+ * @param {string} playerName - Name of the player
+ * @param {Object} lootData - Loot information from command processing
+ */
+async function storePlayerLoot(playerName, lootData) {
+    if (!window.advancedStorageManager) {
+        console.warn('⚠️ AdvancedStorageManager not available for loot storage');
+        return;
+    }
+    
+    try {
+        // Get existing trade area data
+        const tradeAreaKey = `trade_area_${playerName}`;
+        let tradeArea = await window.advancedStorageManager.getItem(tradeAreaKey) || {
+            gold: 0,
+            items: [],
+            lastUpdated: new Date().toISOString()
+        };
+        
+        // Add gold if awarded
+        if (lootData.goldAwarded) {
+            tradeArea.gold = (tradeArea.gold || 0) + lootData.goldAwarded;
+            console.log(`💰 Added ${lootData.goldAwarded} gold to ${playerName}'s trade area (Total: ${tradeArea.gold})`);
+        }
+        
+        // Add item if awarded
+        if (lootData.itemAwarded) {
+            if (!tradeArea.items) tradeArea.items = [];
+            tradeArea.items.push({
+                name: lootData.itemAwarded.name,
+                type: lootData.itemAwarded.type || 'misc',
+                quantity: lootData.itemAwarded.quantity || 1,
+                source: lootData.lootType,
+                timestamp: new Date().toISOString()
+            });
+            console.log(`🎒 Added ${lootData.itemAwarded.name} to ${playerName}'s trade area`);
+        }
+        
+        // Update timestamp
+        tradeArea.lastUpdated = new Date().toISOString();
+        
+        // Store back to IndexedDB
+        await window.advancedStorageManager.setItem(tradeAreaKey, tradeArea, { forceMethod: 'indexeddb' });
+        
+        console.log(`💾 Successfully stored loot for ${playerName} in trade area`);
+        
+        // Trigger UI update if trade area is visible
+        if (window.inventoryManager) {
+            window.inventoryManager.updateTradeAreaDisplay();
+        }
+        
+    } catch (error) {
+        console.error('❌ Failed to store player loot:', error);
+        // Don't throw the error - loot system should continue working even if storage fails
+    }
+}
+
+// Make storePlayerLoot globally available
+window.storePlayerLoot = storePlayerLoot;
+
+// Create global instance when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        window.advancedStorageManager = new AdvancedStorageManager();
+    });
+} else {
+    window.advancedStorageManager = new AdvancedStorageManager();
+}
 
 // Export for modules
 if (typeof module !== 'undefined' && module.exports) {

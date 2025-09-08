@@ -521,7 +521,7 @@ function generateStorytelleroResult(command, targetPlayer, parameters) {
 function generateGenericResult(command, targetPlayer, parameters) {
     switch (command) {
         case 'LOOT':
-            return `${targetPlayer} found some treasure`;
+            return `💰 ${targetPlayer} found some loot!`;
         case 'ACHIEVEMENT':
             return `${targetPlayer} accomplished something noteworthy`;
         case 'LEVELUP':
@@ -546,7 +546,7 @@ function generateGenericResult(command, targetPlayer, parameters) {
  */
 async function generatePersonalLoot(lootType) {
     if (!commandParser) {
-        return `💰 You found some ${lootType}!`;
+        return `💰 You found some ${formatLootName(lootType)}!`;
     }
     
     try {
@@ -574,16 +574,64 @@ async function generatePersonalLoot(lootType) {
         const result = await commandParser.processMessage(`LOOT:${currentPlayer}:${lootType}`, 'StoryTeller');
         
         if (result && result.success && result.message) {
-            // Extract just the loot part for the player
-            return `💰 ${result.message.replace(currentPlayer + ' ', 'You ')}`;
+            // Extract just the loot part for the player and make it more descriptive
+            let personalMessage = result.message.replace(currentPlayer + ' ', 'You ');
+            
+            // Enhance the message with better formatting
+            personalMessage = enhanceLootMessage(personalMessage, lootType, result);
+            
+            return personalMessage;
         } else {
             // Fallback to simple description
-            return `💰 You found some ${lootType}!`;
+            return `💰 You found ${formatLootName(lootType)}!`;
         }
     } catch (error) {
         console.warn('Error generating personal loot:', error);
-        return `💰 You found some ${lootType}!`;
+        return `💰 You found ${formatLootName(lootType)}!`;
     }
+}
+
+/**
+ * Format loot type names to be more readable
+ * @param {string} lootType - The loot type (e.g., "small_pouch", "handful_gold")
+ * @returns {string} Formatted name (e.g., "Small Pouch", "Handful of Gold")
+ */
+function formatLootName(lootType) {
+    const nameMap = {
+        'small_pouch': 'Small Pouch',
+        'handful_gold': 'Handful of Gold',
+        'small_bag': 'Small Bag',
+        'treasure_chest': 'Treasure Chest',
+        'magic_item': 'Magic Item',
+        'weapon': 'Weapon',
+        'armor': 'Armor',
+        'potion': 'Potion'
+    };
+    
+    return nameMap[lootType] || lootType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
+
+/**
+ * Enhance loot message with better descriptions
+ * @param {string} message - Original message
+ * @param {string} lootType - Type of loot
+ * @param {Object} result - Command result with details
+ * @returns {string} Enhanced message
+ */
+function enhanceLootMessage(message, lootType, result) {
+    // If we have gold awarded, format it nicely
+    if (result.goldAwarded && result.diceRolled) {
+        const lootName = formatLootName(lootType);
+        return `💰 You found ${lootName} (${result.goldAwarded} gold)${result.rollsDetail ? ` - Rolled ${result.diceRolled}: ${result.rollsDetail.join('+')}` : ''}!`;
+    }
+    
+    // If we have an item awarded, format it
+    if (result.itemAwarded) {
+        return `🎒 You found ${result.itemAwarded.name}!`;
+    }
+    
+    // Default to the original message but with formatting
+    return message;
 }
 
 /**

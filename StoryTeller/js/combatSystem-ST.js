@@ -1366,20 +1366,31 @@ function addCombatLogEntry(message, type) {
  * @param {Object} logEntry - Combat log entry
  */
 function displayCombatMessage(logEntry) {
-    console.log(`[${logEntry.type}] ${logEntry.message}`);
+    // Handle both string and object inputs for backwards compatibility
+    let messageText, messageType;
+    
+    if (typeof logEntry === 'string') {
+        messageText = logEntry;
+        messageType = 'info';
+    } else if (logEntry && typeof logEntry === 'object') {
+        messageText = logEntry.message;
+        messageType = logEntry.type || 'info';
+    } else {
+        console.warn('⚠️ Invalid logEntry passed to displayCombatMessage:', logEntry);
+        return;
+    }
+    
+    console.log(`[${messageType}] ${messageText}`);
     
     // Send combat messages to chat using multiple methods
-    const chatMessage = logEntry.message;
-    
-    // Try sendChatMessageAsync first (most reliable)
     if (typeof sendChatMessageAsync === 'function') {
-        sendChatMessageAsync(chatMessage);
+        sendChatMessageAsync(messageText);
         console.log('📡 Combat message sent via sendChatMessageAsync');
     } else if (typeof sendChatMessage === 'function') {
-        sendChatMessage(chatMessage);
+        sendChatMessage(messageText);
         console.log('📡 Combat message sent via sendChatMessage');
     } else if (window.supabaseChat && typeof window.supabaseChat.sendChatMessage === 'function') {
-        window.supabaseChat.sendChatMessage(chatMessage);
+        window.supabaseChat.sendChatMessage(messageText);
         console.log('📡 Combat message sent via supabaseChat');
     } else {
         console.warn('⚠️ No chat function available - combat message not sent to chat');
@@ -1471,41 +1482,65 @@ function convertDiceToDescription(lootItem) {
 function mapLootToV4Network(lootItem) {
     const lowerItem = lootItem.toLowerCase();
     
-    // Weapon-like items
+    // Gold containers (ordered by value)
+    const goldContainers = {
+        'small_bag': 'small_bag',
+        'bag': 'small_bag', 
+        'pouch': 'small_pouch',
+        'small_pouch': 'small_pouch',
+        'large_pouch': 'handful_gold',
+        'small_chest': 'handful_gold',
+        'chest': 'treasure_chest',
+        'treasure_chest': 'treasure_chest',
+        'large_chest': 'treasure_chest'
+    };
+    
+    // Check for gold containers first
+    for (const [key, value] of Object.entries(goldContainers)) {
+        if (lowerItem.includes(key)) {
+            return value;
+        }
+    }
+    
+    // Weapon-like items - return as actual items
     if (lowerItem.includes('weapon') || lowerItem.includes('sword') || 
         lowerItem.includes('blade') || lowerItem.includes('club') || 
         lowerItem.includes('staff') || lowerItem.includes('bow') ||
         lowerItem.includes('pineapple_club') || lowerItem.includes('curved_blade') ||
         lowerItem.includes('chieftain_blade') || lowerItem.includes('bone_sword')) {
-        return 'weapon';
+        return formatItemName(lootItem); // Return as actual item, not gold
     }
     
-    // Armor-like items
+    // Armor-like items - return as actual items
     if (lowerItem.includes('armor') || lowerItem.includes('hide') || 
         lowerItem.includes('rags') || lowerItem.includes('robes') ||
         lowerItem.includes('leathery_rags') || lowerItem.includes('black_robes') ||
         lowerItem.includes('tattered_armor')) {
-        return 'armor';
+        return formatItemName(lootItem); // Return as actual item, not gold
     }
     
-    // Potion-like items (essences, components, magical items)
-    if (lowerItem.includes('essence') || lowerItem.includes('component') || 
-        lowerItem.includes('potion') || lowerItem.includes('venom') ||
-        lowerItem.includes('plant_essence') || lowerItem.includes('spell_components') ||
-        lowerItem.includes('venom_sac') || lowerItem.includes('corruption_essence')) {
-        return 'potion';
+    // Crafting materials and misc items - return as actual items
+    if (lowerItem.includes('tail') || lowerItem.includes('bone') || 
+        lowerItem.includes('essence') || lowerItem.includes('component') || 
+        lowerItem.includes('venom') || lowerItem.includes('crystal') ||
+        lowerItem.includes('tome') || lowerItem.includes('token') ||
+        lowerItem.includes('tools') || lowerItem.includes('ear')) {
+        return formatItemName(lootItem); // Return as actual item, not gold
     }
     
-    // Magic items (special/unique items)
-    if (lowerItem.includes('magic') || lowerItem.includes('tome') || 
-        lowerItem.includes('crystal') || lowerItem.includes('token') ||
-        lowerItem.includes('necromantic_tome') || lowerItem.includes('leadership_token') ||
-        lowerItem.includes('cave_crystals') || lowerItem.includes('engineering_tools')) {
-        return 'magic_item';
-    }
-    
-    // Default small items to small_pouch (low value)
-    return 'small_pouch';
+    // Default for unknown items - treat as small items (not gold containers)
+    return formatItemName(lootItem);
+}
+
+/**
+ * Format item names to be readable
+ * @param {string} itemName - Raw item name (e.g., "rat_tail", "small_bones")
+ * @returns {string} Formatted name (e.g., "Rat Tail", "Small Bones")
+ */
+function formatItemName(itemName) {
+    return itemName
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, l => l.toUpperCase());
 }
 
 /**
@@ -1522,21 +1557,14 @@ async function processPlayerLoot(playerName, killList) {
         for (const lootItem of kill.enemyData.loot) {
             const v4NetworkLootType = convertDiceToDescription(lootItem);
             
-            // Create a more descriptive public message using the original item name
-            const publicLootName = lootItem.replace(/_/g, ' ').replace(/\d+d\d+/g, 'some');
-            
-            // Send LOOT command to the specific player
-            // Format: LOOT:PlayerName:LootType:Source
-            const lootCommand = `LOOT:${playerName}:${v4NetworkLootType}:${kill.enemyName}`;
-            
-            // Send to chat for public notification (use descriptive name)
-            const publicMessage = `💰 **${playerName}** found **${publicLootName}** from the defeated ${kill.enemyName}!`;
-            displayCombatMessage(publicMessage);
+            // Send LOOT command to the specific player (this will be processed by command interceptor)
+            // Use simpler 3-part format: LOOT:PlayerName:LootType  
+            const lootCommand = `LOOT:${playerName}:${v4NetworkLootType}`;
             
             // Send detailed loot command to player's V4-network
             if (typeof sendChatMessageAsync === 'function') {
                 sendChatMessageAsync(lootCommand);
-                console.log(`🎁 Sent loot command: ${lootCommand} (original: ${lootItem})`);
+                console.log(`🎁 Sent loot command: ${lootCommand} (original: ${lootItem}, source: ${kill.enemyName})`);
             } else if (typeof sendChatMessage === 'function') {
                 sendChatMessage(lootCommand);
             }

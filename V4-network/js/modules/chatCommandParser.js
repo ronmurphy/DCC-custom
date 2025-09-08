@@ -100,6 +100,17 @@ class ChatCommandParser {
     }
 
     /**
+     * Format item names to be readable
+     * @param {string} itemName - Raw item name (e.g., "rat_tail", "small_bones")
+     * @returns {string} Formatted name (e.g., "Rat Tail", "Small Bones")
+     */
+    formatItemName(itemName) {
+        return itemName
+            .replace(/_/g, ' ')
+            .replace(/\b\w/g, l => l.toUpperCase());
+    }
+
+    /**
      * Process a chat message for hidden commands
      * @param {string} message - Chat message
      * @param {string} senderName - Name of person sending the message
@@ -268,28 +279,41 @@ class ChatCommandParser {
             }
             
         } else {
-            // Handle predefined loot tables
+            // Handle predefined loot tables and actual items
             const lootData = this.lootTables[lootType];
             
-            if (!lootData) {
-                throw new Error(`Unknown loot type: ${lootType}`);
-            }
-
-            if (lootData.type === 'gold') {
-                const amount = Math.floor(Math.random() * (lootData.max - lootData.min + 1)) + lootData.min;
-                player.gold = (player.gold || 0) + amount;
-                
-                result.goldAwarded = amount;
-                result.totalGold = player.gold;
-                result.message = `💰 ${playerName} found ${amount} gold! (Total: ${player.gold})`;
-                
-            } else if (lootData.type === 'item') {
-                const item = await this.generateItem(lootData.table);
+            if (lootData) {
+                // Handle predefined loot tables (gold containers, etc.)
+                if (lootData.type === 'gold') {
+                    const amount = Math.floor(Math.random() * (lootData.max - lootData.min + 1)) + lootData.min;
+                    player.gold = (player.gold || 0) + amount;
+                    
+                    result.goldAwarded = amount;
+                    result.totalGold = player.gold;
+                    result.message = `💰 ${playerName} found ${amount} gold! (Total: ${player.gold})`;
+                    
+                } else if (lootData.type === 'item') {
+                    const item = await this.generateItem(lootData.table);
+                    if (!player.inventory) player.inventory = [];
+                    player.inventory.push(item);
+                    
+                    result.itemAwarded = item;
+                    result.message = `🎒 ${playerName} found: ${item.name}!`;
+                }
+            } else {
+                // Handle actual items (crafting materials, etc.)
                 if (!player.inventory) player.inventory = [];
+                const itemName = this.formatItemName(lootType);
+                const item = { 
+                    name: itemName, 
+                    type: 'material', 
+                    quantity: 1,
+                    source: 'combat'
+                };
                 player.inventory.push(item);
                 
                 result.itemAwarded = item;
-                result.message = `🎒 ${playerName} found: ${item.name}!`;
+                result.message = `🎒 ${playerName} found: ${itemName}!`;
             }
         }
 
@@ -955,13 +979,14 @@ class ChatCommandParser {
             // Find player chip in the UI
             const playerChips = document.querySelectorAll('.player-chip');
             console.log(`🔍 Found ${playerChips.length} player chips total (attempt ${retryCount + 1})`);
+            console.log(`🎯 Looking for player: "${playerName}"`);
             
             let chipFound = false;
             playerChips.forEach((chip, index) => {
                 const nameElement = chip.querySelector('.chip-name');
                 if (nameElement) {
                     const chipPlayerName = nameElement.textContent.trim();
-                    console.log(`🔍 Chip ${index}: "${chipPlayerName}"`);
+                    console.log(`🔍 Chip ${index}: "${chipPlayerName}" (exact match: ${chipPlayerName === playerName})`);
                     
                     if (chipPlayerName === playerName) {
                         console.log(`✅ Found matching chip for: "${playerName}"`);
