@@ -797,54 +797,63 @@ function addDCCSpellButton() {
     console.log('✅ DCC spell button added successfully');
 }
 
-// Show DCC weapon templates modal
+// OLD DCC weapon modal - REPLACED with new enhanced modal system
+// function showDCCWeaponTemplates() {
+//     const modal = document.createElement('div');
+//     modal.className = 'modal level-up-modal-overlay';
+//     modal.style.display = 'block';
+//     modal.innerHTML = `
+//         <div class="modal-content level-up-modal-content" style="max-width: 800px;">
+//             <div class="modal-header level-up-header">
+//                 <h3><i class="ra ra-book"></i> DCC Book Weapons</h3>
+//                 <button class="modal-close" onclick="closeDCCModal()" title="Close">
+//                     <span class="material-icons">close</span>
+//                 </button>
+//             </div>
+//             <div class="modal-body">
+//                 <p>Choose a weapon from the Dungeon Crawler Carl books to add to your inventory:</p>
+//                 <div class="weapon-template-grid">
+//                     ${Object.entries(dccWeapons).map(([key, weapon]) => `
+//                         <button class="weapon-template-btn" onclick="addDCCWeapon('${key}')">
+//                             <strong>${weapon.name}</strong>
+//                             <small>${weapon.damage} damage • ${weapon.description}</small>
+//                             ${weapon.special ? `<em>Special: ${weapon.special.join(', ')}</em>` : ''}
+//                         </button>
+//                     `).join('')}
+//                 </div>
+//             </div>
+//             <div class="modal-footer">
+//                 <button class="btn-secondary" onclick="closeDCCModal()">Cancel</button>
+//             </div>
+//         </div>
+//     `;
+//     
+//     // Close modal when clicking outside
+//     modal.addEventListener('click', (e) => {
+//         if (e.target === modal) {
+//             closeDCCModal();
+//         }
+//     });
+//     
+//     // Close modal on escape key
+//     const escapeHandler = (e) => {
+//         if (e.key === 'Escape') {
+//             closeDCCModal();
+//             document.removeEventListener('keydown', escapeHandler);
+//         }
+//     };
+//     document.addEventListener('keydown', escapeHandler);
+//     
+//     document.body.appendChild(modal);
+// }
+
+// NEW: Use enhanced DCC items modal instead
 function showDCCWeaponTemplates() {
-    const modal = document.createElement('div');
-    modal.className = 'modal level-up-modal-overlay';
-    modal.style.display = 'block';
-    modal.innerHTML = `
-        <div class="modal-content level-up-modal-content" style="max-width: 800px;">
-            <div class="modal-header level-up-header">
-                <h3><i class="ra ra-book"></i> DCC Book Weapons</h3>
-                <button class="modal-close" onclick="closeDCCModal()" title="Close">
-                    <span class="material-icons">close</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>Choose a weapon from the Dungeon Crawler Carl books to add to your inventory:</p>
-                <div class="weapon-template-grid">
-                    ${Object.entries(dccWeapons).map(([key, weapon]) => `
-                        <button class="weapon-template-btn" onclick="addDCCWeapon('${key}')">
-                            <strong>${weapon.name}</strong>
-                            <small>${weapon.damage} damage • ${weapon.description}</small>
-                            ${weapon.special ? `<em>Special: ${weapon.special.join(', ')}</em>` : ''}
-                        </button>
-                    `).join('')}
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeDCCModal()">Cancel</button>
-            </div>
-        </div>
-    `;
-    
-    // Close modal when clicking outside
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            closeDCCModal();
-        }
-    });
-    
-    // Close modal on escape key
-    const escapeHandler = (e) => {
-        if (e.key === 'Escape') {
-            closeDCCModal();
-            document.removeEventListener('keydown', escapeHandler);
-        }
-    };
-    document.addEventListener('keydown', escapeHandler);
-    
-    document.body.appendChild(modal);
+    if (window.inventoryManager && window.inventoryManager.openDCCItemsModal) {
+        window.inventoryManager.openDCCItemsModal();
+    } else {
+        console.error('Enhanced DCC items modal not available');
+    }
 }
 
 // Show DCC spell templates modal
@@ -897,33 +906,33 @@ function showDCCSpellTemplates() {
     document.body.appendChild(modal);
 }
 
-// Add DCC weapon to inventory
-function addDCCWeapon(weaponKey) {
-    const weaponTemplate = dccWeapons[weaponKey];
-    if (!weaponTemplate) return;
-    
-    const item = {
-        id: generateId(),
-        name: weaponTemplate.name,
-        type: 'weapon',
-        size: weaponTemplate.size,
-        defense: 0,
-        twoHanded: weaponTemplate.special && weaponTemplate.special.includes('Two-Handed'),
-        ranged: weaponTemplate.range && weaponTemplate.range !== 'melee',
-        healing: false,
-        description: weaponTemplate.description,
-        special: weaponTemplate.special
-    };
-    
-    character.inventory.push(item);
-    renderInventory();
-    closeDCCModal();
-    
-    // Show notification
-    if (window.showNotification) {
-        showNotification('weapon', `Added ${weaponTemplate.name}`, weaponTemplate.description);
-    }
-}
+// OLD weapon adding function - REPLACED with new enhanced modal system
+// function addDCCWeapon(weaponKey) {
+//     const weaponTemplate = dccWeapons[weaponKey];
+//     if (!weaponTemplate) return;
+//     
+//     const item = {
+//         id: generateId(),
+//         name: weaponTemplate.name,
+//         type: 'weapon',
+//         size: weaponTemplate.size,
+//         defense: 0,
+//         twoHanded: weaponTemplate.special && weaponTemplate.special.includes('Two-Handed'),
+//         ranged: weaponTemplate.range && weaponTemplate.range !== 'melee',
+//         healing: false,
+//         description: weaponTemplate.description,
+//         special: weaponTemplate.special
+//     };
+//     
+//     character.inventory.push(item);
+//     renderInventory();
+//     closeDCCModal();
+//     
+//     // Show notification
+//     if (window.showNotification) {
+//         showNotification('weapon', `Added ${weaponTemplate.name}`, weaponTemplate.description);
+//     }
+// }
 
 // Add DCC spell to spellbook
 function addDCCSpell(spellKey) {
@@ -1523,7 +1532,7 @@ if (document.readyState === 'loading') {
 window.dccImprovements = {
     showDCCWeaponTemplates,
     showDCCSpellTemplates,
-    addDCCWeapon,
+    // addDCCWeapon, // COMMENTED OUT - using new enhanced modal system
     addDCCSpell,
     closeDCCModal,
     updateSkillSelection,
@@ -1535,7 +1544,7 @@ window.dccImprovements = {
 // Also make individual functions global for onclick handlers
 window.showDCCWeaponTemplates = showDCCWeaponTemplates;
 window.showDCCSpellTemplates = showDCCSpellTemplates;
-window.addDCCWeapon = addDCCWeapon;
+// window.addDCCWeapon = addDCCWeapon; // COMMENTED OUT - using new enhanced modal system
 window.addDCCSpell = addDCCSpell;
 window.closeDCCModal = closeDCCModal;
 window.getElementEmoji = getElementEmoji;
