@@ -38,6 +38,7 @@ class ChatCommandParser {
         this.lootTables = {
             handful_gold: { min: 10, max: 50, type: 'gold' },
             small_pouch: { min: 5, max: 25, type: 'gold' },
+            small_bag: { min: 15, max: 35, type: 'gold' },
             treasure_chest: { min: 100, max: 500, type: 'gold' },
             magic_item: { type: 'item', table: 'magic_items' },
             weapon: { type: 'item', table: 'weapons' },
@@ -220,12 +221,6 @@ class ChatCommandParser {
      * @returns {Object} Command result
      */
     async handleLootCommand(player, playerName, lootType, senderName) {
-        const lootData = this.lootTables[lootType];
-        
-        if (!lootData) {
-            throw new Error(`Unknown loot type: ${lootType}`);
-        }
-
         let result = {
             success: true,
             command: 'LOOT',
@@ -234,21 +229,78 @@ class ChatCommandParser {
             lootType: lootType
         };
 
-        if (lootData.type === 'gold') {
-            const amount = Math.floor(Math.random() * (lootData.max - lootData.min + 1)) + lootData.min;
-            player.gold = (player.gold || 0) + amount;
+        // Check if lootType contains dice notation (like "1d4_coins", "2d6_coins", etc.)
+        const dicePattern = /^(\d+)d(\d+)(?:[_\-]?)(.*)/i;
+        const diceMatch = lootType.match(dicePattern);
+        
+        if (diceMatch) {
+            // Handle dice notation loot
+            const numDice = parseInt(diceMatch[1]);
+            const dieSize = parseInt(diceMatch[2]);
+            const itemType = diceMatch[3] || 'coins';
             
-            result.goldAwarded = amount;
-            result.totalGold = player.gold;
-            result.message = `💰 ${playerName} found ${amount} gold! (Total: ${player.gold})`;
+            // Roll the dice
+            let total = 0;
+            const rolls = [];
+            for (let i = 0; i < numDice; i++) {
+                const roll = Math.floor(Math.random() * dieSize) + 1;
+                rolls.push(roll);
+                total += roll;
+            }
             
-        } else if (lootData.type === 'item') {
-            const item = await this.generateItem(lootData.table);
-            if (!player.inventory) player.inventory = [];
-            player.inventory.push(item);
+            if (itemType.includes('coin') || itemType.includes('gold')) {
+                // Gold/coins
+                player.gold = (player.gold || 0) + total;
+                result.goldAwarded = total;
+                result.totalGold = player.gold;
+                result.diceRolled = `${numDice}d${dieSize}`;
+                result.rollsDetail = rolls;
+                result.message = `💰 ${playerName} found ${total} gold! (Rolled ${numDice}d${dieSize}: ${rolls.join('+')}) Total: ${player.gold}`;
+            } else {
+                // Other dice-based items
+                if (!player.inventory) player.inventory = [];
+                const itemName = `${total} ${itemType}`;
+                player.inventory.push({ name: itemName, quantity: total, type: itemType });
+                result.itemAwarded = { name: itemName, quantity: total, type: itemType };
+                result.diceRolled = `${numDice}d${dieSize}`;
+                result.rollsDetail = rolls;
+                result.message = `🎒 ${playerName} found ${total} ${itemType}! (Rolled ${numDice}d${dieSize}: ${rolls.join('+')})`;
+            }
             
-            result.itemAwarded = item;
-            result.message = `🎒 ${playerName} found: ${item.name}!`;
+        } else {
+            // Handle predefined loot tables
+            const lootData = this.lootTables[lootType];
+            
+            if (!lootData) {
+                throw new Error(`Unknown loot type: ${lootType}`);
+            }
+
+            if (lootData.type === 'gold') {
+                const amount = Math.floor(Math.random() * (lootData.max - lootData.min + 1)) + lootData.min;
+                player.gold = (player.gold || 0) + amount;
+                
+                result.goldAwarded = amount;
+                result.totalGold = player.gold;
+                result.message = `💰 ${playerName} found ${amount} gold! (Total: ${player.gold})`;
+                
+            } else if (lootData.type === 'item') {
+                const item = await this.generateItem(lootData.table);
+                if (!player.inventory) player.inventory = [];
+                player.inventory.push(item);
+                
+                result.itemAwarded = item;
+                result.message = `🎒 ${playerName} found: ${item.name}!`;
+            }
+        }
+
+        // Store loot in player's trade area (IndexedDB)
+        if (typeof window.storePlayerLoot === 'function') {
+            try {
+                await window.storePlayerLoot(playerName, result);
+                console.log(`💾 Loot stored in ${playerName}'s trade area`);
+            } catch (error) {
+                console.warn(`⚠️ Could not store loot in trade area: ${error.message}`);
+            }
         }
 
         console.log(`💰 LOOT: ${result.message}`);

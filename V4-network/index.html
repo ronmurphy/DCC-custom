@@ -4833,7 +4833,7 @@
         // Send chat message - copied from player-test.html
         async function sendMessage() {
             const input = document.getElementById('chat-input');
-            const message = input.value.trim();
+            let message = input.value.trim();
             
             if (message && isNetworkConnected) {
                 try {

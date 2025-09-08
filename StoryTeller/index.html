@@ -4884,17 +4884,17 @@
                 console.warn('No active chat input found');
                 return;
             }
-            
-            const message = input.value.trim();
-            
+
+            let message = input.value.trim();
+
             if (!message) return;
-            
+
             // Check if we have an active session
             if (!window.currentGameSession) {
                 addChatMessage('❌ No active session. Please start a session first.', 'system');
                 return;
             }
-            
+
             try {
                 // Send via Supabase real-time system ONLY - don't add locally
                 if (window.sendChatMessageAsync && typeof window.sendChatMessageAsync === 'function') {
