@@ -2888,7 +2888,7 @@
         }
 
         function toggleFABExpansion(event) {
-            console.log('Toggle FAB Expansion');
+            console.log('🔄 Toggle FAB Expansion - Current state:', fabExpanded);
             if (event) {
                 event.preventDefault(); // Prevent context menu
                 event.stopPropagation();
@@ -2898,18 +2898,27 @@
             const ironTangleFab = document.getElementById('iron-tangle-fab');
             const donutsMagicManiaFab = document.getElementById('donuts-magic-mania-fab');
             
+            console.log('📋 Elements found:', {
+                container: !!container,
+                ironTangleFab: !!ironTangleFab,
+                donutsMagicManiaFab: !!donutsMagicManiaFab
+            });
+            
             fabExpanded = !fabExpanded;
             
             if (fabExpanded) {
                 container.classList.add('expanded');
                 ironTangleFab.classList.add('show');
                 donutsMagicManiaFab.classList.add('show');
-                console.log('FAB expanded');
+                console.log('✅ FAB expanded - Classes added');
+                console.log('📊 Container classes:', container.className);
+                console.log('🚂 Iron Tangle classes:', ironTangleFab.className);
+                console.log('🍩 Donuts classes:', donutsMagicManiaFab.className);
             } else {
                 container.classList.remove('expanded');
                 ironTangleFab.classList.remove('show');
                 donutsMagicManiaFab.classList.remove('show');
-                console.log('FAB collapsed');
+                console.log('❌ FAB collapsed - Classes removed');
             }
         }
 
@@ -2942,6 +2951,11 @@
                     if (navigator.vibrate) {
                         navigator.vibrate(50);
                     }
+                    // Visual feedback for mobile debugging
+                    document.body.style.backgroundColor = '#004400';
+                    setTimeout(() => {
+                        document.body.style.backgroundColor = '';
+                    }, 200);
                 }, LONG_PRESS_DURATION);
             }
 
@@ -2983,6 +2997,11 @@
                         console.log('Long press triggered (mouse)');
                         isLongPress = true;
                         toggleFABExpansion();
+                        // Visual feedback for debugging
+                        document.body.style.backgroundColor = '#004400';
+                        setTimeout(() => {
+                            document.body.style.backgroundColor = '';
+                        }, 200);
                     }, LONG_PRESS_DURATION);
                 }
             }
