@@ -2847,6 +2847,89 @@
         // FAB + BOTTOM SHEET CHAT FUNCTIONS
         // ========================================
 
+        // Expandable FAB functionality
+        let fabExpanded = false;
+        let longPressTimer = null;
+        const LONG_PRESS_DURATION = 500; // 500ms for long press
+
+        function handleFABClick() {
+            if (fabExpanded) {
+                // If expanded, collapse first
+                toggleFABExpansion();
+            } else {
+                // Normal click - open chat
+                toggleChatBottomSheet();
+            }
+        }
+
+        function toggleFABExpansion(event) {
+            if (event) {
+                event.preventDefault(); // Prevent context menu
+            }
+            
+            const container = document.getElementById('fab-container');
+            const minigameFab = document.getElementById('iron-tangle-fab');
+            
+            fabExpanded = !fabExpanded;
+            
+            if (fabExpanded) {
+                container.classList.add('expanded');
+                minigameFab.classList.add('show');
+            } else {
+                container.classList.remove('expanded');
+                minigameFab.classList.remove('show');
+            }
+        }
+
+        // Touch event handlers for long press
+        function setupFABTouchEvents() {
+            const chatFab = document.getElementById('chat-fab');
+            
+            chatFab.addEventListener('touchstart', (e) => {
+                longPressTimer = setTimeout(() => {
+                    toggleFABExpansion();
+                    // Add haptic feedback if available
+                    if (navigator.vibrate) {
+                        navigator.vibrate(50);
+                    }
+                }, LONG_PRESS_DURATION);
+            }, { passive: true });
+
+            chatFab.addEventListener('touchend', () => {
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+            }, { passive: true });
+        }
+
+        // Close expanded FAB when clicking outside
+        document.addEventListener('click', (e) => {
+            if (fabExpanded && !e.target.closest('.fab-container')) {
+                toggleFABExpansion();
+            }
+        });
+
+        // Open Iron Tangle mini-game using miniGameManager
+        function openIronTangle() {
+            // Close the expanded FAB
+            if (fabExpanded) {
+                toggleFABExpansion();
+            }
+            
+            // Use the miniGameManager to launch Iron Tangle
+            if (window.miniGameManager) {
+                miniGameManager.launchIronTangle();
+            } else {
+                console.error('MiniGameManager not available');
+                // Fallback: open in new window
+                window.open('./miniGames/ironTangle/ironTangle.html', '_blank');
+            }
+        }
+
+        // Initialize FAB touch events when DOM is ready
+        document.addEventListener('DOMContentLoaded', setupFABTouchEvents);
+
         function toggleChatBottomSheet() {
             const sheet = document.getElementById('chat-bottom-sheet');
             if (sheet.classList.contains('open')) {
@@ -5087,11 +5170,19 @@
     <!-- Image Upload Integration -->
     <script src="js/chatImageUploadIntegration.js"></script>
 
-    <!-- Floating Action Button for Chat -->
-    <button class="chat-fab" id="chat-fab" onclick="toggleChatBottomSheet()" title="Open Chat">
-        <span class="material-icons">chat_bubble</span>
-        <span class="fab-notification-dot" id="chat-fab-notification" style="display: none;"></span>
-    </button>
+    <!-- Expandable Floating Action Button for Chat + Mini-Games -->
+    <div class="fab-container" id="fab-container">
+        <!-- Main Chat FAB -->
+        <button class="chat-fab" id="chat-fab" onclick="handleFABClick()" oncontextmenu="toggleFABExpansion(event)" title="Chat (Long press for games)">
+            <span class="material-icons">chat_bubble</span>
+            <span class="fab-notification-dot" id="chat-fab-notification" style="display: none;"></span>
+        </button>
+        
+        <!-- Mini-Game FAB (slides out on long press) -->
+        <button class="minigame-fab" id="iron-tangle-fab" onclick="openIronTangle()" title="Iron Tangle Railway Puzzle">
+            🚂
+        </button>
+    </div>
 
     <!-- Chat Bottom Sheet -->
     <div class="chat-bottom-sheet" id="chat-bottom-sheet">

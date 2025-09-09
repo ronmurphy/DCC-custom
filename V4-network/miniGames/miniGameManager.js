@@ -353,6 +353,8 @@ document.addEventListener('DOMContentLoaded', () => {
         '.game-controls'
     ];
 
+    // NOTE: Automatic button creation disabled since we now use the expandable FAB
+    /*
     for (const selector of controlContainers) {
         const container = document.querySelector(selector);
         if (container) {
@@ -377,6 +379,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.appendChild(gameControls);
         console.log('Created floating game controls');
     }
+    */
+    console.log('Iron Tangle available via expandable FAB (automatic button creation disabled)');
 });
 
 console.log('MiniGameManager loaded successfully');

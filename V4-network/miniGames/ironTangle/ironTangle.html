@@ -38,9 +38,28 @@
             color: #D4AF37;
             touch-action: none;
             position: relative;
+            overflow: hidden;
         }
 
+        /* Animated steam clouds for railway atmosphere */
         body::before {
+            content: '';
+            position: fixed;
+            top: -50px;
+            left: -50px;
+            width: 120%;
+            height: 120%;
+            background: 
+                radial-gradient(circle at 10% 80%, rgba(255, 255, 255, 0.02) 0%, transparent 30%),
+                radial-gradient(circle at 90% 20%, rgba(255, 255, 255, 0.03) 0%, transparent 25%),
+                radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.01) 0%, transparent 40%);
+            animation: steamDrift 20s infinite linear;
+            pointer-events: none;
+            z-index: -2;
+        }
+
+        /* Subtle railway track pattern overlay */
+        body::after {
             content: '';
             position: fixed;
             top: 0;
@@ -57,6 +76,12 @@
                 );
             pointer-events: none;
             z-index: -1;
+        }
+
+        @keyframes steamDrift {
+            0% { transform: translateX(-10%) translateY(10%); opacity: 0.3; }
+            50% { transform: translateX(5%) translateY(-5%); opacity: 0.1; }
+            100% { transform: translateX(10%) translateY(10%); opacity: 0.3; }
         }
 
         #startMenu {
@@ -1123,9 +1148,9 @@
             if (savedGame) {
                 startMenu.innerHTML = `
             <div id="instructions">
-                <h1>PipeDreams</h1>
-                <p>Connect the pipes from the top-left start to the bottom-right end.</p>
-                <p>Tap/click tiles to rotate pipes.</p>
+                <h1>🚂 Iron Tangle Railway</h1>
+                <p>Connect the railway tracks from station to terminus.</p>
+                <p>Tap/click tiles to rotate track pieces.</p>
                 <p>Create a continuous path to win!</p>
             </div>
             <div class="start-buttons">
@@ -1137,9 +1162,9 @@
             } else {
                 startMenu.innerHTML = `
             <div id="instructions">
-                <h1>PipeDreams</h1>
-                <p>Connect the pipes from the top-left start to the bottom-right end.</p>
-                <p>Tap/click tiles to rotate pipes.</p>
+                <h1>🚂 Iron Tangle Railway</h1>
+                <p>Connect the railway tracks from station to terminus.</p>
+                <p>Tap/click tiles to rotate track pieces.</p>
                 <p>Create a continuous path to win!</p>
             </div>
             <div class="start-buttons">
@@ -1660,6 +1685,8 @@
                 clearInterval(timerInterval);
             }
 
+            // Reset level completion flag for new level
+            levelCompletionInProgress = false;
             levelStartTime = Date.now();
             timerInterval = setInterval(updateTimer, 1000);
             updateTimer(); // Update immediately instead of waiting for first interval
@@ -1789,13 +1816,13 @@
             celebration.style.zIndex = '1000';
             celebration.style.animation = 'fadeInOut 2s ease-in-out';
 
-            // Show stars for completed levels
-            const stars = '⭐'.repeat(levelsCompleted % LEVELS_PER_EXPANSION);
+            // Show stars for completed levels with railway theme
+            const stars = '🚂'.repeat(Math.min(levelsCompleted % LEVELS_PER_EXPANSION, 5)) + '⭐'.repeat(Math.max(0, (levelsCompleted % LEVELS_PER_EXPANSION) - 5));
             celebration.innerHTML = `
         ${stars}<br>
         ${levelsCompleted % LEVELS_PER_EXPANSION === 0 ?
-                    '🎮 Get ready for a bigger challenge! 🎮' :
-                    `${LEVELS_PER_EXPANSION - (levelsCompleted % LEVELS_PER_EXPANSION)} more levels until expansion!`}
+                    '🚉 All aboard for bigger railway networks! 🚉' :
+                    `${LEVELS_PER_EXPANSION - (levelsCompleted % LEVELS_PER_EXPANSION)} more stations until network expansion!`}
     `;
 
             document.body.appendChild(celebration);
@@ -2597,7 +2624,7 @@
                     for (const next of validNextPositions) {
                         if (next.x < GRID_WIDTH && next.y < GRID_HEIGHT) {
                             const nextPipe = grid[next.y][next.x];
-                            if (nextPipe && nextPipe.touched && !colored.has(`${next.x},${next.y}`)) {
+                            if (nextPipe && !colored.has(`${next.x},${next.y}`)) {
                                 const connections = getPipeConnections(nextPipe);
                                 // console.log(`  Checking connection to (${next.x},${next.y}):`);
                                 // console.log(`  - Next pipe orientation: ${getPipeDescription(nextPipe)}`);
@@ -2637,7 +2664,7 @@
                         // console.log(`- Next pipe: ${nextPipe ? getPipeDescription(nextPipe) : 'none'}`);
                         // console.log(`- Next pipe touched: ${nextPipe ? nextPipe.touched : 'N/A'}`);
 
-                        if (!nextPipe || !nextPipe.touched) continue;
+                        if (!nextPipe) continue;
 
                         const nextConnections = getPipeConnections(nextPipe);
                         const connects = nextConnections.some(nc =>
@@ -3028,7 +3055,16 @@
         }
 
         // Updated handleLevelCompletion function
+        let levelCompletionInProgress = false;
+        
         function handleLevelCompletion() {
+            // Prevent multiple celebrations for the same level
+            if (levelCompletionInProgress) {
+                console.log('Level completion already in progress, skipping...');
+                return;
+            }
+            
+            levelCompletionInProgress = true;
             stopLevelTimer();
 
             // Collect stats for achievements
