@@ -5725,6 +5725,15 @@ body.sidebar-open {
     gap: 10px;
 }
 
+/* Position mini-game FABs when expanded */
+.fab-container.expanded #iron-tangle-fab {
+    order: -1; /* Show above the main FAB */
+}
+
+.fab-container.expanded #donuts-magic-mania-fab {
+    order: -2; /* Show above Iron Tangle */
+}
+
 /* Mobile responsiveness */
 @media (max-width: 768px) {
     .fab-container {

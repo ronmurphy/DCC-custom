@@ -2904,6 +2904,15 @@
                 donutsMagicManiaFab: !!donutsMagicManiaFab
             });
             
+            // Visual debugging - flash the container red if elements missing
+            if (!container || !ironTangleFab || !donutsMagicManiaFab) {
+                document.body.style.backgroundColor = '#660000';
+                setTimeout(() => {
+                    document.body.style.backgroundColor = '';
+                }, 500);
+                return;
+            }
+            
             fabExpanded = !fabExpanded;
             
             if (fabExpanded) {
@@ -2914,6 +2923,22 @@
                 console.log('📊 Container classes:', container.className);
                 console.log('🚂 Iron Tangle classes:', ironTangleFab.className);
                 console.log('🍩 Donuts classes:', donutsMagicManiaFab.className);
+                
+                // Visual debugging - make mini-game FABs temporarily more visible
+                ironTangleFab.style.border = '3px solid red';
+                donutsMagicManiaFab.style.border = '3px solid red';
+                // Force visibility for debugging
+                ironTangleFab.style.opacity = '1';
+                ironTangleFab.style.transform = 'scale(1)';
+                ironTangleFab.style.zIndex = '9999';
+                donutsMagicManiaFab.style.opacity = '1';
+                donutsMagicManiaFab.style.transform = 'scale(1)';
+                donutsMagicManiaFab.style.zIndex = '9999';
+                setTimeout(() => {
+                    ironTangleFab.style.border = '';
+                    donutsMagicManiaFab.style.border = '';
+                    // Keep forced visibility for now
+                }, 2000);
             } else {
                 container.classList.remove('expanded');
                 ironTangleFab.classList.remove('show');
