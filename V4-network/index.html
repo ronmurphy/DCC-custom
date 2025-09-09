@@ -2850,34 +2850,32 @@
         // Expandable FAB functionality
         let fabExpanded = false;
         let longPressTimer = null;
-        const LONG_PRESS_DURATION = 500; // 500ms for long press
+        let isLongPress = false;
+        const LONG_PRESS_DURATION = 600; // 600ms for long press
 
         function handleFABClick(event) {
-            // On mobile, if it's a touch-originated event, check if it was a long press
-            if (event && event.type === 'click' && event.isTrusted) {
-                // Short delay to let touch events complete
-                setTimeout(() => {
-                    if (fabExpanded) {
-                        // If expanded, collapse first
-                        toggleFABExpansion();
-                    } else {
-                        // Normal click - open chat
-                        toggleChatBottomSheet();
-                    }
-                }, 10);
+            console.log('FAB Click:', event ? event.type : 'no event', 'isLongPress:', isLongPress);
+            
+            // If this was triggered by a long press, ignore the click
+            if (isLongPress) {
+                isLongPress = false; // Reset flag
+                return;
+            }
+            
+            if (fabExpanded) {
+                // If expanded, collapse first
+                toggleFABExpansion();
             } else {
-                // Direct function call or non-touch event
-                if (fabExpanded) {
-                    toggleFABExpansion();
-                } else {
-                    toggleChatBottomSheet();
-                }
+                // Normal click - open chat
+                toggleChatBottomSheet();
             }
         }
 
         function toggleFABExpansion(event) {
+            console.log('Toggle FAB Expansion');
             if (event) {
                 event.preventDefault(); // Prevent context menu
+                event.stopPropagation();
             }
             
             const container = document.getElementById('fab-container');
@@ -2890,57 +2888,135 @@
                 container.classList.add('expanded');
                 ironTangleFab.classList.add('show');
                 donutsMagicManiaFab.classList.add('show');
+                console.log('FAB expanded');
             } else {
                 container.classList.remove('expanded');
                 ironTangleFab.classList.remove('show');
                 donutsMagicManiaFab.classList.remove('show');
+                console.log('FAB collapsed');
             }
         }
 
-        // Touch event handlers for long press
+        // Touch and Mouse event handlers for long press
         function setupFABTouchEvents() {
             const chatFab = document.getElementById('chat-fab');
             let touchStartTime = 0;
-            let longPressTriggered = false;
+            let mouseStartTime = 0;
             
-            chatFab.addEventListener('touchstart', (e) => {
+            // Remove any existing event listeners first
+            chatFab.removeEventListener('touchstart', handleTouchStart);
+            chatFab.removeEventListener('touchend', handleTouchEnd);
+            chatFab.removeEventListener('touchcancel', handleTouchCancel);
+            chatFab.removeEventListener('mousedown', handleMouseDown);
+            chatFab.removeEventListener('mouseup', handleMouseUp);
+            chatFab.removeEventListener('mouseleave', handleMouseLeave);
+            chatFab.removeEventListener('contextmenu', handleContextMenu);
+            
+            // === TOUCH EVENTS (Mobile) ===
+            function handleTouchStart(e) {
+                console.log('Touch start');
                 touchStartTime = Date.now();
-                longPressTriggered = false;
+                isLongPress = false;
                 
                 longPressTimer = setTimeout(() => {
-                    longPressTriggered = true;
+                    console.log('Long press triggered (touch)');
+                    isLongPress = true;
                     toggleFABExpansion();
                     // Add haptic feedback if available
                     if (navigator.vibrate) {
                         navigator.vibrate(50);
                     }
                 }, LONG_PRESS_DURATION);
-            }, { passive: true });
+            }
 
-            chatFab.addEventListener('touchend', (e) => {
-                const touchDuration = Date.now() - touchStartTime;
-                
+            function handleTouchEnd(e) {
+                console.log('Touch end');
                 if (longPressTimer) {
                     clearTimeout(longPressTimer);
                     longPressTimer = null;
                 }
                 
-                // If it was a long press, prevent the click event
-                if (longPressTriggered || touchDuration >= LONG_PRESS_DURATION) {
+                // Small delay to let the long press flag be processed
+                if (isLongPress) {
                     e.preventDefault();
                     e.stopPropagation();
-                    return false;
+                    setTimeout(() => {
+                        isLongPress = false;
+                    }, 100);
                 }
-            }, { passive: false }); // Not passive so we can preventDefault
+            }
             
-            // Handle touch cancel (when touch is interrupted)
-            chatFab.addEventListener('touchcancel', () => {
+            function handleTouchCancel(e) {
+                console.log('Touch cancel');
                 if (longPressTimer) {
                     clearTimeout(longPressTimer);
                     longPressTimer = null;
                 }
-                longPressTriggered = false;
-            }, { passive: true });
+                isLongPress = false;
+            }
+
+            // === MOUSE EVENTS (Desktop) ===
+            function handleMouseDown(e) {
+                console.log('Mouse down', e.button);
+                // Only handle left mouse button for long press
+                if (e.button === 0) {
+                    mouseStartTime = Date.now();
+                    isLongPress = false;
+                    
+                    longPressTimer = setTimeout(() => {
+                        console.log('Long press triggered (mouse)');
+                        isLongPress = true;
+                        toggleFABExpansion();
+                    }, LONG_PRESS_DURATION);
+                }
+            }
+
+            function handleMouseUp(e) {
+                console.log('Mouse up', e.button);
+                if (e.button === 0) { // Left mouse button
+                    if (longPressTimer) {
+                        clearTimeout(longPressTimer);
+                        longPressTimer = null;
+                    }
+                    
+                    // Small delay to let the long press flag be processed
+                    if (isLongPress) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setTimeout(() => {
+                            isLongPress = false;
+                        }, 100);
+                    }
+                }
+            }
+
+            function handleMouseLeave(e) {
+                console.log('Mouse leave');
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+                isLongPress = false;
+            }
+
+            function handleContextMenu(e) {
+                // Allow right-click to also trigger expansion
+                console.log('Context menu (right click)');
+                e.preventDefault();
+                toggleFABExpansion();
+            }
+            
+            // Add the event listeners
+            // Touch events (mobile)
+            chatFab.addEventListener('touchstart', handleTouchStart, { passive: true });
+            chatFab.addEventListener('touchend', handleTouchEnd, { passive: false });
+            chatFab.addEventListener('touchcancel', handleTouchCancel, { passive: true });
+            
+            // Mouse events (desktop)
+            chatFab.addEventListener('mousedown', handleMouseDown, { passive: false });
+            chatFab.addEventListener('mouseup', handleMouseUp, { passive: false });
+            chatFab.addEventListener('mouseleave', handleMouseLeave, { passive: true });
+            chatFab.addEventListener('contextmenu', handleContextMenu, { passive: false });
         }
 
         // Close expanded FAB when clicking outside
@@ -5230,7 +5306,7 @@
     <!-- Expandable Floating Action Button for Chat + Mini-Games -->
     <div class="fab-container" id="fab-container">
         <!-- Main Chat FAB -->
-        <button class="chat-fab" id="chat-fab" onclick="handleFABClick()" oncontextmenu="toggleFABExpansion(event)" title="Chat (Long press for games)">
+        <button class="chat-fab" id="chat-fab" onclick="handleFABClick(event)" title="Chat (Long press for games)">
             <span class="material-icons">chat_bubble</span>
             <span class="fab-notification-dot" id="chat-fab-notification" style="display: none;"></span>
         </button>
