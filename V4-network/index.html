@@ -2852,13 +2852,26 @@
         let longPressTimer = null;
         const LONG_PRESS_DURATION = 500; // 500ms for long press
 
-        function handleFABClick() {
-            if (fabExpanded) {
-                // If expanded, collapse first
-                toggleFABExpansion();
+        function handleFABClick(event) {
+            // On mobile, if it's a touch-originated event, check if it was a long press
+            if (event && event.type === 'click' && event.isTrusted) {
+                // Short delay to let touch events complete
+                setTimeout(() => {
+                    if (fabExpanded) {
+                        // If expanded, collapse first
+                        toggleFABExpansion();
+                    } else {
+                        // Normal click - open chat
+                        toggleChatBottomSheet();
+                    }
+                }, 10);
             } else {
-                // Normal click - open chat
-                toggleChatBottomSheet();
+                // Direct function call or non-touch event
+                if (fabExpanded) {
+                    toggleFABExpansion();
+                } else {
+                    toggleChatBottomSheet();
+                }
             }
         }
 
@@ -2887,9 +2900,15 @@
         // Touch event handlers for long press
         function setupFABTouchEvents() {
             const chatFab = document.getElementById('chat-fab');
+            let touchStartTime = 0;
+            let longPressTriggered = false;
             
             chatFab.addEventListener('touchstart', (e) => {
+                touchStartTime = Date.now();
+                longPressTriggered = false;
+                
                 longPressTimer = setTimeout(() => {
+                    longPressTriggered = true;
                     toggleFABExpansion();
                     // Add haptic feedback if available
                     if (navigator.vibrate) {
@@ -2898,11 +2917,29 @@
                 }, LONG_PRESS_DURATION);
             }, { passive: true });
 
-            chatFab.addEventListener('touchend', () => {
+            chatFab.addEventListener('touchend', (e) => {
+                const touchDuration = Date.now() - touchStartTime;
+                
                 if (longPressTimer) {
                     clearTimeout(longPressTimer);
                     longPressTimer = null;
                 }
+                
+                // If it was a long press, prevent the click event
+                if (longPressTriggered || touchDuration >= LONG_PRESS_DURATION) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
+            }, { passive: false }); // Not passive so we can preventDefault
+            
+            // Handle touch cancel (when touch is interrupted)
+            chatFab.addEventListener('touchcancel', () => {
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+                longPressTriggered = false;
             }, { passive: true });
         }
 
