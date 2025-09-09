@@ -150,6 +150,24 @@
         "ai_notes": "Fast-moving enemies that attack multiple targets",
         "viewer_appeal": "Medium - tactical combat"
       },
+      "goblin_killdozer": {
+        "name": "Goblin Killdozer",
+        "level": 5,
+        "hp": 40,
+        "stats": { "str": 6, "dex": 1, "con": 6, "int": 3, "wis": 2, "cha": 2 },
+        "attacks": [
+          { "name": "Bulldozer Plow", "hit": "+8", "damage": "2d10+4", "type": "melee", "effect": "knockback" },
+          { "name": "Ram Attack", "hit": "+7", "damage": "3d8+4", "type": "charge", "effect": "knockdown" },
+          { "name": "Crushing Treads", "hit": "+6", "damage": "2d6+3", "type": "melee", "effect": "prone" }
+        ],
+        "special_abilities": ["Armored Vehicle", "Unstoppable Charge", "Heavy Armor", "Slow Movement"],
+        "ac": 18,
+        "resistances": ["physical"],
+        "vulnerabilities": ["fire", "explosive"],
+        "loot": ["scrap_metal", "bulldozer_parts", "goblin_helmet", "4d6_coins", "fuel_cells"],
+        "ai_notes": "Goblin-engineered tank with bulldozer plow, charges in straight lines, hard to stop once moving",
+        "viewer_appeal": "High - unique mechanical enemy with devastating charge attacks"
+      },
       "brood_guardian": {
         "name": "Brood Guardian",
         "level": 4,
