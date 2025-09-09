@@ -190,15 +190,37 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 100vh;
+            height: 100vh; /* Use full viewport height */
             background: linear-gradient(135deg, #2D1B69 0%, #11998e 100%);
             font-family: 'Arial', sans-serif;
             color: white;
             overflow: hidden;
+            padding: 10px;
+            box-sizing: border-box;
         }
 
         .game-container {
-            display: none;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+            max-width: 600px;
+            justify-content: space-between;
+        }
+
+        .game-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: auto;
+            min-height: 0;
+        }
+
+        .powerup-section {
+            flex-shrink: 0;
+            margin-top: auto;
+            padding-top: 10px;
         }
 
         .game-board {
@@ -264,11 +286,15 @@
             display: flex;
             gap: 10px;
             padding: 15px;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.7);
             border-radius: 8px;
-            margin-top: 15px;
             min-height: 70px;
             align-items: center;
+            position: sticky;
+            bottom: 0;
+            margin-top: 10px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .powerup-item {
@@ -572,9 +598,12 @@
         }
 
         .game-container {
-            display: none;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
             width: 100%;
             max-width: 600px;
+            justify-content: space-between;
             margin: 0 auto;
             padding: 0 20px;
         }
@@ -764,15 +793,19 @@
 </div>
 
 <div class="game-container" id="gameContainer">
-    <div class="progress-container">
-        <div class="progress-bar" style="width: 0%"></div>
+    <div class="game-content">
+        <div class="progress-container">
+            <div class="progress-bar" style="width: 0%"></div>
+        </div>
+        <div class="score-container">
+            <div>Score: <span id="score">0</span></div>
+            <button id="powerupButton" disabled>Buy Magic (100pts) ✨</button>
+        </div>
+        <div id="grid" class="game-board"></div>
     </div>
-    <div class="score-container">
-        <div>Score: <span id="score">0</span></div>
-        <button id="powerupButton" disabled>Buy Magic (100pts) ✨</button>
+    <div class="powerup-section">
+        <div id="powerupDock"></div>
     </div>
-    <div id="grid" class="game-board"></div>
-    <div id="powerupDock"></div>
 </div>
 
 <script>
@@ -928,12 +961,21 @@
 
     // Updated game constants
     let BOARD_SIZE = 8;
+    const MAX_BOARD_SIZE = 11; // Cap at 11x11 instead of 12x12
     const SHAPES = ['circle', 'square', 'triangle', 'diamond', 'star', 'hexagon'];
     const COLORS = ['#FF69B4', '#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4'];
     const MAX_POWERUPS = 6;
     const STARTING_POWERUPS = 3; // New constant
     const POWERUP_COST = 100;
     const LEVEL_UP_SCORE = 500;
+    
+    // Smart cell sizing based on board size
+    function getCellSize(boardSize) {
+        if (boardSize <= 8) return 40;
+        if (boardSize <= 9) return 38;
+        if (boardSize <= 10) return 35;
+        return 32; // 11x11
+    }
     const COMBO_MESSAGES = [
         "Fabulous!",
         "Sparkly!",
@@ -1226,12 +1268,20 @@
         return svg;
     }
 
-    // Initialize game board
-    // Update initializeBoard to enforce consistent sizing
+    // Initialize game board with dynamic cell sizing
     function initializeBoard(explode = false) {
         const grid = document.getElementById('grid');
+        const cellSize = getCellSize(BOARD_SIZE);
+        
         grid.innerHTML = '';
-        grid.style.gridTemplateColumns = `repeat(${BOARD_SIZE}, 40px)`;
+        grid.style.gridTemplateColumns = `repeat(${BOARD_SIZE}, ${cellSize}px)`;
+        
+        // Update cell size in CSS
+        const cells = document.querySelectorAll('.cell');
+        cells.forEach(cell => {
+            cell.style.width = `${cellSize}px`;
+            cell.style.height = `${cellSize}px`;
+        });
 
         // Create new empty game board
         gameBoard = Array(BOARD_SIZE).fill().map(() => Array(BOARD_SIZE).fill(null));
@@ -1964,9 +2014,13 @@
         }
         updatePowerupDock();
 
-        // Update board size if needed
-        if (currentLevel <= 4) { // Increase board size up to 12x12
-            BOARD_SIZE = Math.min(12, BOARD_SIZE + 1);
+        // Update board size if needed - Slower progression, cap at 11x11
+        if (currentLevel <= 6 && BOARD_SIZE < MAX_BOARD_SIZE) { 
+            // Grow every 2 levels instead of every level
+            if (currentLevel % 2 === 0) {
+                BOARD_SIZE = Math.min(MAX_BOARD_SIZE, BOARD_SIZE + 1);
+                console.log(`Board expanded to ${BOARD_SIZE}x${BOARD_SIZE} at level ${currentLevel}`);
+            }
         }
 
         // Reinitialize board with new size
@@ -2025,7 +2079,7 @@
     // Initialize the game
     document.getElementById('readyBtn').addEventListener('click', () => {
         document.getElementById('startMenu').style.display = 'none';
-        document.getElementById('gameContainer').style.display = 'block';
+        document.getElementById('gameContainer').style.display = 'flex';
         addLevelDisplay(); // Add this line
         initializeBoard();
         createBackgroundEffects();

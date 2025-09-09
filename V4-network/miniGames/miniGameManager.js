@@ -217,7 +217,7 @@ class MiniGameManager {
                 left: 50%;
                 transform: translate(-50%, -50%);
                 width: 90vw;
-                height: 90vh;
+                height: 85vh;
                 max-width: 800px;
                 max-height: 600px;
                 background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%);
@@ -297,13 +297,25 @@ class MiniGameManager {
                 transition: height 0.3s ease;
             }
 
-            /* Mobile responsive */
+            /* Mobile responsive - Progressive Enhancement */
             @media (max-width: 768px) {
                 .mini-game-overlay {
                     width: 95vw;
-                    height: 95vh;
+                    height: 85vh;
                     top: 50%;
                     left: 50%;
+                }
+            }
+            
+            @media (min-height: 700px) {
+                .mini-game-overlay {
+                    max-height: 650px;
+                }
+            }
+
+            @media (min-height: 800px) {
+                .mini-game-overlay {
+                    max-height: 720px;
                 }
             }
 

@@ -2034,6 +2034,22 @@
     
     <!-- Mini-Game Integration -->
     <script src="miniGames/miniGameManager.js"></script>
+    <script>
+        // Debug: Check if miniGameManager loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('=== MiniGameManager Debug ===');
+            console.log('window.miniGameManager:', window.miniGameManager);
+            console.log('typeof window.miniGameManager:', typeof window.miniGameManager);
+            console.log('miniGameManager methods:', window.miniGameManager ? Object.getOwnPropertyNames(Object.getPrototypeOf(window.miniGameManager)) : 'N/A');
+            
+            // Test if we can call a method
+            if (window.miniGameManager && typeof window.miniGameManager.launchDonutsMagicMania === 'function') {
+                console.log('✅ miniGameManager.launchDonutsMagicMania is available');
+            } else {
+                console.error('❌ miniGameManager.launchDonutsMagicMania is NOT available');
+            }
+        });
+    </script>
     
     <script>
         // Theme Toggle
@@ -3028,6 +3044,9 @@
 
         // Open Iron Tangle mini-game using miniGameManager
         function openIronTangle() {
+            console.log('openIronTangle called');
+            console.log('window.miniGameManager available:', !!window.miniGameManager);
+            
             // Close the expanded FAB
             if (fabExpanded) {
                 toggleFABExpansion();
@@ -3035,9 +3054,10 @@
             
             // Use the miniGameManager to launch Iron Tangle
             if (window.miniGameManager) {
-                miniGameManager.launchIronTangle();
+                console.log('Launching Iron Tangle via miniGameManager');
+                window.miniGameManager.launchIronTangle();
             } else {
-                console.error('MiniGameManager not available');
+                console.error('MiniGameManager not available - falling back to new window');
                 // Fallback: open in new window
                 window.open('./miniGames/ironTangle/ironTangle.html', '_blank');
             }
@@ -3045,6 +3065,10 @@
 
         // Open Donut's Magic Mania mini-game using miniGameManager
         function openDonutsMagicMania() {
+            console.log('openDonutsMagicMania called');
+            console.log('window.miniGameManager available:', !!window.miniGameManager);
+            console.log('typeof miniGameManager:', typeof window.miniGameManager);
+            
             // Close the expanded FAB
             if (fabExpanded) {
                 toggleFABExpansion();
@@ -3052,9 +3076,11 @@
             
             // Use the miniGameManager to launch Donut's Magic Mania
             if (window.miniGameManager) {
-                miniGameManager.launchDonutsMagicMania();
+                console.log('Launching via miniGameManager');
+                window.miniGameManager.launchDonutsMagicMania();
             } else {
-                console.error('MiniGameManager not available');
+                console.error('MiniGameManager not available - falling back to new window');
+                console.log('Available on window:', Object.keys(window).filter(k => k.includes('mini')));
                 // Fallback: open in new window
                 window.open('./miniGames/donutsMagicMania/donutsMagicMania.html', '_blank');
             }
