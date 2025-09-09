@@ -5689,15 +5689,15 @@ body.sidebar-open {
     justify-content: center;
     cursor: pointer;
     box-shadow: 0 3px 15px rgba(255, 107, 53, 0.4);
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
     opacity: 0;
-    transform: translateY(20px);
+    transform: scale(0) translateY(60px);
     pointer-events: none;
 }
 
 .minigame-fab.show {
     opacity: 1;
-    transform: translateY(0);
+    transform: scale(1) translateY(0);
     pointer-events: auto;
 }
 
@@ -5722,16 +5722,18 @@ body.sidebar-open {
 }
 
 .fab-container.expanded {
-    gap: 10px;
+    gap: 15px; /* Increase gap when expanded */
 }
 
 /* Position mini-game FABs when expanded */
 .fab-container.expanded #iron-tangle-fab {
     order: -1; /* Show above the main FAB */
+    margin-bottom: 0; /* Remove any extra margin */
 }
 
 .fab-container.expanded #donuts-magic-mania-fab {
     order: -2; /* Show above Iron Tangle */
+    margin-bottom: 0; /* Remove any extra margin */
 }
 
 /* Mobile responsiveness */
