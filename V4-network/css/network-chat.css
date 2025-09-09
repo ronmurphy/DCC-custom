@@ -936,10 +936,18 @@
     transform: scale(1);
 }
 
-/* Position the mini-game button when expanded */
+/* Position the mini-game buttons when expanded */
 .fab-container.expanded .minigame-fab {
-    bottom: 72px;
     transition-delay: 0.1s;
+}
+
+/* Specific positioning for each mini-game FAB */
+.fab-container.expanded #iron-tangle-fab {
+    bottom: 72px;
+}
+
+.fab-container.expanded #donuts-magic-mania-fab {
+    bottom: 120px;
 }
 
 @keyframes pulse {

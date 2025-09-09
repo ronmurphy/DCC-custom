@@ -167,6 +167,36 @@
       "effect": "+2 to Strength, rage abilities last longer",
       "rarity": "uncommon",
       "category": "combat"
+    },
+    {
+      "id": "railway_engineer",
+      "name": "Railway Engineer",
+      "description": "Complete half of the Iron Tangle puzzles (50% progress)",
+      "effect": "+1 to Dexterity, +10% chance to find engineering components",
+      "rarity": "common",
+      "category": "puzzle",
+      "minigame": "iron_tangle",
+      "progressRequired": 0.5
+    },
+    {
+      "id": "master_conductor",
+      "name": "Master Conductor",
+      "description": "Complete two-thirds of the Iron Tangle puzzles (67% progress)",
+      "effect": "+2 to Intelligence, +1 to Dexterity, mechanical devices work 25% better",
+      "rarity": "uncommon",
+      "category": "puzzle",
+      "minigame": "iron_tangle",
+      "progressRequired": 0.67
+    },
+    {
+      "id": "iron_tangle_grandmaster",
+      "name": "Iron Tangle Grandmaster",
+      "description": "Complete all Iron Tangle puzzles with mastery",
+      "effect": "+2 to Intelligence, +2 to Dexterity, +15% damage with improvised weapons, puzzle-solving grants bonus XP",
+      "rarity": "rare",
+      "category": "puzzle",
+      "minigame": "iron_tangle",
+      "progressRequired": 1.0
     }
   ],
   "skill_based": [

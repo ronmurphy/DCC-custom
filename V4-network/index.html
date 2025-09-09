@@ -2868,16 +2868,19 @@
             }
             
             const container = document.getElementById('fab-container');
-            const minigameFab = document.getElementById('iron-tangle-fab');
+            const ironTangleFab = document.getElementById('iron-tangle-fab');
+            const donutsMagicManiaFab = document.getElementById('donuts-magic-mania-fab');
             
             fabExpanded = !fabExpanded;
             
             if (fabExpanded) {
                 container.classList.add('expanded');
-                minigameFab.classList.add('show');
+                ironTangleFab.classList.add('show');
+                donutsMagicManiaFab.classList.add('show');
             } else {
                 container.classList.remove('expanded');
-                minigameFab.classList.remove('show');
+                ironTangleFab.classList.remove('show');
+                donutsMagicManiaFab.classList.remove('show');
             }
         }
 
@@ -2924,6 +2927,23 @@
                 console.error('MiniGameManager not available');
                 // Fallback: open in new window
                 window.open('./miniGames/ironTangle/ironTangle.html', '_blank');
+            }
+        }
+
+        // Open Donut's Magic Mania mini-game using miniGameManager
+        function openDonutsMagicMania() {
+            // Close the expanded FAB
+            if (fabExpanded) {
+                toggleFABExpansion();
+            }
+            
+            // Use the miniGameManager to launch Donut's Magic Mania
+            if (window.miniGameManager) {
+                miniGameManager.launchDonutsMagicMania();
+            } else {
+                console.error('MiniGameManager not available');
+                // Fallback: open in new window
+                window.open('./miniGames/donutsMagicMania/donutsMagicMania.html', '_blank');
             }
         }
 
@@ -5181,6 +5201,11 @@
         <!-- Mini-Game FAB (slides out on long press) -->
         <button class="minigame-fab" id="iron-tangle-fab" onclick="openIronTangle()" title="Iron Tangle Railway Puzzle">
             🚂
+        </button>
+        
+        <!-- Donut's Magic Mania FAB -->
+        <button class="minigame-fab" id="donuts-magic-mania-fab" onclick="openDonutsMagicMania()" title="Donut's Magic Mania - Princess Donut's sparkly match-3 game">
+            🍩
         </button>
     </div>
 

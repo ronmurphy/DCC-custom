@@ -414,6 +414,29 @@
             gap: 20px;
         }
 
+        .train-emoji {
+            position: absolute;
+            font-size: 24px;
+            z-index: 1000;
+            pointer-events: none;
+            transition: all 0.3s ease-in-out;
+            filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.5));
+        }
+
+        .train-emoji.moving {
+            transition: all 0.5s ease-in-out;
+        }
+
+        @keyframes trainBounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-5px); }
+            60% { transform: translateY(-3px); }
+        }
+
+        .train-emoji.bounce {
+            animation: trainBounce 0.6s ease-in-out;
+        }
+
         #moveCounter,
         #timer {
             display: inline-block;
@@ -1096,6 +1119,158 @@
                 earned: false
             }
         };
+
+        // DCC Achievement Progress Tracking
+        const dccAchievements = {
+            railway_engineer: {
+                id: "railway_engineer",
+                title: "Railway Engineer", 
+                desc: "Complete half of the Iron Tangle puzzles",
+                progressRequired: 0.5,
+                earned: false
+            },
+            master_conductor: {
+                id: "master_conductor", 
+                title: "Master Conductor",
+                desc: "Complete two-thirds of the Iron Tangle puzzles", 
+                progressRequired: 0.67,
+                earned: false
+            },
+            iron_tangle_grandmaster: {
+                id: "iron_tangle_grandmaster",
+                title: "Iron Tangle Grandmaster",
+                desc: "Complete all Iron Tangle puzzles with mastery",
+                progressRequired: 1.0,
+                earned: false
+            }
+        };
+
+        // Load DCC achievement progress from localStorage
+        function loadDCCAchievementProgress() {
+            try {
+                const saved = localStorage.getItem('ironTangle_dccAchievements');
+                if (saved) {
+                    const savedData = JSON.parse(saved);
+                    Object.keys(dccAchievements).forEach(key => {
+                        if (savedData[key]) {
+                            dccAchievements[key].earned = savedData[key].earned || false;
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading DCC achievement progress:', error);
+            }
+        }
+
+        // Save DCC achievement progress to localStorage  
+        function saveDCCAchievementProgress() {
+            try {
+                localStorage.setItem('ironTangle_dccAchievements', JSON.stringify(dccAchievements));
+            } catch (error) {
+                console.error('Error saving DCC achievement progress:', error);
+            }
+        }
+
+        // Check and award DCC achievements based on total puzzle progress
+        function checkDCCAchievements() {
+            const totalPuzzles = Object.keys(achievements).length;
+            const completedPuzzles = Object.values(achievements).filter(a => a.earned).length;
+            const progress = totalPuzzles > 0 ? completedPuzzles / totalPuzzles : 0;
+            
+            console.log(`DCC Achievement Check: ${completedPuzzles}/${totalPuzzles} = ${(progress * 100).toFixed(1)}% progress`);
+            
+            Object.values(dccAchievements).forEach(achievement => {
+                if (!achievement.earned && progress >= achievement.progressRequired) {
+                    awardDCCAchievement(achievement);
+                }
+            });
+        }
+
+        // Award a DCC achievement and attempt to send to parent games
+        function awardDCCAchievement(achievement) {
+            achievement.earned = true;
+            saveDCCAchievementProgress();
+            
+            console.log(`🎉 DCC Achievement Earned: ${achievement.title}`);
+            
+            // Show notification
+            showDCCAchievementNotification(achievement);
+            
+            // Try to communicate with parent window (V4-network or StoryTeller)
+            try {
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({
+                        type: 'ACHIEVEMENT_EARNED',
+                        achievementId: achievement.id,
+                        source: 'iron_tangle'
+                    }, '*');
+                    console.log('Sent achievement to parent window:', achievement.id);
+                }
+            } catch (error) {
+                console.error('Error communicating with parent window:', error);
+            }
+        }
+
+        // Show DCC achievement notification
+        function showDCCAchievementNotification(achievement) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #2C5AA0, #1a1a2e);
+                color: #D4AF37;
+                padding: 15px 20px;
+                border-radius: 10px;
+                box-shadow: 0 4px 20px rgba(212, 175, 55, 0.3);
+                z-index: 10000;
+                font-family: Arial, sans-serif;
+                font-weight: bold;
+                font-size: 14px;
+                max-width: 300px;
+                border: 2px solid #D4AF37;
+                animation: slideInRight 0.5s ease-out;
+            `;
+            
+            notification.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 24px;">🏆</span>
+                    <div>
+                        <div style="font-size: 16px; margin-bottom: 5px;">DCC Achievement Unlocked!</div>
+                        <div style="font-size: 14px; opacity: 0.9;">${achievement.title}</div>
+                        <div style="font-size: 12px; opacity: 0.7; margin-top: 3px;">${achievement.desc}</div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOutRight 0.5s ease-in';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 500);
+            }, 4000);
+        }
+
+        // Initialize DCC achievements on page load
+        loadDCCAchievementProgress();
+
+        // Add CSS animations for notifications
+        const achievementStyles = document.createElement('style');
+        achievementStyles.textContent = `
+            @keyframes slideInRight {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOutRight {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(achievementStyles);
 
         // Add to your existing achievements object
         Object.assign(achievements, additionalAchievements);
@@ -1799,9 +1974,12 @@
         }
 
         function showStarCelebration() {
+            console.log('🎊 Showing star celebration, levelsCompleted:', levelsCompleted);
+            
             // Prevent overlapping celebrations
             const existingCelebration = document.querySelector('.star-celebration');
             if (existingCelebration) {
+                console.log('🗑️ Removing existing celebration');
                 existingCelebration.remove();
             }
 
@@ -1818,14 +1996,18 @@
 
             // Show stars for completed levels with railway theme
             const stars = '🚂'.repeat(Math.min(levelsCompleted % LEVELS_PER_EXPANSION, 5)) + '⭐'.repeat(Math.max(0, (levelsCompleted % LEVELS_PER_EXPANSION) - 5));
-            celebration.innerHTML = `
+            const celebrationContent = `
         ${stars}<br>
         ${levelsCompleted % LEVELS_PER_EXPANSION === 0 ?
                     '🚉 All aboard for bigger railway networks! 🚉' :
                     `${LEVELS_PER_EXPANSION - (levelsCompleted % LEVELS_PER_EXPANSION)} more stations until network expansion!`}
     `;
+            
+            console.log('🎨 Celebration content:', celebrationContent);
+            celebration.innerHTML = celebrationContent;
 
             document.body.appendChild(celebration);
+            console.log('✅ Celebration element added to DOM');
 
             // Add the animation style if it doesn't exist
             if (!document.querySelector('#celebrationStyle')) {
@@ -2368,6 +2550,12 @@
 
             // Initial pipe check
             checkCorrectPipes();
+            
+            // Initialize train at start position
+            createTrainElement();
+            
+            console.log('🆕 New level started');
+            console.log('🗺️ Solution path:', solution.map(s => `(${s.x},${s.y})`).join(' → '));
 
             // Check hours for achievements
             const hour = new Date().getHours();
@@ -2796,18 +2984,199 @@
 
                     // If this pipe just got colored (wasn't colored before)
                     if (!wasColoredBefore && grid[y][x].isColored) {
-                        console.log(`Pipe colored at ${x},${y}`);
+                        console.log(`🟨 Pipe colored at (${x},${y}) - Train currently at (${trainPosition.x},${trainPosition.y})`);
+                        
+                        // Always try to move train to newly colored adjacent pieces
+                        if (shouldTrainMoveTo(x, y)) {
+                            console.log(`✅ Train will move to (${x},${y})`);
+                            animateTrainToNextPosition(x, y);
+                        } else {
+                            console.log(`❌ Train won't move to (${x},${y})`);
+                        }
 
                         // Check if any colored pipe connects to the end
                         if (isConnectedToEnd()) {
-                            console.log("Found connection to end!");
-                            handleLevelCompletion();
+                            console.log(`🎯 Path complete!`);
+                            
+                            // Animate train along the complete golden path
+                            setTimeout(() => {
+                                animateTrainAlongGoldenPath();
+                            }, 500);
+                            
+                            setTimeout(() => {
+                                handleLevelCompletion();
+                            }, 3000);
                         }
                     }
                 }
                 return true;
             }
             return false;
+        }
+
+        // Train Animation System
+        function createTrainElement() {
+            if (trainElement) {
+                trainElement.remove();
+            }
+            
+            trainElement = document.createElement('div');
+            trainElement.className = 'train-emoji';
+            trainElement.textContent = '🚂';
+            document.body.appendChild(trainElement);
+            
+            // Position at start
+            const startCell = getGridCellPosition(startPos.x, startPos.y);
+            trainElement.style.left = startCell.x + 'px';
+            trainElement.style.top = startCell.y + 'px';
+            trainPosition = { x: startPos.x, y: startPos.y };
+            
+            console.log(`🚂 Train created at start position (${startPos.x},${startPos.y})`);
+        }
+
+        function getGridCellPosition(gridX, gridY) {
+            const gridElement = document.getElementById('grid');
+            const cellElement = gridElement.children[gridY * GRID_WIDTH + gridX];
+            const rect = cellElement.getBoundingClientRect();
+            const cellSize = rect.width;
+            
+            return {
+                x: rect.left + cellSize / 2 - 12, // Center the emoji (24px font-size / 2)
+                y: rect.top + cellSize / 2 - 12
+            };
+        }
+
+        function animateTrainToNextPosition(targetX, targetY) {
+            if (!trainElement) return;
+            
+            console.log(`🚂 Train moving from (${trainPosition.x},${trainPosition.y}) to (${targetX},${targetY})`);
+            
+            // Update position immediately for logic purposes
+            trainPosition = { x: targetX, y: targetY };
+            
+            trainElement.classList.add('moving');
+            
+            const targetPos = getGridCellPosition(targetX, targetY);
+            trainElement.style.left = targetPos.x + 'px';
+            trainElement.style.top = targetPos.y + 'px';
+            
+            setTimeout(() => {
+                trainElement.classList.remove('moving');
+                trainElement.classList.add('bounce');
+                console.log(`🚂 Train arrived at (${targetX},${targetY})`);
+                
+                setTimeout(() => {
+                    if (trainElement) {
+                        trainElement.classList.remove('bounce');
+                    }
+                }, 600);
+            }, 500);
+        }
+
+        function shouldTrainMoveTo(x, y) {
+            // Check if this newly colored piece is adjacent to the train AND it's golden colored
+            const dx = Math.abs(x - trainPosition.x);
+            const dy = Math.abs(y - trainPosition.y);
+            
+            // Must be adjacent (not diagonal) and not current position
+            const isAdjacent = (dx === 1 && dy === 0) || (dx === 0 && dy === 1);
+            const isCurrentPosition = (x === trainPosition.x && y === trainPosition.y);
+            
+            // Check if the pipe at this position is golden colored (part of correct path)
+            const pipe = grid[y] && grid[y][x];
+            const isGoldenColored = pipe && pipe.isColored;
+            
+            const shouldMove = isAdjacent && !isCurrentPosition && isGoldenColored;
+            
+            console.log(`🔍 Train movement check: (${x},${y}) - adjacent: ${isAdjacent}, current: ${isCurrentPosition}, golden: ${isGoldenColored}, should move: ${shouldMove}`);
+            
+            return shouldMove;
+        }
+
+        // Function to animate train along the complete golden path when puzzle is solved
+        function animateTrainAlongGoldenPath() {
+            const goldenPath = getGoldenColoredPath();
+            if (goldenPath.length <= 1) {
+                console.log('🚂 No golden path found for animation');
+                return;
+            }
+            
+            console.log('🎨 Following golden path:', goldenPath.map(p => `(${p.x},${p.y})`).join(' → '));
+            
+            let currentIndex = goldenPath.findIndex(step => 
+                step.x === trainPosition.x && step.y === trainPosition.y
+            );
+            
+            if (currentIndex === -1) {
+                console.log('� Train not found on golden path, starting from beginning');
+                currentIndex = 0;
+                // Move train to start of golden path
+                if (goldenPath[0]) {
+                    trainPosition = { x: goldenPath[0].x, y: goldenPath[0].y };
+                    const startPos = getGridCellPosition(goldenPath[0].x, goldenPath[0].y);
+                    trainElement.style.left = startPos.x + 'px';
+                    trainElement.style.top = startPos.y + 'px';
+                }
+            }
+            
+            const animateNext = () => {
+                if (currentIndex < goldenPath.length - 1) {
+                    currentIndex++;
+                    const nextPos = goldenPath[currentIndex];
+                    animateTrainToNextPosition(nextPos.x, nextPos.y);
+                    
+                    setTimeout(animateNext, 600); // Wait for animation to complete
+                }
+            };
+            
+            setTimeout(animateNext, 300); // Initial delay
+        }
+
+        function getGoldenColoredPath() {
+            const goldenPipes = [];
+            
+            // Find all golden colored pipes
+            for (let y = 0; y < GRID_HEIGHT; y++) {
+                for (let x = 0; x < GRID_WIDTH; x++) {
+                    if (grid[y] && grid[y][x] && grid[y][x].isColored) {
+                        goldenPipes.push({ x, y });
+                    }
+                }
+            }
+            
+            if (goldenPipes.length === 0) return [];
+            
+            // Sort the path from start to end by finding connected sequence
+            const orderedPath = [];
+            let current = goldenPipes.find(p => p.x === startPos.x && p.y === startPos.y);
+            
+            if (!current) {
+                console.log('� Start position not in golden path');
+                return goldenPipes; // Return unordered if can't find start
+            }
+            
+            orderedPath.push(current);
+            const remaining = goldenPipes.filter(p => !(p.x === current.x && p.y === current.y));
+            
+            while (remaining.length > 0 && current) {
+                // Find next adjacent golden pipe
+                const next = remaining.find(p => {
+                    const dx = Math.abs(p.x - current.x);
+                    const dy = Math.abs(p.y - current.y);
+                    return (dx === 1 && dy === 0) || (dx === 0 && dy === 1);
+                });
+                
+                if (next) {
+                    orderedPath.push(next);
+                    const index = remaining.indexOf(next);
+                    remaining.splice(index, 1);
+                    current = next;
+                } else {
+                    break; // No more connected pieces
+                }
+            }
+            
+            return orderedPath;
         }
 
         // Helper function to validate the entire path from start to end
@@ -3056,16 +3425,27 @@
 
         // Updated handleLevelCompletion function
         let levelCompletionInProgress = false;
+        let trainElement = null;
+        let trainPosition = { x: 0, y: 0 };
+        let trainAnimationInProgress = false;
         
         function handleLevelCompletion() {
             // Prevent multiple celebrations for the same level
             if (levelCompletionInProgress) {
-                console.log('Level completion already in progress, skipping...');
+                console.log('⚠️ Level completion already in progress, skipping...');
                 return;
             }
             
             levelCompletionInProgress = true;
             stopLevelTimer();
+
+            console.log('🎉 Level completed!');
+
+            // Move train to end position if not already there
+            if (trainPosition.x !== endPos.x || trainPosition.y !== endPos.y) {
+                console.log(`🚂 Moving train to end position: (${endPos.x},${endPos.y})`);
+                animateTrainToNextPosition(endPos.x, endPos.y);
+            }
 
             // Collect stats for achievements
             const stats = {
@@ -3078,19 +3458,27 @@
 
             // checkAchievements();
 
+            console.log('🏆 Checking achievements...');
             checkAchievements(stats);
             checkLevelCompletionAchievements(stats);
             saveGameProgress();
 
             levelsCompleted++;
+            console.log(`🏁 Level ${levelsCompleted} completed, calling showStarCelebration()`);
             showStarCelebration();
 
             const modal = document.getElementById('completionModal');
+            console.log(`🎭 Showing completion modal`, modal);
             modal.style.display = 'block';
 
             document.getElementById('nextLevelButton').onclick = () => {
+                console.log('🚂 Next Level button clicked');
                 stopLevelTimer();
                 modal.style.display = 'none';
+                
+                // Check DCC achievements after the user clicks next level
+                console.log('🎖️ Checking DCC achievements after level completion...');
+                checkDCCAchievements();
 
                 if (levelsCompleted % LEVELS_PER_EXPANSION === 0) {
                     const expanded = handleGridExpansion();

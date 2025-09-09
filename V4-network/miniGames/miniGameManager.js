@@ -57,6 +57,46 @@ class MiniGameManager {
     }
 
     /**
+     * Launch Donut's Magic Mania mini-game in a WebView overlay
+     */
+    launchDonutsMagicMania() {
+        if (this.isGameActive) {
+            console.log('Game already active');
+            return;
+        }
+
+        this.createGameOverlay();
+        this.minimizeChat();
+        
+        // Create WebView-like container
+        const gameFrame = document.createElement('div');
+        gameFrame.className = 'mini-game-frame';
+        gameFrame.innerHTML = `
+            <div class="game-header">
+                <h3>🍩 Donut's Magic Mania</h3>
+                <button class="close-game-btn" onclick="miniGameManager.closeGame()">✕</button>
+            </div>
+            <iframe 
+                src="miniGames/donutsMagicMania/donutsMagicMania.html" 
+                width="100%" 
+                height="100%" 
+                frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                sandbox="allow-scripts allow-same-origin allow-forms">
+            </iframe>
+        `;
+
+        this.gameContainer.appendChild(gameFrame);
+        this.activeGame = 'donutsMagicMania';
+        this.isGameActive = true;
+
+        // Add game-specific styling
+        this.addGameStyles();
+        
+        console.log('Donut\'s Magic Mania launched successfully');
+    }
+
+    /**
      * Create the overlay container for mini-games
      */
     createGameOverlay() {
@@ -317,6 +357,25 @@ class MiniGameManager {
         gameButton.innerHTML = '🚂 Iron Tangle';
         gameButton.title = 'Play the Iron Tangle railway mini-game';
         gameButton.onclick = () => this.launchIronTangle();
+
+        container.appendChild(gameButton);
+        return gameButton;
+    }
+
+    /**
+     * Create a button to launch Donut's Magic Mania
+     */
+    createDonutsMagicManiaButton(container) {
+        if (!container) {
+            console.warn('No container provided for game button');
+            return;
+        }
+
+        const gameButton = document.createElement('button');
+        gameButton.className = 'game-launch-btn';
+        gameButton.innerHTML = '🍩 Donut\'s Magic Mania';
+        gameButton.title = 'Play Princess Donut\'s sparkly match-3 game';
+        gameButton.onclick = () => this.launchDonutsMagicMania();
 
         container.appendChild(gameButton);
         return gameButton;
