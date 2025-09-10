@@ -88,87 +88,16 @@ function initializeShapeForgeWorkspace() {
         editorDiv.style.display = 'block';
         
         if (!shapeForge) {
-            // Initialize ShapeForge
-            shapeForge = new ShapeForge(resourceManager, shaderEffectsManager);
+            // Initialize ShapeForge with the editor container directly
+            console.log("🎯 Creating ShapeForge directly in tab container...");
+            shapeForge = new ShapeForge(resourceManager, shaderEffectsManager, null, editorDiv);
             window.shapeForge = shapeForge;
         }
         
-        // Initialize ShapeForge but don't show the drawer immediately
-        // We'll extract content directly after creation
-        if (!shapeForge.drawer) {
-            shapeForge.createUI(); // Create UI without showing
-        }
+        // Show ShapeForge in the tab container (no drawer!)
+        shapeForge.show(editorDiv);
         
-        // Wait a moment for UI creation, then move content immediately
-        setTimeout(() => {
-            if (shapeForge.drawer) {
-                // Hide the drawer immediately to prevent it from showing
-                shapeForge.drawer.style.display = 'none';
-                
-                // Get the main content from the drawer
-                const drawerContent = shapeForge.drawer.querySelector('#shape-forge-container');
-                if (drawerContent) {
-                    // Move the content to our workspace
-                    editorDiv.appendChild(drawerContent);
-                    
-                    // Update all ShapeForge element references to work in the new location
-                    shapeForge.previewContainer = editorDiv.querySelector('#preview-container');
-                    shapeForge.objectsListContainer = editorDiv.querySelector('#objects-list-container');
-                    
-                    // Update drawer reference to point to our workspace for compatibility
-                    const originalDrawer = shapeForge.drawer;
-                    shapeForge.drawer = {
-                        ...originalDrawer,
-                        querySelector: (selector) => editorDiv.querySelector(selector),
-                        querySelectorAll: (selector) => editorDiv.querySelectorAll(selector),
-                        hide: () => {}, // Mock hide method
-                        remove: () => {} // Mock remove method
-                    };
-                    
-                    // Update internal references that might be used by ShapeForge
-                    if (shapeForge.previewContainer) {
-                        console.log("🎬 Preview container found in workspace");
-                        // Re-initialize preview scene if needed
-                        if (shapeForge.previewScene && shapeForge.previewRenderer) {
-                            console.log("🎬 Re-attaching renderer to workspace preview container");
-                            shapeForge.previewContainer.appendChild(shapeForge.previewRenderer.domElement);
-                            
-                            // Force a resize to ensure proper fitting
-                            setTimeout(() => {
-                                if (shapeForge.handleResize) {
-                                    shapeForge.handleResize();
-                                }
-                            }, 100);
-                        }
-                    }
-                    
-                    // Hide and remove the original drawer
-                    if (originalDrawer && originalDrawer.hide) {
-                        originalDrawer.hide();
-                    }
-                    if (originalDrawer && originalDrawer.remove) {
-                        setTimeout(() => originalDrawer.remove(), 100);
-                    }
-                    
-                    // Additional cleanup - remove any sl-drawer elements that might be lingering
-                    setTimeout(() => {
-                        const lingering = document.querySelectorAll('sl-drawer[label*="ShapeForge"]');
-                        lingering.forEach(drawer => {
-                            if (drawer !== shapeForge.drawer) {
-                                console.log("🧹 Removing lingering ShapeForge drawer");
-                                drawer.remove();
-                            }
-                        });
-                    }, 200);
-                    
-                    console.log("✅ ShapeForge moved to workspace successfully");
-                } else {
-                    console.error("❌ Could not find ShapeForge content in drawer");
-                }
-            } else {
-                console.error("❌ ShapeForge drawer not created");
-            }
-        }, 750); // Increased timeout to ensure full initialization
+        console.log("✅ ShapeForge initialized directly in workspace tab");
         
     } catch (error) {
         console.error("❌ Failed to initialize ShapeForge workspace:", error);

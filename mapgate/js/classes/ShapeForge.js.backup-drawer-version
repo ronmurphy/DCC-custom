@@ -10,13 +10,10 @@ class ShapeForge {
    * Create a new ShapeForge editor
    * @param {ResourceManager} resourceManager - Reference to the resource manager
    * @param {ShaderEffectsManager} shaderEffectsManager - Reference to the shader effects manager
-   * @param {MapEditor} mapEditor - Reference to the map editor  
-   * @param {HTMLElement} container - Container element (tab panel or div)
    */
-  constructor(resourceManager = null, shaderEffectsManager = null, mapEditor = null, container = null) {
+  constructor(resourceManager = null, shaderEffectsManager = null, mapEditor = null) {
     // Add mapEditor parameter
     this.mapEditor = mapEditor;
-    this.container = container; // Store the container reference
 
     // Dependencies
     // Try to get ResourceManager from mapEditor first if available
@@ -45,7 +42,7 @@ class ShapeForge {
     this.isPreviewActive = false;
 
     // UI references
-    this.uiContainer = null; // Changed from drawer to uiContainer
+    this.drawer = null;
     this.propertyPanels = {};
 
     // Bind methods to maintain proper 'this' context
@@ -104,22 +101,8 @@ class ShapeForge {
 
 
 
-  /**
-   * Initialize ShapeForge in the provided container
-   * @param {HTMLElement} container - Container element (optional, uses constructor container if not provided)
-   */
-  show(container = null) {
+  show() {
     console.log("ShapeForge show() called");
-
-    // Use provided container or fall back to constructor container
-    if (container) {
-      this.container = container;
-    }
-
-    if (!this.container) {
-      console.error("No container provided for ShapeForge!");
-      return this;
-    }
 
     // Check if THREE.js is available
     if (!window.THREE) {
@@ -129,21 +112,25 @@ class ShapeForge {
     }
 
     // Create UI if it doesn't exist
-    if (!this.uiContainer) {
+    if (!this.drawer) {
       console.log("Creating ShapeForge UI");
       this.createUI();
     }
 
-    // Check if the UI was created successfully
-    if (!this.uiContainer) {
+    // Check if the drawer was created successfully
+    if (!this.drawer) {
       console.error("Failed to create ShapeForge UI!");
       return this;
     }
 
-    // Wait a moment for the UI to be visible before initializing preview
+    // Show the drawer
+    this.drawer.show();
+    console.log("ShapeForge drawer shown");
+
+    // Wait a moment for the drawer to be visible before initializing preview
     setTimeout(() => {
       // Check if preview container exists in the DOM
-      this.previewContainer = this.uiContainer.querySelector('#preview-container');
+      this.previewContainer = this.drawer.querySelector('#preview-container');
 
       if (!this.previewContainer) {
         console.error("Preview container not found in ShapeForge UI!");
@@ -187,8 +174,8 @@ class ShapeForge {
    * Hide the ShapeForge UI
    */
   hide() {
-    if (this.uiContainer) {
-      this.uiContainer.style.display = 'none';
+    if (this.drawer) {
+      this.drawer.hide();
     }
 
     // Stop the preview to save resources
@@ -206,78 +193,57 @@ class ShapeForge {
   createUI() {
     console.log("Creating ShapeForge UI");
 
-    // Create main container div instead of drawer
-    this.uiContainer = document.createElement('div');
-    this.uiContainer.id = 'shape-forge-ui';
-    this.uiContainer.style.cssText = `
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    `;
+    // Create drawer
+    this.drawer = document.createElement('sl-drawer');
+    this.drawer.label = 'ShapeForge - 3D Geometry Editor';
+    this.drawer.placement = 'end';
+    this.drawer.style.setProperty('--size', 'calc(100vw - 260px');
 
-    // Create UI content
-    this.uiContainer.innerHTML = `
-    <div id="shape-forge-container" style="display: flex; height: 100%; max-height: 100%; overflow: hidden; gap: 6px;">
-      <!-- Left panel for basic tools and shapes - RESTORED WIDTH -->
-      <div class="tool-panel" style="width: 180px; padding: 6px; overflow-y: auto; border-right: 1px solid #444; background: #2a2a2a; font-size: 12px;">
+    // Create drawer content
+    this.drawer.innerHTML = `
+    <div id="shape-forge-container" style="display: flex; height: 100%; max-height: 100%; overflow: hidden; gap: 10px;">
+      <!-- Left panel for basic tools and shapes -->
+      <div class="tool-panel" style="width: 220px; padding: 10px; overflow-y: auto; border-right: 1px solid #444; background: #2a2a2a;">
         <!-- Project Info -->
         <div class="panel-section">
           <sl-input id="project-name" label="Project Name" placeholder="Untitled Project"></sl-input>
-          <!-- Compact Project Toolbar -->
-          <div style="display: flex; gap: 4px; margin-top: 10px; justify-content: space-between;">
-            <sl-tooltip content="New File">
-              <sl-icon-button id="new-project" name="file-plus" size="small"></sl-icon-button>
-            </sl-tooltip>
-            <sl-tooltip content="Open File">
-              <sl-icon-button id="loadModelBtn" name="folder-open" size="small"></sl-icon-button>
-            </sl-tooltip>
-            <sl-tooltip content="Export File">
-              <sl-icon-button id="save-project" name="download" size="small"></sl-icon-button>
-            </sl-tooltip>
-            <sl-tooltip content="Add to Project">
-              <sl-icon-button id="import-additional" name="plus-circle" size="small"></sl-icon-button>
-            </sl-tooltip>
-            <sl-tooltip content="Save to Resources">
-              <sl-icon-button id="save-to-resources" name="save" size="small"></sl-icon-button>
-            </sl-tooltip>
-            <sl-tooltip content="Clear All">
-              <sl-icon-button id="clear-all" name="trash" size="small" variant="danger"></sl-icon-button>
-            </sl-tooltip>
-            <!-- Commented out unused buttons
-            <sl-tooltip content="Import DXF">
-              <sl-icon-button id="importDXF" name="file-import" size="small"></sl-icon-button>
-            </sl-tooltip>
-            -->
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 10px;">
+            <sl-button id="new-project" size="small">New File</sl-button>
+            <sl-button id="loadModelBtn" size="small">Open File</sl-button>
+            <sl-button id="save-project" size="small">Export File</sl-button>
+  <sl-button id="import-additional" size="small">Add to Project</sl-button>
+    <sl-button id="save-to-resources" size="small">Save to Resources</sl-button>
+  <sl-button id="clear-all" size="small" variant="danger">Clear All</sl-button>
+    <sl-button id="importDXF" size="small" >Import DXF</sl-button>
+
           </div>
         </div>
         
         
-<div class="panel-section" style="margin-top: 15px;">
-  <h3 style="font-size: 12px; margin-bottom: 8px;">Shapes</h3>
-  <div class="shape-buttons" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px;">
+<div class="panel-section" style="margin-top: 20px;">
+  <h3>Shapes</h3>
+  <div class="shape-buttons" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;">
     <!-- Basic Shapes -->
-    <sl-icon-button title="Cube" name="square" id="shape-cube" style="font-size: 12px;"></sl-icon-button>
-    <sl-icon-button title="Sphere" name="circle" id="shape-sphere" style="font-size: 12px;"></sl-icon-button>
-    <sl-icon-button title="Cylinder" name="plus-square" id="shape-cylinder" style="font-size: 12px;"></sl-icon-button>
-    <sl-icon-button title="Cone" name="triangle" id="shape-cone" style="font-size: 12px;"></sl-icon-button>
-    <sl-icon-button title="Torus" name="life-preserver" id="shape-torus" style="font-size: 12px;"></sl-icon-button>
-    <sl-icon-button title="Plane" name="window" id="shape-plane" style="font-size: 12px;"></sl-icon-button>
+    <sl-icon-button  title="Cube" name="square" label="Cube" id="shape-cube"></sl-icon-button><sl-tooltip>
+    <sl-icon-button  title="Sphere" name="circle" label="Sphere" id="shape-sphere"></sl-icon-button>
+    <sl-icon-button  title="Cylinder"  name="plus-square" label="Cylinder" id="shape-cylinder"></sl-icon-button>
+    <sl-icon-button  title="Cone" name="triangle" label="Cone" id="shape-cone"></sl-icon-button>
+    <sl-icon-button  title="Torus"  name="life-preserver" label="Torus" id="shape-torus"></sl-icon-button>
+    <sl-icon-button  title="Plane"  name="window" label="Plane" id="shape-plane"></sl-icon-button>
     
     <!-- Dice Shapes -->
-    <sl-icon-button title="D4" name="diamond" id="shape-d4" style="font-size: 12px;"></sl-icon-button>
-    <sl-icon-button title="D8" name="octagon" id="shape-d8" style="font-size: 12px;"></sl-icon-button>
-    <sl-icon-button title="D10" name="pentagon" id="shape-d10" style="font-size: 12px;"></sl-icon-button>
-    <sl-icon-button title="D12" name="hexagon" id="shape-d12" style="font-size: 12px;"></sl-icon-button>
-    <sl-icon-button title="D20" name="record-circle" id="shape-d20" style="font-size: 12px;"></sl-icon-button>
+    <sl-icon-button  title="D4"  name="diamond" label="D4 Tetrahedron" id="shape-d4"></sl-icon-button>
+    <sl-icon-button  title="D8" name="octagon" label="D8 Octahedron" id="shape-d8"></sl-icon-button>
+    <sl-icon-button  title="D10" name="pentagon" label="D10" id="shape-d10"></sl-icon-button>
+    <sl-icon-button  title="D12" name="hexagon" label="D12 Dodecahedron" id="shape-d12"></sl-icon-button>
+    <sl-icon-button  title="D20" name="record-circle" label="D20 Icosahedron" id="shape-d20"></sl-icon-button>
     
     <!-- Additional Shapes -->
-    <sl-icon-button title="Torus Knot" name="intersect" id="shape-torus-knot" style="font-size: 12px;"></sl-icon-button>
-    <sl-icon-button title="Pyramid" name="triangle-fill" id="shape-pyramid" style="font-size: 12px;"></sl-icon-button>
-    <sl-icon-button title="Capsule" name="capsule" id="shape-capsule" style="font-size: 12px;"></sl-icon-button>
-    <sl-icon-button title="Tube" name="record" id="shape-tube" style="font-size: 12px;"></sl-icon-button>
-    <sl-icon-button title="Hemisphere" name="circle-half" id="shape-hemisphere" style="font-size: 12px;"></sl-icon-button>
+    <sl-icon-button  title="Torus Knot" name="intersect" label="Torus Knot" id="shape-torus-knot"></sl-icon-button>
+    <sl-icon-button  title="Pyramid" name="triangle-fill" label="Pyramid" id="shape-pyramid"></sl-icon-button>
+    <sl-icon-button  title="Capsule" name="capsule" label="Capsule" id="shape-capsule"></sl-icon-button>
+    <sl-icon-button  title="Tube" name="record" label="Tube/Ring" id="shape-tube"></sl-icon-button>
+    <sl-icon-button  title="Hemisphere" name="circle-half" label="Hemisphere" id="shape-hemisphere"></sl-icon-button>
     <sl-icon-button  title="Star" name="asterisk" label="Star" id="shape-star"></sl-icon-button>
   </div>
 </div>
@@ -378,68 +344,37 @@ class ShapeForge {
             </div>
           </div>
         </div>
-      </div>
-      
-      <!-- Center panel for 3D preview - NO HEADER TO SAVE SPACE -->
-      <div class="preview-panel" style="flex: 3; display: flex; flex-direction: column; background: #1a1a1a; border-radius: 8px; margin: 0 4px;">
-        <div id="preview-container" style="flex: 1; position: relative; border-radius: 8px; overflow: hidden; width: 100%; height: 100%;">
-          <!-- Three.js preview will be inserted here -->
-        </div>
-      </div>
-      
-      <!-- Right panel for object properties - FURTHER REDUCED -->
-      <div class="properties-panel" style="width: 200px; padding: 6px; overflow-y: auto; border-left: 1px solid #444; background: #2a2a2a; font-size: 12px;">
-        <!-- Object Properties -->
-        <div class="panel-section">
-          <h3 style="font-size: 12px; margin-bottom: 8px;">Selected Object</h3>
-          <div id="properties-container">
-            <!-- Properties will be populated based on selected object -->
-            <div class="no-selection-message">
-              <p style="font-size: 11px; margin: 4px 0;">Select an object to edit its properties.</p>
-            </div>
-          </div>
-        </div>
+
         
         <!-- Materials -->
-        <div class="panel-section" style="margin-top: 15px;">
-          <h3 style="font-size: 12px; margin-bottom: 8px;">Materials</h3>
+        <div class="panel-section" style="margin-top: 20px;">
+          <h3>Materials</h3>
           <div id="materials-container">
-            <!-- Material Type selector -->
-            <sl-select label="Material Type" id="material-type" style="margin-bottom: 10px;">
+            <sl-select label="Material Type" id="material-type">
               <sl-option value="basic">Basic</sl-option>
               <sl-option value="standard">Standard</sl-option>
               <sl-option value="phong">Phong</sl-option>
               <sl-option value="lambert">Lambert</sl-option>
             </sl-select>
             
-            <!-- Material controls -->
-            <div class="material-control">
-              <label>Color:</label>
-              <sl-color-picker id="material-color" value="#3388ff"></sl-color-picker>
-            </div>
+            <sl-color-picker label="Color" id="material-color" value="#3388ff"></sl-color-picker>
             
-            <sl-checkbox id="material-wireframe" style="margin: 10px 0;">Wireframe</sl-checkbox>
+            <sl-checkbox id="material-wireframe">Wireframe</sl-checkbox>
             
-            <div class="material-control" style="margin-top: 10px;">
-              <label>Opacity:</label>
-              <sl-range id="material-opacity" min="0" max="1" step="0.01" value="1"></sl-range>
-            </div>
+            <sl-range id="material-opacity" min="0" max="1" step="0.01" value="1" 
+                    label="Opacity"></sl-range>
             
-            <div class="material-control" style="margin-top: 10px;">
-              <label>Roughness:</label>
-              <sl-range id="material-roughness" min="0" max="1" step="0.01" value="0.5"></sl-range>
-            </div>
+            <sl-range id="material-metalness" min="0" max="1" step="0.01" value="0" 
+                    label="Metalness"></sl-range>
             
-            <div class="material-control" style="margin-top: 10px;">
-              <label>Metalness:</label>
-              <sl-range id="material-metalness" min="0" max="1" step="0.01" value="0"></sl-range>
-            </div>
+            <sl-range id="material-roughness" min="0" max="1" step="0.01" value="0.5" 
+                    label="Roughness"></sl-range>
           </div>
         </div>
         
         <!-- Shader Effects -->
-        <div class="panel-section" style="margin-top: 15px;">
-          <h3 style="font-size: 12px; margin-bottom: 8px;">Shader Effects</h3>
+        <div class="panel-section" style="margin-top: 20px;">
+          <h3>Shader Effects</h3>
           <div id="effects-container">
             <sl-select label="Effect Type" id="effect-type">
               <sl-option value="none">None</sl-option>
@@ -453,42 +388,102 @@ class ShapeForge {
             </div>
           </div>
         </div>
+      </div>
+      
+      <!-- Center panel for 3D preview -->
+      <div class="preview-panel" style="flex: 2; display: flex; flex-direction: column; background: #1a1a1a; border-radius: 8px; margin: 0 5px;">
+        <div style="padding: 10px; border-bottom: 1px solid #444; background: #333; border-radius: 8px 8px 0 0;">
+          <h3 style="margin: 0; color: #fff; font-size: 14px;">3D Preview</h3>
+        </div>
+        <div id="preview-container" style="flex: 1; position: relative; border-radius: 0 0 8px 8px; overflow: hidden; width: 100%; height: 100%;">
+          <!-- Three.js preview will be inserted here -->
+        </div>
+      </div>
+      
+      <!-- Right panel for object properties and advanced controls -->
+      <div class="properties-panel" style="width: 280px; padding: 10px; overflow-y: auto; border-left: 1px solid #444; background: #2a2a2a;">
+        <!-- Object Properties -->
+        <div class="panel-section">
+          <h3>Selected Object</h3>
+          <div id="properties-container">
+            <!-- Properties will be populated based on selected object -->
+            <div class="no-selection-message">
+              <p>Select an object to edit its properties.</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Materials -->
+        <div class="panel-section" style="margin-top: 20px;">
+          <h3>Materials</h3>
+          <div id="materials-container">
+            <!-- Material controls -->
+            <div class="material-control">
+              <label>Color:</label>
+              <sl-color-picker id="material-color" value="#ff0000" format="hex"></sl-color-picker>
+            </div>
+            
+            <div class="material-control" style="margin-top: 10px;">
+              <label>Transparency:</label>
+              <sl-range id="material-opacity" min="0" max="1" step="0.01" value="1"></sl-range>
+            </div>
+            
+            <div class="material-control" style="margin-top: 10px;">
+              <label>Roughness:</label>
+              <sl-range id="material-roughness" min="0" max="1" step="0.01" value="0.5"></sl-range>
+            </div>
+            
+            <div class="material-control" style="margin-top: 10px;">
+              <label>Metalness:</label>
+              <sl-range id="material-metalness" min="0" max="1" step="0.01" value="0"></sl-range>
+            </div>
+            
+            <div class="material-control" style="margin-top: 10px;">
+              <label>Emissive:</label>
+              <sl-range id="material-emissive" min="0" max="1" step="0.01" value="0"></sl-range>
+            </div>
+          </div>
+        </div>
         
         <!-- Objects List -->
-        <div class="panel-section" style="margin-top: 15px;">
-          <h3 style="font-size: 12px; margin-bottom: 8px;">Scene Objects</h3>
-          <div id="objects-list-container" style="max-height: 150px; overflow-y: auto; border: 1px solid #444; border-radius: 4px; padding: 6px;">
+        <div class="panel-section" style="margin-top: 20px;">
+          <h3>Scene Objects</h3>
+          <div id="objects-list-container" style="max-height: 200px; overflow-y: auto; border: 1px solid #444; border-radius: 4px; padding: 8px;">
             <!-- List of objects in the scene -->
           </div>
         </div>
         
         <!-- Camera Controls -->
-        <div class="panel-section" style="margin-top: 15px;">
-          <h3 style="font-size: 12px; margin-bottom: 8px;">Camera & View</h3>
-          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; font-size: 11px;">
-            <sl-button id="reset-camera" size="small" style="font-size: 10px; padding: 2px 6px;">Reset</sl-button>
-            <sl-button id="fit-camera" size="small" style="font-size: 10px; padding: 2px 6px;">Fit All</sl-button>
-            <sl-button id="front-view" size="small" style="font-size: 10px; padding: 2px 6px;">Front</sl-button>
-            <sl-button id="top-view" size="small" style="font-size: 10px; padding: 2px 6px;">Top</sl-button>
-            <sl-button id="side-view" size="small" style="font-size: 10px; padding: 2px 6px;">Side</sl-button>
-            <sl-button id="perspective-view" size="small" style="font-size: 10px; padding: 2px 6px;">3D</sl-button>
+        <div class="panel-section" style="margin-top: 20px;">
+          <h3>Camera & View</h3>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+            <sl-button id="reset-camera" size="small">Reset View</sl-button>
+            <sl-button id="fit-camera" size="small">Fit All</sl-button>
+            <sl-button id="front-view" size="small">Front</sl-button>
+            <sl-button id="top-view" size="small">Top</sl-button>
+            <sl-button id="side-view" size="small">Side</sl-button>
+            <sl-button id="perspective-view" size="small">3D View</sl-button>
           </div>
         </div>
       </div>
     </div>
+    
+    <div slot="footer">
+      <sl-button variant="neutral" class="close-button">Close</sl-button>
+    </div>
   `;
 
-    // Append UI to the provided container
-    this.container.appendChild(this.uiContainer);
+    // Add drawer to document
+    document.body.appendChild(this.drawer);
 
     // Get references to UI elements
-    this.previewContainer = this.uiContainer.querySelector('#preview-container');
-    this.objectsListContainer = this.uiContainer.querySelector('#objects-list-container');
+    this.previewContainer = this.drawer.querySelector('#preview-container');
+    this.objectsListContainer = this.drawer.querySelector('#objects-list-container');
 
     // Set up event listeners
     this.setupEventListeners();
 
-    const materialsContainer = this.uiContainer.querySelector('#materials-container');
+    const materialsContainer = this.drawer.querySelector('#materials-container');
     if (materialsContainer) {
       // Add texture selection button
       const textureBtn = document.createElement('sl-button');
@@ -518,6 +513,11 @@ class ShapeForge {
    */
 
   setupEventListeners() {
+    // Close button
+    this.drawer.querySelector('.close-button').addEventListener('click', () => {
+      this.hide();
+    });
+
     // Shape creation buttons
     // In setupEventListeners, update the shapeButtons object:
     const shapeButtons = {
@@ -546,14 +546,14 @@ class ShapeForge {
 
     // Add event listeners for shape buttons
     Object.entries(shapeButtons).forEach(([id, handler]) => {
-      const button = this.uiContainer.querySelector(`#${id}`);
+      const button = this.drawer.querySelector(`#${id}`);
       if (button) {
         button.addEventListener('click', handler);
       }
     });
 
     // Material type change
-    const materialTypeSelect = this.uiContainer.querySelector('#material-type');
+    const materialTypeSelect = this.drawer.querySelector('#material-type');
     if (materialTypeSelect) {
       materialTypeSelect.addEventListener('sl-change', (e) => {
         this.updateMaterialType(e.target.value);
@@ -561,7 +561,7 @@ class ShapeForge {
     }
 
     // Material color change
-    const colorPicker = this.uiContainer.querySelector('#material-color');
+    const colorPicker = this.drawer.querySelector('#material-color');
     if (colorPicker) {
       colorPicker.addEventListener('sl-change', (e) => {
         this.updateMaterialColor(e.target.value);
@@ -570,7 +570,7 @@ class ShapeForge {
 
     // Material property changes
     ['wireframe', 'opacity', 'metalness', 'roughness'].forEach(prop => {
-      const control = this.uiContainer.querySelector(`#material-${prop}`);
+      const control = this.drawer.querySelector(`#material-${prop}`);
       if (control) {
         control.addEventListener('sl-change', (e) => {
           this.updateMaterialProperty(prop, e.target.type === 'checkbox' ? e.target.checked : e.target.value);
@@ -579,12 +579,12 @@ class ShapeForge {
     });
 
     // Project controls
-    this.uiContainer.querySelector('#new-project')?.addEventListener('click', this.newProject.bind(this));
-    this.uiContainer.querySelector('#save-project')?.addEventListener('click', this.saveProject.bind(this));
-    // this.uiContainer.querySelector('#load-project')?.addEventListener('click', this.loadProject.bind(this));
-    this.uiContainer.querySelector('#export-code')?.addEventListener('click', this.showExportDialog.bind(this));
-    this.uiContainer.querySelector('#save-to-resources')?.addEventListener('click', this.saveToResources.bind(this));
-    this.uiContainer.querySelector('#loadModelBtn')?.addEventListener('click', this.showModelBrowser.bind(this));
+    this.drawer.querySelector('#new-project')?.addEventListener('click', this.newProject.bind(this));
+    this.drawer.querySelector('#save-project')?.addEventListener('click', this.saveProject.bind(this));
+    // this.drawer.querySelector('#load-project')?.addEventListener('click', this.loadProject.bind(this));
+    this.drawer.querySelector('#export-code')?.addEventListener('click', this.showExportDialog.bind(this));
+    this.drawer.querySelector('#save-to-resources')?.addEventListener('click', this.saveToResources.bind(this));
+    this.drawer.querySelector('#loadModelBtn')?.addEventListener('click', this.showModelBrowser.bind(this));
 
     const rotationQuickButtons = [
       { id: 'rot-x-90', axis: 'x', degrees: 90 },
@@ -596,7 +596,7 @@ class ShapeForge {
     ];
 
     rotationQuickButtons.forEach(btn => {
-      const button = this.uiContainer.querySelector(`#${btn.id}`);
+      const button = this.drawer.querySelector(`#${btn.id}`);
       if (button) {
         button.addEventListener('click', () => {
           if (this.selectedObject === null) return;
@@ -608,7 +608,7 @@ class ShapeForge {
           let newDegrees = (currentDegrees + btn.degrees) % 360;
 
           // Update the slider
-          const slider = this.uiContainer.querySelector(`#rotation-${btn.axis}`);
+          const slider = this.drawer.querySelector(`#rotation-${btn.axis}`);
           if (slider) {
             slider.value = newDegrees;
 
@@ -630,7 +630,7 @@ class ShapeForge {
     ];
 
     positionQuickButtons.forEach(btn => {
-      const button = this.uiContainer.querySelector(`#${btn.id}`);
+      const button = this.drawer.querySelector(`#${btn.id}`);
       if (button) {
         button.addEventListener('click', () => {
           if (this.selectedObject === null) return;
@@ -642,7 +642,7 @@ class ShapeForge {
           const newValue = currentValue + btn.value;
 
           // Update the slider
-          const slider = this.uiContainer.querySelector(`#position-${btn.axis}`);
+          const slider = this.drawer.querySelector(`#position-${btn.axis}`);
           if (slider) {
             // Ensure we stay within the slider's range
             slider.value = Math.max(slider.min, Math.min(slider.max, newValue));
@@ -660,7 +660,7 @@ class ShapeForge {
 
     transformControls.forEach(control => {
       axes.forEach(axis => {
-        const slider = this.uiContainer.querySelector(`#${control}-${axis}`);
+        const slider = this.drawer.querySelector(`#${control}-${axis}`);
         if (slider) {
           slider.addEventListener('sl-change', (e) => {
             this.updateTransform(control, axis, e.target.value);
@@ -672,23 +672,23 @@ class ShapeForge {
 
 
 
-    this.uiContainer.querySelector('#import-additional')?.addEventListener('click', this.importAdditional.bind(this));
-    this.uiContainer.querySelector('#clear-all')?.addEventListener('click', this.clearAll.bind(this));
+    this.drawer.querySelector('#import-additional')?.addEventListener('click', this.importAdditional.bind(this));
+    this.drawer.querySelector('#clear-all')?.addEventListener('click', this.clearAll.bind(this));
 
     // Preview controls
-    this.uiContainer.querySelector('#preview-reset-camera')?.addEventListener('click', this.resetCamera.bind(this));
-    this.uiContainer.querySelector('#preview-wireframe')?.addEventListener('click', () => this.setPreviewMode('wireframe'));
-    this.uiContainer.querySelector('#preview-solid')?.addEventListener('click', () => this.setPreviewMode('solid'));
+    this.drawer.querySelector('#preview-reset-camera')?.addEventListener('click', this.resetCamera.bind(this));
+    this.drawer.querySelector('#preview-wireframe')?.addEventListener('click', () => this.setPreviewMode('wireframe'));
+    this.drawer.querySelector('#preview-solid')?.addEventListener('click', () => this.setPreviewMode('solid'));
 
     // History controls
-    this.uiContainer.querySelector('#object-undo')?.addEventListener('click', this.undo.bind(this));
-    this.uiContainer.querySelector('#object-redo')?.addEventListener('click', this.redo.bind(this));
+    this.drawer.querySelector('#object-undo')?.addEventListener('click', this.undo.bind(this));
+    this.drawer.querySelector('#object-redo')?.addEventListener('click', this.redo.bind(this));
 
     // Window resize
     window.addEventListener('resize', this.handleResize);
 
 
-    const scaleContainer = this.uiContainer.querySelector('.transform-group:has(#scale-x)');
+    const scaleContainer = this.drawer.querySelector('.transform-group:has(#scale-x)');
     if (scaleContainer) {
       // Create a new div for our scale percentage controls
       const scalePercentDiv = document.createElement('div');
@@ -707,9 +707,9 @@ class ShapeForge {
       scaleContainer.appendChild(scalePercentDiv);
       
       // Scale percentage controls
-      const scaleInput = this.uiContainer.querySelector('#scale-percentage');
-      const scaleIncreaseBtn = this.uiContainer.querySelector('#scale-increase');
-      const scaleDecreaseBtn = this.uiContainer.querySelector('#scale-decrease');
+      const scaleInput = this.drawer.querySelector('#scale-percentage');
+      const scaleIncreaseBtn = this.drawer.querySelector('#scale-increase');
+      const scaleDecreaseBtn = this.drawer.querySelector('#scale-decrease');
     
       const applyScalePercentage = (percentageStr) => {
         if (this.selectedObject === null) return;
@@ -746,7 +746,7 @@ class ShapeForge {
           newScales[axis] = Math.max(0.1, newScales[axis]);
           
           // Update slider with new value
-          const slider = this.uiContainer.querySelector(`#scale-${axis}`);
+          const slider = this.drawer.querySelector(`#scale-${axis}`);
           if (slider) {
             slider.value = Math.min(slider.max, newScales[axis]);
             this.updateTransform('scale', axis, slider.value);
@@ -795,7 +795,7 @@ class ShapeForge {
       }
     }
 
-    // this.uiContainer.querySelector('#importDXF')?.addEventListener('click', () => this.importDXF());
+    this.drawer.querySelector('#importDXF')?.addEventListener('click', () => this.importDXF());
 
   }
 
@@ -968,7 +968,7 @@ class ShapeForge {
       const sliderContainer = document.createElement('div');
       sliderContainer.style.cssText = `
     position: absolute;
-    bottom: 60px;
+    bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
     width: 200px;
@@ -1503,7 +1503,7 @@ class ShapeForge {
   updatePropertyPanels(object) {
     if (!object) {
       // No selection, clear properties
-      const propertiesContainer = this.uiContainer.querySelector('#properties-container');
+      const propertiesContainer = this.drawer.querySelector('#properties-container');
       if (propertiesContainer) {
         propertiesContainer.innerHTML = `
           <div class="no-selection-message">
@@ -1515,7 +1515,7 @@ class ShapeForge {
     }
 
     // Create properties UI based on object type
-    const propertiesContainer = this.uiContainer.querySelector('#properties-container');
+    const propertiesContainer = this.drawer.querySelector('#properties-container');
     if (!propertiesContainer) return;
 
     // Clear existing properties
@@ -1721,9 +1721,9 @@ class ShapeForge {
     this.updateMaterialUI(object);
 
     // Update physics properties if they exist
-const isRegularWallCheckbox = this.uiContainer.querySelector('#is-regular-wall');
-const isRaisedBlockCheckbox = this.uiContainer.querySelector('#is-raised-block');
-const blockHeightSlider = this.uiContainer.querySelector('#block-height');
+const isRegularWallCheckbox = this.drawer.querySelector('#is-regular-wall');
+const isRaisedBlockCheckbox = this.drawer.querySelector('#is-raised-block');
+const blockHeightSlider = this.drawer.querySelector('#block-height');
 
 if (isRegularWallCheckbox && isRaisedBlockCheckbox && blockHeightSlider) {
   // Initialize or retrieve physics properties
@@ -2032,7 +2032,7 @@ if (isRegularWallCheckbox && isRaisedBlockCheckbox && blockHeightSlider) {
    */
   updateMaterialUI(object) {
     // Update material type selector
-    const materialType = this.uiContainer.querySelector('#material-type');
+    const materialType = this.drawer.querySelector('#material-type');
     if (materialType) {
       let type = 'standard';
       if (object.material instanceof THREE.MeshBasicMaterial) {
@@ -2046,32 +2046,32 @@ if (isRegularWallCheckbox && isRaisedBlockCheckbox && blockHeightSlider) {
     }
 
     // Update color picker
-    const colorPicker = this.uiContainer.querySelector('#material-color');
+    const colorPicker = this.drawer.querySelector('#material-color');
     if (colorPicker && object.material.color) {
       colorPicker.value = '#' + object.material.color.getHexString();
     }
 
     // Update wireframe checkbox
-    const wireframeCheckbox = this.uiContainer.querySelector('#material-wireframe');
+    const wireframeCheckbox = this.drawer.querySelector('#material-wireframe');
     if (wireframeCheckbox) {
       wireframeCheckbox.checked = object.material.wireframe || false;
     }
 
     // Update opacity slider
-    const opacitySlider = this.uiContainer.querySelector('#material-opacity');
+    const opacitySlider = this.drawer.querySelector('#material-opacity');
     if (opacitySlider) {
       opacitySlider.value = object.material.opacity !== undefined ? object.material.opacity : 1;
     }
 
     // Update metalness slider (for standard material)
-    const metalnessSlider = this.uiContainer.querySelector('#material-metalness');
+    const metalnessSlider = this.drawer.querySelector('#material-metalness');
     if (metalnessSlider) {
       metalnessSlider.value = object.material.metalness !== undefined ? object.material.metalness : 0;
       metalnessSlider.disabled = !(object.material instanceof THREE.MeshStandardMaterial);
     }
 
     // Update roughness slider (for standard material)
-    const roughnessSlider = this.uiContainer.querySelector('#material-roughness');
+    const roughnessSlider = this.drawer.querySelector('#material-roughness');
     if (roughnessSlider) {
       roughnessSlider.value = object.material.roughness !== undefined ? object.material.roughness : 0.5;
       roughnessSlider.disabled = !(object.material instanceof THREE.MeshStandardMaterial);
@@ -2089,19 +2089,19 @@ if (isRegularWallCheckbox && isRaisedBlockCheckbox && blockHeightSlider) {
     // Update position sliders
     const axes = ['x', 'y', 'z'];
     axes.forEach(axis => {
-      const positionSlider = this.uiContainer.querySelector(`#position-${axis}`);
+      const positionSlider = this.drawer.querySelector(`#position-${axis}`);
       if (positionSlider) {
         positionSlider.value = object.position[axis];
       }
 
-      const rotationSlider = this.uiContainer.querySelector(`#rotation-${axis}`);
+      const rotationSlider = this.drawer.querySelector(`#rotation-${axis}`);
       if (rotationSlider) {
         // Convert radians to degrees
         const degrees = (object.rotation[axis] * 180) / Math.PI;
         rotationSlider.value = degrees;
       }
 
-      const scaleSlider = this.uiContainer.querySelector(`#scale-${axis}`);
+      const scaleSlider = this.drawer.querySelector(`#scale-${axis}`);
       if (scaleSlider) {
         scaleSlider.value = object.scale[axis];
       }
@@ -2725,8 +2725,8 @@ case 'multiDistribute':
    * Update history button states
    */
   updateHistoryButtons() {
-    const undoButton = this.uiContainer.querySelector('#object-undo');
-    const redoButton = this.uiContainer.querySelector('#object-redo');
+    const undoButton = this.drawer.querySelector('#object-undo');
+    const redoButton = this.drawer.querySelector('#object-redo');
 
     if (undoButton) {
       undoButton.disabled = this.historyIndex < 0;
@@ -2831,7 +2831,7 @@ case 'multiDistribute':
 
     // Update UI if this is the selected object
     if (this.selectedObject === index) {
-      const colorPicker = this.uiContainer.querySelector('#material-color');
+      const colorPicker = this.drawer.querySelector('#material-color');
       if (colorPicker) {
         colorPicker.value = '#' + object.material.color.getHexString();
       }
@@ -2859,7 +2859,7 @@ case 'multiDistribute':
 
     // Update UI if this is the selected object
     if (this.selectedObject === index) {
-      const control = this.uiContainer.querySelector(`#material-${property}`);
+      const control = this.drawer.querySelector(`#material-${property}`);
       if (control) {
         if (control.type === 'checkbox') {
           control.checked = value;
@@ -2898,7 +2898,7 @@ case 'multiDistribute':
 
     // Update UI if this is the selected object
     if (this.selectedObject === index) {
-      const slider = this.uiContainer.querySelector(`#${transformType}-${axis}`);
+      const slider = this.drawer.querySelector(`#${transformType}-${axis}`);
       if (slider) {
         if (transformType === 'rotation') {
           // Convert back to degrees for the UI
@@ -2929,7 +2929,7 @@ case 'multiDistribute':
 
     // Update UI if this is the selected object
     if (this.selectedObject === index) {
-      const slider = this.uiContainer.querySelector(`#property-${parameter}`);
+      const slider = this.drawer.querySelector(`#property-${parameter}`);
       if (slider) {
         slider.value = value;
       }
@@ -2951,7 +2951,7 @@ case 'multiDistribute':
 
     // Update UI if this is the selected object
     if (this.selectedObject === index) {
-      const nameInput = this.uiContainer.querySelector('#object-name');
+      const nameInput = this.drawer.querySelector('#object-name');
       if (nameInput) {
         nameInput.value = name;
       }
@@ -3256,7 +3256,7 @@ case 'multiDistribute':
     this.historyIndex = -1;
 
     // Reset project name
-    const projectNameInput = this.uiContainer.querySelector('#project-name');
+    const projectNameInput = this.drawer.querySelector('#project-name');
     if (projectNameInput) {
       projectNameInput.value = 'Untitled Project';
     }
@@ -3274,7 +3274,7 @@ case 'multiDistribute':
    */
   saveProject() {
 
-    const projectNameInput = this.uiContainer.querySelector('#project-name');
+    const projectNameInput = this.drawer.querySelector('#project-name');
     const projectName = (projectNameInput?.value || 'Untitled Project').trim();
 
     // Create file name dialog
@@ -3450,7 +3450,7 @@ case 'multiDistribute':
 
   createProjectData() {
     // Get project name
-    const projectNameInput = this.uiContainer.querySelector('#project-name');
+    const projectNameInput = this.drawer.querySelector('#project-name');
     const projectName = (projectNameInput?.value || 'Untitled Project').trim();
 
     // Create thumbnail
@@ -4083,7 +4083,7 @@ if (obj.physics) {
     }
 
     // Get project name
-    const projectNameInput = this.uiContainer.querySelector('#project-name');
+    const projectNameInput = this.drawer.querySelector('#project-name');
     const projectName = (projectNameInput?.value || 'Untitled Project').trim();
 
     // Create dialog for saving
@@ -4795,8 +4795,8 @@ if (obj.physics) {
     }
 
     // Remove from DOM
-    if (this.uiContainer && this.uiContainer.parentNode) {
-      this.uiContainer.parentNode.removeChild(this.uiContainer);
+    if (this.drawer && this.drawer.parentNode) {
+      this.drawer.parentNode.removeChild(this.drawer);
     }
 
     // Clear references
@@ -4805,10 +4805,9 @@ if (obj.physics) {
     this.previewScene = null;
     this.previewCamera = null;
     this.previewRenderer = null;
-    this.uiContainer = null;
     this.previewControls = null;
     this.previewContainer = null;
-    this.uiContainer = null;
+    this.drawer = null;
 
     console.log("ShapeForge resources disposed");
   }
@@ -5228,7 +5227,7 @@ initializeNewFeatures() {
     console.log('✓ Alignment tools initialized');
     
     // Connect "Import DXF" button
-    const importDXFBtn = this.uiContainer.querySelector('#importDXF');
+    const importDXFBtn = this.drawer.querySelector('#importDXF');
     if (importDXFBtn) {
       importDXFBtn.addEventListener('click', () => this.importDXF());
       console.log('✓ Import DXF button connected');
@@ -5236,7 +5235,7 @@ initializeNewFeatures() {
       console.warn('Import DXF button not found, looking for alternative...');
       
       // Try to find by other means
-      const allButtons = this.uiContainer.querySelectorAll('sl-button');
+      const allButtons = this.drawer.querySelectorAll('sl-button');
       for (const btn of allButtons) {
         if (btn.textContent.includes('DXF')) {
           btn.addEventListener('click', () => this.importDXF());
@@ -5671,7 +5670,7 @@ getObjectSize(object) {
 
 ShapeForge.prototype.addPhysicsPanel = function() {
   // Find the parent container to add the physics panel to
-  const propertyPanelSection = this.uiContainer.querySelector('.panel-section:has(#properties-container)');
+  const propertyPanelSection = this.drawer.querySelector('.panel-section:has(#properties-container)');
   
   if (!propertyPanelSection) {
     console.warn("Could not find properties panel to add physics panel after");
@@ -5709,7 +5708,7 @@ ShapeForge.prototype.addPhysicsPanel = function() {
   propertyPanelSection.after(physicsPanel);
   
   // Set up event listeners for the physics controls
-  const isRegularWallCheckbox = this.uiContainer.querySelector('#is-regular-wall');
+  const isRegularWallCheckbox = this.drawer.querySelector('#is-regular-wall');
   if (isRegularWallCheckbox) {
     isRegularWallCheckbox.addEventListener('sl-change', (e) => {
       if (this.selectedObject !== null) {
@@ -5727,8 +5726,8 @@ ShapeForge.prototype.addPhysicsPanel = function() {
     });
   }
 
-  const isRaisedBlockCheckbox = this.uiContainer.querySelector('#is-raised-block');
-  const blockHeightSlider = this.uiContainer.querySelector('#block-height');
+  const isRaisedBlockCheckbox = this.drawer.querySelector('#is-raised-block');
+  const blockHeightSlider = this.drawer.querySelector('#block-height');
 
   if (isRaisedBlockCheckbox && blockHeightSlider) {
     isRaisedBlockCheckbox.addEventListener('sl-change', (e) => {
@@ -6274,7 +6273,7 @@ ShapeForge.prototype.showRenameDialog = function (obj, index) {
 
       // Update name in properties panel if this object is selected
       if (this.selectedObject === index) {
-        const nameInput = this.uiContainer.querySelector('#object-name');
+        const nameInput = this.drawer.querySelector('#object-name');
         if (nameInput) {
           nameInput.value = newName;
         }
@@ -6424,7 +6423,7 @@ ShapeForge.prototype.initializeShaderEffects = function () {
   }
 
   // Find effects container
-  const effectsContainer = this.uiContainer.querySelector('#effects-container');
+  const effectsContainer = this.drawer.querySelector('#effects-container');
   if (!effectsContainer) {
     console.warn('Effects container not found in UI');
     return;
@@ -7406,7 +7405,7 @@ ShapeForge.prototype.enableMultiSelect = function () {
   this.updateObjectsList();
 
   // Update button text
-  const multiSelectBtn = this.uiContainer.querySelector('#enable-multi-select');
+  const multiSelectBtn = this.drawer.querySelector('#enable-multi-select');
   if (multiSelectBtn) {
     multiSelectBtn.textContent = 'Exit Multi-Select';
   }
@@ -7443,7 +7442,7 @@ ShapeForge.prototype.disableMultiSelect = function () {
   this.updateObjectsList();
 
   // Update button text
-  const multiSelectBtn = this.uiContainer.querySelector('#enable-multi-select');
+  const multiSelectBtn = this.drawer.querySelector('#enable-multi-select');
   if (multiSelectBtn) {
     multiSelectBtn.textContent = 'Multi-Select';
   }
@@ -7538,7 +7537,7 @@ ShapeForge.prototype.initializeNewFeatures = async function () {
  * Add merge tools to the UI
  */
 ShapeForge.prototype.addMergeTools = function () {
-  const toolPanel = this.uiContainer.querySelector('.tool-panel');
+  const toolPanel = this.drawer.querySelector('.tool-panel');
   if (!toolPanel) {
     console.warn('Tool panel not found, cannot add merge tools');
     return;
@@ -7692,7 +7691,7 @@ ShapeForge.prototype.initializeShaderEffects = async function () {
     await this.setupShaderEffectsManager();
 
     // Find effects container
-    const effectsContainer = this.uiContainer.querySelector('#effects-container');
+    const effectsContainer = this.drawer.querySelector('#effects-container');
     if (!effectsContainer) {
       console.warn('Effects container not found in UI');
       return;
@@ -7742,7 +7741,7 @@ ShapeForge.prototype.initializeShaderEffects = async function () {
  * Refresh the list of available shader effects
  */
 ShapeForge.prototype.refreshEffectsList = function () {
-  const effectTypeSelect = this.uiContainer.querySelector('#effect-type');
+  const effectTypeSelect = this.drawer.querySelector('#effect-type');
   if (!effectTypeSelect) return;
 
   // Clear existing options
@@ -8318,7 +8317,7 @@ ShapeForge.prototype.loadProjectFromJson = function (jsonData) {
   this.newProject();
 
   // Set project name
-  const projectNameInput = this.uiContainer.querySelector('#project-name');
+  const projectNameInput = this.drawer.querySelector('#project-name');
   if (projectNameInput && jsonData.name) {
     projectNameInput.value = jsonData.name;
   }
@@ -8427,7 +8426,7 @@ ShapeForge.prototype.loadProjectFromJson = function (jsonData) {
  */
 ShapeForge.prototype.addImportExportButtons = function () {
   // Find the project controls section
-  const projectButtons = this.uiContainer.querySelector('#project-name')?.closest('.panel-section');
+  const projectButtons = this.drawer.querySelector('#project-name')?.closest('.panel-section');
   if (!projectButtons) return;
 
   // Get the buttons container
