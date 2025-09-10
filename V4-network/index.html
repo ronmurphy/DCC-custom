@@ -3295,6 +3295,45 @@
             }
         }
 
+        // Themes Constellation Functions
+        function openThemesModule() {
+            // Hide Feral Gateway and show themes constellation
+            const feralGateway = document.getElementById('feralGatewayFab');
+            const themesConstellation = document.getElementById('themesConstellation');
+            
+            feralGateway.classList.remove('expanded');
+            themesConstellation.classList.add('active');
+            
+            // Add haptic feedback if available
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
+        }
+
+        function closeThemesConstellation() {
+            const themesConstellation = document.getElementById('themesConstellation');
+            const feralGateway = document.getElementById('feralGatewayFab');
+            
+            themesConstellation.classList.remove('active');
+            // Return to Feral Gateway
+            setTimeout(() => {
+                feralGateway.classList.add('expanded');
+            }, 300);
+        }
+
+        function selectTheme(themeName) {
+            closeThemesConstellation();
+            // Use existing setAccentTheme function
+            setAccentTheme(themeName);
+            
+            // Add haptic feedback
+            if (navigator.vibrate) {
+                navigator.vibrate(100);
+            }
+            
+            console.log(`Theme changed to: ${themeName}`);
+        }
+
         // ========================================
 
         // Initialize FAB touch events when DOM is ready
@@ -5578,6 +5617,10 @@
             <div class="feral-option" onclick="openMiniGamesModule()" title="Mini-Games">
                 <i class="las la-gamepad"></i>
             </div>
+            <!-- Themes & Colors -->
+            <div class="feral-option" onclick="openThemesModule()" title="Themes & Colors">
+                <i class="las la-palette"></i>
+            </div>
         </div>
     </div>
 
@@ -5602,6 +5645,34 @@
             <div class="game-star future-game-2" title="🎯 Coming Soon - New challenges ahead!">
                 🎯
             </div>
+        </div>
+    </div>
+
+    <!-- Themes Constellation Overlay -->
+    <div class="themes-constellation" id="themesConstellation">
+        <div class="themes-map">
+            <div class="themes-header">🎨 Color Realms 🎨</div>
+            <button class="themes-close" onclick="closeThemesConstellation()">✕</button>
+            
+            <!-- Basic Themes -->
+            <div class="theme-square theme-default" onclick="selectTheme('default')" title="Default Purple"></div>
+            <div class="theme-square theme-red" onclick="selectTheme('red')" title="Red"></div>
+            <div class="theme-square theme-orange" onclick="selectTheme('orange')" title="Orange"></div>
+            <div class="theme-square theme-yellow" onclick="selectTheme('yellow')" title="Yellow"></div>
+            <div class="theme-square theme-green" onclick="selectTheme('green')" title="Green"></div>
+            <div class="theme-square theme-blue" onclick="selectTheme('blue')" title="Blue"></div>
+            <div class="theme-square theme-indigo" onclick="selectTheme('indigo')" title="Indigo"></div>
+            
+            <!-- Cool Themes -->
+            <div class="theme-square theme-violet" onclick="selectTheme('violet')" title="Violet"></div>
+            
+            <!-- Special Themes -->
+            <div class="theme-square theme-christmas" onclick="selectTheme('christmas')" title="Christmas"></div>
+            <div class="theme-square theme-halloween" onclick="selectTheme('halloween')" title="Halloween"></div>
+            <div class="theme-square theme-valentine" onclick="selectTheme('valentine')" title="Valentine's Day"></div>
+            <div class="theme-square theme-ocean" onclick="selectTheme('ocean')" title="Ocean"></div>
+            <div class="theme-square theme-forest" onclick="selectTheme('forest')" title="Forest"></div>
+            <div class="theme-square theme-sunset" onclick="selectTheme('sunset')" title="Sunset"></div>
         </div>
     </div>
 

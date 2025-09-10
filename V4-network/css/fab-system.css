@@ -91,7 +91,7 @@
     bottom: 90px;
     right: -10px;
     width: 120px;
-    height: 400px; /* Increased for 8 options */
+    height: 450px; /* Increased for 9 options */
     pointer-events: none;
 }
 
@@ -376,5 +376,161 @@
         width: 75px;
         height: 75px;
         font-size: 28px;
+    }
+}
+
+/* Themes Constellation - separate from games constellation */
+.themes-constellation {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: radial-gradient(ellipse at center, rgba(15, 15, 35, 0.95), rgba(10, 10, 25, 0.98));
+    backdrop-filter: blur(10px);
+    z-index: 2000;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.themes-constellation.active {
+    display: flex;
+    opacity: 1;
+}
+
+.themes-map {
+    position: relative;
+    width: 95%;
+    max-width: 600px;
+    height: 80%;
+    max-height: 500px;
+    margin: auto;
+    background: radial-gradient(ellipse at center, rgba(26, 26, 62, 0.95), rgba(15, 15, 35, 0.98));
+    border-radius: 20px;
+    border: 2px solid #4a69bd;
+    backdrop-filter: blur(15px);
+    overflow: hidden;
+    transform: scale(0.8);
+    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.themes-constellation.active .themes-map {
+    transform: scale(1);
+}
+
+.themes-header {
+    text-align: center;
+    padding: 20px;
+    font-size: 1.5rem;
+    color: #ffd700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.themes-close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background: none;
+    border: none;
+    color: #ffd700;
+    font-size: 1.5rem;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+
+.themes-close:hover {
+    opacity: 1;
+}
+
+.theme-square {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.4s ease;
+    border: 2px solid rgba(255,255,255,0.3);
+    backdrop-filter: blur(5px);
+    z-index: 5;
+}
+
+.theme-square::before {
+    content: '';
+    position: absolute;
+    inset: -10px;
+    border-radius: 12px;
+    background: radial-gradient(circle, transparent 60%, rgba(255,255,255,0.1));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    animation: themeShimmer 3s ease-in-out infinite;
+}
+
+@keyframes themeShimmer {
+    0%, 100% { opacity: 0.2; transform: scale(0.9); }
+    50% { opacity: 0.6; transform: scale(1.05); }
+}
+
+.theme-square:hover::before {
+    opacity: 1;
+    animation: themePulse 1s ease-in-out infinite;
+}
+
+@keyframes themePulse {
+    0%, 100% { transform: scale(0.9); opacity: 0.5; }
+    50% { transform: scale(1.15); opacity: 1; }
+}
+
+.theme-square:hover {
+    transform: scale(1.15);
+    border-color: rgba(255, 215, 0, 0.8);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+}
+
+/* Theme square positioning - constellation layout */
+/* Basic Themes - Top row */
+.theme-square.theme-default { top: 25%; left: 10%; background: linear-gradient(135deg, #8e44ad, #9b59b6); }
+.theme-square.theme-red { top: 25%; left: 22%; background: linear-gradient(135deg, #e74c3c, #c0392b); }
+.theme-square.theme-orange { top: 25%; left: 34%; background: linear-gradient(135deg, #f39c12, #d68910); }
+.theme-square.theme-yellow { top: 25%; left: 46%; background: linear-gradient(135deg, #f1c40f, #d4ac0d); }
+.theme-square.theme-green { top: 25%; left: 58%; background: linear-gradient(135deg, #27ae60, #229954); }
+.theme-square.theme-blue { top: 25%; left: 70%; background: linear-gradient(135deg, #3498db, #2980b9); }
+.theme-square.theme-indigo { top: 25%; right: 10%; background: linear-gradient(135deg, #6c5ce7, #5f3dc4); }
+
+/* Cool Themes - Second row */
+.theme-square.theme-violet { top: 45%; left: 15%; background: linear-gradient(135deg, #9c88ff, #8c7ae6); }
+
+/* Special Themes - Bottom constellation */
+.theme-square.theme-christmas { top: 65%; left: 15%; background: linear-gradient(135deg, #c0392b, #27ae60); }
+.theme-square.theme-halloween { top: 65%; left: 30%; background: linear-gradient(135deg, #ff6b35, #2c2c54); }
+.theme-square.theme-valentine { top: 65%; left: 45%; background: linear-gradient(135deg, #fd79a8, #e84393); }
+.theme-square.theme-ocean { top: 65%; left: 60%; background: linear-gradient(135deg, #00b894, #0984e3); }
+.theme-square.theme-forest { top: 65%; right: 25%; background: linear-gradient(135deg, #00b894, #6c5ce7); }
+.theme-square.theme-sunset { top: 65%; right: 10%; background: linear-gradient(135deg, #fd79a8, #fdcb6e); }
+
+/* Mobile optimizations for themes constellation */
+@media (max-width: 480px) {
+    .themes-map {
+        width: 98%;
+        height: 85%;
+    }
+    
+    .themes-header {
+        font-size: 1.3rem;
+        padding: 15px;
+    }
+    
+    .theme-square {
+        width: 45px;
+        height: 45px;
+    }
+}
+
+@media (max-width: 360px) {
+    .theme-square {
+        width: 40px;
+        height: 40px;
     }
 }
