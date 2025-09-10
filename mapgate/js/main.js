@@ -36,35 +36,19 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function setupEventListeners() {
-    // ShapeForge button
-    const shapeForgeBtn = document.getElementById('shapeForgeBtn');
-    if (shapeForgeBtn) {
-        shapeForgeBtn.addEventListener('click', openShapeForge);
-    }
+    // Load Object button (exists in multiple places)
+    const loadObjectBtns = document.querySelectorAll('#loadObjectBtn');
+    loadObjectBtns.forEach(btn => {
+        if (btn) btn.addEventListener('click', loadObject);
+    });
 
-    // 3D Viewer button
-    const view3DBtn = document.getElementById('view3DBtn');
-    if (view3DBtn) {
-        view3DBtn.addEventListener('click', open3DViewer);
-    }
-
-    // Sample Objects button
-    const sampleObjectsBtn = document.getElementById('sampleObjectsBtn');
-    if (sampleObjectsBtn) {
-        sampleObjectsBtn.addEventListener('click', showSampleObjects);
-    }
-
-    // Load Object button
-    const loadObjectBtn = document.getElementById('loadObjectBtn');
-    if (loadObjectBtn) {
-        loadObjectBtn.addEventListener('click', loadObject);
-    }
-
-    // Save Object button
-    const saveObjectBtn = document.getElementById('saveObjectBtn');
-    if (saveObjectBtn) {
-        saveObjectBtn.addEventListener('click', saveObject);
-    }
+    // Save Object button (exists in multiple places)
+    const saveObjectBtns = document.querySelectorAll('#saveObjectBtn');
+    saveObjectBtns.forEach(btn => {
+        if (btn) btn.addEventListener('click', saveObject);
+    });
+    
+    console.log("🔗 Event listeners set up for tabbed interface");
 }
 
 // Open ShapeForge editor
@@ -84,6 +68,77 @@ function openShapeForge() {
     } catch (error) {
         console.error("❌ Failed to open ShapeForge:", error);
         alert("Failed to open ShapeForge. Check console for details.");
+    }
+}
+
+function initializeShapeForgeWorkspace() {
+    console.log("🎨 Initializing ShapeForge workspace...");
+    
+    try {
+        const welcomeDiv = document.getElementById('shapeforge-welcome');
+        const editorDiv = document.getElementById('shapeforge-editor');
+        
+        if (!welcomeDiv || !editorDiv) {
+            console.error("❌ ShapeForge workspace containers not found!");
+            return;
+        }
+        
+        // Hide welcome, show editor
+        welcomeDiv.style.display = 'none';
+        editorDiv.style.display = 'block';
+        
+        if (!shapeForge) {
+            // Initialize ShapeForge
+            shapeForge = new ShapeForge(resourceManager, shaderEffectsManager);
+            window.shapeForge = shapeForge;
+        }
+        
+        // Show ShapeForge in drawer first to initialize it
+        shapeForge.show();
+        
+        // Wait for the drawer to be created and fully initialized, then move its content
+        setTimeout(() => {
+            if (shapeForge.drawer) {
+                // Get the main content from the drawer
+                const drawerContent = shapeForge.drawer.querySelector('#shape-forge-container');
+                if (drawerContent) {
+                    // Move the content to our workspace
+                    editorDiv.appendChild(drawerContent);
+                    
+                    // Update all ShapeForge element references to work in the new location
+                    shapeForge.previewContainer = editorDiv.querySelector('#preview-container');
+                    shapeForge.objectsListContainer = editorDiv.querySelector('#objects-list-container');
+                    
+                    // Update drawer reference to point to our workspace for compatibility
+                    const originalDrawer = shapeForge.drawer;
+                    shapeForge.drawer = {
+                        ...originalDrawer,
+                        querySelector: (selector) => editorDiv.querySelector(selector),
+                        querySelectorAll: (selector) => editorDiv.querySelectorAll(selector)
+                    };
+                    
+                    // Re-initialize the preview if it exists
+                    if (shapeForge.previewContainer) {
+                        console.log("🎬 Re-initializing preview in workspace...");
+                        shapeForge.initializePreview();
+                    }
+                    
+                    // Hide and remove the original drawer
+                    originalDrawer.hide();
+                    setTimeout(() => originalDrawer.remove(), 100);
+                    
+                    console.log("✅ ShapeForge moved to workspace successfully");
+                } else {
+                    console.error("❌ Could not find ShapeForge content in drawer");
+                }
+            } else {
+                console.error("❌ ShapeForge drawer not created");
+            }
+        }, 500); // Increased timeout to ensure full initialization
+        
+    } catch (error) {
+        console.error("❌ Failed to initialize ShapeForge workspace:", error);
+        alert("Failed to initialize ShapeForge. Check console for details.");
     }
 }
 
@@ -175,16 +230,16 @@ async function open3DViewer() {
         }
         
         // Show the 3D viewer
-        const welcomeScreen = document.getElementById('welcomeScreen');
+        const viewerWelcome = document.getElementById('viewerWelcome');
         const viewer3d = document.getElementById('viewer3d');
         
-        if (!welcomeScreen || !viewer3d) {
+        if (!viewerWelcome || !viewer3d) {
             console.error("❌ UI elements not found!");
             return;
         }
         
         console.log("🎭 Switching to 3D viewer interface...");
-        welcomeScreen.classList.add('hidden');
+        viewerWelcome.style.display = 'none';
         viewer3d.style.display = 'block';
         viewer3d.classList.add('active');
         
@@ -250,26 +305,33 @@ function exit3DViewer() {
         scene3DController.cleanup();
     }
     
-    // Hide the 3D viewer and show welcome screen
-    const welcomeScreen = document.getElementById('welcomeScreen');
+    // Hide the 3D viewer and show viewer welcome screen
+    const viewerWelcome = document.getElementById('viewerWelcome');
     const viewer3d = document.getElementById('viewer3d');
     
     viewer3d.style.display = 'none';
     viewer3d.classList.remove('active');
-    welcomeScreen.classList.remove('hidden');
+    if (viewerWelcome) {
+        viewerWelcome.style.display = 'flex';
+    }
 }
 
 // Show sample objects browser
 function showSampleObjects() {
     console.log("📦 Showing sample objects...");
     
+    // Clean up any existing sample browser dialogs
+    const existingDialogs = document.querySelectorAll('sl-dialog[label="Sample Objects"]');
+    existingDialogs.forEach(dialog => dialog.remove());
+    
     // Create a dialog to show sample objects
     const dialog = document.createElement('sl-dialog');
     dialog.label = 'Sample Objects';
-    dialog.style.setProperty('--width', '800px');
+    dialog.style.setProperty('--width', '900px');
+    dialog.style.setProperty('--height', '70vh');
     
     dialog.innerHTML = `
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; max-height: 60vh; overflow-y: auto;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; max-height: 55vh; overflow-y: auto; padding: 8px;">
             <!-- Sample objects will be loaded here -->
             <div id="sampleObjectsList">Loading sample objects...</div>
         </div>
@@ -330,27 +392,36 @@ async function loadSampleObjectsList() {
                 displayName = filename.replace('.shapeforge.json', '');
             }
             
-            // Create object card
+            // Create object card with improved design
             const card = document.createElement('div');
             card.style.cssText = `
-                border: 1px solid #ddd;
-                border-radius: 8px;
-                padding: 12px;
+                border: 1px solid #e1e5e9;
+                border-radius: 12px;
+                padding: 8px;
                 cursor: pointer;
-                transition: all 0.2s ease;
-                background: white;
+                transition: all 0.3s ease;
+                background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                overflow: hidden;
+                position: relative;
             `;
             
+            // Add effect indicator if object has effects
+            const hasEffects = objectData.objects && objectData.objects.some(obj => obj.effect);
+            const effectsBadge = hasEffects ? 
+                `<div style="position: absolute; top: 4px; right: 4px; background: #ff6b35; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: bold;">FX</div>` : '';
+            
             card.innerHTML = `
+                ${effectsBadge}
                 <div style="text-align: center;">
                     ${objectData.thumbnail ? 
-                        `<img src="${objectData.thumbnail}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 4px; margin-bottom: 8px;" />` :
-                        `<div style="width: 100%; height: 120px; background: #f0f0f0; border-radius: 4px; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; color: #666;">
-                            <span class="material-icons" style="font-size: 48px;">3d_rotation</span>
+                        `<img src="${objectData.thumbnail}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 8px; margin-bottom: 6px;" />` :
+                        `<div style="width: 100%; height: 100px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; margin-bottom: 6px; display: flex; align-items: center; justify-content: center; color: white;">
+                            <span class="material-icons" style="font-size: 36px;">3d_rotation</span>
                         </div>`
                     }
-                    <div style="font-weight: bold; margin-bottom: 4px;">${displayName}</div>
-                    <div style="font-size: 12px; color: #666;">Click to load</div>
+                    <div style="font-weight: 600; margin-bottom: 2px; font-size: 13px; color: #2c3e50; line-height: 1.2;">${displayName}</div>
+                    <div style="font-size: 11px; color: #7f8c8d; opacity: 0.8;">Click to view</div>
                 </div>
             `;
             
@@ -360,13 +431,15 @@ async function loadSampleObjectsList() {
             });
             
             card.addEventListener('mouseover', () => {
-                card.style.transform = 'translateY(-2px)';
-                card.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+                card.style.transform = 'translateY(-4px) scale(1.02)';
+                card.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
+                card.style.borderColor = '#667eea';
             });
             
             card.addEventListener('mouseout', () => {
-                card.style.transform = 'translateY(0)';
-                card.style.boxShadow = 'none';
+                card.style.transform = 'translateY(0) scale(1)';
+                card.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                card.style.borderColor = '#e1e5e9';
             });
             
             if (loadedCount === 0) {
