@@ -647,6 +647,7 @@
             initGame() {
                 this.gameStarted = false;
                 this.gameRunning = false;
+                this.mouseDown = false; // For auto-fire tracking
                 
                 // Player properties
                 this.player = {
@@ -671,9 +672,9 @@
                 this.projectiles = [];
                 this.enemies = [];
                 
-                // Room progression
+                // Room progression - reduced energy for 5-room themes
                 this.currentRoom = 1;
-                this.energyRequired = 100; // Energy needed to advance to next room
+                this.energyRequired = 60; // Reduced from 100 for faster progression
                 this.totalEnergy = 0; // Total energy collected
                 
                 // Rush ability
@@ -694,10 +695,12 @@
                     energyMultiplier: { active: false, timer: 0 },
                     crossbowUpgrade: { active: false, timer: 0 },
                     crossbowBurst: { active: false, timer: 0 },
-                    massShield: { active: false, timer: 0 }
+                    massShield: { active: false, timer: 0 },
+                    tripleShot: { active: false, timer: 0 },
+                    autoFire: { active: false, timer: 0, lastFire: 0 }
                 };
                 
-                // Floor themes
+                // Floor themes - 5 rooms per theme with boss on room 5
                 this.currentTheme = 'stone';
                 this.floorThemes = {
                     stone: {
@@ -706,7 +709,8 @@
                         floorColor: '#34495e',
                         wallColor: '#1e2a36',
                         particleColor: '#7f8c8d',
-                        rooms: [1, 2, 3]
+                        rooms: [1, 2, 3, 4, 5],
+                        bossRoom: 5
                     },
                     lava: {
                         name: 'Lava Caves',
@@ -715,7 +719,8 @@
                         wallColor: '#922b21',
                         particleColor: '#f39c12',
                         glowColor: '#e74c3c',
-                        rooms: [4, 5, 6]
+                        rooms: [6, 7, 8, 9, 10],
+                        bossRoom: 10
                     },
                     ice: {
                         name: 'Ice Caverns',
@@ -724,7 +729,8 @@
                         wallColor: '#2e86ab',
                         particleColor: '#85c1e9',
                         glowColor: '#aed6f1',
-                        rooms: [7, 8, 9]
+                        rooms: [11, 12, 13, 14, 15],
+                        bossRoom: 15
                     },
                     crystal: {
                         name: 'Crystal Chambers',
@@ -733,7 +739,8 @@
                         wallColor: '#6a1b9a',
                         particleColor: '#ba68c8',
                         glowColor: '#e1bee7',
-                        rooms: [10, 11, 12]
+                        rooms: [16, 17, 18, 19, 20],
+                        bossRoom: 20
                     },
                     void: {
                         name: 'Void Realm',
@@ -742,7 +749,8 @@
                         wallColor: '#1c2833',
                         particleColor: '#8b7bd6',
                         glowColor: '#5d4e75',
-                        rooms: [13, 999] // 13+
+                        rooms: [21, 999], // 21+
+                        bossRoom: 25
                     }
                 };
                 
@@ -802,73 +810,184 @@
 
             generateEnemies() {
                 this.enemies = [];
-                const enemyCount = Math.min(3 + this.currentRoom, 8); // More enemies in higher rooms
+                const baseEnemyCount = Math.min(3 + this.currentRoom, 8); // More enemies in higher rooms
                 
-                for (let i = 0; i < enemyCount; i++) {
-                    let x, y, attempts = 0;
-                    
-                    // Spawn enemies away from player
-                    do {
-                        x = Math.random() * (this.canvas.width - 60) + 30;
-                        y = Math.random() * (this.canvas.height - 60) + 30;
-                        attempts++;
-                    } while (
-                        attempts < 50 && 
-                        Math.sqrt((x - this.player.x) ** 2 + (y - this.player.y) ** 2) < 200
-                    );
-                    
-                    // Different enemy types
-                    const enemyType = Math.random();
-                    let type, color, speed, health, behavior;
-                    
-                    if (enemyType < 0.4) {
-                        // Chaser - direct pursuit
-                        type = 'chaser';
-                        color = '#FF4500'; // Orange-red
-                        speed = 1.5;
-                        health = 2;
-                        behavior = 'chase';
-                    } else if (enemyType < 0.7) {
-                        // Ambusher - tries to flank
-                        type = 'ambusher';
-                        color = '#8B008B'; // Dark magenta
-                        speed = 2;
-                        health = 1;
-                        behavior = 'flank';
-                    } else {
-                        // Guardian - protects crystals, slower but tougher
-                        type = 'guardian';
-                        color = '#2F4F4F'; // Dark slate gray
-                        speed = 1;
-                        health = 4;
-                        behavior = 'guard';
-                    }
-                    
-                    this.enemies.push({
-                        x: x,
-                        y: y,
-                        radius: 12,
-                        type: type,
-                        color: color,
-                        speed: speed,
-                        health: health,
-                        maxHealth: health,
-                        behavior: behavior,
-                        targetX: x,
-                        targetY: y,
-                        angle: 0,
-                        stunned: false,
-                        stunnedTimer: 0,
-                        lastDamageTime: 0
-                    });
+                // Generate base enemies (always present)
+                for (let i = 0; i < baseEnemyCount; i++) {
+                    this.createBaseEnemy();
                 }
+                
+                // Generate theme-specific enemies (1-2 per room)
+                const themeEnemyCount = Math.min(1 + Math.floor(this.currentRoom / 2), 3);
+                for (let i = 0; i < themeEnemyCount; i++) {
+                    this.createThemeEnemy();
+                }
+            }
+
+            createBaseEnemy() {
+                let x, y, attempts = 0;
+                
+                // Spawn enemies away from player
+                do {
+                    x = Math.random() * (this.canvas.width - 60) + 30;
+                    y = Math.random() * (this.canvas.height - 60) + 30;
+                    attempts++;
+                } while (
+                    attempts < 50 && 
+                    Math.sqrt((x - this.player.x) ** 2 + (y - this.player.y) ** 2) < 200
+                );
+                
+                // Different enemy types
+                const enemyType = Math.random();
+                let type, color, speed, health, behavior;
+                
+                if (enemyType < 0.4) {
+                    // Chaser - direct pursuit
+                    type = 'chaser';
+                    color = '#FF4500'; // Orange-red
+                    speed = 1.5;
+                    health = 2;
+                    behavior = 'chase';
+                } else if (enemyType < 0.7) {
+                    // Ambusher - tries to flank
+                    type = 'ambusher';
+                    color = '#8B008B'; // Dark magenta
+                    speed = 2;
+                    health = 1;
+                    behavior = 'flank';
+                } else {
+                    // Guardian - protects crystals, slower but tougher
+                    type = 'guardian';
+                    color = '#2F4F4F'; // Dark slate gray
+                    speed = 1;
+                    health = 4;
+                    behavior = 'guard';
+                }
+                
+                this.enemies.push({
+                    x: x,
+                    y: y,
+                    radius: 12,
+                    color: color,
+                    type: type,
+                    speed: speed,
+                    health: health,
+                    maxHealth: health,
+                    behavior: behavior,
+                    stunned: false,
+                    stunnedTimer: 0,
+                    lastDamageTime: 0,
+                    targetAngle: 0,
+                    circleDistance: 100,
+                    guardTarget: null
+                });
+            }
+
+            createThemeEnemy() {
+                let x, y, attempts = 0;
+                
+                // Spawn theme enemies away from player and other enemies
+                do {
+                    x = Math.random() * (this.canvas.width - 60) + 30;
+                    y = Math.random() * (this.canvas.height - 60) + 30;
+                    attempts++;
+                } while (
+                    attempts < 50 && 
+                    (Math.sqrt((x - this.player.x) ** 2 + (y - this.player.y) ** 2) < 250 ||
+                     this.enemies.some(enemy => Math.sqrt((x - enemy.x) ** 2 + (y - enemy.y) ** 2) < 80))
+                );
+                
+                let type, color, speed, health, behavior, specialAbility;
+                
+                switch (this.currentTheme) {
+                    case 'stone':
+                        // Stone Crusher - slow but creates stone barriers
+                        type = 'stone-crusher';
+                        color = '#696969'; // Dim gray
+                        speed = 0.8;
+                        health = 6;
+                        behavior = 'barrier';
+                        specialAbility = 'stone-barrier';
+                        break;
+                        
+                    case 'lava':
+                        // Magma Striker - leaves burning trails, immune to fire
+                        type = 'magma-striker';
+                        color = '#DC143C'; // Crimson
+                        speed = 1.8;
+                        health = 3;
+                        behavior = 'burning-chase';
+                        specialAbility = 'fire-trail';
+                        break;
+                        
+                    case 'ice':
+                        // Frost Stalker - slows player on contact, creates ice barriers
+                        type = 'frost-stalker';
+                        color = '#87CEEB'; // Sky blue
+                        speed = 1.3;
+                        health = 4;
+                        behavior = 'freeze-touch';
+                        specialAbility = 'ice-slow';
+                        break;
+                        
+                    case 'crystal':
+                        // Prism Guardian - reflects projectiles, short teleports
+                        type = 'prism-guardian';
+                        color = '#DA70D6'; // Orchid
+                        speed = 1.6;
+                        health = 5;
+                        behavior = 'reflect-teleport';
+                        specialAbility = 'projectile-reflect';
+                        break;
+                        
+                    case 'void':
+                        // Shadow Wraith - phases through walls, unpredictable
+                        type = 'shadow-wraith';
+                        color = '#483D8B'; // Dark slate blue
+                        speed = 2.2;
+                        health = 3;
+                        behavior = 'phase-chaos';
+                        specialAbility = 'wall-phase';
+                        break;
+                        
+                    default:
+                        // Fallback to stone crusher
+                        type = 'stone-crusher';
+                        color = '#696969';
+                        speed = 0.8;
+                        health = 6;
+                        behavior = 'barrier';
+                        specialAbility = 'stone-barrier';
+                }
+                
+                this.enemies.push({
+                    x: x,
+                    y: y,
+                    radius: 14, // Slightly larger than base enemies
+                    color: color,
+                    type: type,
+                    speed: speed,
+                    health: health,
+                    maxHealth: health,
+                    behavior: behavior,
+                    specialAbility: specialAbility,
+                    stunned: false,
+                    stunnedTimer: 0,
+                    lastDamageTime: 0,
+                    targetAngle: 0,
+                    circleDistance: 120,
+                    guardTarget: null,
+                    abilityTimer: 0,
+                    lastTrailTime: 0,
+                    teleportCooldown: 0
+                });
             }
 
             generatePowerUps() {
                 this.powerUps = [];
                 const powerUpCount = Math.min(2 + Math.floor(this.currentRoom / 3), 6); // More power-ups in higher rooms
                 
-                // Define power-up types
+                // Define power-up types - Enhanced with crossbow variants
                 const powerUpTypes = [
                     { type: 'electric-shield', color: '#00FFFF', name: 'Electric Shield' },
                     { type: 'fire-trail', color: '#FF4500', name: 'Fire Trail' },
@@ -880,7 +999,9 @@
                     { type: 'time-slow', color: '#FF69B4', name: 'Time Distortion' },
                     { type: 'phase-walk', color: '#F0F8FF', name: 'Phase Walk' },
                     { type: 'energy-multiplier', color: '#FFD700', name: 'Energy Multiplier' },
-                    { type: 'crossbow-burst', color: '#8B0000', name: 'Crossbow Burst' }
+                    { type: 'crossbow-burst', color: '#8B0000', name: 'Crossbow Burst' },
+                    { type: 'triple-shot', color: '#FF6347', name: 'Triple Shot' },
+                    { type: 'auto-fire', color: '#32CD32', name: 'Auto-Fire Crossbow' }
                 ];
                 
                 for (let i = 0; i < powerUpCount; i++) {
@@ -986,13 +1107,21 @@
                     if (!this.gameRunning) return;
                     
                     if (e.button === 0) {
-                        // Left click - shoot
+                        // Left click - shoot or enable auto-fire
+                        this.mouseDown = true;
                         this.shootCrossbow();
                     } else if (e.button === 2) {
                         // Right click - rush
                         if (this.rushCooldown <= 0) {
                             this.performRush();
                         }
+                    }
+                });
+
+                this.canvas.addEventListener('mouseup', (e) => {
+                    e.preventDefault();
+                    if (e.button === 0) {
+                        this.mouseDown = false;
                     }
                 });
 
@@ -1122,13 +1251,23 @@
 
             updateEnemyList() {
                 const enemyList = document.getElementById('enemyList');
-                const enemyTypes = [
+                const baseEnemyTypes = [
                     { type: 'chaser', name: 'Chaser', color: '#ff5722', description: 'Aggressive hunters that pursue relentlessly', icon: '🔺' },
                     { type: 'ambusher', name: 'Ambusher', color: '#9c27b0', description: 'Cunning flankers that try to surround you', icon: '🔷' },
                     { type: 'guardian', name: 'Guardian', color: '#2196f3', description: 'Defensive sentries that patrol territories', icon: '🔳' }
                 ];
+                
+                const themeEnemyTypes = [
+                    { type: 'stone-crusher', name: 'Stone Crusher', color: '#696969', description: 'Slow but creates stone barriers (Stone Dungeon)', icon: '🗿' },
+                    { type: 'magma-striker', name: 'Magma Striker', color: '#DC143C', description: 'Leaves burning trails, immune to fire (Lava Caves)', icon: '🌋' },
+                    { type: 'frost-stalker', name: 'Frost Stalker', color: '#87CEEB', description: 'Slows player on contact, creates ice barriers (Ice Caverns)', icon: '❄️' },
+                    { type: 'prism-guardian', name: 'Prism Guardian', color: '#DA70D6', description: 'Reflects projectiles, short teleports (Crystal Chambers)', icon: '💎' },
+                    { type: 'shadow-wraith', name: 'Shadow Wraith', color: '#483D8B', description: 'Phases through walls, unpredictable movement (Void Realm)', icon: '👻' }
+                ];
+                
+                const allEnemies = [...baseEnemyTypes, ...themeEnemyTypes];
 
-                enemyList.innerHTML = enemyTypes.map(enemy => {
+                enemyList.innerHTML = allEnemies.map(enemy => {
                     return `
                         <div class="enemy-item" style="border-left-color: ${enemy.color}">
                             <div class="enemy-icon" style="background: ${enemy.color}">${enemy.icon}</div>
@@ -1189,20 +1328,45 @@
             shootCrossbow() {
                 if (!this.gameRunning) return;
                 
-                // Create a projectile
                 const speed = 10;
                 const offsetX = Math.cos(this.player.crossbowAngle) * (this.player.radius + 5);
                 const offsetY = Math.sin(this.player.crossbowAngle) * (this.player.radius + 5);
                 
-                this.projectiles.push({
-                    x: this.player.x + offsetX,
-                    y: this.player.y + offsetY,
-                    vx: Math.cos(this.player.crossbowAngle) * speed,
-                    vy: Math.sin(this.player.crossbowAngle) * speed,
-                    radius: 4,
-                    color: '#ffcc00',
-                    life: 60 // Will disappear after 60 frames
-                });
+                // Check for Triple Shot power-up
+                if (this.activeEffects.tripleShot.active) {
+                    // Create three projectiles with spread angles
+                    const angles = [
+                        this.player.crossbowAngle - Math.PI / 12, // -15 degrees
+                        this.player.crossbowAngle,                // center
+                        this.player.crossbowAngle + Math.PI / 12  // +15 degrees
+                    ];
+                    
+                    angles.forEach(angle => {
+                        const shotOffsetX = Math.cos(angle) * (this.player.radius + 5);
+                        const shotOffsetY = Math.sin(angle) * (this.player.radius + 5);
+                        
+                        this.projectiles.push({
+                            x: this.player.x + shotOffsetX,
+                            y: this.player.y + shotOffsetY,
+                            vx: Math.cos(angle) * speed,
+                            vy: Math.sin(angle) * speed,
+                            radius: 4,
+                            color: '#ff6600', // Orange for triple shot
+                            life: 60
+                        });
+                    });
+                } else {
+                    // Single projectile
+                    this.projectiles.push({
+                        x: this.player.x + offsetX,
+                        y: this.player.y + offsetY,
+                        vx: Math.cos(this.player.crossbowAngle) * speed,
+                        vy: Math.sin(this.player.crossbowAngle) * speed,
+                        radius: 4,
+                        color: '#ffcc00',
+                        life: 60
+                    });
+                }
             }
 
             performRush() {
@@ -1321,8 +1485,9 @@
                             this.createParticles(enemy.x, enemy.y, '#ff0000');
                             
                             if (enemy.health <= 0) {
-                                // Enemy defeated by rush
+                                // Enemy defeated by rush - higher rewards for combat
                                 this.score += 75; // Bonus for rush kill
+                                this.totalEnergy += 15; // Combat energy reward
                                 this.createParticles(enemy.x, enemy.y, enemy.color);
                                 this.enemies.splice(index, 1);
                             } else {
@@ -1525,10 +1690,126 @@
                         }
                     }
                     
+                    // Handle theme-specific behaviors
+                    this.handleThemeEnemyBehavior(enemy);
+                    
                     // Keep enemies in bounds
                     enemy.x = Math.max(enemy.radius, Math.min(this.canvas.width - enemy.radius, enemy.x));
                     enemy.y = Math.max(enemy.radius, Math.min(this.canvas.height - enemy.radius, enemy.y));
                 });
+            }
+
+            handleThemeEnemyBehavior(enemy) {
+                if (!enemy.specialAbility) return;
+                
+                enemy.abilityTimer = (enemy.abilityTimer || 0) + 1;
+                
+                switch (enemy.specialAbility) {
+                    case 'fire-trail':
+                        // Magma Striker leaves burning trail
+                        if (enemy.abilityTimer % 20 === 0) { // Every 1/3 second
+                            this.createBurningTrail(enemy.x, enemy.y);
+                        }
+                        break;
+                        
+                    case 'ice-slow':
+                        // Frost Stalker slows player on proximity
+                        const distToPlayer = Math.sqrt((enemy.x - this.player.x) ** 2 + (enemy.y - this.player.y) ** 2);
+                        if (distToPlayer < 80) {
+                            this.player.maxSpeed = Math.max(this.player.maxSpeed * 0.7, 1); // Slow effect
+                            if (enemy.abilityTimer % 60 === 0) { // Create ice particles
+                                this.createParticles(enemy.x, enemy.y, '#87CEEB');
+                            }
+                        }
+                        break;
+                        
+                    case 'projectile-reflect':
+                        // Prism Guardian reflects projectiles
+                        this.reflectProjectiles(enemy);
+                        // Teleport occasionally
+                        if (enemy.abilityTimer > 300 && enemy.teleportCooldown <= 0) {
+                            this.teleportEnemy(enemy);
+                            enemy.teleportCooldown = 240; // 4 second cooldown
+                        }
+                        enemy.teleportCooldown = Math.max(0, enemy.teleportCooldown - 1);
+                        break;
+                        
+                    case 'wall-phase':
+                        // Shadow Wraith phases through walls with chaotic movement
+                        if (enemy.abilityTimer % 180 === 0) { // Every 3 seconds
+                            enemy.behavior = Math.random() < 0.5 ? 'chase' : 'chaos';
+                            this.createParticles(enemy.x, enemy.y, '#483D8B');
+                        }
+                        
+                        if (enemy.behavior === 'chaos') {
+                            // Random movement
+                            enemy.x += (Math.random() - 0.5) * enemy.speed * 3;
+                            enemy.y += (Math.random() - 0.5) * enemy.speed * 3;
+                        }
+                        break;
+                        
+                    case 'stone-barrier':
+                        // Stone Crusher creates temporary barriers
+                        if (enemy.abilityTimer > 480 && Math.random() < 0.01) { // Rare barrier creation
+                            this.createStoneBarrier(enemy.x, enemy.y);
+                            enemy.abilityTimer = 0;
+                        }
+                        break;
+                }
+            }
+
+            createBurningTrail(x, y) {
+                // Add burning ground effect
+                this.fireTrail.push({
+                    x: x + (Math.random() - 0.5) * 20,
+                    y: y + (Math.random() - 0.5) * 20,
+                    life: 180,
+                    maxLife: 180,
+                    radius: 8,
+                    damage: true
+                });
+            }
+
+            reflectProjectiles(enemy) {
+                this.projectiles.forEach((projectile, index) => {
+                    const dx = projectile.x - enemy.x;
+                    const dy = projectile.y - enemy.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < enemy.radius + 30) { // Reflection field
+                        // Reflect projectile back toward player
+                        const angleToPlayer = Math.atan2(this.player.y - enemy.y, this.player.x - enemy.x);
+                        projectile.velocityX = Math.cos(angleToPlayer) * 6;
+                        projectile.velocityY = Math.sin(angleToPlayer) * 6;
+                        projectile.color = '#DA70D6'; // Change color to show reflection
+                        this.createParticles(enemy.x, enemy.y, '#DA70D6');
+                    }
+                });
+            }
+
+            teleportEnemy(enemy) {
+                // Short-range teleport near player
+                const angle = Math.random() * Math.PI * 2;
+                const distance = 60 + Math.random() * 80;
+                const newX = this.player.x + Math.cos(angle) * distance;
+                const newY = this.player.y + Math.sin(angle) * distance;
+                
+                // Keep in bounds
+                enemy.x = Math.max(enemy.radius, Math.min(this.canvas.width - enemy.radius, newX));
+                enemy.y = Math.max(enemy.radius, Math.min(this.canvas.height - enemy.radius, newY));
+                
+                this.createParticles(enemy.x, enemy.y, '#DA70D6');
+            }
+
+            createStoneBarrier(x, y) {
+                // Create temporary stone obstacles (visual only for now)
+                for (let i = 0; i < 3; i++) {
+                    this.createParticles(
+                        x + (Math.random() - 0.5) * 60,
+                        y + (Math.random() - 0.5) * 60,
+                        '#696969'
+                    );
+                }
             }
 
             checkEnemyCollisions() {
@@ -1553,8 +1834,9 @@
                             this.projectiles.splice(projIndex, 1);
                             
                             if (enemy.health <= 0) {
-                                // Enemy defeated
+                                // Enemy defeated by crossbow - combat rewards
                                 this.score += 50;
+                                this.totalEnergy += 12; // Combat energy reward (slightly less than rush)
                                 this.createParticles(enemy.x, enemy.y, enemy.color);
                                 this.enemies.splice(enemyIndex, 1);
                             } else {
@@ -2141,6 +2423,9 @@
                     this.ctx.stroke();
                 }
                 
+                // Theme-specific enemy rendering
+                this.drawThemeEnemyEffects(enemy, radius, isFlashing);
+                
                 // Health bar
                 if (enemy.health < enemy.maxHealth) {
                     const barWidth = radius * 2;
@@ -2177,6 +2462,124 @@
                 }
                 
                 this.ctx.restore();
+            }
+
+            drawThemeEnemyEffects(enemy, radius, isFlashing) {
+                if (!enemy.specialAbility) return;
+                
+                switch (enemy.type) {
+                    case 'magma-striker':
+                        // Lava enemy - glowing effect with fire particles
+                        this.ctx.fillStyle = isFlashing ? '#FF6666' : enemy.color;
+                        this.ctx.beginPath();
+                        this.ctx.arc(0, 0, radius, 0, Math.PI * 2);
+                        this.ctx.fill();
+                        
+                        // Glowing rim
+                        this.ctx.strokeStyle = '#FF4500';
+                        this.ctx.lineWidth = 3;
+                        this.ctx.globalAlpha = 0.7;
+                        this.ctx.stroke();
+                        
+                        // Fire particles around enemy
+                        for (let i = 0; i < 3; i++) {
+                            const angle = Date.now() * 0.01 + i * Math.PI * 2 / 3;
+                            const sparkX = Math.cos(angle) * (radius + 8);
+                            const sparkY = Math.sin(angle) * (radius + 8);
+                            this.ctx.fillStyle = '#FF4500';
+                            this.ctx.globalAlpha = 0.8;
+                            this.ctx.beginPath();
+                            this.ctx.arc(sparkX, sparkY, 2, 0, Math.PI * 2);
+                            this.ctx.fill();
+                        }
+                        this.ctx.globalAlpha = 1;
+                        break;
+                        
+                    case 'frost-stalker':
+                        // Ice enemy - crystalline shape with frost aura
+                        this.ctx.fillStyle = isFlashing ? '#ADD8E6' : enemy.color;
+                        this.ctx.beginPath();
+                        // Hexagonal ice crystal shape
+                        for (let i = 0; i < 6; i++) {
+                            const angle = (i * Math.PI) / 3;
+                            const x = Math.cos(angle) * radius;
+                            const y = Math.sin(angle) * radius;
+                            if (i === 0) this.ctx.moveTo(x, y);
+                            else this.ctx.lineTo(x, y);
+                        }
+                        this.ctx.closePath();
+                        this.ctx.fill();
+                        
+                        // Frost aura
+                        this.ctx.strokeStyle = '#B0E0E6';
+                        this.ctx.lineWidth = 2;
+                        this.ctx.globalAlpha = 0.5;
+                        this.ctx.beginPath();
+                        this.ctx.arc(0, 0, radius + 10, 0, Math.PI * 2);
+                        this.ctx.stroke();
+                        this.ctx.globalAlpha = 1;
+                        break;
+                        
+                    case 'prism-guardian':
+                        // Crystal enemy - prismatic with rainbow edges
+                        this.ctx.fillStyle = isFlashing ? '#DDA0DD' : enemy.color;
+                        this.ctx.beginPath();
+                        this.ctx.arc(0, 0, radius, 0, Math.PI * 2);
+                        this.ctx.fill();
+                        
+                        // Rainbow prismatic edge
+                        const hue = (Date.now() * 0.1) % 360;
+                        this.ctx.strokeStyle = `hsl(${hue}, 80%, 60%)`;
+                        this.ctx.lineWidth = 3;
+                        this.ctx.stroke();
+                        
+                        // Reflection field indicator
+                        this.ctx.strokeStyle = 'rgba(218, 112, 214, 0.3)';
+                        this.ctx.lineWidth = 1;
+                        this.ctx.beginPath();
+                        this.ctx.arc(0, 0, radius + 30, 0, Math.PI * 2);
+                        this.ctx.stroke();
+                        break;
+                        
+                    case 'shadow-wraith':
+                        // Void enemy - dark with void particles
+                        this.ctx.fillStyle = isFlashing ? '#663399' : enemy.color;
+                        this.ctx.globalAlpha = 0.8; // Semi-transparent
+                        this.ctx.beginPath();
+                        this.ctx.arc(0, 0, radius, 0, Math.PI * 2);
+                        this.ctx.fill();
+                        
+                        // Void wisps
+                        for (let i = 0; i < 4; i++) {
+                            const angle = Date.now() * 0.005 + i * Math.PI / 2;
+                            const wispX = Math.cos(angle) * (radius + 15);
+                            const wispY = Math.sin(angle) * (radius + 15);
+                            this.ctx.fillStyle = '#483D8B';
+                            this.ctx.globalAlpha = 0.6;
+                            this.ctx.beginPath();
+                            this.ctx.arc(wispX, wispY, 3, 0, Math.PI * 2);
+                            this.ctx.fill();
+                        }
+                        this.ctx.globalAlpha = 1;
+                        break;
+                        
+                    case 'stone-crusher':
+                        // Stone enemy - rocky texture with stone particles
+                        this.ctx.fillStyle = isFlashing ? '#888888' : enemy.color;
+                        this.ctx.beginPath();
+                        this.ctx.arc(0, 0, radius, 0, Math.PI * 2);
+                        this.ctx.fill();
+                        
+                        // Rocky texture
+                        this.ctx.fillStyle = '#555555';
+                        this.ctx.globalAlpha = 0.6;
+                        this.ctx.beginPath();
+                        this.ctx.arc(-radius * 0.3, -radius * 0.3, radius * 0.2, 0, Math.PI * 2);
+                        this.ctx.arc(radius * 0.2, radius * 0.2, radius * 0.15, 0, Math.PI * 2);
+                        this.ctx.fill();
+                        this.ctx.globalAlpha = 1;
+                        break;
+                }
             }
 
             drawPowerUp(powerUp) {
@@ -2323,9 +2726,96 @@
                     // Update canvas background immediately
                     document.body.style.background = `linear-gradient(45deg, ${theme.backgroundColor}, ${theme.wallColor})`;
                     
-                    // Create theme transition particles
+                    // Create epic theme transition effects
                     this.createThemeTransitionEffect(oldTheme, newTheme);
+                    this.createEmojiTransition(oldTheme, newTheme);
                 }
+            }
+
+            createEmojiTransition(oldTheme, newTheme) {
+                // Create floating emoji elements for dramatic transitions
+                const transitions = {
+                    'stone-lava': { emoji: '🔥', direction: 'up', count: 20 },
+                    'lava-ice': { emoji: '❄️', direction: 'down', count: 25 },
+                    'ice-crystal': { emoji: '✨', direction: 'spiral', count: 30 },
+                    'crystal-void': { emoji: '🌌', direction: 'inward', count: 15 }
+                };
+                
+                const transitionKey = `${oldTheme}-${newTheme}`;
+                const transition = transitions[transitionKey];
+                
+                if (!transition) return;
+                
+                for (let i = 0; i < transition.count; i++) {
+                    setTimeout(() => {
+                        this.createFloatingEmoji(transition.emoji, transition.direction);
+                    }, i * 100);
+                }
+            }
+
+            createFloatingEmoji(emoji, direction) {
+                const emojiElement = document.createElement('div');
+                emojiElement.textContent = emoji;
+                emojiElement.style.position = 'fixed';
+                emojiElement.style.fontSize = '2rem';
+                emojiElement.style.pointerEvents = 'none';
+                emojiElement.style.zIndex = '1000';
+                emojiElement.style.transition = 'all 3s ease-out';
+                
+                let startX, startY, endX, endY;
+                
+                switch (direction) {
+                    case 'up': // Fire erupting from bottom
+                        startX = Math.random() * window.innerWidth;
+                        startY = window.innerHeight + 50;
+                        endX = startX + (Math.random() - 0.5) * 200;
+                        endY = -50;
+                        break;
+                        
+                    case 'down': // Snow falling from top
+                        startX = Math.random() * window.innerWidth;
+                        startY = -50;
+                        endX = startX + (Math.random() - 0.5) * 100;
+                        endY = window.innerHeight + 50;
+                        break;
+                        
+                    case 'spiral': // Sparkles spiraling
+                        const centerX = window.innerWidth / 2;
+                        const centerY = window.innerHeight / 2;
+                        const angle = Math.random() * Math.PI * 2;
+                        startX = centerX + Math.cos(angle) * 300;
+                        startY = centerY + Math.sin(angle) * 300;
+                        endX = centerX;
+                        endY = centerY;
+                        break;
+                        
+                    case 'inward': // Void wisps moving inward
+                        startX = Math.random() * window.innerWidth;
+                        startY = Math.random() * window.innerHeight;
+                        endX = window.innerWidth / 2;
+                        endY = window.innerHeight / 2;
+                        break;
+                }
+                
+                emojiElement.style.left = startX + 'px';
+                emojiElement.style.top = startY + 'px';
+                emojiElement.style.opacity = '1';
+                
+                document.body.appendChild(emojiElement);
+                
+                // Animate to end position
+                setTimeout(() => {
+                    emojiElement.style.left = endX + 'px';
+                    emojiElement.style.top = endY + 'px';
+                    emojiElement.style.opacity = '0';
+                }, 50);
+                
+                // Remove element after animation
+                setTimeout(() => {
+                    if (emojiElement.parentNode) {
+                        emojiElement.parentNode.removeChild(emojiElement);
+                    }
+                }, 3200);
             }
 
             createThemeTransitionEffect(oldTheme, newTheme) {
@@ -2526,6 +3016,34 @@
                         this.activeEffects.massShield.active = false;
                     }
                 }
+                
+                // Update triple shot
+                if (this.activeEffects.tripleShot.active) {
+                    this.activeEffects.tripleShot.timer--;
+                    if (this.activeEffects.tripleShot.timer <= 0) {
+                        this.activeEffects.tripleShot.active = false;
+                    }
+                }
+                
+                // Update auto fire (timer only, actual firing handled separately)
+                if (this.activeEffects.autoFire.active) {
+                    this.activeEffects.autoFire.timer--;
+                    if (this.activeEffects.autoFire.timer <= 0) {
+                        this.activeEffects.autoFire.active = false;
+                    }
+                }
+            }
+
+            handleAutoFire() {
+                if (this.activeEffects.autoFire.active && this.mouseDown) {
+                    const now = Date.now();
+                    const fireRate = 100; // Fire every 100ms when auto-fire is active
+                    
+                    if (now - this.activeEffects.autoFire.lastFire >= fireRate) {
+                        this.shootCrossbow();
+                        this.activeEffects.autoFire.lastFire = now;
+                    }
+                }
             }
 
             checkPowerUpCollisions() {
@@ -2620,6 +3138,19 @@
                         this.activeEffects.crossbowBurst.timer = 480; // 8 seconds
                         this.showPowerNotification(0, 0, 'CROSSBOW BURST MODE!');
                         break;
+                        
+                    case 'triple-shot':
+                        this.activeEffects.tripleShot.active = true;
+                        this.activeEffects.tripleShot.timer = 720; // 12 seconds
+                        this.showPowerNotification(0, 0, 'TRIPLE SHOT ACTIVATED!');
+                        break;
+                        
+                    case 'auto-fire':
+                        this.activeEffects.autoFire.active = true;
+                        this.activeEffects.autoFire.timer = 600; // 10 seconds
+                        this.activeEffects.autoFire.lastFire = 0;
+                        this.showPowerNotification(0, 0, 'AUTO-FIRE ENABLED!');
+                        break;
                 }
             }
 
@@ -2631,6 +3162,7 @@
                 this.updateRushCooldown();
                 this.updatePowerUps();
                 this.updateActiveEffects();
+                this.handleAutoFire(); // Handle auto-fire for new power-up
                 this.updateCollectibles();
                 this.updateEnemies();
                 this.updateProjectiles();
