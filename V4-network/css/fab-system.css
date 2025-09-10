@@ -489,32 +489,60 @@
     box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
 }
 
-/* Theme square positioning - constellation layout */
-/* Basic Themes - Top row */
-.theme-square.theme-default { top: 25%; left: 10%; background: linear-gradient(135deg, #8e44ad, #9b59b6); }
-.theme-square.theme-red { top: 25%; left: 22%; background: linear-gradient(135deg, #e74c3c, #c0392b); }
-.theme-square.theme-orange { top: 25%; left: 34%; background: linear-gradient(135deg, #f39c12, #d68910); }
-.theme-square.theme-yellow { top: 25%; left: 46%; background: linear-gradient(135deg, #f1c40f, #d4ac0d); }
-.theme-square.theme-green { top: 25%; left: 58%; background: linear-gradient(135deg, #27ae60, #229954); }
-.theme-square.theme-blue { top: 25%; left: 70%; background: linear-gradient(135deg, #3498db, #2980b9); }
-.theme-square.theme-indigo { top: 25%; right: 10%; background: linear-gradient(135deg, #6c5ce7, #5f3dc4); }
+/* Theme square positioning - organized grid layout */
+.themes-map {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
 
-/* Cool Themes - Second row */
-.theme-square.theme-violet { top: 45%; left: 15%; background: linear-gradient(135deg, #9c88ff, #8c7ae6); }
+.themes-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+    margin-top: 20px;
+    justify-items: center;
+    align-items: center;
+    width: 100%;
+    max-width: 300px;
+}
 
-/* Special Themes - Bottom constellation */
-.theme-square.theme-christmas { top: 65%; left: 15%; background: linear-gradient(135deg, #c0392b, #27ae60); }
-.theme-square.theme-halloween { top: 65%; left: 30%; background: linear-gradient(135deg, #ff6b35, #2c2c54); }
-.theme-square.theme-valentine { top: 65%; left: 45%; background: linear-gradient(135deg, #fd79a8, #e84393); }
-.theme-square.theme-ocean { top: 65%; left: 60%; background: linear-gradient(135deg, #00b894, #0984e3); }
-.theme-square.theme-forest { top: 65%; right: 25%; background: linear-gradient(135deg, #00b894, #6c5ce7); }
-.theme-square.theme-sunset { top: 65%; right: 10%; background: linear-gradient(135deg, #fd79a8, #fdcb6e); }
+.theme-square {
+    position: relative;
+    width: 55px;
+    height: 55px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.4s ease;
+    border: 2px solid rgba(255,255,255,0.3);
+    backdrop-filter: blur(5px);
+    z-index: 5;
+}
+
+/* Remove all individual positioning - grid handles it now */
+.theme-square.theme-default { background: linear-gradient(135deg, #8e44ad, #9b59b6); }
+.theme-square.theme-red { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+.theme-square.theme-orange { background: linear-gradient(135deg, #f39c12, #d68910); }
+.theme-square.theme-yellow { background: linear-gradient(135deg, #f1c40f, #d4ac0d); }
+.theme-square.theme-green { background: linear-gradient(135deg, #27ae60, #229954); }
+.theme-square.theme-blue { background: linear-gradient(135deg, #3498db, #2980b9); }
+.theme-square.theme-indigo { background: linear-gradient(135deg, #6c5ce7, #5f3dc4); }
+.theme-square.theme-violet { background: linear-gradient(135deg, #9c88ff, #8c7ae6); }
+.theme-square.theme-christmas { background: linear-gradient(135deg, #c0392b, #27ae60); }
+.theme-square.theme-halloween { background: linear-gradient(135deg, #ff6b35, #2c2c54); }
+.theme-square.theme-valentine { background: linear-gradient(135deg, #fd79a8, #e84393); }
+.theme-square.theme-ocean { background: linear-gradient(135deg, #00b894, #0984e3); }
+.theme-square.theme-forest { background: linear-gradient(135deg, #00b894, #6c5ce7); }
+.theme-square.theme-sunset { background: linear-gradient(135deg, #fd79a8, #fdcb6e); }
 
 /* Mobile optimizations for themes constellation */
 @media (max-width: 480px) {
     .themes-map {
         width: 98%;
         height: 85%;
+        padding: 15px;
     }
     
     .themes-header {
@@ -522,15 +550,25 @@
         padding: 15px;
     }
     
+    .themes-grid {
+        gap: 12px;
+        max-width: 280px;
+    }
+    
     .theme-square {
-        width: 45px;
-        height: 45px;
+        width: 50px;
+        height: 50px;
     }
 }
 
 @media (max-width: 360px) {
+    .themes-grid {
+        gap: 10px;
+        max-width: 240px;
+    }
+    
     .theme-square {
-        width: 40px;
-        height: 40px;
+        width: 45px;
+        height: 45px;
     }
 }
