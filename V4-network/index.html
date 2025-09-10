@@ -3153,11 +3153,18 @@
         // Close Feral Gateway when clicking outside
         document.addEventListener('click', (e) => {
             const isClickInsideFab = e.target.closest('#feralGatewayFab');
+            const isClickInsideConstellation = e.target.closest('.constellation-map');
+            
             if (!isClickInsideFab) {
                 const fab = document.getElementById('feralGatewayFab');
                 if (fab) {
                     fab.classList.remove('active');
                 }
+            }
+            
+            // Close constellation when clicking outside
+            if (!isClickInsideConstellation && e.target.closest('.constellation-overlay')) {
+                closeGamesConstellation();
             }
         });
 
@@ -3243,12 +3250,47 @@
             const feralFab = document.getElementById('feralGatewayFab');
             if (feralFab) feralFab.classList.remove('active');
             
-            // Simple dialog for now - will be replaced with constellation map
-            const choice = confirm("🎮 Choose a mini-game:\n\nOK = 🚂 Iron Tangle Railway\nCancel = 🍩 Donut's Magic Mania");
+            // Open the constellation map instead of simple dialog
+            const constellation = document.getElementById('gamesConstellation');
+            constellation.style.display = 'flex';
+            setTimeout(() => {
+                constellation.classList.add('active');
+            }, 50);
             
-            if (choice) {
-                openIronTangle();
+            // Add haptic feedback
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
+        }
+
+        function closeGamesConstellation() {
+            const constellation = document.getElementById('gamesConstellation');
+            constellation.classList.remove('active');
+            setTimeout(() => {
+                constellation.style.display = 'none';
+            }, 500);
+        }
+
+        function launchIronTangle() {
+            closeGamesConstellation();
+            // Use miniGameManager if available
+            if (window.miniGameManager) {
+                console.log('Launching Iron Tangle via miniGameManager');
+                window.miniGameManager.launchIronTangle();
             } else {
+                console.log('Launching Iron Tangle via openIronTangle fallback');
+                openIronTangle();
+            }
+        }
+
+        function launchDonutsMagicMania() {
+            closeGamesConstellation();
+            // Use miniGameManager if available
+            if (window.miniGameManager) {
+                console.log('Launching Donuts Magic Mania via miniGameManager');
+                window.miniGameManager.launchDonutsMagicMania();
+            } else {
+                console.log('Launching Donuts Magic Mania via openDonutsMagicMania fallback');
                 openDonutsMagicMania();
             }
         }
@@ -5535,6 +5577,30 @@
             <!-- Mini-Games Module -->
             <div class="feral-option" onclick="openMiniGamesModule()" title="Mini-Games">
                 <i class="las la-gamepad"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mini-Games Constellation Overlay -->
+    <div class="constellation-overlay" id="gamesConstellation">
+        <div class="constellation-map">
+            <div class="constellation-header">🌟 Gaming Realms 🌟</div>
+            <button class="constellation-close" onclick="closeGamesConstellation()">✕</button>
+            
+            <!-- Available Games -->
+            <div class="game-star iron-tangle" onclick="launchIronTangle()" title="🚂 Iron Tangle Railway - Connect the tracks to reach your destination!">
+                🚂
+            </div>
+            <div class="game-star donuts-magic-mania" onclick="launchDonutsMagicMania()" title="🍩 Donut's Magic Mania - Princess Donut's sparkly match-3 game">
+                🍩
+            </div>
+            
+            <!-- Future Games (disabled for now) -->
+            <div class="game-star future-game-1" title="🧩 Coming Soon - More adventures await!">
+                🧩
+            </div>
+            <div class="game-star future-game-2" title="🎯 Coming Soon - New challenges ahead!">
+                🎯
             </div>
         </div>
     </div>
