@@ -3295,6 +3295,17 @@
             }
         }
 
+        function launchKatiasTrainingRoom() {
+            closeGamesConstellation();
+            // Use miniGameManager if available
+            if (window.miniGameManager) {
+                console.log('Launching Katias Training Room via miniGameManager');
+                window.miniGameManager.launchKatiasTrainingRoom();
+            } else {
+                console.log('miniGameManager not available for Katias Training Room');
+            }
+        }
+
         // Themes Constellation Functions
         function openThemesModule() {
             // Hide Feral Gateway and show themes constellation
@@ -5637,13 +5648,13 @@
             <div class="game-star donuts-magic-mania" onclick="launchDonutsMagicMania()" title="🍩 Donut's Magic Mania - Princess Donut's sparkly match-3 game">
                 🍩
             </div>
+            <div class="game-star katias-training-room" onclick="launchKatiasTrainingRoom()" title="🎯 Katia's Training Room - Master doppelganger abilities and absorb your way to victory!">
+                🎯
+            </div>
             
             <!-- Future Games (disabled for now) -->
             <div class="game-star future-game-1" title="🧩 Coming Soon - More adventures await!">
                 🧩
-            </div>
-            <div class="game-star future-game-2" title="🎯 Coming Soon - New challenges ahead!">
-                🎯
             </div>
         </div>
     </div>

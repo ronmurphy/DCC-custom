@@ -28,7 +28,7 @@ class MiniGameManager {
         this.createGameOverlay();
         this.minimizeChat();
         
-        // Create WebView-like container
+        // Create iframe container (reverting to working iframe approach)
         const gameFrame = document.createElement('div');
         gameFrame.className = 'mini-game-frame';
         gameFrame.innerHTML = `
@@ -68,7 +68,7 @@ class MiniGameManager {
         this.createGameOverlay();
         this.minimizeChat();
         
-        // Create WebView-like container
+        // Create iframe container (reverting to working iframe approach)
         const gameFrame = document.createElement('div');
         gameFrame.className = 'mini-game-frame';
         gameFrame.innerHTML = `
@@ -90,10 +90,161 @@ class MiniGameManager {
         this.activeGame = 'donutsMagicMania';
         this.isGameActive = true;
 
+        // Load game content via fetch (WebView approach)
+        this.loadGameContent('miniGames/donutsMagicMania/donutsMagicMania.html', 'donutsMagicManiaContainer');
+
         // Add game-specific styling
         this.addGameStyles();
         
-        console.log('Donut\'s Magic Mania launched successfully');
+        console.log('Donuts Magic Mania launched successfully');
+    }
+
+    /**
+     * Load game content directly into a container (WebView approach)
+     */
+    async loadGameContent(gameUrl, containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) {
+            console.error('Container not found:', containerId);
+            return;
+        }
+
+        try {
+            // Fetch the game HTML
+            const response = await fetch(gameUrl);
+            if (!response.ok) {
+                throw new Error(`Failed to load ${gameUrl}: ${response.status}`);
+            }
+            
+            const gameHtml = await response.text();
+            
+            // Create a document fragment to safely parse HTML
+            const parser = new DOMParser();
+            const gameDoc = parser.parseFromString(gameHtml, 'text/html');
+            
+            // Extract and modify styles to constrain within modal
+            const styles = gameDoc.querySelectorAll('style');
+            styles.forEach(style => {
+                const newStyle = document.createElement('style');
+                let styleContent = style.textContent;
+                
+                // Override any fullscreen styles to fit within modal
+                styleContent = styleContent.replace(/100vw/g, '100%');
+                styleContent = styleContent.replace(/100vh/g, '100%');
+                styleContent = styleContent.replace(/width:\s*100vw/g, 'width: 100%');
+                styleContent = styleContent.replace(/height:\s*100vh/g, 'height: 100%');
+                
+                // Add container-specific scoping
+                newStyle.textContent = `
+                    .webview-container { ${styleContent} }
+                    .webview-container * { 
+                        max-width: 100% !important; 
+                        max-height: 100% !important; 
+                    }
+                    .webview-container canvas {
+                        max-width: 100% !important;
+                        max-height: calc(100% - 50px) !important;
+                    }
+                `;
+                
+                document.head.appendChild(newStyle);
+            });
+            
+            // Extract and apply the body content
+            const gameBody = gameDoc.body;
+            if (gameBody) {
+                container.innerHTML = gameBody.innerHTML;
+                
+                // Override any fullscreen elements within the game
+                const gameContainer = container.querySelector('#gameContainer');
+                if (gameContainer) {
+                    gameContainer.style.width = '100%';
+                    gameContainer.style.height = '100%';
+                    gameContainer.style.maxWidth = '100%';
+                    gameContainer.style.maxHeight = '100%';
+                }
+                
+                const canvas = container.querySelector('canvas');
+                if (canvas) {
+                    canvas.style.maxWidth = '100%';
+                    canvas.style.maxHeight = 'calc(100% - 50px)';
+                }
+                
+                // Execute any scripts in the game
+                const scripts = gameDoc.querySelectorAll('script');
+                scripts.forEach(script => {
+                    if (script.src) {
+                        // External script
+                        const newScript = document.createElement('script');
+                        newScript.src = script.src;
+                        document.head.appendChild(newScript);
+                    } else {
+                        // Inline script
+                        const newScript = document.createElement('script');
+                        newScript.textContent = script.textContent;
+                        document.head.appendChild(newScript);
+                    }
+                });
+            }
+            
+            console.log(`Successfully loaded ${gameUrl} as WebView within modal`);
+            
+        } catch (error) {
+            console.error('Error loading game content:', error);
+            container.innerHTML = `
+                <div class="error-message">
+                    <h3>❌ Failed to load game</h3>
+                    <p>Could not load ${gameUrl}</p>
+                    <p>Error: ${error.message}</p>
+                </div>
+            `;
+        }
+    }
+
+    /**
+     * Check if mini-games are available
+     */
+    static isAvailable() {
+    }
+
+    /**
+     * Launch Katia's Training Room mini-game in a WebView overlay
+     */
+    launchKatiasTrainingRoom() {
+        if (this.isGameActive) {
+            console.log('Game already active');
+            return;
+        }
+
+        this.createGameOverlay();
+        this.minimizeChat();
+        
+        // Create iframe container (reverting to working iframe approach)
+        const gameFrame = document.createElement('div');
+        gameFrame.className = 'mini-game-frame';
+        gameFrame.innerHTML = `
+            <div class="game-header">
+                <h3>🎯 Katia's Training Room</h3>
+                <button class="close-game-btn" onclick="miniGameManager.closeGame()">✕</button>
+            </div>
+            <iframe 
+                src="miniGames/katiasTrainingRoom/katiasTrainingRoom.html" 
+                width="100%" 
+                height="100%" 
+                frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                sandbox="allow-scripts allow-same-origin allow-forms">
+            </iframe>
+        `;
+
+        this.gameContainer.appendChild(gameFrame);
+        this.activeGame = 'katiasTrainingRoom';
+        this.isGameActive = true;
+
+        // Add game-specific styling
+        this.addGameStyles();
+        
+        console.log('Katia\'s Training Room launched successfully');
     }
 
     /**
@@ -277,6 +428,34 @@ class MiniGameManager {
                 flex: 1;
                 border: none;
                 background: #1a1a1a;
+            }
+
+            @keyframes loadingPulse {
+                0%, 100% { opacity: 0.6; }
+                50% { opacity: 1; }
+            }
+
+            .error-message {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                color: #ff6b6b;
+                text-align: center;
+                padding: 20px;
+                background: rgba(0, 0, 0, 0.8);
+                border-radius: 10px;
+                border: 1px solid #ff6b6b;
+            }
+
+            .error-message h3 {
+                margin: 0 0 10px 0;
+                color: #ff6b6b;
+            }
+
+            .error-message p {
+                margin: 5px 0;
+                color: #F5DEB3;
             }
 
             @keyframes gameSlideIn {

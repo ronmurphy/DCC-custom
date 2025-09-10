@@ -324,10 +324,17 @@
     background: linear-gradient(135deg, rgba(231, 76, 60, 0.8), rgba(192, 57, 43, 0.9));
 }
 
+.game-star.katias-training-room {
+    top: 55%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, rgba(142, 68, 173, 0.8), rgba(155, 89, 182, 0.9));
+}
+
 /* Future games - positioned for expansion */
 .game-star.future-game-1 {
     top: 55%;
-    left: 35%;
+    right: 35%;
     background: linear-gradient(135deg, rgba(155, 89, 182, 0.8), rgba(142, 68, 173, 0.9));
     opacity: 0.5;
 }

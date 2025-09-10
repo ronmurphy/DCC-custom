@@ -1,8 +1,8 @@
-<html lang="en"><head><div style="display: none;"></div>
+<html lang="en"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mass Collector</title>
-    <meta name="description" content="Grow bigger by collecting objects in this addictive 2D top-down game">
+    <title>Katia's Training Room</title>
+    <meta name="description" content="Training simulation for Katia Grim - absorption and crossbow skills">
     <style>
         * {
             margin: 0;
@@ -12,7 +12,7 @@
 
         body {
             font-family: 'Courier New', monospace;
-            background: linear-gradient(45deg, #1a1a2e, #16213e);
+            background: linear-gradient(45deg, #2c1810, #3d2817);
             color: white;
             overflow: hidden;
             touch-action: none;
@@ -28,9 +28,9 @@
         }
 
         #gameCanvas {
-            border: 2px solid #0f3460;
-            background: #0f1419;
-            box-shadow: 0 0 20px rgba(15, 52, 96, 0.5);
+            border: 2px solid #654321;
+            background: #2a2a2a;
+            box-shadow: 0 0 20px rgba(139, 69, 19, 0.5);
         }
 
         #startMenu {
@@ -185,6 +185,44 @@
             box-shadow: 0 0 20px rgba(255, 82, 82, 0.8);
         }
 
+        /* Power-up notifications */
+        .power-notification {
+            position: fixed !important;
+            top: 20px !important;
+            right: 20px !important;
+            z-index: 1000 !important;
+            pointer-events: none !important;
+            padding: 10px 15px !important;
+            background: linear-gradient(45deg, #4fc3f7, #29b6f6) !important;
+            color: white !important;
+            border-radius: 5px !important;
+            font-family: 'Courier New', monospace !important;
+            font-size: 14px !important;
+            font-weight: bold !important;
+            box-shadow: 0 4px 12px rgba(79, 195, 247, 0.4) !important;
+            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+            animation: slideInFade 3s ease-out forwards !important;
+            min-width: 120px !important;
+            text-align: center !important;
+        }
+
+        @keyframes slideInFade {
+            0% { 
+                transform: translateX(100px) !important;
+                opacity: 0 !important;
+            }
+            20% { 
+                transform: translateX(0) !important;
+                opacity: 1 !important;
+            }
+            80% { 
+                opacity: 1 !important;
+            }
+            100% { 
+                opacity: 0 !important;
+            }
+        }
+
         @media (max-width: 768px) {
             #startMenu h1 {
                 font-size: 2rem;
@@ -203,31 +241,25 @@
             }
         }
     </style>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><style>
-                        body, html {
-                            touch-action: manipulation;
-                            user-select: none;
-                            -webkit-user-select: none;
-                            -webkit-touch-callout: none;
-                            -webkit-tap-highlight-color: rgba(0,0,0,0);
-                        }
-                    </style></head>
+</head>
 <body>
     <div id="gameContainer">
         <canvas id="gameCanvas" width="800" height="600"></canvas>
         
         <div id="startMenu">
-            <h1>MASS COLLECTOR</h1>
+            <h1>KATIA'S TRAINING ROOM</h1>
             <p>🎮 Touch and drag to move</p>
-            <p>🔵 Collect colored objects to grow</p>
-            <p>🎯 Some objects flee - use your crossbow!</p>
-            <p>📈 Get bigger and dominate the field!</p>
-            <button id="readyBtn">READY TO GROW</button>
+            <p>🔵 Absorb energy orbs to grow stronger</p>
+            <p>🎯 Some targets flee - use your crossbow!</p>
+            <p>📈 Master absorption techniques!</p>
+            <button id="readyBtn">BEGIN TRAINING</button>
         </div>
 
         <div id="gameUI" style="display: none;">
             <div class="score">Score: <span id="score">0</span></div>
             <div class="mass">Mass: <span id="mass">10</span></div>
+            <div class="room">Room: <span id="room">1</span></div>
+            <div class="energy">Energy: <span id="energy">0</span>/<span id="energyRequired">100</span></div>
         </div>
         
         <!-- Virtual thumb stick -->
@@ -272,6 +304,41 @@
                 }
             }
 
+            showPowerNotification(mass, score, customMessage = null) {
+                // Remove any existing notifications
+                const existingNotifications = document.querySelectorAll('.power-notification');
+                existingNotifications.forEach(notification => {
+                    document.body.removeChild(notification);
+                });
+
+                // Create new notification
+                const notification = document.createElement('div');
+                notification.className = 'power-notification';
+                
+                let message = '';
+                if (customMessage) {
+                    message = customMessage;
+                } else if (mass < 0) {
+                    message = `DAMAGE! ${mass}`;
+                } else if (mass >= 5) {
+                    message = `MASS SURGE! +${Math.floor(mass)}`;
+                } else if (score >= 50) {
+                    message = `BIG SCORE! +${score}`;
+                } else {
+                    message = `ENERGY +${score}`;
+                }
+                
+                notification.textContent = message;
+                document.body.appendChild(notification);
+
+                // Remove after animation completes
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 3000);
+            }
+
             initGame() {
                 this.gameStarted = false;
                 this.gameRunning = false;
@@ -297,6 +364,12 @@
                 this.collectibles = [];
                 this.particles = [];
                 this.projectiles = [];
+                this.enemies = [];
+                
+                // Room progression
+                this.currentRoom = 1;
+                this.energyRequired = 100; // Energy needed to advance to next room
+                this.totalEnergy = 0; // Total energy collected
                 
                 // Thumbstick properties
                 this.thumbstickActive = false;
@@ -308,11 +381,13 @@
                 this.thumbstickRadius = 40;
                 
                 this.generateCollectibles();
+                this.generateEnemies();
             }
 
             generateCollectibles() {
                 this.collectibles = [];
-                const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#fecca7', '#ff9ff3', '#54a0ff'];
+                // DCC-themed energy crystal colors
+                const colors = ['#8A2BE2', '#FF4500', '#32CD32', '#FFD700', '#DC143C', '#4169E1', '#FF69B4'];
                 
                 for (let i = 0; i < 25; i++) {
                     let x, y, attempts = 0;
@@ -342,6 +417,70 @@
                         fleeTimer: 0,
                         immobilized: false,
                         immobilizeTimer: 0
+                    });
+                }
+            }
+
+            generateEnemies() {
+                this.enemies = [];
+                const enemyCount = Math.min(3 + this.currentRoom, 8); // More enemies in higher rooms
+                
+                for (let i = 0; i < enemyCount; i++) {
+                    let x, y, attempts = 0;
+                    
+                    // Spawn enemies away from player
+                    do {
+                        x = Math.random() * (this.canvas.width - 60) + 30;
+                        y = Math.random() * (this.canvas.height - 60) + 30;
+                        attempts++;
+                    } while (
+                        attempts < 50 && 
+                        Math.sqrt((x - this.player.x) ** 2 + (y - this.player.y) ** 2) < 200
+                    );
+                    
+                    // Different enemy types
+                    const enemyType = Math.random();
+                    let type, color, speed, health, behavior;
+                    
+                    if (enemyType < 0.4) {
+                        // Chaser - direct pursuit
+                        type = 'chaser';
+                        color = '#FF4500'; // Orange-red
+                        speed = 1.5;
+                        health = 2;
+                        behavior = 'chase';
+                    } else if (enemyType < 0.7) {
+                        // Ambusher - tries to flank
+                        type = 'ambusher';
+                        color = '#8B008B'; // Dark magenta
+                        speed = 2;
+                        health = 1;
+                        behavior = 'flank';
+                    } else {
+                        // Guardian - protects crystals, slower but tougher
+                        type = 'guardian';
+                        color = '#2F4F4F'; // Dark slate gray
+                        speed = 1;
+                        health = 4;
+                        behavior = 'guard';
+                    }
+                    
+                    this.enemies.push({
+                        x: x,
+                        y: y,
+                        radius: 12,
+                        type: type,
+                        color: color,
+                        speed: speed,
+                        health: health,
+                        maxHealth: health,
+                        behavior: behavior,
+                        targetX: x,
+                        targetY: y,
+                        angle: 0,
+                        stunned: false,
+                        stunnedTimer: 0,
+                        lastDamageTime: 0
                     });
                 }
             }
@@ -606,6 +745,156 @@
                     });
                 }
             }
+
+            updateEnemies() {
+                this.enemies.forEach((enemy, index) => {
+                    // Handle stun timer
+                    if (enemy.stunned) {
+                        enemy.stunnedTimer--;
+                        if (enemy.stunnedTimer <= 0) {
+                            enemy.stunned = false;
+                        }
+                        return; // Don't move while stunned
+                    }
+                    
+                    // Different AI behaviors
+                    if (enemy.behavior === 'chase') {
+                        // Direct chase
+                        const dx = this.player.x - enemy.x;
+                        const dy = this.player.y - enemy.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance > 0) {
+                            enemy.x += (dx / distance) * enemy.speed;
+                            enemy.y += (dy / distance) * enemy.speed;
+                        }
+                    } else if (enemy.behavior === 'flank') {
+                        // Try to move to player's side
+                        const dx = this.player.x - enemy.x;
+                        const dy = this.player.y - enemy.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance > 50) {
+                            // Move toward player
+                            enemy.x += (dx / distance) * enemy.speed;
+                            enemy.y += (dy / distance) * enemy.speed;
+                        } else {
+                            // Circle around player
+                            const angle = Math.atan2(dy, dx) + Math.PI / 2;
+                            enemy.x += Math.cos(angle) * enemy.speed;
+                            enemy.y += Math.sin(angle) * enemy.speed;
+                        }
+                    } else if (enemy.behavior === 'guard') {
+                        // Protect nearest crystal cluster
+                        let nearestCrystal = null;
+                        let nearestDistance = Infinity;
+                        
+                        this.collectibles.forEach(collectible => {
+                            if (!collectible.collected) {
+                                const dist = Math.sqrt((enemy.x - collectible.x) ** 2 + (enemy.y - collectible.y) ** 2);
+                                if (dist < nearestDistance) {
+                                    nearestDistance = dist;
+                                    nearestCrystal = collectible;
+                                }
+                            }
+                        });
+                        
+                        if (nearestCrystal) {
+                            const playerDist = Math.sqrt((this.player.x - nearestCrystal.x) ** 2 + (this.player.y - nearestCrystal.y) ** 2);
+                            const enemyDist = Math.sqrt((enemy.x - nearestCrystal.x) ** 2 + (enemy.y - nearestCrystal.y) ** 2);
+                            
+                            if (playerDist < 100 && enemyDist > 30) {
+                                // Player near crystal, move to intercept
+                                const dx = this.player.x - enemy.x;
+                                const dy = this.player.y - enemy.y;
+                                const distance = Math.sqrt(dx * dx + dy * dy);
+                                
+                                if (distance > 0) {
+                                    enemy.x += (dx / distance) * enemy.speed;
+                                    enemy.y += (dy / distance) * enemy.speed;
+                                }
+                            } else if (enemyDist > 40) {
+                                // Move closer to crystal
+                                const dx = nearestCrystal.x - enemy.x;
+                                const dy = nearestCrystal.y - enemy.y;
+                                const distance = Math.sqrt(dx * dx + dy * dy);
+                                
+                                if (distance > 0) {
+                                    enemy.x += (dx / distance) * enemy.speed * 0.5;
+                                    enemy.y += (dy / distance) * enemy.speed * 0.5;
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Keep enemies in bounds
+                    enemy.x = Math.max(enemy.radius, Math.min(this.canvas.width - enemy.radius, enemy.x));
+                    enemy.y = Math.max(enemy.radius, Math.min(this.canvas.height - enemy.radius, enemy.y));
+                });
+            }
+
+            checkEnemyCollisions() {
+                // Check projectile hits on enemies
+                this.projectiles.forEach((projectile, projIndex) => {
+                    this.enemies.forEach((enemy, enemyIndex) => {
+                        if (enemy.stunned) return;
+                        
+                        const dx = projectile.x - enemy.x;
+                        const dy = projectile.y - enemy.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < projectile.radius + enemy.radius) {
+                            // Hit enemy with crossbow
+                            enemy.health--;
+                            enemy.lastDamageTime = Date.now();
+                            
+                            // Create hit particles
+                            this.createParticles(enemy.x, enemy.y, '#ff0000');
+                            
+                            // Remove projectile
+                            this.projectiles.splice(projIndex, 1);
+                            
+                            if (enemy.health <= 0) {
+                                // Enemy defeated
+                                this.score += 50;
+                                this.createParticles(enemy.x, enemy.y, enemy.color);
+                                this.enemies.splice(enemyIndex, 1);
+                            } else {
+                                // Stun enemy briefly
+                                enemy.stunned = true;
+                                enemy.stunnedTimer = 30; // 0.5 seconds
+                            }
+                            return;
+                        }
+                    });
+                });
+                
+                // Check player collision with enemies
+                this.enemies.forEach((enemy, index) => {
+                    const dx = this.player.x - enemy.x;
+                    const dy = this.player.y - enemy.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < this.player.radius + enemy.radius) {
+                        // Player touched by enemy - take damage
+                        this.player.mass = Math.max(5, this.player.mass - 2);
+                        this.player.radius = Math.sqrt(this.player.mass) * 2;
+                        
+                        // Push enemy away
+                        const pushForce = 20;
+                        const angle = Math.atan2(dy, dx);
+                        enemy.x -= Math.cos(angle) * pushForce;
+                        enemy.y -= Math.sin(angle) * pushForce;
+                        
+                        // Brief stun for enemy
+                        enemy.stunned = true;
+                        enemy.stunnedTimer = 60; // 1 second
+                        
+                        // Damage notification
+                        this.showPowerNotification(-2, -20);
+                    }
+                });
+            }
             
             updateImmobilizedCollectibles() {
                 this.collectibles.forEach(collectible => {
@@ -630,9 +919,15 @@
                     if (distance < this.player.radius + collectible.radius) {
                         // Collect the item
                         collectible.collected = true;
-                        this.score += Math.floor(collectible.mass * 10);
+                        const scoreGain = Math.floor(collectible.mass * 10);
+                        const energyGain = Math.floor(collectible.mass * 5);
+                        this.score += scoreGain;
+                        this.totalEnergy += energyGain;
                         this.player.mass += collectible.mass;
                         this.player.radius = Math.sqrt(this.player.mass) * 2;
+
+                        // Show power-up notification
+                        this.showPowerNotification(collectible.mass, scoreGain);
 
                         // Create particles
                         this.createParticles(collectible.x, collectible.y, collectible.color);
@@ -649,7 +944,8 @@
             }
 
             addNewCollectible() {
-                const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#fecca7', '#ff9ff3', '#54a0ff'];
+                // DCC-themed energy crystal colors
+                const colors = ['#8A2BE2', '#FF4500', '#32CD32', '#FFD700', '#DC143C', '#4169E1', '#FF69B4'];
                 let x, y, attempts = 0;
                 
                 do {
@@ -707,10 +1003,34 @@
                 });
             }
 
+            drawStoneFloor() {
+                const tileSize = 60;
+                for (let x = 0; x < this.canvas.width + tileSize; x += tileSize) {
+                    for (let y = 0; y < this.canvas.height + tileSize; y += tileSize) {
+                        // Draw stone tile
+                        this.ctx.fillStyle = '#3a3a3a';
+                        this.ctx.fillRect(x, y, tileSize - 2, tileSize - 2);
+                        
+                        // Add some variation to tiles
+                        const variation = Math.sin(x * 0.01 + y * 0.01) * 10;
+                        this.ctx.fillStyle = `rgba(${50 + variation}, ${50 + variation}, ${50 + variation}, 0.3)`;
+                        this.ctx.fillRect(x + 5, y + 5, tileSize - 12, tileSize - 12);
+                        
+                        // Dark grout lines
+                        this.ctx.strokeStyle = '#1a1a1a';
+                        this.ctx.lineWidth = 2;
+                        this.ctx.strokeRect(x, y, tileSize - 2, tileSize - 2);
+                    }
+                }
+            }
+
             render() {
-                // Clear canvas
-                this.ctx.fillStyle = '#0f1419';
+                // Clear canvas with dark stone color
+                this.ctx.fillStyle = '#2a2a2a';
                 this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                // Draw stone floor tiles
+                this.drawStoneFloor();
 
                 // Draw grid
                 this.ctx.strokeStyle = 'rgba(15, 52, 96, 0.3)';
@@ -747,30 +1067,16 @@
                     this.ctx.stroke();
                 });
 
-                // Draw collectibles
+                // Draw collectibles (Energy Crystals)
                 this.collectibles.forEach(collectible => {
                     if (collectible.collected) return;
                     
-                    collectible.pulse += 0.1;
-                    const pulseRadius = collectible.radius + Math.sin(collectible.pulse) * 2;
-                    
-                    this.ctx.beginPath();
-                    this.ctx.arc(collectible.x, collectible.y, pulseRadius, 0, Math.PI * 2);
-                    this.ctx.fillStyle = collectible.color;
-                    this.ctx.fill();
-                    
-                    // Draw immobilized effect
-                    if (collectible.immobilized) {
-                        this.ctx.beginPath();
-                        this.ctx.arc(collectible.x, collectible.y, pulseRadius + 3, 0, Math.PI * 2);
-                        this.ctx.strokeStyle = 'rgba(255, 204, 0, 0.7)';
-                        this.ctx.lineWidth = 2;
-                        this.ctx.stroke();
-                    }
-                    
-                    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-                    this.ctx.lineWidth = 2;
-                    this.ctx.stroke();
+                    this.drawEnergyCrystal(collectible);
+                });
+
+                // Draw enemies
+                this.enemies.forEach(enemy => {
+                    this.drawEnemy(enemy);
                 });
 
                 // Draw particles
@@ -782,53 +1088,323 @@
                     this.ctx.fill();
                 });
 
-                // Draw player
-                this.ctx.beginPath();
-                this.ctx.arc(this.player.x, this.player.y, this.player.radius, 0, Math.PI * 2);
-                this.ctx.fillStyle = this.player.color;
-                this.ctx.fill();
-                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-                this.ctx.lineWidth = 3;
-                this.ctx.stroke();
-
-                // Draw player glow
-                this.ctx.beginPath();
-                this.ctx.arc(this.player.x, this.player.y, this.player.radius + 5, 0, Math.PI * 2);
-                this.ctx.strokeStyle = `rgba(79, 195, 247, 0.3)`;
-                this.ctx.lineWidth = 2;
-                this.ctx.stroke();
+                // Draw player (Katia/Tatis)
+                this.drawKatiaSprite();
                 
                 // Draw crossbow
-                const crossbowLength = this.player.radius + 10;
+                this.drawCrossbow();
+            }
+
+            drawKatiaSprite() {
+                const x = this.player.x;
+                const y = this.player.y;
+                const radius = this.player.radius;
+                
+                // Draw muscular body (larger, darker skin tone)
+                this.ctx.fillStyle = '#8B4513'; // Dark skin tone
                 this.ctx.beginPath();
-                this.ctx.moveTo(
-                    this.player.x,
-                    this.player.y
-                );
-                this.ctx.lineTo(
-                    this.player.x + Math.cos(this.player.crossbowAngle) * crossbowLength,
-                    this.player.y + Math.sin(this.player.crossbowAngle) * crossbowLength
-                );
-                this.ctx.strokeStyle = '#8B4513'; // Brown for crossbow
+                this.ctx.arc(x, y, radius * 0.9, 0, Math.PI * 2);
+                this.ctx.fill();
+                
+                // Draw body highlight for muscle definition
+                this.ctx.fillStyle = '#A0522D';
+                this.ctx.beginPath();
+                this.ctx.arc(x - radius * 0.3, y - radius * 0.3, radius * 0.4, 0, Math.PI * 2);
+                this.ctx.fill();
+                
+                // Draw purple mohawk (distinctive purple hair in spikes)
+                this.ctx.fillStyle = '#8A2BE2'; // Purple
+                this.ctx.beginPath();
+                // Central spike
+                this.ctx.arc(x, y - radius * 0.8, radius * 0.3, 0, Math.PI * 2);
+                this.ctx.fill();
+                // Left spike
+                this.ctx.beginPath();
+                this.ctx.arc(x - radius * 0.4, y - radius * 0.7, radius * 0.25, 0, Math.PI * 2);
+                this.ctx.fill();
+                // Right spike
+                this.ctx.beginPath();
+                this.ctx.arc(x + radius * 0.4, y - radius * 0.7, radius * 0.25, 0, Math.PI * 2);
+                this.ctx.fill();
+                
+                // Draw energy aura (represents her absorption powers)
+                this.ctx.strokeStyle = 'rgba(138, 43, 226, 0.5)'; // Purple glow
                 this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                this.ctx.arc(x, y, radius + 5, 0, Math.PI * 2);
                 this.ctx.stroke();
                 
-                // Draw crossbow tip
+                // Pulsing inner aura
+                const pulseSize = Math.sin(Date.now() * 0.005) * 3;
+                this.ctx.strokeStyle = 'rgba(138, 43, 226, 0.8)';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.arc(x, y, radius + pulseSize, 0, Math.PI * 2);
+                this.ctx.stroke();
+            }
+
+            drawCrossbow() {
+                const x = this.player.x;
+                const y = this.player.y;
+                const angle = this.player.crossbowAngle;
+                const length = this.player.radius + 12;
+                
+                // Crossbow stock (main body)
+                this.ctx.strokeStyle = '#8B4513'; // Dark brown
+                this.ctx.lineWidth = 4;
+                this.ctx.beginPath();
+                this.ctx.moveTo(x, y);
+                this.ctx.lineTo(
+                    x + Math.cos(angle) * length,
+                    y + Math.sin(angle) * length
+                );
+                this.ctx.stroke();
+                
+                // Crossbow arms (horizontal part)
+                const armLength = 8;
+                const tipX = x + Math.cos(angle) * length;
+                const tipY = y + Math.sin(angle) * length;
+                
+                // Left arm
+                this.ctx.strokeStyle = '#654321'; // Darker brown
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                this.ctx.moveTo(
+                    tipX + Math.cos(angle + Math.PI/2) * armLength,
+                    tipY + Math.sin(angle + Math.PI/2) * armLength
+                );
+                this.ctx.lineTo(
+                    tipX + Math.cos(angle - Math.PI/2) * armLength,
+                    tipY + Math.sin(angle - Math.PI/2) * armLength
+                );
+                this.ctx.stroke();
+                
+                // Crossbow string
+                this.ctx.strokeStyle = 'rgba(200, 200, 200, 0.8)';
+                this.ctx.lineWidth = 1;
+                this.ctx.beginPath();
+                this.ctx.moveTo(
+                    tipX + Math.cos(angle + Math.PI/2) * armLength * 0.8,
+                    tipY + Math.sin(angle + Math.PI/2) * armLength * 0.8
+                );
+                this.ctx.lineTo(
+                    tipX + Math.cos(angle - Math.PI/2) * armLength * 0.8,
+                    tipY + Math.sin(angle - Math.PI/2) * armLength * 0.8
+                );
+                this.ctx.stroke();
+                
+                // Trigger mechanism
+                this.ctx.fillStyle = '#CD853F'; // Light brown
                 this.ctx.beginPath();
                 this.ctx.arc(
-                    this.player.x + Math.cos(this.player.crossbowAngle) * crossbowLength,
-                    this.player.y + Math.sin(this.player.crossbowAngle) * crossbowLength,
-                    4,
+                    x + Math.cos(angle) * (length * 0.7),
+                    y + Math.sin(angle) * (length * 0.7),
+                    2,
                     0,
                     Math.PI * 2
                 );
-                this.ctx.fillStyle = '#ffcc00';
                 this.ctx.fill();
+            }
+
+            drawEnergyCrystal(collectible) {
+                const x = collectible.x;
+                const y = collectible.y;
+                collectible.pulse += 0.1;
+                const pulseIntensity = Math.sin(collectible.pulse) * 0.3 + 0.7;
+                const radius = collectible.radius;
+                
+                // Draw crystal facets (diamond-like shape)
+                this.ctx.save();
+                this.ctx.translate(x, y);
+                
+                // Main crystal body
+                this.ctx.fillStyle = collectible.color;
+                this.ctx.globalAlpha = pulseIntensity;
+                this.ctx.beginPath();
+                // Create diamond/crystal shape
+                this.ctx.moveTo(0, -radius);
+                this.ctx.lineTo(radius * 0.7, -radius * 0.3);
+                this.ctx.lineTo(radius * 0.7, radius * 0.3);
+                this.ctx.lineTo(0, radius);
+                this.ctx.lineTo(-radius * 0.7, radius * 0.3);
+                this.ctx.lineTo(-radius * 0.7, -radius * 0.3);
+                this.ctx.closePath();
+                this.ctx.fill();
+                
+                // Crystal highlights
+                this.ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                this.ctx.globalAlpha = pulseIntensity * 0.8;
+                this.ctx.beginPath();
+                this.ctx.moveTo(0, -radius * 0.8);
+                this.ctx.lineTo(radius * 0.4, -radius * 0.2);
+                this.ctx.lineTo(0, 0);
+                this.ctx.closePath();
+                this.ctx.fill();
+                
+                // Energy glow
+                this.ctx.globalAlpha = pulseIntensity * 0.5;
+                this.ctx.strokeStyle = collectible.color;
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                this.ctx.arc(0, 0, radius + 3, 0, Math.PI * 2);
+                this.ctx.stroke();
+                
+                // Immobilized effect (crossbow hit)
+                if (collectible.immobilized) {
+                    this.ctx.globalAlpha = 1;
+                    this.ctx.strokeStyle = 'rgba(255, 204, 0, 0.9)';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.beginPath();
+                    this.ctx.arc(0, 0, radius + 5, 0, Math.PI * 2);
+                    this.ctx.stroke();
+                    
+                    // Draw crossbow bolt stuck in crystal
+                    this.ctx.strokeStyle = '#8B4513';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(-radius * 0.3, -radius * 0.3);
+                    this.ctx.lineTo(radius * 0.3, radius * 0.3);
+                    this.ctx.stroke();
+                }
+                
+                this.ctx.restore();
+            }
+
+            drawEnemy(enemy) {
+                const x = enemy.x;
+                const y = enemy.y;
+                const radius = enemy.radius;
+                
+                // Flash red when damaged
+                const timeSinceHit = Date.now() - enemy.lastDamageTime;
+                const isFlashing = timeSinceHit < 300 && Math.floor(timeSinceHit / 50) % 2 === 0;
+                
+                this.ctx.save();
+                this.ctx.translate(x, y);
+                
+                // Main enemy body based on type
+                if (enemy.type === 'chaser') {
+                    // Aggressive angular shape
+                    this.ctx.fillStyle = isFlashing ? '#FF6666' : enemy.color;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(0, -radius);
+                    this.ctx.lineTo(radius * 0.8, -radius * 0.3);
+                    this.ctx.lineTo(radius * 0.8, radius * 0.3);
+                    this.ctx.lineTo(0, radius);
+                    this.ctx.lineTo(-radius * 0.8, radius * 0.3);
+                    this.ctx.lineTo(-radius * 0.8, -radius * 0.3);
+                    this.ctx.closePath();
+                    this.ctx.fill();
+                    
+                    // Aggressive eyes
+                    this.ctx.fillStyle = '#FF0000';
+                    this.ctx.beginPath();
+                    this.ctx.arc(-radius * 0.3, -radius * 0.2, 2, 0, Math.PI * 2);
+                    this.ctx.arc(radius * 0.3, -radius * 0.2, 2, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    
+                } else if (enemy.type === 'ambusher') {
+                    // Sleek, fast shape
+                    this.ctx.fillStyle = isFlashing ? '#DD44DD' : enemy.color;
+                    this.ctx.beginPath();
+                    this.ctx.arc(0, 0, radius, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    
+                    // Speed lines
+                    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+                    this.ctx.lineWidth = 1;
+                    for (let i = 0; i < 3; i++) {
+                        const angle = (i * Math.PI * 2) / 3;
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(Math.cos(angle) * radius * 0.5, Math.sin(angle) * radius * 0.5);
+                        this.ctx.lineTo(Math.cos(angle) * radius * 0.8, Math.sin(angle) * radius * 0.8);
+                        this.ctx.stroke();
+                    }
+                    
+                } else if (enemy.type === 'guardian') {
+                    // Heavy, defensive shape
+                    this.ctx.fillStyle = isFlashing ? '#666666' : enemy.color;
+                    this.ctx.fillRect(-radius, -radius * 0.8, radius * 2, radius * 1.6);
+                    
+                    // Armor plating
+                    this.ctx.strokeStyle = '#888888';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.strokeRect(-radius, -radius * 0.8, radius * 2, radius * 1.6);
+                    
+                    // Shield symbol
+                    this.ctx.strokeStyle = '#AAAAAA';
+                    this.ctx.lineWidth = 1;
+                    this.ctx.beginPath();
+                    this.ctx.arc(0, 0, radius * 0.4, 0, Math.PI * 2);
+                    this.ctx.stroke();
+                }
+                
+                // Health bar
+                if (enemy.health < enemy.maxHealth) {
+                    const barWidth = radius * 2;
+                    const barHeight = 4;
+                    const healthPercent = enemy.health / enemy.maxHealth;
+                    
+                    // Background
+                    this.ctx.fillStyle = '#333333';
+                    this.ctx.fillRect(-barWidth / 2, -radius - 10, barWidth, barHeight);
+                    
+                    // Health
+                    this.ctx.fillStyle = '#FF0000';
+                    this.ctx.fillRect(-barWidth / 2, -radius - 10, barWidth * healthPercent, barHeight);
+                }
+                
+                // Stun effect
+                if (enemy.stunned) {
+                    this.ctx.strokeStyle = '#FFFF00';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.beginPath();
+                    this.ctx.arc(0, 0, radius + 3, 0, Math.PI * 2);
+                    this.ctx.stroke();
+                    
+                    // Stun stars
+                    for (let i = 0; i < 3; i++) {
+                        const angle = (Date.now() * 0.01 + i * Math.PI * 2 / 3);
+                        const starX = Math.cos(angle) * (radius + 8);
+                        const starY = Math.sin(angle) * (radius + 8);
+                        this.ctx.fillStyle = '#FFFF00';
+                        this.ctx.beginPath();
+                        this.ctx.arc(starX, starY, 2, 0, Math.PI * 2);
+                        this.ctx.fill();
+                    }
+                }
+                
+                this.ctx.restore();
             }
 
             updateUI() {
                 document.getElementById('score').textContent = this.score;
                 document.getElementById('mass').textContent = Math.floor(this.player.mass);
+                document.getElementById('room').textContent = this.currentRoom;
+                document.getElementById('energy').textContent = this.totalEnergy;
+                document.getElementById('energyRequired').textContent = this.energyRequired;
+                
+                // Check for room advancement
+                if (this.totalEnergy >= this.energyRequired) {
+                    this.advanceToNextRoom();
+                }
+            }
+
+            advanceToNextRoom() {
+                this.currentRoom++;
+                this.energyRequired = Math.floor(this.energyRequired * 1.5); // Increase requirement by 50%
+                this.totalEnergy = 0; // Reset energy for new room
+                
+                // Show room advancement notification
+                this.showPowerNotification(0, 0, `ROOM ${this.currentRoom} UNLOCKED!`);
+                
+                // Generate new enemies and collectibles for the new room
+                this.generateEnemies();
+                this.generateCollectibles();
+                
+                // Slight player power boost for advancing
+                this.player.mass += 5;
+                this.player.radius = Math.sqrt(this.player.mass) * 2;
             }
 
             gameLoop() {
@@ -837,9 +1413,11 @@
                 this.updatePlayer();
                 this.updateCrossbowDirection();
                 this.updateCollectibles();
+                this.updateEnemies();
                 this.updateProjectiles();
                 this.updateImmobilizedCollectibles();
                 this.checkCollisions();
+                this.checkEnemyCollisions();
                 this.updateParticles();
                 this.render();
                 this.updateUI();
@@ -873,58 +1451,5 @@
             location.reload();
         });
     </script>
-<script>
-(function() {
-    var originalConsoleError = console.error;
-    console.error = function() {
-        window.parent.postMessage({
-            type: 'error',
-            message: Array.from(arguments).join(' ')
-        }, '*');
-        originalConsoleError.apply(console, arguments);
-    };
-
-    window.addEventListener('error', function(event) {
-        window.parent.postMessage({
-            type: 'error',
-            message: event.message,
-            source: event.filename,
-            lineno: event.lineno,
-            colno: event.colno,
-            error: event.error ? event.error.stack : null
-        }, '*');
-    });
-
-    window.addEventListener('unhandledrejection', function(event) {
-        window.parent.postMessage({
-            type: 'error',
-            message: 'Unhandled Promise Rejection: ' + event.reason,
-            error: event.reason ? event.reason.stack : null
-        }, '*');
-    });
-})();
-</script><script defer="" src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon="{"version":"2024.11.0","token":"5562e2e56e7244b2af1869a8c731adb3","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}" crossorigin="anonymous"></script>
-
-<script>
-                        let lastTouchEnd = 0;
-
-                        document.addEventListener('touchstart', function(e) {
-                            if (e.touches.length > 1) {
-                                e.preventDefault();
-                            }
-                        }, { passive: false });
-
-                        document.addEventListener('touchend', function(e) {
-                            const now = (new Date()).getTime();
-                            if (now - lastTouchEnd <= 300) {
-                                e.preventDefault();
-                            }
-                            lastTouchEnd = now;
-                        }, false);
-
-                        document.addEventListener('touchmove', function(e) {
-                            if (e.touches.length > 1) {
-                                e.preventDefault();
-                            }
-                        }, { passive: false });
-                    </script></body></html>
+</body>
+</html>
