@@ -34,6 +34,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Uncial+Antiqua&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/rpg-awesome/0.2.0/css/rpg-awesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/line-awesome/1.3.0/line-awesome/css/line-awesome.min.css">
     <!-- Add Montserrat font for modern look -->
     <link href="https://fonts.googleapis.com/css?family=Montserrat:400,500,700&display=swap" rel="stylesheet">
     
@@ -143,6 +144,7 @@
     <!-- Network Integration CSS -->
     <link rel="stylesheet" href="css/network-chat.css">
     <link rel="stylesheet" href="css/enhanced_chat_effects.css">
+    <link rel="stylesheet" href="css/fab-system.css">
 </head>
 
 <body>
@@ -150,9 +152,11 @@
     <div class="app-container">
         <!-- Mobile Header -->
         <header class="app-header">
+            <!-- Disabled for Feral Gateway system
             <button class="header-btn menu-btn" onclick="toggleSidebar()" title="Open Navigation Menu">
                 <span class="material-icons">menu</span>
             </button>
+            -->
             <button class="header-btn theme-btn" onclick="toggleTheme()" title="Toggle Theme">
                 <span class="material-icons">brightness_6</span>
             </button>
@@ -258,7 +262,9 @@
         </nav>
 
         <!-- Sidebar Overlay for Mobile -->
+        <!-- Disabled for Feral Gateway system
         <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+        -->
 
         <!-- Tab Contents -->
         <main class="tab-container">
@@ -3130,6 +3136,125 @@
             }
         }
 
+        // ============================================
+        // FERAL GATEWAY FUNCTIONS
+        // ============================================
+        
+        function toggleFeralGateway() {
+            const feralFab = document.getElementById('feralGatewayFab');
+            feralFab.classList.toggle('active');
+            
+            // Add haptic feedback on mobile
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
+        }
+
+        // Close Feral Gateway when clicking outside
+        document.addEventListener('click', (e) => {
+            const isClickInsideFab = e.target.closest('#feralGatewayFab');
+            if (!isClickInsideFab) {
+                const fab = document.getElementById('feralGatewayFab');
+                if (fab) {
+                    fab.classList.remove('active');
+                }
+            }
+        });
+
+        // Tab Navigation Functions
+        function openCharacterTab() {
+            const feralFab = document.getElementById('feralGatewayFab');
+            if (feralFab) feralFab.classList.remove('active');
+            
+            // Switch to character tab
+            const characterTab = document.querySelector('[data-tab="character"]');
+            if (characterTab) {
+                characterTab.click();
+            }
+        }
+
+        function openInventoryTab() {
+            const feralFab = document.getElementById('feralGatewayFab');
+            if (feralFab) feralFab.classList.remove('active');
+            
+            // Switch to inventory tab
+            const inventoryTab = document.querySelector('[data-tab="inventory"]');
+            if (inventoryTab) {
+                inventoryTab.click();
+            }
+        }
+
+        function openMagicTab() {
+            const feralFab = document.getElementById('feralGatewayFab');
+            if (feralFab) feralFab.classList.remove('active');
+            
+            // Switch to magic tab
+            const magicTab = document.querySelector('[data-tab="magic"]');
+            if (magicTab) {
+                magicTab.click();
+            }
+        }
+
+        function openNotesTab() {
+            const feralFab = document.getElementById('feralGatewayFab');
+            if (feralFab) feralFab.classList.remove('active');
+            
+            // Switch to notes tab
+            const notesTab = document.querySelector('[data-tab="notes"]');
+            if (notesTab) {
+                notesTab.click();
+            }
+        }
+
+        function openStorageTab() {
+            const feralFab = document.getElementById('feralGatewayFab');
+            if (feralFab) feralFab.classList.remove('active');
+            
+            // Switch to storage tab
+            const storageTab = document.querySelector('[data-tab="storage"]');
+            if (storageTab) {
+                storageTab.click();
+            }
+        }
+
+        function openReferenceTab() {
+            const feralFab = document.getElementById('feralGatewayFab');
+            if (feralFab) feralFab.classList.remove('active');
+            
+            // Switch to reference tab
+            const referenceTab = document.querySelector('[data-tab="reference"]');
+            if (referenceTab) {
+                referenceTab.click();
+            }
+        }
+
+        function openChatBottomSheet() {
+            const feralFab = document.getElementById('feralGatewayFab');
+            if (feralFab) feralFab.classList.remove('active');
+            
+            // Open the chat bottom sheet
+            const sheet = document.getElementById('chat-bottom-sheet');
+            if (sheet && !sheet.classList.contains('open')) {
+                sheet.classList.add('open');
+            }
+        }
+
+        function openMiniGamesModule() {
+            const feralFab = document.getElementById('feralGatewayFab');
+            if (feralFab) feralFab.classList.remove('active');
+            
+            // Simple dialog for now - will be replaced with constellation map
+            const choice = confirm("🎮 Choose a mini-game:\n\nOK = 🚂 Iron Tangle Railway\nCancel = 🍩 Donut's Magic Mania");
+            
+            if (choice) {
+                openIronTangle();
+            } else {
+                openDonutsMagicMania();
+            }
+        }
+
+        // ========================================
+
         // Initialize FAB touch events when DOM is ready
         document.addEventListener('DOMContentLoaded', setupFABTouchEvents);
 
@@ -5373,23 +5498,45 @@
     <!-- Image Upload Integration -->
     <script src="js/chatImageUploadIntegration.js"></script>
 
-    <!-- Expandable Floating Action Button for Chat + Mini-Games -->
-    <div class="fab-container" id="fab-container">
-        <!-- Main Chat FAB -->
-        <button class="chat-fab" id="chat-fab" onclick="handleFABClick(event)" title="Chat (Long press for games)">
-            <span class="material-icons">chat_bubble</span>
-            <span class="fab-notification-dot" id="chat-fab-notification" style="display: none;"></span>
-        </button>
-        
-        <!-- Mini-Game FAB (slides out on long press) -->
-        <button class="minigame-fab" id="iron-tangle-fab" onclick="openIronTangle()" title="Iron Tangle Railway Puzzle">
-            🚂
-        </button>
-        
-        <!-- Donut's Magic Mania FAB -->
-        <button class="minigame-fab" id="donuts-magic-mania-fab" onclick="openDonutsMagicMania()" title="Donut's Magic Mania - Princess Donut's sparkly match-3 game">
-            🍩
-        </button>
+    <!-- Feral Gateway FAB - DCC-Themed Navigation -->
+    <div class="feral-gateway-fab" id="feralGatewayFab">
+        <div class="feral-gateway-main" onclick="toggleFeralGateway()">
+            <i class="las la-dungeon dungeon-icon"></i>
+        </div>
+        <div class="feral-stack">
+            <!-- Chat - First and primary function -->
+            <div class="feral-option" onclick="openChatBottomSheet()" title="Game Chat">
+                <i class="material-icons">chat_bubble</i>
+            </div>
+            <!-- Character Stats -->
+            <div class="feral-option" onclick="openCharacterTab()" title="Character Stats">
+                <i class="ra ra-player"></i>
+            </div>
+            <!-- Inventory & Gear -->
+            <div class="feral-option" onclick="openInventoryTab()" title="Inventory & Gear">
+                <i class="ra ra-book"></i>
+            </div>
+            <!-- Magic & Spells -->
+            <div class="feral-option" onclick="openMagicTab()" title="Magic & Spells">
+                <i class="ra ra-fairy-wand"></i>
+            </div>
+            <!-- Notes & Backstory -->
+            <div class="feral-option" onclick="openNotesTab()" title="Notes & Backstory">
+                <i class="ra ra-scroll-unfurled"></i>
+            </div>
+            <!-- Storage Manager -->
+            <div class="feral-option" onclick="openStorageTab()" title="Storage Manager">
+                🗄️
+            </div>
+            <!-- Reference/Help -->
+            <div class="feral-option" onclick="openReferenceTab()" title="How the Game Works">
+                <i class="material-icons">help_outline</i>
+            </div>
+            <!-- Mini-Games Module -->
+            <div class="feral-option" onclick="openMiniGamesModule()" title="Mini-Games">
+                <i class="las la-gamepad"></i>
+            </div>
+        </div>
     </div>
 
     <!-- Chat Bottom Sheet -->
