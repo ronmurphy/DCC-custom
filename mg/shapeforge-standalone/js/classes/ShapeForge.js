@@ -201,9 +201,9 @@ class ShapeForge {
 
     // Create drawer content
     this.drawer.innerHTML = `
-    <div id="shape-forge-container" style="display: flex; height: 100%; max-height: 100%; overflow: hidden; gap: 10px;">
-      <!-- Left panel for basic tools and shapes -->
-      <div class="tool-panel" style="width: 220px; padding: 10px; overflow-y: auto; border-right: 1px solid #444; background: #2a2a2a;">
+    <div id="shape-forge-container" style="display: flex; height: 100%; overflow: hidden;">
+      <!-- Left panel for tools and properties -->
+      <div class="tool-panel" style="width: 250px; padding: 0 10px; overflow-y: auto; border-right: 1px solid #444;">
         <!-- Project Info -->
         <div class="panel-section">
           <sl-input id="project-name" label="Project Name" placeholder="Untitled Project"></sl-input>
@@ -390,80 +390,12 @@ class ShapeForge {
         </div>
       </div>
       
-      <!-- Center panel for 3D preview -->
-      <div class="preview-panel" style="flex: 2; display: flex; flex-direction: column; background: #1a1a1a; border-radius: 8px; margin: 0 5px;">
-        <div style="padding: 10px; border-bottom: 1px solid #444; background: #333; border-radius: 8px 8px 0 0;">
-          <h3 style="margin: 0; color: #fff; font-size: 14px;">3D Preview</h3>
-        </div>
-        <div id="preview-container" style="flex: 1; position: relative; border-radius: 0 0 8px 8px; overflow: hidden; width: 100%; height: 100%;">
+      <!-- Right panel for preview -->
+      <div class="preview-panel" style="flex: 1; display: flex; flex-direction: column;">
+
+        
+        <div id="preview-container" style="flex: 1; position: relative;">
           <!-- Three.js preview will be inserted here -->
-        </div>
-      </div>
-      
-      <!-- Right panel for object properties and advanced controls -->
-      <div class="properties-panel" style="width: 280px; padding: 10px; overflow-y: auto; border-left: 1px solid #444; background: #2a2a2a;">
-        <!-- Object Properties -->
-        <div class="panel-section">
-          <h3>Selected Object</h3>
-          <div id="properties-container">
-            <!-- Properties will be populated based on selected object -->
-            <div class="no-selection-message">
-              <p>Select an object to edit its properties.</p>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Materials -->
-        <div class="panel-section" style="margin-top: 20px;">
-          <h3>Materials</h3>
-          <div id="materials-container">
-            <!-- Material controls -->
-            <div class="material-control">
-              <label>Color:</label>
-              <sl-color-picker id="material-color" value="#ff0000" format="hex"></sl-color-picker>
-            </div>
-            
-            <div class="material-control" style="margin-top: 10px;">
-              <label>Transparency:</label>
-              <sl-range id="material-opacity" min="0" max="1" step="0.01" value="1"></sl-range>
-            </div>
-            
-            <div class="material-control" style="margin-top: 10px;">
-              <label>Roughness:</label>
-              <sl-range id="material-roughness" min="0" max="1" step="0.01" value="0.5"></sl-range>
-            </div>
-            
-            <div class="material-control" style="margin-top: 10px;">
-              <label>Metalness:</label>
-              <sl-range id="material-metalness" min="0" max="1" step="0.01" value="0"></sl-range>
-            </div>
-            
-            <div class="material-control" style="margin-top: 10px;">
-              <label>Emissive:</label>
-              <sl-range id="material-emissive" min="0" max="1" step="0.01" value="0"></sl-range>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Objects List -->
-        <div class="panel-section" style="margin-top: 20px;">
-          <h3>Scene Objects</h3>
-          <div id="objects-list-container" style="max-height: 200px; overflow-y: auto; border: 1px solid #444; border-radius: 4px; padding: 8px;">
-            <!-- List of objects in the scene -->
-          </div>
-        </div>
-        
-        <!-- Camera Controls -->
-        <div class="panel-section" style="margin-top: 20px;">
-          <h3>Camera & View</h3>
-          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
-            <sl-button id="reset-camera" size="small">Reset View</sl-button>
-            <sl-button id="fit-camera" size="small">Fit All</sl-button>
-            <sl-button id="front-view" size="small">Front</sl-button>
-            <sl-button id="top-view" size="small">Top</sl-button>
-            <sl-button id="side-view" size="small">Side</sl-button>
-            <sl-button id="perspective-view" size="small">3D View</sl-button>
-          </div>
         </div>
       </div>
     </div>
@@ -828,14 +760,6 @@ class ShapeForge {
       this.previewContainer.clientWidth,
       this.previewContainer.clientHeight
     );
-    
-    // Ensure the canvas fits within its container
-    this.previewRenderer.domElement.style.width = '100%';
-    this.previewRenderer.domElement.style.height = '100%';
-    this.previewRenderer.domElement.style.display = 'block';
-    this.previewRenderer.domElement.style.maxWidth = '100%';
-    this.previewRenderer.domElement.style.maxHeight = '100%';
-    
     this.previewContainer.appendChild(this.previewRenderer.domElement);
 
     // Check if OrbitControls is available
