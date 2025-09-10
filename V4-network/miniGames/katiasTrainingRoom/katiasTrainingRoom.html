@@ -77,6 +77,169 @@
             box-shadow: 0 0 20px rgba(79, 195, 247, 0.5);
         }
 
+        #guideBtn {
+            background: linear-gradient(45deg, #9c27b0, #7b1fa2);
+            border: none;
+            padding: 12px 25px;
+            font-size: 1.2rem;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        #guideBtn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(156, 39, 176, 0.5);
+        }
+
+        /* Guide Modal Styles */
+        #guideModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+        }
+
+        #guideContent {
+            background: linear-gradient(135deg, #1a237e, #0f3460);
+            border-radius: 15px;
+            padding: 0;
+            max-width: 80%;
+            max-height: 80%;
+            border: 2px solid #4fc3f7;
+            overflow: hidden;
+        }
+
+        #guideHeader {
+            background: rgba(79, 195, 247, 0.2);
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #4fc3f7;
+        }
+
+        #guideHeader h2 {
+            color: #4fc3f7;
+            margin: 0;
+            font-size: 1.8rem;
+            text-shadow: 0 0 10px #4fc3f7;
+        }
+
+        #closeGuide {
+            background: none;
+            border: none;
+            color: #4fc3f7;
+            font-size: 2rem;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        #closeGuide:hover {
+            background: rgba(79, 195, 247, 0.2);
+        }
+
+        #guideTabs {
+            display: flex;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .guide-tab {
+            flex: 1;
+            background: none;
+            border: none;
+            color: #b0bec5;
+            padding: 15px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .guide-tab.active {
+            color: #4fc3f7;
+            border-bottom-color: #4fc3f7;
+            background: rgba(79, 195, 247, 0.1);
+        }
+
+        .guide-tab:hover {
+            background: rgba(79, 195, 247, 0.1);
+        }
+
+        #guideBody {
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .guide-tab-content h3 {
+            color: #4fc3f7;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+
+        .power-up-item, .enemy-item {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .power-up-icon, .enemy-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .power-up-info, .enemy-info {
+            flex: 1;
+        }
+
+        .power-up-name, .enemy-name {
+            font-weight: bold;
+            color: #4fc3f7;
+            margin-bottom: 5px;
+        }
+
+        .power-up-description, .enemy-description {
+            color: #b0bec5;
+            font-size: 0.9rem;
+        }
+
+        .undiscovered {
+            opacity: 0.5;
+        }
+
+        .undiscovered .power-up-name {
+            color: #666;
+        }
+
+        .undiscovered .power-up-description {
+            color: #555;
+        }
+
         #gameUI {
             position: absolute;
             top: 20px;
@@ -338,6 +501,42 @@
             <p>🎯 Some targets flee - use your crossbow!</p>
             <p>📈 Master absorption techniques!</p>
             <button id="readyBtn">BEGIN TRAINING</button>
+            <button id="guideBtn">POWER-UP & ENEMY GUIDE</button>
+        </div>
+
+        <!-- Guide Modal -->
+        <div id="guideModal" style="display: none;">
+            <div id="guideContent">
+                <div id="guideHeader">
+                    <h2>TRAINING GUIDE</h2>
+                    <button id="closeGuide">×</button>
+                </div>
+                <div id="guideTabs">
+                    <button class="guide-tab active" data-tab="powerups">Power-Ups</button>
+                    <button class="guide-tab" data-tab="enemies">Enemies</button>
+                    <button class="guide-tab" data-tab="strategy">Strategy</button>
+                </div>
+                <div id="guideBody">
+                    <div id="powerups-tab" class="guide-tab-content">
+                        <h3>Power-Up Discovery Log</h3>
+                        <div id="powerUpList"></div>
+                    </div>
+                    <div id="enemies-tab" class="guide-tab-content" style="display: none;">
+                        <h3>Enemy Types Encountered</h3>
+                        <div id="enemyList"></div>
+                    </div>
+                    <div id="strategy-tab" class="guide-tab-content" style="display: none;">
+                        <h3>Training Tips</h3>
+                        <div id="strategyTips">
+                            <p><strong>🧲 Absorption:</strong> Larger mass = better absorption rate</p>
+                            <p><strong>⚡ Rush:</strong> 30-second cooldown escape ability</p>
+                            <p><strong>🎯 Crossbow:</strong> Hold shoot button to aim precisely</p>
+                            <p><strong>💎 Power-Ups:</strong> Mystery colors - collect to discover effects!</p>
+                            <p><strong>🏃 Movement:</strong> Strategic positioning beats raw speed</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div id="gameUI" style="display: none;">
@@ -385,9 +584,15 @@
                 this.rushCooldownBar = document.getElementById('rushCooldownBar');
                 this.rushCooldownFill = document.getElementById('rushCooldownFill');
                 
+                // Guide modal elements
+                this.guideModal = document.getElementById('guideModal');
+                this.guideBtn = document.getElementById('guideBtn');
+                this.closeGuideBtn = document.getElementById('closeGuide');
+                
                 this.setupCanvas();
                 this.initGame();
                 this.setupControls();
+                this.setupGuideModal();
                 
                 document.getElementById('readyBtn').addEventListener('click', () => this.startGame());
             }
@@ -481,8 +686,64 @@
                 this.discoveredPowerUps = new Set(); // Track which colors have been discovered
                 this.fireTrail = []; // Fire trail points for visual effect
                 this.activeEffects = {
-                    electricShield: { active: false, timer: 0 },
-                    fireTrail: { active: false, timer: 0, trail: [] }
+                    electricShield: { active: false, timer: 0, radius: 0 },
+                    fireTrail: { active: false, timer: 0, trail: [] },
+                    magnet: { active: false, timer: 0 },
+                    timeSlow: { active: false, timer: 0 },
+                    phaseWalk: { active: false, timer: 0 },
+                    energyMultiplier: { active: false, timer: 0 },
+                    crossbowUpgrade: { active: false, timer: 0 },
+                    crossbowBurst: { active: false, timer: 0 },
+                    massShield: { active: false, timer: 0 }
+                };
+                
+                // Floor themes
+                this.currentTheme = 'stone';
+                this.floorThemes = {
+                    stone: {
+                        name: 'Stone Dungeon',
+                        backgroundColor: '#2c3e50',
+                        floorColor: '#34495e',
+                        wallColor: '#1e2a36',
+                        particleColor: '#7f8c8d',
+                        rooms: [1, 2, 3]
+                    },
+                    lava: {
+                        name: 'Lava Caves',
+                        backgroundColor: '#8b1538',
+                        floorColor: '#c0392b',
+                        wallColor: '#922b21',
+                        particleColor: '#f39c12',
+                        glowColor: '#e74c3c',
+                        rooms: [4, 5, 6]
+                    },
+                    ice: {
+                        name: 'Ice Caverns',
+                        backgroundColor: '#1b4f72',
+                        floorColor: '#5dade2',
+                        wallColor: '#2e86ab',
+                        particleColor: '#85c1e9',
+                        glowColor: '#aed6f1',
+                        rooms: [7, 8, 9]
+                    },
+                    crystal: {
+                        name: 'Crystal Chambers',
+                        backgroundColor: '#4a148c',
+                        floorColor: '#8e24aa',
+                        wallColor: '#6a1b9a',
+                        particleColor: '#ba68c8',
+                        glowColor: '#e1bee7',
+                        rooms: [10, 11, 12]
+                    },
+                    void: {
+                        name: 'Void Realm',
+                        backgroundColor: '#0d1421',
+                        floorColor: '#2c3e50',
+                        wallColor: '#1c2833',
+                        particleColor: '#8b7bd6',
+                        glowColor: '#5d4e75',
+                        rooms: [13, 999] // 13+
+                    }
                 };
                 
                 // Thumbstick properties
@@ -493,6 +754,9 @@
                     y: this.thumbstickContainer.offsetTop + this.thumbstickContainer.offsetHeight / 2
                 };
                 this.thumbstickRadius = 40;
+                
+                // Initialize floor theme
+                this.updateFloorTheme();
                 
                 this.generateCollectibles();
                 this.generateEnemies();
@@ -606,12 +870,17 @@
                 
                 // Define power-up types
                 const powerUpTypes = [
-                    { type: 'electricShield', color: '#FFD700', name: 'Electric Shield' },
-                    { type: 'fireTrail', color: '#FF4500', name: 'Fire Trail' },
-                    { type: 'rushRefill', color: '#9932CC', name: 'Rush Refill' },
-                    { type: 'healthBoost', color: '#00FF00', name: 'Health Boost' },
-                    { type: 'crossbowUpgrade', color: '#00BFFF', name: 'Crossbow Upgrade' },
-                    { type: 'massShield', color: '#C0C0C0', name: 'Mass Shield' }
+                    { type: 'electric-shield', color: '#00FFFF', name: 'Electric Shield' },
+                    { type: 'fire-trail', color: '#FF4500', name: 'Fire Trail' },
+                    { type: 'rush-refill', color: '#FFFF00', name: 'Rush Refill' },
+                    { type: 'health-boost', color: '#00FF00', name: 'Health Boost' },
+                    { type: 'crossbow-upgrade', color: '#800080', name: 'Crossbow Upgrade' },
+                    { type: 'mass-shield', color: '#0000FF', name: 'Mass Shield' },
+                    { type: 'magnet', color: '#C0C0C0', name: 'Energy Magnet' },
+                    { type: 'time-slow', color: '#FF69B4', name: 'Time Distortion' },
+                    { type: 'phase-walk', color: '#F0F8FF', name: 'Phase Walk' },
+                    { type: 'energy-multiplier', color: '#FFD700', name: 'Energy Multiplier' },
+                    { type: 'crossbow-burst', color: '#8B0000', name: 'Crossbow Burst' }
                 ];
                 
                 for (let i = 0; i < powerUpCount; i++) {
@@ -765,6 +1034,111 @@
 
                 // Prevent context menu on touch
                 this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+            }
+
+            setupGuideModal() {
+                // Guide button click
+                this.guideBtn.addEventListener('click', () => {
+                    this.openGuideModal();
+                });
+
+                // Close guide modal
+                this.closeGuideBtn.addEventListener('click', () => {
+                    this.closeGuideModal();
+                });
+
+                // Close on background click
+                this.guideModal.addEventListener('click', (e) => {
+                    if (e.target === this.guideModal) {
+                        this.closeGuideModal();
+                    }
+                });
+
+                // Tab switching
+                document.querySelectorAll('.guide-tab').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        this.switchGuideTab(tab.dataset.tab);
+                    });
+                });
+            }
+
+            openGuideModal() {
+                this.updateGuideContent();
+                this.guideModal.style.display = 'flex';
+            }
+
+            closeGuideModal() {
+                this.guideModal.style.display = 'none';
+            }
+
+            switchGuideTab(tabName) {
+                // Update tab buttons
+                document.querySelectorAll('.guide-tab').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+                // Update tab content
+                document.querySelectorAll('.guide-tab-content').forEach(content => {
+                    content.style.display = 'none';
+                });
+                document.getElementById(`${tabName}-tab`).style.display = 'block';
+            }
+
+            updateGuideContent() {
+                this.updatePowerUpList();
+                this.updateEnemyList();
+            }
+
+            updatePowerUpList() {
+                const powerUpList = document.getElementById('powerUpList');
+                const powerUpTypes = [
+                    { type: 'electric-shield', name: 'Electric Shield', color: '#00FFFF', description: 'Creates a stunning energy field around you' },
+                    { type: 'fire-trail', name: 'Fire Trail', color: '#FF4500', description: 'Leaves a burning path behind you' },
+                    { type: 'rush-refill', name: 'Rush Refill', color: '#FFFF00', description: 'Instantly resets your Rush ability cooldown' },
+                    { type: 'health-boost', name: 'Health Boost', color: '#00FF00', description: 'Increases your mass and absorption power' },
+                    { type: 'crossbow-upgrade', name: 'Crossbow Upgrade', color: '#800080', description: 'Enhanced crossbow damage for limited time' },
+                    { type: 'mass-shield', name: 'Mass Shield', color: '#0000FF', description: 'Temporary immunity to mass loss' },
+                    { type: 'magnet', name: 'Energy Magnet', color: '#C0C0C0', description: 'Draws nearby energy crystals to you automatically' },
+                    { type: 'time-slow', name: 'Time Distortion', color: '#FF69B4', description: 'Slows down everything except you' },
+                    { type: 'phase-walk', name: 'Phase Walk', color: '#F0F8FF', description: 'Walk through enemies and walls temporarily' },
+                    { type: 'energy-multiplier', name: 'Energy Multiplier', color: '#FFD700', description: 'Double energy gain from crystals' },
+                    { type: 'crossbow-burst', name: 'Crossbow Burst', color: '#8B0000', description: 'Fires multiple bolts in a spread pattern' }
+                ];
+
+                powerUpList.innerHTML = powerUpTypes.map(powerUp => {
+                    const discovered = this.discoveredPowerUps.has(powerUp.type);
+                    return `
+                        <div class="power-up-item ${discovered ? '' : 'undiscovered'}" style="border-left-color: ${powerUp.color}">
+                            <div class="power-up-icon" style="background: ${powerUp.color}">💎</div>
+                            <div class="power-up-info">
+                                <div class="power-up-name">${discovered ? powerUp.name : '??? Mystery Power-Up'}</div>
+                                <div class="power-up-description">${discovered ? powerUp.description : 'Collect to discover its effects!'}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            updateEnemyList() {
+                const enemyList = document.getElementById('enemyList');
+                const enemyTypes = [
+                    { type: 'chaser', name: 'Chaser', color: '#ff5722', description: 'Aggressive hunters that pursue relentlessly', icon: '🔺' },
+                    { type: 'ambusher', name: 'Ambusher', color: '#9c27b0', description: 'Cunning flankers that try to surround you', icon: '🔷' },
+                    { type: 'guardian', name: 'Guardian', color: '#2196f3', description: 'Defensive sentries that patrol territories', icon: '🔳' }
+                ];
+
+                enemyList.innerHTML = enemyTypes.map(enemy => {
+                    return `
+                        <div class="enemy-item" style="border-left-color: ${enemy.color}">
+                            <div class="enemy-icon" style="background: ${enemy.color}">${enemy.icon}</div>
+                            <div class="enemy-info">
+                                <div class="enemy-name">${enemy.name}</div>
+                                <div class="enemy-description">${enemy.description}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
             }
             
             updateThumbstick(touch) {
@@ -1327,37 +1701,133 @@
                 });
             }
 
-            drawStoneFloor() {
+            drawThemedFloor() {
+                const theme = this.floorThemes[this.currentTheme];
                 const tileSize = 60;
+                
                 for (let x = 0; x < this.canvas.width + tileSize; x += tileSize) {
                     for (let y = 0; y < this.canvas.height + tileSize; y += tileSize) {
-                        // Draw stone tile
-                        this.ctx.fillStyle = '#3a3a3a';
+                        // Draw base tile with theme color
+                        this.ctx.fillStyle = theme.floorColor;
                         this.ctx.fillRect(x, y, tileSize - 2, tileSize - 2);
                         
-                        // Add some variation to tiles
-                        const variation = Math.sin(x * 0.01 + y * 0.01) * 10;
-                        this.ctx.fillStyle = `rgba(${50 + variation}, ${50 + variation}, ${50 + variation}, 0.3)`;
-                        this.ctx.fillRect(x + 5, y + 5, tileSize - 12, tileSize - 12);
+                        // Add theme-specific effects
+                        this.addThemeEffects(x, y, tileSize, theme);
                         
                         // Dark grout lines
-                        this.ctx.strokeStyle = '#1a1a1a';
+                        this.ctx.strokeStyle = theme.wallColor;
                         this.ctx.lineWidth = 2;
                         this.ctx.strokeRect(x, y, tileSize - 2, tileSize - 2);
                     }
                 }
             }
 
+            addThemeEffects(x, y, tileSize, theme) {
+                const variation = Math.sin(x * 0.01 + y * 0.01) * 10;
+                
+                switch (this.currentTheme) {
+                    case 'stone':
+                        // Stone texture variation
+                        this.ctx.fillStyle = `rgba(${50 + variation}, ${50 + variation}, ${50 + variation}, 0.3)`;
+                        this.ctx.fillRect(x + 5, y + 5, tileSize - 12, tileSize - 12);
+                        break;
+                        
+                    case 'lava':
+                        // Glowing cracks and heat shimmer
+                        this.ctx.fillStyle = theme.glowColor;
+                        this.ctx.globalAlpha = 0.3 + Math.sin(Date.now() * 0.005 + x * 0.01) * 0.2;
+                        this.ctx.fillRect(x + 10, y + 10, tileSize - 22, tileSize - 22);
+                        
+                        // Random lava cracks
+                        if (Math.random() < 0.1) {
+                            this.ctx.strokeStyle = theme.glowColor;
+                            this.ctx.lineWidth = 2;
+                            this.ctx.globalAlpha = 0.6;
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(x + Math.random() * tileSize, y);
+                            this.ctx.lineTo(x + Math.random() * tileSize, y + tileSize);
+                            this.ctx.stroke();
+                        }
+                        this.ctx.globalAlpha = 1;
+                        break;
+                        
+                    case 'ice':
+                        // Ice crystals and frost
+                        this.ctx.fillStyle = theme.glowColor;
+                        this.ctx.globalAlpha = 0.4;
+                        this.ctx.fillRect(x + 8, y + 8, tileSize - 18, tileSize - 18);
+                        
+                        // Frost patterns
+                        this.ctx.strokeStyle = theme.particleColor;
+                        this.ctx.lineWidth = 1;
+                        this.ctx.globalAlpha = 0.5;
+                        for (let i = 0; i < 3; i++) {
+                            const centerX = x + tileSize / 2;
+                            const centerY = y + tileSize / 2;
+                            const angle = (i * Math.PI * 2) / 3;
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(centerX, centerY);
+                            this.ctx.lineTo(
+                                centerX + Math.cos(angle) * (tileSize / 4),
+                                centerY + Math.sin(angle) * (tileSize / 4)
+                            );
+                            this.ctx.stroke();
+                        }
+                        this.ctx.globalAlpha = 1;
+                        break;
+                        
+                    case 'crystal':
+                        // Prismatic refractions
+                        this.ctx.fillStyle = theme.glowColor;
+                        this.ctx.globalAlpha = 0.3;
+                        this.ctx.fillRect(x + 6, y + 6, tileSize - 14, tileSize - 14);
+                        
+                        // Rainbow refraction effect
+                        const time = Date.now() * 0.003;
+                        const hue = (time + x * 0.01 + y * 0.01) % 360;
+                        this.ctx.fillStyle = `hsla(${hue}, 60%, 70%, 0.2)`;
+                        this.ctx.fillRect(x + 12, y + 12, tileSize - 26, tileSize - 26);
+                        this.ctx.globalAlpha = 1;
+                        break;
+                        
+                    case 'void':
+                        // Floating platform effect with void gaps
+                        if (Math.random() < 0.2) {
+                            // Create void gaps (darker areas)
+                            this.ctx.fillStyle = '#000';
+                            this.ctx.globalAlpha = 0.7;
+                            this.ctx.fillRect(x + 15, y + 15, tileSize - 32, tileSize - 32);
+                        } else {
+                            // Glowing platform edges
+                            this.ctx.strokeStyle = theme.glowColor;
+                            this.ctx.lineWidth = 1;
+                            this.ctx.globalAlpha = 0.4;
+                            this.ctx.strokeRect(x + 5, y + 5, tileSize - 12, tileSize - 12);
+                        }
+                        this.ctx.globalAlpha = 1;
+                        break;
+                }
+            }
+
+            hexToRgb(hex) {
+                const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                return result ? 
+                    `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : 
+                    '0, 0, 0';
+            }
+
             render() {
-                // Clear canvas with dark stone color
-                this.ctx.fillStyle = '#2a2a2a';
+                const theme = this.floorThemes[this.currentTheme];
+                
+                // Clear canvas with themed background color
+                this.ctx.fillStyle = theme.backgroundColor;
                 this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-                // Draw stone floor tiles
-                this.drawStoneFloor();
+                // Draw themed floor tiles
+                this.drawThemedFloor();
 
-                // Draw grid
-                this.ctx.strokeStyle = 'rgba(15, 52, 96, 0.3)';
+                // Draw grid with themed colors
+                this.ctx.strokeStyle = `rgba(${this.hexToRgb(theme.wallColor)}, 0.3)`;
                 this.ctx.lineWidth = 1;
                 for (let x = 0; x < this.canvas.width; x += 50) {
                     this.ctx.beginPath();
@@ -1816,6 +2286,9 @@
                 // Show room advancement notification
                 this.showPowerNotification(0, 0, `ROOM ${this.currentRoom} UNLOCKED!`);
                 
+                // Update floor theme
+                this.updateFloorTheme();
+                
                 // Generate new enemies and collectibles for the new room
                 this.generateEnemies();
                 this.generateCollectibles();
@@ -1824,6 +2297,52 @@
                 // Slight player power boost for advancing
                 this.player.mass += 5;
                 this.player.radius = Math.sqrt(this.player.mass) * 2;
+            }
+
+            updateFloorTheme() {
+                let newTheme = 'stone'; // Default
+                
+                // Determine theme based on current room
+                for (const [themeName, theme] of Object.entries(this.floorThemes)) {
+                    if (this.currentRoom >= theme.rooms[0] && 
+                        this.currentRoom <= theme.rooms[theme.rooms.length - 1]) {
+                        newTheme = themeName;
+                        break;
+                    }
+                }
+                
+                // Check if theme changed
+                if (newTheme !== this.currentTheme) {
+                    const oldTheme = this.currentTheme;
+                    this.currentTheme = newTheme;
+                    const theme = this.floorThemes[newTheme];
+                    
+                    // Show theme change notification
+                    this.showPowerNotification(0, 0, `ENTERING: ${theme.name.toUpperCase()}!`);
+                    
+                    // Update canvas background immediately
+                    document.body.style.background = `linear-gradient(45deg, ${theme.backgroundColor}, ${theme.wallColor})`;
+                    
+                    // Create theme transition particles
+                    this.createThemeTransitionEffect(oldTheme, newTheme);
+                }
+            }
+
+            createThemeTransitionEffect(oldTheme, newTheme) {
+                const oldThemeData = this.floorThemes[oldTheme];
+                const newThemeData = this.floorThemes[newTheme];
+                
+                // Create swirling particles that transition from old to new theme colors
+                for (let i = 0; i < 20; i++) {
+                    setTimeout(() => {
+                        const x = Math.random() * this.canvas.width;
+                        const y = Math.random() * this.canvas.height;
+                        
+                        // Alternate between old and new theme colors
+                        const color = i % 2 === 0 ? oldThemeData.particleColor : newThemeData.particleColor;
+                        this.createParticles(x, y, color);
+                    }, i * 100);
+                }
             }
 
             updateRushCooldown() {
@@ -1927,6 +2446,86 @@
                         });
                     }
                 }
+                
+                // Update magnet effect
+                if (this.activeEffects.magnet.active) {
+                    this.activeEffects.magnet.timer--;
+                    if (this.activeEffects.magnet.timer <= 0) {
+                        this.activeEffects.magnet.active = false;
+                    } else {
+                        // Attract energy crystals within range
+                        const magnetRange = this.player.mass * 0.25;
+                        this.collectibles.forEach(collectible => {
+                            if (!collectible.collected) {
+                                const dx = this.player.x - collectible.x;
+                                const dy = this.player.y - collectible.y;
+                                const distance = Math.sqrt(dx * dx + dy * dy);
+                                
+                                if (distance < magnetRange) {
+                                    // Pull crystal toward player
+                                    const pullForce = 0.3;
+                                    const angle = Math.atan2(dy, dx);
+                                    collectible.x += Math.cos(angle) * pullForce * (magnetRange - distance) / magnetRange;
+                                    collectible.y += Math.sin(angle) * pullForce * (magnetRange - distance) / magnetRange;
+                                    
+                                    // Add magnetic particle trail
+                                    if (Math.random() < 0.3) {
+                                        this.createParticles(collectible.x, collectible.y, '#C0C0C0');
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+                
+                // Update time slow effect
+                if (this.activeEffects.timeSlow.active) {
+                    this.activeEffects.timeSlow.timer--;
+                    if (this.activeEffects.timeSlow.timer <= 0) {
+                        this.activeEffects.timeSlow.active = false;
+                    }
+                    // Time slow is handled in enemy movement and other updates
+                }
+                
+                // Update phase walk
+                if (this.activeEffects.phaseWalk.active) {
+                    this.activeEffects.phaseWalk.timer--;
+                    if (this.activeEffects.phaseWalk.timer <= 0) {
+                        this.activeEffects.phaseWalk.active = false;
+                    }
+                }
+                
+                // Update energy multiplier
+                if (this.activeEffects.energyMultiplier.active) {
+                    this.activeEffects.energyMultiplier.timer--;
+                    if (this.activeEffects.energyMultiplier.timer <= 0) {
+                        this.activeEffects.energyMultiplier.active = false;
+                    }
+                }
+                
+                // Update crossbow upgrade
+                if (this.activeEffects.crossbowUpgrade.active) {
+                    this.activeEffects.crossbowUpgrade.timer--;
+                    if (this.activeEffects.crossbowUpgrade.timer <= 0) {
+                        this.activeEffects.crossbowUpgrade.active = false;
+                    }
+                }
+                
+                // Update crossbow burst
+                if (this.activeEffects.crossbowBurst.active) {
+                    this.activeEffects.crossbowBurst.timer--;
+                    if (this.activeEffects.crossbowBurst.timer <= 0) {
+                        this.activeEffects.crossbowBurst.active = false;
+                    }
+                }
+                
+                // Update mass shield
+                if (this.activeEffects.massShield.active) {
+                    this.activeEffects.massShield.timer--;
+                    if (this.activeEffects.massShield.timer <= 0) {
+                        this.activeEffects.massShield.active = false;
+                    }
+                }
             }
 
             checkPowerUpCollisions() {
@@ -1955,41 +2554,71 @@
                 }
                 
                 switch (powerUp.type) {
-                    case 'electricShield':
+                    case 'electric-shield':
                         this.activeEffects.electricShield.active = true;
-                        this.activeEffects.electricShield.timer = 600; // 10 seconds
+                        this.activeEffects.electricShield.timer = 900; // 15 seconds
+                        this.activeEffects.electricShield.radius = this.player.radius * 3;
                         this.showPowerNotification(0, 0, 'ELECTRIC SHIELD ACTIVATED!');
                         break;
                         
-                    case 'fireTrail':
+                    case 'fire-trail':
                         this.activeEffects.fireTrail.active = true;
-                        this.activeEffects.fireTrail.timer = 900; // 15 seconds
-                        this.activeEffects.fireTrail.trail = [];
+                        this.activeEffects.fireTrail.timer = 600; // 10 seconds
                         this.showPowerNotification(0, 0, 'FIRE TRAIL ACTIVATED!');
                         break;
                         
-                    case 'rushRefill':
+                    case 'rush-refill':
                         this.rushCooldown = 0;
                         this.updateRushButton();
                         this.showPowerNotification(0, 0, 'RUSH REFILLED!');
                         break;
                         
-                    case 'healthBoost':
-                        this.player.mass += 10;
+                    case 'health-boost':
+                        this.player.mass += 20;
                         this.player.radius = Math.sqrt(this.player.mass) * 2;
                         this.showPowerNotification(10, 0, 'HEALTH BOOST!');
                         break;
                         
-                    case 'crossbowUpgrade':
-                        // Temporary rapid fire
-                        this.crossbowUpgradeTimer = 600; // 10 seconds
+                    case 'crossbow-upgrade':
+                        this.activeEffects.crossbowUpgrade.active = true;
+                        this.activeEffects.crossbowUpgrade.timer = 1200; // 20 seconds
                         this.showPowerNotification(0, 0, 'CROSSBOW UPGRADED!');
                         break;
                         
-                    case 'massShield':
-                        // Protection from next 3 enemy hits
-                        this.massShieldHits = 3;
+                    case 'mass-shield':
+                        this.activeEffects.massShield.active = true;
+                        this.activeEffects.massShield.timer = 480; // 8 seconds
                         this.showPowerNotification(0, 0, 'MASS SHIELD ACTIVE!');
+                        break;
+                        
+                    case 'magnet':
+                        this.activeEffects.magnet.active = true;
+                        this.activeEffects.magnet.timer = 600; // 10 seconds
+                        this.showPowerNotification(0, 0, 'ENERGY MAGNET ACTIVATED!');
+                        break;
+                        
+                    case 'time-slow':
+                        this.activeEffects.timeSlow.active = true;
+                        this.activeEffects.timeSlow.timer = 360; // 6 seconds
+                        this.showPowerNotification(0, 0, 'TIME DISTORTION ACTIVE!');
+                        break;
+                        
+                    case 'phase-walk':
+                        this.activeEffects.phaseWalk.active = true;
+                        this.activeEffects.phaseWalk.timer = 240; // 4 seconds
+                        this.showPowerNotification(0, 0, 'PHASE WALK ENABLED!');
+                        break;
+                        
+                    case 'energy-multiplier':
+                        this.activeEffects.energyMultiplier.active = true;
+                        this.activeEffects.energyMultiplier.timer = 900; // 15 seconds
+                        this.showPowerNotification(0, 0, 'ENERGY MULTIPLIER ACTIVE!');
+                        break;
+                        
+                    case 'crossbow-burst':
+                        this.activeEffects.crossbowBurst.active = true;
+                        this.activeEffects.crossbowBurst.timer = 480; // 8 seconds
+                        this.showPowerNotification(0, 0, 'CROSSBOW BURST MODE!');
                         break;
                 }
             }
