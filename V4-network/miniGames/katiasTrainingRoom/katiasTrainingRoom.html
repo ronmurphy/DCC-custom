@@ -185,6 +185,81 @@
             box-shadow: 0 0 20px rgba(255, 82, 82, 0.8);
         }
 
+        /* Rush button */
+        #rushButton {
+            position: absolute;
+            bottom: 25px;
+            right: 100px;
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(45deg, #8A2BE2, #9932CC);
+            border: 3px solid #DDA0DD;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            touch-action: none;
+            display: none;
+            box-shadow: 0 0 15px rgba(138, 43, 226, 0.5);
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+            text-align: center;
+            line-height: 1;
+        }
+
+        #rushButton.active {
+            background: linear-gradient(45deg, #FF69B4, #FF1493);
+            box-shadow: 0 0 20px rgba(255, 105, 180, 0.8);
+        }
+
+        #rushButton.disabled {
+            background: linear-gradient(45deg, #666666, #555555);
+            border-color: #888888;
+            box-shadow: 0 0 10px rgba(102, 102, 102, 0.3);
+            opacity: 0.6;
+        }
+
+        #rushCooldownRing {
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            width: 70px;
+            height: 70px;
+            border: 3px solid transparent;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, #8A2BE2 0%, #8A2BE2 var(--progress, 0%), transparent var(--progress, 0%));
+            mask: radial-gradient(circle, transparent 60%, black 60%);
+            -webkit-mask: radial-gradient(circle, transparent 60%, black 60%);
+            pointer-events: none;
+        }
+
+        /* Desktop rush cooldown bar */
+        #rushCooldownBar {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 8px;
+            height: 150px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid #8A2BE2;
+            border-radius: 5px;
+            display: none;
+        }
+
+        #rushCooldownFill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: linear-gradient(to top, #8A2BE2, #DDA0DD);
+            border-radius: 3px;
+            height: var(--cooldown-progress, 0%);
+            transition: height 0.1s ease;
+        }
+
         /* Power-up notifications */
         .power-notification {
             position: fixed !important;
@@ -236,7 +311,17 @@
                 font-size: 1rem;
             }
             
-            #thumbstickContainer, #shootButton {
+            #thumbstickContainer, #shootButton, #rushButton {
+                display: block;
+            }
+            
+            #rushCooldownBar {
+                display: none;
+            }
+        }
+
+        @media (min-width: 769px) {
+            #rushCooldownBar {
                 display: block;
             }
         }
@@ -270,6 +355,17 @@
         
         <!-- Shoot button -->
         <div id="shootButton"></div>
+        
+        <!-- Rush button -->
+        <div id="rushButton">
+            <div id="rushCooldownRing"></div>
+            <span>RUSH</span>
+        </div>
+        
+        <!-- Rush cooldown bar for desktop -->
+        <div id="rushCooldownBar">
+            <div id="rushCooldownFill"></div>
+        </div>
     </div>
 
     <script>
@@ -284,6 +380,10 @@
                 this.thumbstickContainer = document.getElementById('thumbstickContainer');
                 this.thumbstickKnob = document.getElementById('thumbstickKnob');
                 this.shootButton = document.getElementById('shootButton');
+                this.rushButton = document.getElementById('rushButton');
+                this.rushCooldownRing = document.getElementById('rushCooldownRing');
+                this.rushCooldownBar = document.getElementById('rushCooldownBar');
+                this.rushCooldownFill = document.getElementById('rushCooldownFill');
                 
                 this.setupCanvas();
                 this.initGame();
@@ -371,6 +471,20 @@
                 this.energyRequired = 100; // Energy needed to advance to next room
                 this.totalEnergy = 0; // Total energy collected
                 
+                // Rush ability
+                this.rushCooldown = 0; // Cooldown timer in milliseconds
+                this.rushMaxCooldown = 30000; // 30 seconds
+                this.rushActive = false;
+                
+                // Power-ups and effects
+                this.powerUps = [];
+                this.discoveredPowerUps = new Set(); // Track which colors have been discovered
+                this.fireTrail = []; // Fire trail points for visual effect
+                this.activeEffects = {
+                    electricShield: { active: false, timer: 0 },
+                    fireTrail: { active: false, timer: 0, trail: [] }
+                };
+                
                 // Thumbstick properties
                 this.thumbstickActive = false;
                 this.thumbstickPosition = { x: 0, y: 0 };
@@ -382,6 +496,7 @@
                 
                 this.generateCollectibles();
                 this.generateEnemies();
+                this.generatePowerUps();
             }
 
             generateCollectibles() {
@@ -485,6 +600,50 @@
                 }
             }
 
+            generatePowerUps() {
+                this.powerUps = [];
+                const powerUpCount = Math.min(2 + Math.floor(this.currentRoom / 3), 6); // More power-ups in higher rooms
+                
+                // Define power-up types
+                const powerUpTypes = [
+                    { type: 'electricShield', color: '#FFD700', name: 'Electric Shield' },
+                    { type: 'fireTrail', color: '#FF4500', name: 'Fire Trail' },
+                    { type: 'rushRefill', color: '#9932CC', name: 'Rush Refill' },
+                    { type: 'healthBoost', color: '#00FF00', name: 'Health Boost' },
+                    { type: 'crossbowUpgrade', color: '#00BFFF', name: 'Crossbow Upgrade' },
+                    { type: 'massShield', color: '#C0C0C0', name: 'Mass Shield' }
+                ];
+                
+                for (let i = 0; i < powerUpCount; i++) {
+                    let x, y, attempts = 0;
+                    
+                    // Spawn power-ups away from player and enemies
+                    do {
+                        x = Math.random() * (this.canvas.width - 80) + 40;
+                        y = Math.random() * (this.canvas.height - 80) + 40;
+                        attempts++;
+                    } while (
+                        attempts < 50 && 
+                        (Math.sqrt((x - this.player.x) ** 2 + (y - this.player.y) ** 2) < 150 ||
+                         this.enemies.some(enemy => Math.sqrt((x - enemy.x) ** 2 + (y - enemy.y) ** 2) < 80))
+                    );
+                    
+                    const powerUpType = powerUpTypes[Math.floor(Math.random() * powerUpTypes.length)];
+                    
+                    this.powerUps.push({
+                        x: x,
+                        y: y,
+                        radius: 10,
+                        type: powerUpType.type,
+                        color: powerUpType.color,
+                        name: powerUpType.name,
+                        collected: false,
+                        pulse: Math.random() * Math.PI * 2,
+                        glowIntensity: 0
+                    });
+                }
+            }
+
             setupControls() {
                 // Touch controls for thumbstick
                 this.thumbstickContainer.addEventListener('touchstart', (e) => {
@@ -533,12 +692,44 @@
                     this.shootButton.classList.remove('active');
                 });
 
+                // Rush button controls
+                this.rushButton.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    if (!this.gameRunning || this.rushCooldown > 0) return;
+                    
+                    this.rushButton.classList.add('active');
+                    this.performRush();
+                });
+
+                this.rushButton.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    this.rushButton.classList.remove('active');
+                });
+
+                this.rushButton.addEventListener('touchcancel', (e) => {
+                    e.preventDefault();
+                    this.rushButton.classList.remove('active');
+                });
+
                 // Mouse click to shoot for desktop
                 this.canvas.addEventListener('mousedown', (e) => {
                     e.preventDefault();
-                    if (!this.gameRunning || e.button !== 0) return; // Only left click
+                    if (!this.gameRunning) return;
                     
-                    this.shootCrossbow();
+                    if (e.button === 0) {
+                        // Left click - shoot
+                        this.shootCrossbow();
+                    } else if (e.button === 2) {
+                        // Right click - rush
+                        if (this.rushCooldown <= 0) {
+                            this.performRush();
+                        }
+                    }
+                });
+
+                // Disable context menu on right click
+                this.canvas.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
                 });
 
                 // Mouse controls for desktop
@@ -638,6 +829,139 @@
                     color: '#ffcc00',
                     life: 60 // Will disappear after 60 frames
                 });
+            }
+
+            performRush() {
+                if (this.rushCooldown > 0) return;
+                
+                // Start cooldown
+                this.rushCooldown = this.rushMaxCooldown;
+                this.updateRushButton();
+                
+                // Random rush distance - anywhere from 20 pixels to edge of screen
+                const direction = this.player.directionX;
+                const minDistance = 20;
+                const maxDistance = Math.min(
+                    this.canvas.width - this.player.x - this.player.radius,
+                    this.player.x - this.player.radius,
+                    200 // Cap at reasonable distance
+                );
+                const rushDistance = Math.random() * (maxDistance - minDistance) + minDistance;
+                
+                // Rush in the direction Katia was last moving (or forward)
+                const rushAngle = Math.atan2(this.player.directionY, this.player.directionX);
+                const endX = this.player.x + Math.cos(rushAngle) * rushDistance;
+                const endY = this.player.y + Math.sin(rushAngle) * rushDistance;
+                
+                // Keep within bounds
+                const finalX = Math.max(this.player.radius, Math.min(this.canvas.width - this.player.radius, endX));
+                const finalY = Math.max(this.player.radius, Math.min(this.canvas.height - this.player.radius, endY));
+                
+                // Create rush trail effect
+                this.createRushTrail(this.player.x, this.player.y, finalX, finalY);
+                
+                // Check for absorption during rush
+                this.checkRushCollisions(this.player.x, this.player.y, finalX, finalY);
+                
+                // Move player instantly
+                this.player.x = finalX;
+                this.player.y = finalY;
+                this.player.targetX = finalX;
+                this.player.targetY = finalY;
+                
+                // Show rush notification
+                this.showPowerNotification(0, 0, `RUSH! Distance: ${Math.floor(rushDistance)}px`);
+            }
+
+            createRushTrail(startX, startY, endX, endY) {
+                // Create purple energy trail particles
+                const steps = 10;
+                for (let i = 0; i <= steps; i++) {
+                    const t = i / steps;
+                    const x = startX + (endX - startX) * t;
+                    const y = startY + (endY - startY) * t;
+                    
+                    // Add multiple particles per step for thick trail
+                    for (let j = 0; j < 3; j++) {
+                        this.particles.push({
+                            x: x + (Math.random() - 0.5) * 10,
+                            y: y + (Math.random() - 0.5) * 10,
+                            vx: (Math.random() - 0.5) * 2,
+                            vy: (Math.random() - 0.5) * 2,
+                            color: '#8A2BE2',
+                            life: 30,
+                            maxLife: 30
+                        });
+                    }
+                }
+            }
+
+            checkRushCollisions(startX, startY, endX, endY) {
+                // Check what Katia hits during her rush
+                const dx = endX - startX;
+                const dy = endY - startY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const steps = Math.ceil(distance / 5); // Check every 5 pixels
+                
+                for (let i = 0; i <= steps; i++) {
+                    const t = i / steps;
+                    const checkX = startX + dx * t;
+                    const checkY = startY + dy * t;
+                    
+                    // Check collectibles
+                    this.collectibles.forEach((collectible, index) => {
+                        if (collectible.collected) return;
+                        
+                        const cdx = checkX - collectible.x;
+                        const cdy = checkY - collectible.y;
+                        const cdist = Math.sqrt(cdx * cdx + cdy * cdy);
+                        
+                        if (cdist < this.player.radius + collectible.radius) {
+                            // Absorb during rush!
+                            collectible.collected = true;
+                            const scoreGain = Math.floor(collectible.mass * 15); // Bonus for rush absorption
+                            const energyGain = Math.floor(collectible.mass * 8);
+                            this.score += scoreGain;
+                            this.totalEnergy += energyGain;
+                            this.player.mass += collectible.mass;
+                            this.player.radius = Math.sqrt(this.player.mass) * 2;
+                            
+                            // Create absorption particles
+                            this.createParticles(collectible.x, collectible.y, collectible.color);
+                            this.collectibles.splice(index, 1);
+                        }
+                    });
+                    
+                    // Check enemies - Rush damages them!
+                    this.enemies.forEach((enemy, index) => {
+                        const edx = checkX - enemy.x;
+                        const edy = checkY - enemy.y;
+                        const edist = Math.sqrt(edx * edx + edy * edy);
+                        
+                        if (edist < this.player.radius + enemy.radius) {
+                            // Rush damages enemies
+                            enemy.health -= 2;
+                            enemy.lastDamageTime = Date.now();
+                            
+                            // Create hit particles
+                            this.createParticles(enemy.x, enemy.y, '#ff0000');
+                            
+                            if (enemy.health <= 0) {
+                                // Enemy defeated by rush
+                                this.score += 75; // Bonus for rush kill
+                                this.createParticles(enemy.x, enemy.y, enemy.color);
+                                this.enemies.splice(index, 1);
+                            } else {
+                                // Knock back enemy
+                                const knockAngle = Math.atan2(edy, edx);
+                                enemy.x += Math.cos(knockAngle) * 30;
+                                enemy.y += Math.sin(knockAngle) * 30;
+                                enemy.stunned = true;
+                                enemy.stunnedTimer = 90; // 1.5 seconds
+                            }
+                        }
+                    });
+                }
             }
 
             updatePlayer() {
@@ -1079,6 +1403,11 @@
                     this.drawEnemy(enemy);
                 });
 
+                // Draw power-ups
+                this.powerUps.forEach(powerUp => {
+                    this.drawPowerUp(powerUp);
+                });
+
                 // Draw particles
                 this.particles.forEach(particle => {
                     const alpha = particle.life / particle.maxLife;
@@ -1090,6 +1419,9 @@
 
                 // Draw player (Katia/Tatis)
                 this.drawKatiaSprite();
+                
+                // Draw active power-up effects
+                this.drawActiveEffects();
                 
                 // Draw crossbow
                 this.drawCrossbow();
@@ -1377,6 +1709,92 @@
                 this.ctx.restore();
             }
 
+            drawPowerUp(powerUp) {
+                const x = powerUp.x;
+                const y = powerUp.y;
+                powerUp.pulse += 0.1;
+                const pulseIntensity = Math.sin(powerUp.pulse) * 0.3 + 0.7;
+                const radius = powerUp.radius;
+                
+                this.ctx.save();
+                this.ctx.translate(x, y);
+                
+                // Draw diamond/scroll shape based on type
+                this.ctx.fillStyle = powerUp.color;
+                this.ctx.globalAlpha = pulseIntensity;
+                
+                if (powerUp.type === 'rush-refill' || powerUp.type === 'electric-shield' || powerUp.type === 'mass-shield') {
+                    // Draw scroll shape for special abilities
+                    this.ctx.fillRect(-radius * 0.8, -radius * 0.6, radius * 1.6, radius * 1.2);
+                    this.ctx.fillStyle = powerUp.color;
+                    this.ctx.globalAlpha = pulseIntensity * 0.7;
+                    this.ctx.fillRect(-radius * 0.6, -radius * 0.4, radius * 1.2, radius * 0.8);
+                } else {
+                    // Draw diamond shape for consumables
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(0, -radius);
+                    this.ctx.lineTo(radius * 0.7, 0);
+                    this.ctx.lineTo(0, radius);
+                    this.ctx.lineTo(-radius * 0.7, 0);
+                    this.ctx.closePath();
+                    this.ctx.fill();
+                }
+                
+                // Add glowing effect
+                this.ctx.globalAlpha = pulseIntensity * 0.5;
+                this.ctx.shadowColor = powerUp.color;
+                this.ctx.shadowBlur = 10;
+                this.ctx.fillStyle = powerUp.color;
+                this.ctx.beginPath();
+                this.ctx.arc(0, 0, radius * 0.5, 0, Math.PI * 2);
+                this.ctx.fill();
+                
+                this.ctx.restore();
+            }
+
+            drawActiveEffects() {
+                // Draw Electric Shield effect
+                if (this.activeEffects.electricShield.active) {
+                    const x = this.player.x;
+                    const y = this.player.y;
+                    const radius = this.activeEffects.electricShield.radius;
+                    
+                    this.ctx.save();
+                    this.ctx.globalAlpha = 0.3;
+                    this.ctx.strokeStyle = '#00FFFF';
+                    this.ctx.lineWidth = 3;
+                    this.ctx.setLineDash([5, 5]);
+                    this.ctx.beginPath();
+                    this.ctx.arc(x, y, radius, 0, Math.PI * 2);
+                    this.ctx.stroke();
+                    
+                    // Electric sparks
+                    for (let i = 0; i < 8; i++) {
+                        const angle = (Date.now() * 0.01 + i * Math.PI / 4);
+                        const sparkX = x + Math.cos(angle) * radius;
+                        const sparkY = y + Math.sin(angle) * radius;
+                        this.ctx.fillStyle = '#00FFFF';
+                        this.ctx.globalAlpha = 0.7;
+                        this.ctx.beginPath();
+                        this.ctx.arc(sparkX, sparkY, 2, 0, Math.PI * 2);
+                        this.ctx.fill();
+                    }
+                    this.ctx.restore();
+                }
+                
+                // Draw Fire Trail
+                this.fireTrail.forEach((point, index) => {
+                    const alpha = point.life / point.maxLife;
+                    this.ctx.save();
+                    this.ctx.globalAlpha = alpha * 0.8;
+                    this.ctx.fillStyle = `hsl(${Math.random() * 60}, 100%, 50%)`; // Random reds/oranges
+                    this.ctx.beginPath();
+                    this.ctx.arc(point.x, point.y, 4 * alpha, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    this.ctx.restore();
+                });
+            }
+
             updateUI() {
                 document.getElementById('score').textContent = this.score;
                 document.getElementById('mass').textContent = Math.floor(this.player.mass);
@@ -1401,10 +1819,179 @@
                 // Generate new enemies and collectibles for the new room
                 this.generateEnemies();
                 this.generateCollectibles();
+                this.generatePowerUps();
                 
                 // Slight player power boost for advancing
                 this.player.mass += 5;
                 this.player.radius = Math.sqrt(this.player.mass) * 2;
+            }
+
+            updateRushCooldown() {
+                if (this.rushCooldown > 0) {
+                    this.rushCooldown -= 16; // Assuming ~60fps (16ms per frame)
+                    if (this.rushCooldown < 0) {
+                        this.rushCooldown = 0;
+                    }
+                    this.updateRushButton();
+                }
+            }
+
+            updateRushButton() {
+                const progress = (this.rushMaxCooldown - this.rushCooldown) / this.rushMaxCooldown;
+                const isReady = this.rushCooldown <= 0;
+                
+                // Update mobile button
+                if (isReady) {
+                    this.rushButton.classList.remove('disabled');
+                    this.rushCooldownRing.style.setProperty('--progress', '100%');
+                } else {
+                    this.rushButton.classList.add('disabled');
+                    this.rushCooldownRing.style.setProperty('--progress', `${progress * 100}%`);
+                }
+                
+                // Update desktop bar
+                this.rushCooldownFill.style.setProperty('--cooldown-progress', `${progress * 100}%`);
+            }
+
+            updatePowerUps() {
+                this.powerUps.forEach(powerUp => {
+                    if (!powerUp.collected) {
+                        powerUp.pulse += 0.15;
+                        powerUp.glowIntensity = Math.sin(powerUp.pulse) * 0.3 + 0.7;
+                    }
+                });
+            }
+
+            updateActiveEffects() {
+                // Update electric shield
+                if (this.activeEffects.electricShield.active) {
+                    this.activeEffects.electricShield.timer--;
+                    if (this.activeEffects.electricShield.timer <= 0) {
+                        this.activeEffects.electricShield.active = false;
+                    } else {
+                        // Stun enemies within shield radius
+                        const shieldRadius = this.player.radius + 30;
+                        this.enemies.forEach(enemy => {
+                            const dx = this.player.x - enemy.x;
+                            const dy = this.player.y - enemy.y;
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+                            
+                            if (distance < shieldRadius && !enemy.stunned) {
+                                enemy.stunned = true;
+                                enemy.stunnedTimer = 30; // 0.5 seconds
+                                this.createParticles(enemy.x, enemy.y, '#FFD700');
+                            }
+                        });
+                    }
+                }
+                
+                // Update fire trail
+                if (this.activeEffects.fireTrail.active) {
+                    this.activeEffects.fireTrail.timer--;
+                    if (this.activeEffects.fireTrail.timer <= 0) {
+                        this.activeEffects.fireTrail.active = false;
+                        this.activeEffects.fireTrail.trail = [];
+                    } else {
+                        // Add current position to trail
+                        this.activeEffects.fireTrail.trail.push({
+                            x: this.player.x,
+                            y: this.player.y,
+                            life: 180 // Trail segment lasts 3 seconds
+                        });
+                        
+                        // Update trail segments
+                        this.activeEffects.fireTrail.trail.forEach((segment, index) => {
+                            segment.life--;
+                            if (segment.life <= 0) {
+                                this.activeEffects.fireTrail.trail.splice(index, 1);
+                            }
+                        });
+                        
+                        // Check enemies against fire trail
+                        this.enemies.forEach((enemy, enemyIndex) => {
+                            this.activeEffects.fireTrail.trail.forEach(segment => {
+                                const dx = enemy.x - segment.x;
+                                const dy = enemy.y - segment.y;
+                                const distance = Math.sqrt(dx * dx + dy * dy);
+                                
+                                if (distance < 15) {
+                                    // Enemy touches fire trail - take damage and get absorbed
+                                    enemy.health = 0; // Instant kill from fire
+                                    this.score += 75;
+                                    this.player.mass += 3;
+                                    this.player.radius = Math.sqrt(this.player.mass) * 2;
+                                    this.createParticles(enemy.x, enemy.y, '#FF4500');
+                                    this.enemies.splice(enemyIndex, 1);
+                                }
+                            });
+                        });
+                    }
+                }
+            }
+
+            checkPowerUpCollisions() {
+                this.powerUps.forEach((powerUp, index) => {
+                    if (powerUp.collected) return;
+                    
+                    const dx = this.player.x - powerUp.x;
+                    const dy = this.player.y - powerUp.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < this.player.radius + powerUp.radius) {
+                        // Collect power-up
+                        powerUp.collected = true;
+                        this.activatePowerUp(powerUp);
+                        this.createParticles(powerUp.x, powerUp.y, powerUp.color);
+                        this.powerUps.splice(index, 1);
+                    }
+                });
+            }
+
+            activatePowerUp(powerUp) {
+                // Show discovery message if first time
+                if (!this.discoveredPowerUps.has(powerUp.type)) {
+                    this.discoveredPowerUps.add(powerUp.type);
+                    this.showPowerNotification(0, 0, `DISCOVERED: ${powerUp.name}!`);
+                }
+                
+                switch (powerUp.type) {
+                    case 'electricShield':
+                        this.activeEffects.electricShield.active = true;
+                        this.activeEffects.electricShield.timer = 600; // 10 seconds
+                        this.showPowerNotification(0, 0, 'ELECTRIC SHIELD ACTIVATED!');
+                        break;
+                        
+                    case 'fireTrail':
+                        this.activeEffects.fireTrail.active = true;
+                        this.activeEffects.fireTrail.timer = 900; // 15 seconds
+                        this.activeEffects.fireTrail.trail = [];
+                        this.showPowerNotification(0, 0, 'FIRE TRAIL ACTIVATED!');
+                        break;
+                        
+                    case 'rushRefill':
+                        this.rushCooldown = 0;
+                        this.updateRushButton();
+                        this.showPowerNotification(0, 0, 'RUSH REFILLED!');
+                        break;
+                        
+                    case 'healthBoost':
+                        this.player.mass += 10;
+                        this.player.radius = Math.sqrt(this.player.mass) * 2;
+                        this.showPowerNotification(10, 0, 'HEALTH BOOST!');
+                        break;
+                        
+                    case 'crossbowUpgrade':
+                        // Temporary rapid fire
+                        this.crossbowUpgradeTimer = 600; // 10 seconds
+                        this.showPowerNotification(0, 0, 'CROSSBOW UPGRADED!');
+                        break;
+                        
+                    case 'massShield':
+                        // Protection from next 3 enemy hits
+                        this.massShieldHits = 3;
+                        this.showPowerNotification(0, 0, 'MASS SHIELD ACTIVE!');
+                        break;
+                }
             }
 
             gameLoop() {
@@ -1412,12 +1999,16 @@
 
                 this.updatePlayer();
                 this.updateCrossbowDirection();
+                this.updateRushCooldown();
+                this.updatePowerUps();
+                this.updateActiveEffects();
                 this.updateCollectibles();
                 this.updateEnemies();
                 this.updateProjectiles();
                 this.updateImmobilizedCollectibles();
                 this.checkCollisions();
                 this.checkEnemyCollisions();
+                this.checkPowerUpCollisions();
                 this.updateParticles();
                 this.render();
                 this.updateUI();
