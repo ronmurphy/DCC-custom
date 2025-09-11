@@ -371,8 +371,16 @@ class MapSyncAdapter {
             this.positionTracker.setMovementEnabled(mapData.settings?.allowPlayerMovement !== false);
         }
         
+        // Debug: Check if event handler is set
+        console.log('🔍 Event handler set?', !!this.onMapReceived);
         if (this.onMapReceived) {
+            console.log('🎯 Calling onMapReceived event handler...');
             this.onMapReceived(mapData, record);
+        } else {
+            console.warn('⚠️ No onMapReceived handler set, calling autoDisplayMaps directly');
+            if (window.autoDisplayMaps) {
+                window.autoDisplayMaps();
+            }
         }
     }
 

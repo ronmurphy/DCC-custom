@@ -185,6 +185,65 @@
             </button>
         </header>
 
+        <!-- Map Display Overlay (shows above everything when map arrives) -->
+        <div id="map-overlay" style="
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        ">
+            <div id="map-viewer-container" style="
+                width: 90vw;
+                height: 80vh;
+                max-width: 800px;
+                max-height: 600px;
+                background: var(--surface-color);
+                border-radius: 12px;
+                border: 2px solid var(--border-color);
+                position: relative;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            ">
+                <div style="
+                    position: absolute;
+                    top: 10px;
+                    right: 10px;
+                    z-index: 1001;
+                ">
+                    <button onclick="hideMapOverlay()" style="
+                        background: rgba(255, 255, 255, 0.2);
+                        border: 1px solid var(--border-color);
+                        color: var(--text-color);
+                        border-radius: 50%;
+                        width: 32px;
+                        height: 32px;
+                        cursor: pointer;
+                        font-size: 18px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    " title="Close Map">×</button>
+                </div>
+                <canvas id="map-canvas" style="
+                    width: 100%;
+                    height: 100%;
+                    border: none;
+                    border-radius: 10px;
+                "></canvas>
+            </div>
+        </div>
+
+        <!-- Map Display Area (for real-time map sharing) - DEPRECATED, using overlay instead -->
+        <div id="map-display" style="display: none;">
+            <!-- Kept for compatibility -->
+        </div>
+
         <!-- Sidebar Navigation Drawer -->
         <nav class="sidebar" id="sidebar">
             <div class="sidebar-header">
@@ -1356,7 +1415,7 @@
                                         <span class="material-icons">casino</span>
                                         <span class="notification-dot"></span>
                                     </button>
-                                    <button class="notification-btn" id="map-notification" style="display: none;" title="Map update">
+                                    <button class="notification-btn" id="map-notification" style="display: none;" title="Map update" onclick="showMapOverlay()">
                                         <span class="material-icons">map</span>
                                         <span class="notification-dot"></span>
                                     </button>
@@ -2399,6 +2458,21 @@
     <script src="js/avatarUrlSystem.js"></script>
     <script src="js/characterAvatarMigration.js"></script>
     
+    <!-- Maps System -->
+    <script src="js/unified-storage-db.js"></script>
+    <script src="js/maps-manager.js"></script>
+    <script src="js/MapSyncManager.js"></script>
+    <script src="js/MapSyncAdapter.js"></script>
+    <script src="js/PlayerMapViewer.js"></script>
+    <script src="js/PlayerMapViewerCanvas.js"></script>
+    <script src="js/PlayerMapViewerCSS.js"></script>
+    <script src="js/PlayerMapViewerLocal.js"></script>
+    <script src="js/MapDataFormatter.js"></script>
+    <script src="js/SimpleMapRenderer.js"></script>
+    <script src="js/MapClientManager.js"></script>
+    <script src="js/PlayerPositionTracker.js"></script>
+    <script src="js/StorytellerIntegration.js"></script>
+    
     <script src="js/command-interceptor.js"></script>
     <script src="js/modules/chatEffectsManager.js"></script>
     <script src="js/modules/emojiProcessor.js"></script>
@@ -3177,6 +3251,198 @@
             const characterTab = document.querySelector('[data-tab="character"]');
             if (characterTab) {
                 characterTab.click();
+            }
+        }
+
+        // Track if maps viewer is currently open
+        window.mapsViewerOpen = false;
+
+        function openMapsView(autoDisplay = false) {
+            // Prevent multiple instances
+            if (window.mapsViewerOpen && !autoDisplay) {
+                console.log('🗺️ Maps viewer already open, focusing existing viewer');
+                return;
+            }
+            
+            const feralFab = document.getElementById('feralGatewayFab');
+            if (feralFab) feralFab.classList.remove('active');
+            
+            console.log('🗺️ Maps view requested' + (autoDisplay ? ' (auto-display)' : ''));
+            
+            // Initialize MapsManager if not already done
+            if (!window.mapsManager) {
+                console.log('📋 Initializing MapsManager...');
+                window.mapsManager = new MapsManager();
+                window.mapsManager.initialize().then(() => {
+                    console.log('✅ MapsManager initialized');
+                    showMapsInterface(autoDisplay);
+                }).catch(error => {
+                    console.error('❌ Failed to initialize MapsManager:', error);
+                    if (!autoDisplay) {
+                        alert('Error loading maps system: ' + error.message);
+                    }
+                });
+            } else {
+                showMapsInterface(autoDisplay);
+            }
+        }
+
+        // Auto-display maps when MAP_SYNC arrives (called from command interceptor)
+        window.autoDisplayMaps = function() {
+            console.log('🚀 Auto-displaying maps due to MAP_SYNC');
+            
+            // Show map notification button
+            const mapNotification = document.getElementById('map-notification');
+            if (mapNotification) {
+                mapNotification.style.display = 'block';
+                console.log('🗺️ Map notification button shown');
+            }
+            
+            showMapOverlay();
+            openMapsView(true);
+        };
+
+        // Show the map overlay
+        window.showMapOverlay = function() {
+            console.log('🗺️ Showing map overlay');
+            const overlay = document.getElementById('map-overlay');
+            if (overlay) {
+                overlay.style.display = 'flex';
+                window.mapsViewerOpen = true;
+                
+                // Force canvas resize after overlay becomes visible
+                setTimeout(() => {
+                    const canvas = document.getElementById('map-canvas');
+                    const container = document.getElementById('map-viewer-container');
+                    if (canvas && container) {
+                        const rect = container.getBoundingClientRect();
+                        console.log('🔧 Resizing canvas to container:', rect.width, 'x', rect.height);
+                        
+                        // Set canvas actual size
+                        canvas.width = rect.width;
+                        canvas.height = rect.height;
+                        
+                        // Force mapViewer to re-render if available
+                        if (window.mapSyncAdapter && window.mapSyncAdapter.mapClientManager && window.mapSyncAdapter.mapClientManager.mapViewer) {
+                            console.log('🔄 Triggering map re-render...');
+                            window.mapSyncAdapter.mapClientManager.mapViewer.setupCanvas();
+                            
+                            // Re-render current map if exists
+                            if (window.mapSyncAdapter.mapClientManager.mapViewer.currentMapData) {
+                                window.mapSyncAdapter.mapClientManager.mapViewer.renderCurrentMap();
+                            }
+                        }
+                    }
+                }, 100); // Small delay to ensure overlay is visible
+            }
+        };
+
+        // Hide the map overlay
+        window.hideMapOverlay = function() {
+            console.log('🗺️ Hiding map overlay');
+            const overlay = document.getElementById('map-overlay');
+            if (overlay) {
+                overlay.style.display = 'none';
+                window.mapsViewerOpen = false;
+            }
+        };
+
+        // Console test functions for debugging
+        window.showMap = function() {
+            console.log('🗺️ Manual showMap() called');
+            showMapOverlay();
+        };
+
+        window.testMapNotification = function() {
+            console.log('🔔 Testing map notification');
+            const mapNotification = document.getElementById('map-notification');
+            if (mapNotification) {
+                mapNotification.style.display = 'block';
+                console.log('✅ Map notification shown');
+            } else {
+                console.log('❌ Map notification element not found');
+            }
+        };
+
+        window.debugMapSystem = function() {
+            console.log('🔍 Map System Debug Info:');
+            console.log('mapSyncAdapter:', window.mapSyncAdapter);
+            console.log('mapsManager:', window.mapsManager);
+            console.log('mapClientManager:', window.mapSyncAdapter?.mapClientManager);
+            console.log('Map notification element:', document.getElementById('map-notification'));
+            console.log('Map overlay element:', document.getElementById('map-overlay'));
+            console.log('Map canvas element:', document.getElementById('map-canvas'));
+        };
+
+        // Force check for existing maps and display them
+        window.checkAndShowMap = function() {
+            console.log('🔄 Manually checking for existing maps...');
+            if (window.mapSyncAdapter && window.mapSyncAdapter.mapClientManager) {
+                window.mapSyncAdapter.mapClientManager.checkForExistingMap();
+                setTimeout(() => {
+                    showMapOverlay();
+                    testMapNotification();
+                }, 1000);
+            } else {
+                console.log('❌ Map sync adapter not available');
+            }
+        };
+
+        // Reset maps viewer state when switching between tabs or closing modals
+        document.addEventListener('click', function(event) {
+            // Reset when clicking on tab navigation
+            if (event.target.closest('[data-tab]') || event.target.classList.contains('tab-button')) {
+                window.mapsViewerOpen = false;
+            }
+            // Reset when closing modals (but not our map overlay close button)
+            if ((event.target.classList.contains('close-modal') || event.target.closest('.close-modal')) 
+                && !event.target.closest('#map-overlay')) {
+                window.mapsViewerOpen = false;
+            }
+        });
+
+        // Also reset on Escape key (common modal close behavior)
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                hideMapOverlay();
+            }
+        });
+        
+        function showMapsInterface(autoDisplay = false) {
+            // Mark maps viewer as open
+            window.mapsViewerOpen = true;
+            
+            // Check if there are any maps available
+            if (window.mapsManager && window.mapsManager.savedMaps.size > 0) {
+                // Show available maps
+                const mapsList = Array.from(window.mapsManager.savedMaps.keys());
+                const mapNames = mapsList.join(', ');
+                
+                if (!autoDisplay) {
+                    alert(`Available maps: ${mapNames}\n\nClick OK to display the most recent map.`);
+                } else {
+                    console.log(`🗺️ Auto-displaying map from available: ${mapNames}`);
+                }
+                
+                // Display the most recent map
+                const latestMapId = mapsList[mapsList.length - 1];
+                const latestMap = window.mapsManager.savedMaps.get(latestMapId);
+                if (latestMap) {
+                    console.log('📍 Displaying latest map:', latestMap.name);
+                    // For now, let's just log the map data
+                    console.log('Map data:', latestMap);
+                    
+                    // TODO: Create a proper map display modal/panel
+                    // window.mapsManager.displayMapInViewer(latestMap);
+                }
+            } else {
+                if (!autoDisplay) {
+                    alert('No maps available. Send a map from StoryTeller first.');
+                } else {
+                    console.log('🔍 Auto-display triggered but no maps available yet');
+                }
+                // Reset the viewer state if no maps
+                window.mapsViewerOpen = false;
             }
         }
 
@@ -5362,6 +5628,44 @@
                         // Show connection toggle button when connected
                         document.getElementById('connection-toggle').style.display = 'block';
                         
+                        // Initialize Map Sync System after successful connection
+                        try {
+                            console.log('🗺️ Initializing Map Sync System...');
+                            if (window.MapSyncAdapter) {
+                                const mapSyncAdapter = new MapSyncAdapter();
+                                await mapSyncAdapter.initialize({
+                                    supabaseClient: window.supabaseClient,
+                                    sessionCode: sessionCode,
+                                    playerName: playerName,
+                                    isStoryteller: false,
+                                    mapContainerId: 'map-viewer-container'
+                                });
+                                
+                                // Store globally for access
+                                window.mapSyncAdapter = mapSyncAdapter;
+                                
+                                // Enable keyboard movement
+                                mapSyncAdapter.setupKeyboardMovement(true);
+                                
+                                // Set up event handlers for map reception
+                                mapSyncAdapter.setEventHandlers(
+                                    (mapData, record) => {
+                                        console.log('📥 Map received, auto-displaying...');
+                                        window.autoDisplayMaps();
+                                    },
+                                    null, // onMapShared (not needed for player)
+                                    null, // onPlayerMoved 
+                                    (type, error) => console.error('Map error:', type, error)
+                                );
+                                
+                                console.log('✅ Map synchronization ready!');
+                            } else {
+                                console.warn('⚠️ MapSyncAdapter not available');
+                            }
+                        } catch (mapError) {
+                            console.warn('⚠️ Map sync initialization failed:', mapError);
+                        }
+                        
                         updateConnectionStatus('connected', `Connected as ${playerName}`);
                         
                         addChatMessage('system', 'Successfully connected to game session!');
@@ -5599,6 +5903,10 @@
             <!-- Chat - First and primary function -->
             <div class="feral-option" onclick="openChatBottomSheet()" title="Game Chat">
                 <i class="material-icons">chat_bubble</i>
+            </div>
+            <!-- Maps - Show current map -->
+            <div class="feral-option" onclick="openMapsView()" title="Show Map">
+                <i class="material-icons">map</i>
             </div>
             <!-- Character Stats -->
             <div class="feral-option" onclick="openCharacterTab()" title="Character Stats">

@@ -282,6 +282,15 @@ async function processCommandMessage(message) {
                 if (window.mapSyncAdapter && window.mapSyncAdapter.mapClientManager) {
                     window.mapSyncAdapter.mapClientManager.checkForExistingMap();
                     console.log('🗺️ Map refresh triggered by MAP_SYNC');
+                    
+                    // Auto-display maps when a new map arrives
+                    setTimeout(() => {
+                        if (window.autoDisplayMaps) {
+                            window.autoDisplayMaps();
+                        } else {
+                            console.warn('⚠️ autoDisplayMaps function not available');
+                        }
+                    }, 500); // Small delay to ensure map is fully processed
                 }
             }
         } catch (error) {
