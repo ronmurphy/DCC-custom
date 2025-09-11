@@ -21,12 +21,32 @@ document.addEventListener("DOMContentLoaded", () => {
             resourceManager = new window.ResourceManager();
             window.resourceManager = resourceManager;
             console.log("✅ ResourceManager initialized and set globally");
+            
+            // Test ResourceManager capabilities
+            console.log("🧪 Testing ResourceManager capabilities:");
+            console.log("  - Resources structure:", Object.keys(resourceManager.resources));
+            console.log("  - Loaded packs:", resourceManager.loadedPacks.size);
+            console.log("  - Methods available:", typeof resourceManager.loadResourcePack, typeof resourceManager.saveResourcePack);
+            console.log("  - IndexedDB ready for:", resourceManager.resources.textures ? "✅ textures" : "❌ textures");
+            console.log("  - Sound system ready:", resourceManager.resources.sounds ? "✅ sounds" : "❌ sounds");
+            console.log("  - Bestiary ready:", resourceManager.resources.bestiary ? "✅ bestiary" : "❌ bestiary");
         } else {
             console.error("❌ ResourceManager class not available!");
         }
 
         // Set up event listeners
         setupEventListeners();
+        
+        // Calculate and set proper container heights
+        setTimeout(() => {
+            calculateAndSetContainerHeights();
+        }, 100); // Small delay to ensure DOM is fully rendered
+        
+        // Add window resize handler to recalculate heights
+        window.addEventListener('resize', () => {
+            console.log("🔄 Window resized, recalculating container heights...");
+            calculateAndSetContainerHeights();
+        });
         
         console.log("🎉 ShapeForge Standalone ready!");
         
@@ -48,7 +68,28 @@ function setupEventListeners() {
         if (btn) btn.addEventListener('click', saveObject);
     });
     
+    // ResourceManager buttons
+    setupResourceManagerListeners();
+    
     console.log("🔗 Event listeners set up for tabbed interface");
+}
+
+function setupResourceManagerListeners() {
+    // Open Resource Manager Drawer (using the proper maped3d approach)
+    const openResourceDrawerBtn = document.getElementById('openResourceDrawerBtn');
+    if (openResourceDrawerBtn) {
+        openResourceDrawerBtn.addEventListener('click', () => {
+            if (resourceManager) {
+                console.log("🎨 Opening ResourceManager drawer...");
+                const drawer = resourceManager.createResourceManagerUI();
+                drawer.show();
+            } else {
+                console.error("ResourceManager not available");
+            }
+        });
+    }
+    
+    console.log("🎮 ResourceManager event listeners set up");
 }
 
 // Open ShapeForge editor
@@ -97,12 +138,67 @@ function initializeShapeForgeWorkspace() {
         // Show ShapeForge in the tab container (no drawer!)
         shapeForge.show(editorDiv);
         
+        // Ensure proper container heights
+        calculateAndSetContainerHeights();
+        
         console.log("✅ ShapeForge initialized directly in workspace tab");
         
     } catch (error) {
         console.error("❌ Failed to initialize ShapeForge workspace:", error);
         alert("Failed to initialize ShapeForge. Check console for details.");
     }
+}
+
+// Add a function to calculate and set proper container heights
+function calculateAndSetContainerHeights() {
+    console.log("📏 Calculating proper container heights...");
+    
+    // Get viewport height
+    const viewportHeight = window.innerHeight;
+    console.log("🖥️ Viewport height:", viewportHeight);
+    
+    // Calculate heights of fixed elements
+    const header = document.querySelector('.app-header') || document.querySelector('header');
+    const headerHeight = header ? header.offsetHeight : 0;
+    console.log("📋 Header height:", headerHeight);
+    
+    // Get tab navigation height (the actual tab buttons)
+    const tabGroup = document.querySelector('sl-tab-group');
+    const tabNav = tabGroup ? tabGroup.shadowRoot?.querySelector('.tab-group__nav') : null;
+    const tabNavHeight = tabNav ? tabNav.offsetHeight : 50; // Fallback to estimated height
+    console.log("🏷️ Tab navigation height:", tabNavHeight);
+    
+    // Calculate available height for content
+    const availableHeight = viewportHeight - headerHeight - tabNavHeight;
+    console.log("✅ Available height for content:", availableHeight);
+    
+    // Apply to all tab panels
+    const tabPanels = document.querySelectorAll('sl-tab-panel');
+    tabPanels.forEach((panel, index) => {
+        panel.style.height = `${availableHeight}px`;
+        console.log(`📐 Set tab panel ${index + 1} height to:`, availableHeight);
+        
+        // For panels with flex column layout, ensure the content area gets proper height
+        const flexColumnDiv = panel.querySelector('div[style*="flex-direction: column"]');
+        if (flexColumnDiv) {
+            flexColumnDiv.style.height = `${availableHeight}px`;
+            
+            // Find toolbar and content areas
+            const toolbar = flexColumnDiv.querySelector('div[style*="padding"][style*="background: white"]');
+            const toolbarHeight = toolbar ? toolbar.offsetHeight : 0;
+            
+            // Calculate height for content area (flex: 1 element)
+            const contentHeight = availableHeight - toolbarHeight;
+            const contentArea = flexColumnDiv.querySelector('div[style*="flex: 1"]');
+            if (contentArea) {
+                contentArea.style.height = `${contentHeight}px`;
+                contentArea.style.minHeight = `${contentHeight}px`;
+                console.log(`📦 Set content area height to: ${contentHeight}px (available: ${availableHeight} - toolbar: ${toolbarHeight})`);
+            }
+        }
+    });
+    
+    return availableHeight;
 }
 
 // Open 3D Viewer for testing objects
@@ -120,6 +216,21 @@ async function open3DViewer() {
                 return;
             }
             
+            // Debug: Verify we have the correct container
+            console.log("🎯 Found viewer3d container:", {
+                element: viewer3d,
+                id: viewer3d.id,
+                parentElement: viewer3d.parentElement,
+                boundingRect: viewer3d.getBoundingClientRect(),
+                computedStyle: {
+                    position: window.getComputedStyle(viewer3d).position,
+                    top: window.getComputedStyle(viewer3d).top,
+                    left: window.getComputedStyle(viewer3d).left,
+                    width: window.getComputedStyle(viewer3d).width,
+                    height: window.getComputedStyle(viewer3d).height
+                }
+            });
+            
             scene3DController = new Scene3DController();
             
             // Connect ResourceManager BEFORE initialization (like maped3d does)
@@ -132,7 +243,43 @@ async function open3DViewer() {
             
             // Initialize the 3D scene in the viewer container
             console.log("🎬 Initializing 3D scene...");
-            scene3DController.initialize(viewer3d);
+            
+            // Get container dimensions, with fallbacks if container is hidden
+            let width = viewer3d.clientWidth || viewer3d.offsetWidth;
+            let height = viewer3d.clientHeight || viewer3d.offsetHeight;
+            
+            // If container is hidden (display: none), use reasonable defaults
+            if (width === 0 || !width) width = 800;
+            if (height === 0 || !height) height = 600;
+            
+            console.log("Initializing Scene3D with dimensions:", { width, height });
+            scene3DController.initialize(viewer3d, width, height);
+            
+            // Debug: Check if canvas was created and attached
+            console.log("🎨 Post-initialization canvas check:");
+            if (scene3DController.renderer) {
+                const canvas = scene3DController.renderer.domElement;
+                console.log("  Canvas exists:", !!canvas);
+                console.log("  Canvas parent:", canvas ? canvas.parentElement : null);
+                console.log("  Canvas parent ID:", canvas && canvas.parentElement ? canvas.parentElement.id : 'none');
+                console.log("  Canvas in viewer3d:", viewer3d.contains(canvas));
+                console.log("  Canvas dimensions:", canvas ? { width: canvas.width, height: canvas.height } : null);
+                console.log("  Canvas style:", canvas ? canvas.style.cssText : null);
+                
+                // If canvas isn't in the right place, move it
+                if (canvas && canvas.parentElement !== viewer3d) {
+                    console.log("🚚 Moving canvas from", canvas.parentElement?.id || 'unknown', "to viewer3d");
+                    // Remove from current location
+                    if (canvas.parentElement) {
+                        canvas.parentElement.removeChild(canvas);
+                    }
+                    // Add to correct location
+                    viewer3d.appendChild(canvas);
+                    console.log("✅ Canvas moved to correct container");
+                }
+            } else {
+                console.log("  ❌ No renderer found after initialization");
+            }
             
             // Provide minimal data that Scene3DController expects
             scene3DController.markers = [];
@@ -180,6 +327,20 @@ async function open3DViewer() {
                 console.warn("⚠️ PhysicsController not initialized by Scene3DController");
             }
             
+            // Initialize Storyboard through ResourceManager (requires scene3D)
+            if (resourceManager && scene3DController.scene) {
+                resourceManager.scene3D = scene3DController.scene;
+                const storyboard = resourceManager.initStoryboard();
+                if (storyboard) {
+                    console.log("✅ Storyboard initialized and connected to ResourceManager");
+                    window.storyboard = storyboard; // Make globally available
+                } else {
+                    console.warn("⚠️ Storyboard initialization failed");
+                }
+            } else {
+                console.warn("⚠️ Cannot initialize Storyboard - ResourceManager or Scene3D not available");
+            }
+            
             // Initialize shader effects manager with scene3D
             if (scene3DController && !shaderEffectsManager) {
                 shaderEffectsManager = new ShaderEffectsManager(scene3DController);
@@ -206,6 +367,135 @@ async function open3DViewer() {
         viewer3d.style.display = 'block';
         viewer3d.classList.add('active');
         
+        // Calculate proper container heights before applying any fixes
+        const availableHeight = calculateAndSetContainerHeights();
+        
+        // Debug: Add temporary styling to make the container visible
+        viewer3d.style.backgroundColor = '#1a1a1a';
+        viewer3d.style.border = '2px solid red'; // Temporary debug border
+        viewer3d.style.position = 'absolute'; // Ensure proper positioning
+        viewer3d.style.top = '0';
+        viewer3d.style.left = '0';
+        viewer3d.style.width = '100%';
+        viewer3d.style.height = '100%';
+        viewer3d.style.zIndex = '1'; // Ensure it's above other content
+        
+        console.log("🐛 Applied debug styling to viewer3d container");
+        
+        // Important: Resize the renderer now that the container is visible and has actual dimensions
+        setTimeout(() => {
+            if (scene3DController && scene3DController.renderer) {
+                // Debug the container and all its parent elements
+                console.log("🔍 Analyzing container hierarchy:");
+                let element = viewer3d;
+                let level = 0;
+                while (element && level < 5) {
+                    const rect = element.getBoundingClientRect();
+                    const computed = window.getComputedStyle(element);
+                    console.log(`  Level ${level} (${element.tagName}${element.id ? '#' + element.id : ''}${element.className ? '.' + element.className.replace(/\s+/g, '.') : ''}):`, {
+                        clientSize: { width: element.clientWidth, height: element.clientHeight },
+                        offsetSize: { width: element.offsetWidth, height: element.offsetHeight },
+                        boundingRect: { width: rect.width, height: rect.height },
+                        computed: { 
+                            width: computed.width, 
+                            height: computed.height, 
+                            display: computed.display,
+                            position: computed.position,
+                            flex: computed.flex,
+                            flexDirection: computed.flexDirection
+                        }
+                    });
+                    element = element.parentElement;
+                    level++;
+                }
+                
+                // Get container dimensions with detailed debugging
+                const computedStyle = window.getComputedStyle(viewer3d);
+                const actualWidth = viewer3d.clientWidth;
+                const actualHeight = viewer3d.clientHeight;
+                const offsetWidth = viewer3d.offsetWidth;
+                const offsetHeight = viewer3d.offsetHeight;
+                const boundingRect = viewer3d.getBoundingClientRect();
+                
+                console.log("🔧 Container dimension analysis:", {
+                    clientWidth: actualWidth,
+                    clientHeight: actualHeight,
+                    offsetWidth: offsetWidth,
+                    offsetHeight: offsetHeight,
+                    boundingRect: { width: boundingRect.width, height: boundingRect.height },
+                    computedWidth: computedStyle.width,
+                    computedHeight: computedStyle.height,
+                    display: computedStyle.display,
+                    position: computedStyle.position
+                });
+                
+                // Try to get parent container dimensions as fallback
+                const parentContainer = viewer3d.parentElement;
+                const parentWidth = parentContainer ? parentContainer.clientWidth : 0;
+                const parentHeight = parentContainer ? parentContainer.clientHeight : 0;
+                console.log("📦 Parent container dimensions:", { parentWidth, parentHeight });
+                
+                // Use the best available dimensions
+                let finalWidth = actualWidth || offsetWidth || boundingRect.width || parentWidth;
+                let finalHeight = actualHeight || offsetHeight || boundingRect.height || parentHeight;
+                
+                // If still zero, force reasonable defaults
+                if (finalWidth <= 0) finalWidth = 800;
+                if (finalHeight <= 0) finalHeight = 600;
+                
+                console.log("🎯 Final dimensions to use:", { finalWidth, finalHeight });
+                
+                // Resize the renderer
+                scene3DController.renderer.setSize(finalWidth, finalHeight);
+                
+                if (scene3DController.camera) {
+                    scene3DController.camera.aspect = finalWidth / finalHeight;
+                    scene3DController.camera.updateProjectionMatrix();
+                }
+                
+                console.log("✅ Renderer resized to:", finalWidth, "x", finalHeight);
+                
+                // Verify the canvas size after resize
+                const canvas = scene3DController.renderer.domElement;
+                console.log("🎨 Canvas after resize:", {
+                    width: canvas.width,
+                    height: canvas.height,
+                    style: { width: canvas.style.width, height: canvas.style.height },
+                    parentElement: canvas.parentElement ? canvas.parentElement.tagName : 'none',
+                    isConnected: canvas.isConnected
+                });
+                
+                // Ensure canvas is properly attached to the container
+                if (!canvas.parentElement || canvas.parentElement !== viewer3d) {
+                    console.log("🔧 Re-attaching canvas to viewer3d container");
+                    // Clear any existing canvas from viewer3d first
+                    const existingCanvases = viewer3d.querySelectorAll('canvas');
+                    existingCanvases.forEach(c => c.remove());
+                    // Attach the new canvas
+                    viewer3d.appendChild(canvas);
+                }
+                
+                // Make sure canvas is properly styled and positioned within its container
+                canvas.style.display = 'block';
+                canvas.style.position = 'absolute';
+                canvas.style.top = '0';
+                canvas.style.left = '0';
+                canvas.style.width = '100%';
+                canvas.style.height = '100%';
+                canvas.style.pointerEvents = 'auto';
+                canvas.style.zIndex = '0'; // Behind controls
+                console.log("✅ Canvas visibility and positioning ensured");
+                
+                // Debug: Check where the canvas actually ended up
+                console.log("🎯 Canvas final location check:", {
+                    parentId: canvas.parentElement ? canvas.parentElement.id : 'none',
+                    parentClassName: canvas.parentElement ? canvas.parentElement.className : 'none',
+                    canvasRect: canvas.getBoundingClientRect(),
+                    containerRect: viewer3d.getBoundingClientRect()
+                });
+            }
+        }, 100); // Small delay to ensure container is fully visible
+        
         // Start continuous animation loop like maped3d does
         scene3DController.isActive = true;
         
@@ -218,12 +508,29 @@ async function open3DViewer() {
         animate();
         console.log("🎬 3D scene animation loop started");
         
-        // Add window resize handler like maped3d
+        // Add window resize handler like maped3d - more robust version
         const handleResize = () => {
             const viewer = document.getElementById('viewer3d');
             if (viewer && scene3DController.renderer && scene3DController.camera) {
-                const width = viewer.offsetWidth;
-                const height = viewer.offsetHeight;
+                // Try multiple methods to get dimensions
+                let width = viewer.clientWidth || viewer.offsetWidth || viewer.getBoundingClientRect().width;
+                let height = viewer.clientHeight || viewer.offsetHeight || viewer.getBoundingClientRect().height;
+                
+                // If still zero, try parent dimensions
+                if (width <= 0 || height <= 0) {
+                    const parent = viewer.parentElement;
+                    if (parent) {
+                        width = width || parent.clientWidth || parent.offsetWidth;
+                        height = height || parent.clientHeight || parent.offsetHeight;
+                    }
+                }
+                
+                // Final fallback to reasonable defaults
+                if (width <= 0) width = 800;
+                if (height <= 0) height = 600;
+                
+                console.log("📐 Resize handler using dimensions:", { width, height });
+                
                 scene3DController.renderer.setSize(width, height);
                 scene3DController.camera.aspect = width / height;
                 scene3DController.camera.updateProjectionMatrix();
@@ -231,8 +538,28 @@ async function open3DViewer() {
         };
         window.addEventListener('resize', handleResize);
         
-        // Trigger initial resize to ensure proper sizing
+        // Also trigger resize when tab becomes active (important for tab-based layouts)
+        const tabObserver = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'aria-hidden') {
+                    const tabPanel = document.getElementById('sl-tab-panel-2'); // 3D Viewer tab panel
+                    if (tabPanel && !tabPanel.hasAttribute('aria-hidden')) {
+                        console.log("🎯 3D Viewer tab became active, triggering resize...");
+                        setTimeout(handleResize, 100);
+                    }
+                }
+            });
+        });
+        
+        const tabPanel = document.getElementById('sl-tab-panel-2');
+        if (tabPanel) {
+            tabObserver.observe(tabPanel, { attributes: true });
+        }
+        
+        // Trigger initial resize to ensure proper sizing - multiple attempts
         setTimeout(handleResize, 100);
+        setTimeout(handleResize, 250);
+        setTimeout(handleResize, 500); // Extra attempts to ensure sizing works
         
         // If we have a current object, load it
         if (currentObject) {

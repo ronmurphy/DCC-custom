@@ -300,7 +300,7 @@ class ShapeForge {
           <!-- Three.js preview will be inserted here -->
           
           <!-- Transform Controls Overlay at Bottom -->
-          <div class="bottom-panel" style="position: absolute; bottom: 10px; left: 10px; right: 10px; height: 190px; padding: 8px; background: rgba(42, 42, 42, 0.9); border: 1px solid #555; border-radius: 8px; overflow: hidden; z-index: 50; backdrop-filter: blur(4px);">
+          <div class="bottom-panel" style="position: absolute; bottom: 10px; left: 10px; right: 10px; height: 190px; padding: 8px; background: rgba(42, 42, 42, 0.9); border: 1px solid #555; border-radius: 8px; overflow: hidden; z-index: 10; backdrop-filter: blur(4px); pointer-events: auto;">>
             <!-- Transform Controls -->
             <div class="panel-section">
               <div id="transform-container" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; height: 100%;">
@@ -797,11 +797,13 @@ class ShapeForge {
 
   // In ShapeForge.js, modify the initPreview method:
   initPreview() {
+    console.log("initPreview called, previewContainer:", this.previewContainer);
     if (!this.previewContainer) return;
 
     // Create scene
     this.previewScene = new THREE.Scene();
     this.previewScene.background = new THREE.Color(0x111111);
+    console.log("Scene created with background color 0x111111");
 
     // Create camera
     this.previewCamera = new THREE.PerspectiveCamera(
@@ -812,6 +814,7 @@ class ShapeForge {
     );
     this.previewCamera.position.set(3, 3, 3);
     this.previewCamera.lookAt(0, 0, 0);
+    console.log("Camera created at position:", this.previewCamera.position);
 
     // Create renderer
     this.previewRenderer = new THREE.WebGLRenderer({ antialias: true });
@@ -819,15 +822,16 @@ class ShapeForge {
       this.previewContainer.clientWidth,
       this.previewContainer.clientHeight
     );
+    console.log("Renderer created with size:", this.previewContainer.clientWidth, "x", this.previewContainer.clientHeight);
     
     // Ensure the canvas fits within its container
     this.previewRenderer.domElement.style.width = '100%';
     this.previewRenderer.domElement.style.height = '100%';
     this.previewRenderer.domElement.style.display = 'block';
     this.previewRenderer.domElement.style.maxWidth = '100%';
-    this.previewRenderer.domElement.style.maxHeight = '75%';
     
     this.previewContainer.appendChild(this.previewRenderer.domElement);
+    console.log("Canvas appended to preview container");
 
     // Check if OrbitControls is available
     if (typeof THREE.OrbitControls === 'function') {
@@ -869,7 +873,8 @@ class ShapeForge {
     directionalLight.position.set(1, 1, 1);
     this.previewScene.add(directionalLight);
 
-    console.log("Preview scene initialized");
+    console.log("Preview scene initialized with grid and lights");
+    console.log("Scene children count:", this.previewScene.children.length);
   }
 
 
@@ -1074,7 +1079,10 @@ class ShapeForge {
    * Animation loop for preview
    */
   animate() {
-    if (!this.isPreviewActive) return;
+    if (!this.isPreviewActive) {
+      console.log("animate() called but preview not active");
+      return;
+    }
 
     requestAnimationFrame(this.animate);
 
@@ -1093,6 +1101,18 @@ class ShapeForge {
     // Render the scene
     if (this.previewRenderer && this.previewScene && this.previewCamera) {
       this.previewRenderer.render(this.previewScene, this.previewCamera);
+      // Log only every 60 frames to avoid spam
+      if (!this.frameCount) this.frameCount = 0;
+      this.frameCount++;
+      if (this.frameCount % 60 === 0) {
+        console.log("Rendering frame", this.frameCount, "scene children:", this.previewScene.children.length);
+      }
+    } else {
+      console.log("Missing components for rendering:", {
+        renderer: !!this.previewRenderer,
+        scene: !!this.previewScene,
+        camera: !!this.previewCamera
+      });
     }
   }
 
