@@ -221,7 +221,7 @@ class ShapeForge {
     this.uiContainer.innerHTML = `
     <div id="shape-forge-container" style="display: flex; height: 100%; max-height: 100%; overflow: hidden; gap: 6px;">
       <!-- Left panel for basic tools and shapes - RESTORED WIDTH -->
-      <div class="tool-panel" style="width: 180px; padding: 6px; overflow-y: auto; border-right: 1px solid #444; background: #2a2a2a; font-size: 12px;">
+        <div class="tool-panel" style="width: 180px; padding: 6px; overflow-y: auto; border-right: 1px solid #444; background: #2a2a2a; font-size: 12px;">
         <!-- Project Info -->
         <div class="panel-section">
           <sl-input id="project-name" label="Project Name" placeholder="Untitled Project"></sl-input>
@@ -282,92 +282,6 @@ class ShapeForge {
   </div>
 </div>
         
-        <!-- Transform Controls -->
-        <div class="panel-section" style="margin-top: 20px;">
-          <h3>Transform</h3>
-          <div id="transform-container">
-            <!-- Position -->
-            <div class="transform-group">
-              <label>Position</label>
-<div style="display: grid; grid-template-columns: auto 1fr auto; gap: 6px; align-items: center;">
-  <label>X:</label>
-  <sl-range id="position-x" min="-10" max="10" step="0.1" value="0"></sl-range>
-  <sl-button-group>
-    <sl-button size="small" id="pos-x-minus" title="Move -0.5 on X axis">-0.5</sl-button>
-    <sl-button size="small" id="pos-x-plus" title="Move +0.5 on X axis">+0.5</sl-button>
-  </sl-button-group>
-  
-  <label>Y:</label>
-  <sl-range id="position-y" min="-10" max="10" step="0.1" value="0"></sl-range>
-  <sl-button-group>
-    <sl-button size="small" id="pos-y-minus" title="Move -0.5 on Y axis">-0.5</sl-button>
-    <sl-button size="small" id="pos-y-plus" title="Move +0.5 on Y axis">+0.5</sl-button>
-  </sl-button-group>
-  
-  <label>Z:</label>
-  <sl-range id="position-z" min="-10" max="10" step="0.1" value="0"></sl-range>
-  <sl-button-group>
-    <sl-button size="small" id="pos-z-minus" title="Move -0.5 on Z axis">-0.5</sl-button>
-    <sl-button size="small" id="pos-z-plus" title="Move +0.5 on Z axis">+0.5</sl-button>
-  </sl-button-group>
-</div>
-            </div>
-            
-            <!-- Rotation -->
-            <!-- <div class="transform-group" style="margin-top: 10px;">
-              <label>Rotation</label>
-              <div style="display: grid; grid-template-columns: auto 1fr; gap: 6px; align-items: center;">
-                <label>X:</label>
-                <sl-range id="rotation-x" min="0" max="6.28" step="0.1" value="0"></sl-range>
-                <label>Y:</label>
-                <sl-range id="rotation-y" min="0" max="6.28" step="0.1" value="0"></sl-range>
-                <label>Z:</label>
-                <sl-range id="rotation-z" min="0" max="6.28" step="0.1" value="0"></sl-range>
-              </div>
-            </div> -->
-
-
-<div class="transform-group" style="margin-top: 10px;">
-  <label>Rotation (degrees)</label>
-  <div style="display: grid; grid-template-columns: auto 1fr auto; gap: 6px; align-items: center;">
-    <label>X:</label>
-    <sl-range id="rotation-x" min="0" max="360" step="1" value="0"></sl-range>
-    <sl-button-group>
-      <sl-button size="small" id="rot-x-90">90°</sl-button>
-      <sl-button size="small" id="rot-x-180">180°</sl-button>
-    </sl-button-group>
-    
-    <label>Y:</label>
-    <sl-range id="rotation-y" min="0" max="360" step="1" value="0"></sl-range>
-    <sl-button-group>
-      <sl-button size="small" id="rot-y-90">90°</sl-button>
-      <sl-button size="small" id="rot-y-180">180°</sl-button>
-    </sl-button-group>
-    
-    <label>Z:</label>
-    <sl-range id="rotation-z" min="0" max="360" step="1" value="0"></sl-range>
-    <sl-button-group>
-      <sl-button size="small" id="rot-z-90">90°</sl-button>
-      <sl-button size="small" id="rot-z-180">180°</sl-button>
-    </sl-button-group>
-  </div>
-</div>
-            
-            <!-- Scale -->
-            <div class="transform-group" style="margin-top: 10px;">
-              <label>Scale</label>
-              <div style="display: grid; grid-template-columns: auto 1fr; gap: 6px; align-items: center;">
-                <label>X:</label>
-                <sl-range id="scale-x" min="0.1" max="10" step="0.1" value="1"></sl-range>
-                <label>Y:</label>
-                <sl-range id="scale-y" min="0.1" max="10" step="0.1" value="1"></sl-range>
-                <label>Z:</label>
-                <sl-range id="scale-z" min="0.1" max="10" step="0.1" value="1"></sl-range>
-              </div>
-            </div>
-          </div>
-        </div>
-        
         <!-- Shape Properties -->
         <div class="panel-section" style="margin-top: 20px;">
           <h3>Properties</h3>
@@ -384,6 +298,83 @@ class ShapeForge {
       <div class="preview-panel" style="flex: 3; display: flex; flex-direction: column; background: #1a1a1a; border-radius: 8px; margin: 0 4px;">
         <div id="preview-container" style="flex: 1; position: relative; border-radius: 8px; overflow: hidden; width: 100%; height: 100%;">
           <!-- Three.js preview will be inserted here -->
+          
+          <!-- Transform Controls Overlay at Bottom -->
+          <div class="bottom-panel" style="position: absolute; bottom: 10px; left: 10px; right: 10px; height: 190px; padding: 8px; background: rgba(42, 42, 42, 0.9); border: 1px solid #555; border-radius: 8px; overflow: hidden; z-index: 50; backdrop-filter: blur(4px);">
+            <!-- Transform Controls -->
+            <div class="panel-section">
+              <div id="transform-container" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; height: 100%;">
+                
+                <!-- Left Column: Position -->
+                <div class="transform-column" style="padding: 6px; border: 1px solid #444; border-radius: 4px; background: #1e1e1e;">
+                  <h4 style="font-size: 11px; margin-bottom: 6px; text-align: center; color: #ccc;">Position</h4>
+                  <div style="display: grid; grid-template-columns: auto 1fr auto; gap: 4px; align-items: center; font-size: 10px;">
+                    <label>X:</label>
+                    <sl-range id="position-x" min="-10" max="10" step="0.1" value="0" style="--track-width: 2px; --thumb-size: 12px;"></sl-range>
+                    <sl-button-group>
+                      <sl-button size="small" id="pos-x-minus" title="Move -0.5 on X axis" style="font-size: 9px; padding: 1px 4px;">-0.5</sl-button>
+                      <sl-button size="small" id="pos-x-plus" title="Move +0.5 on X axis" style="font-size: 9px; padding: 1px 4px;">+0.5</sl-button>
+                    </sl-button-group>
+                    
+                    <label>Y:</label>
+                    <sl-range id="position-y" min="-10" max="10" step="0.1" value="0" style="--track-width: 2px; --thumb-size: 12px;"></sl-range>
+                    <sl-button-group>
+                      <sl-button size="small" id="pos-y-minus" title="Move -0.5 on Y axis" style="font-size: 9px; padding: 1px 4px;">-0.5</sl-button>
+                      <sl-button size="small" id="pos-y-plus" title="Move +0.5 on Y axis" style="font-size: 9px; padding: 1px 4px;">+0.5</sl-button>
+                    </sl-button-group>
+                    
+                    <label>Z:</label>
+                    <sl-range id="position-z" min="-10" max="10" step="0.1" value="0" style="--track-width: 2px; --thumb-size: 12px;"></sl-range>
+                    <sl-button-group>
+                      <sl-button size="small" id="pos-z-minus" title="Move -0.5 on Z axis" style="font-size: 9px; padding: 1px 4px;">-0.5</sl-button>
+                      <sl-button size="small" id="pos-z-plus" title="Move +0.5 on Z axis" style="font-size: 9px; padding: 1px 4px;">+0.5</sl-button>
+                    </sl-button-group>
+                  </div>
+                </div>
+                
+                <!-- Middle Column: Rotation -->
+                <div class="transform-column" style="padding: 6px; border: 1px solid #444; border-radius: 4px; background: #1e1e1e;">
+                  <h4 style="font-size: 11px; margin-bottom: 6px; text-align: center; color: #ccc;">Rotation (degrees)</h4>
+                  <div style="display: grid; grid-template-columns: auto 1fr auto; gap: 4px; align-items: center; font-size: 10px;">
+                    <label>X:</label>
+                    <sl-range id="rotation-x" min="0" max="360" step="1" value="0" style="--track-width: 2px; --thumb-size: 12px;"></sl-range>
+                    <sl-button-group>
+                      <sl-button size="small" id="rot-x-90" style="font-size: 9px; padding: 1px 4px;">90°</sl-button>
+                      <sl-button size="small" id="rot-x-180" style="font-size: 9px; padding: 1px 4px;">180°</sl-button>
+                    </sl-button-group>
+                    
+                    <label>Y:</label>
+                    <sl-range id="rotation-y" min="0" max="360" step="1" value="0" style="--track-width: 2px; --thumb-size: 12px;"></sl-range>
+                    <sl-button-group>
+                      <sl-button size="small" id="rot-y-90" style="font-size: 9px; padding: 1px 4px;">90°</sl-button>
+                      <sl-button size="small" id="rot-y-180" style="font-size: 9px; padding: 1px 4px;">180°</sl-button>
+                    </sl-button-group>
+                    
+                    <label>Z:</label>
+                    <sl-range id="rotation-z" min="0" max="360" step="1" value="0" style="--track-width: 2px; --thumb-size: 12px;"></sl-range>
+                    <sl-button-group>
+                      <sl-button size="small" id="rot-z-90" style="font-size: 9px; padding: 1px 4px;">90°</sl-button>
+                      <sl-button size="small" id="rot-z-180" style="font-size: 9px; padding: 1px 4px;">180°</sl-button>
+                    </sl-button-group>
+                  </div>
+                </div>
+                
+                <!-- Right Column: Scale -->
+                <div class="transform-column" style="padding: 6px; border: 1px solid #444; border-radius: 4px; background: #1e1e1e;">
+                  <h4 style="font-size: 11px; margin-bottom: 6px; text-align: center; color: #ccc;">Scale</h4>
+                  <div style="display: grid; grid-template-columns: auto 1fr; gap: 4px; align-items: center; font-size: 10px;">
+                    <label>X:</label>
+                    <sl-range id="scale-x" min="0.1" max="10" step="0.1" value="1" style="--track-width: 2px; --thumb-size: 12px;"></sl-range>
+                    <label>Y:</label>
+                    <sl-range id="scale-y" min="0.1" max="10" step="0.1" value="1" style="--track-width: 2px; --thumb-size: 12px;"></sl-range>
+                    <label>Z:</label>
+                    <sl-range id="scale-z" min="0.1" max="10" step="0.1" value="1" style="--track-width: 2px; --thumb-size: 12px;"></sl-range>
+                  </div>
+                </div>
+                
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       
@@ -834,7 +825,7 @@ class ShapeForge {
     this.previewRenderer.domElement.style.height = '100%';
     this.previewRenderer.domElement.style.display = 'block';
     this.previewRenderer.domElement.style.maxWidth = '100%';
-    this.previewRenderer.domElement.style.maxHeight = '100%';
+    this.previewRenderer.domElement.style.maxHeight = '75%';
     
     this.previewContainer.appendChild(this.previewRenderer.domElement);
 
@@ -968,7 +959,7 @@ class ShapeForge {
       const sliderContainer = document.createElement('div');
       sliderContainer.style.cssText = `
     position: absolute;
-    bottom: 60px;
+    bottom: 250px;
     left: 50%;
     transform: translateX(-50%);
     width: 200px;
